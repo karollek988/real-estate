@@ -2,6 +2,7 @@ import type Stripe from "stripe";
 import { createStripeClient } from "./admin";
 import { getTierForPriceId } from "./prices";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { unlockAnalysisRequest } from "@/lib/analysis/ownership";
 import type { SubscriptionTier } from "./prices";
 
 function mapStripeStatus(status: Stripe.Subscription.Status): string {
@@ -151,14 +152,26 @@ export async function handleCheckoutSessionCompleted(session: Stripe.Checkout.Se
     const currentRemaining = (profile as { premium_analyses_remaining?: number } | null)
       ?.premium_analyses_remaining ?? 0;
 
-    console.log("[Webhook] Current premium_analyses_remaining:", currentRemaining);
+    // Always add 1 credit first (existing "buy a spare credit" behavior).
+    let newRemaining = currentRemaining + 1;
+
+    const unlockAnalysisId = session.metadata?.unlockAnalysisId;
+    if (unlockAnalysisId) {
+      console.log("[Webhook] Unlocking analysis:", unlockAnalysisId);
+      await unlockAnalysisRequest(userId, unlockAnalysisId);
+      // Decrement back down by 1 since this purchase was spent immediately
+      // on unlocking that specific analysis rather than banked as a spare
+      // credit. Net effect: analysis unlocked, credit balance unchanged.
+      newRemaining -= 1;
+      console.log("[Webhook] ✓ Unlocked analysis, decrementing balance to compensate. Net: balance unchanged");
+    }
 
     await adminClient
       .from("profiles")
-      .update({ premium_analyses_remaining: currentRemaining + 1 })
+      .update({ premium_analyses_remaining: newRemaining })
       .eq("id", userId);
 
-    console.log("[Webhook] ✓ Added 1 premium analysis to user:", userId);
+    console.log("[Webhook] ✓ Premium analyses remaining now:", newRemaining);
   }
 
   console.log("[Webhook] ✓ Purchase Completed for user:", userId);

@@ -2,11 +2,12 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { Source_Serif_4 } from "next/font/google";
 import { getAnalysisWithProperty } from "@/lib/analysis/store";
-import { findPremiumAnalysisForProperty } from "@/lib/analysis/ownership";
+import { findPremiumAnalysisForProperty, getAnalysisRequestRow } from "@/lib/analysis/ownership";
 import { createClient } from "@/lib/supabase/server";
 import { analysisAgeDays, FRESH_ANALYSIS_MAX_AGE_DAYS } from "@/lib/analysis/pipeline";
 import type { AnalysisReport, DataSourceReport, DecisionFactorResult } from "@/lib/analysis/types";
 import { UpdateAnalysisButton } from "@/components/report/UpdateAnalysisButton";
+import { UnlockButton } from "@/components/report/UnlockButton";
 import { KeyValueTable } from "@/components/report/KeyValueTable";
 import { IconFactGrid, type IconFactRow } from "@/components/report/IconFactGrid";
 import { RiskCategoryCard } from "@/components/report/RiskCategoryCard";
@@ -307,6 +308,76 @@ export default async function ReportPage({
     data: { user },
   } = await supabase.auth.getUser();
   const hasPremiumInspectionAccess = user ? Boolean(await findPremiumAnalysisForProperty(user.id, property.id)) : false;
+  const requestRow = user ? await getAnalysisRequestRow(user.id, id) : null;
+  const analysisType = requestRow?.analysisType ?? null;
+  const isFree = analysisType === "free";
+  const locked = requestRow !== null && requestRow.analysisType === "premium" && !requestRow.unlocked;
+
+  if (locked) {
+    const generatedDate = new Date(analysis.createdAt).toLocaleDateString("sv-SE", {
+      year: "numeric",
+      month: "long",
+      day: "numeric",
+    });
+    return (
+      <div className="min-h-screen bg-[#F7F4EC]">
+        <div className="no-print mx-auto flex w-full max-w-[880px] items-center px-8 py-5 sm:px-16">
+          <Link href="/" className="text-sm font-medium text-[#5B5648] transition hover:text-[#12271D]">
+            ← Ny analys
+          </Link>
+        </div>
+        <main className="mx-auto w-full max-w-[880px] border-t-[3px] border-[#B98A2E] bg-[#FBF9F4] shadow-[0_0_0_1px_rgba(0,0,0,0.06)]">
+          <section className="report-page relative overflow-hidden bg-[#0E2B1F] text-[#F5F1E4]">
+            <Watermark dark />
+            <CornerAccents color="rgba(216,181,99,0.4)" />
+            <div className="relative flex items-center justify-between px-8 pt-8 sm:px-16">
+              <div className="flex items-center gap-2.5">
+                <span
+                  style={serifStyle}
+                  className="flex h-8 w-8 items-center justify-center rounded-md border border-[#D8B563]/40 bg-white/5 text-[15px] font-semibold text-[#D8B563]"
+                >
+                  K
+                </span>
+                <span className="text-[11px] font-semibold uppercase tracking-[0.18em] text-[#D8CBA3]">Köpanalys</span>
+              </div>
+              <span className="text-[11px] text-[#8AA396]">{generatedDate}</span>
+            </div>
+            {analysis.report?.property.imageUrls?.[0] && (
+              <div className="relative mt-8 h-64 w-full sm:h-80">
+                <img src={analysis.report.property.imageUrls[0]} alt={property.address} className="h-full w-full object-cover blur-xl" />
+                <div className="absolute inset-0 bg-gradient-to-t from-[#0E2B1F] via-[#0E2B1F]/10 to-transparent" />
+              </div>
+            )}
+            <div className="relative px-8 pb-10 pt-6 sm:px-16 sm:pb-14">
+              <h1 style={serifStyle} className="text-[34px] font-semibold leading-[1.15] tracking-tight sm:text-[46px]">
+                {property.address}
+              </h1>
+              <p className="mt-3 text-[14px] text-[#C9D6CC]">{property.propertyType}</p>
+            </div>
+          </section>
+          <section className="report-page relative px-8 py-14 sm:px-16 sm:py-16">
+            <Watermark />
+            <CornerAccents color="rgba(185,138,46,0.35)" />
+            <div className="flex flex-col items-center gap-6 py-12 text-center">
+              <div className="flex h-16 w-16 items-center justify-center rounded-full bg-[#B98A2E]/10">
+                <svg className="h-8 w-8 text-[#B98A2E]" fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M16.5 10.5V6.75a4.5 4.5 0 1 0-9 0v3.75m-.75 11.25h10.5a2.25 2.25 0 0 0 2.25-2.25v-6.75a2.25 2.25 0 0 0-2.25-2.25H6.75a2.25 2.25 0 0 0-2.25 2.25v6.75a2.25 2.25 0 0 0 2.25 2.25Z" />
+                </svg>
+              </div>
+              <h2 style={serifStyle} className="text-[26px] font-semibold tracking-tight text-[#12271D] sm:text-[30px]">
+                Premium-analys låst
+              </h2>
+              <p className="max-w-md text-[14px] leading-relaxed text-[#5B5648]">
+                Den fullständiga Premium-analysen är klar, men du behöver betala för att låsa upp den.
+                Efter betalning får du tillgång till hela rapporten med områdesanalys, riskbedömning och investeringsutsikt.
+              </p>
+              <UnlockButton analysisId={id} />
+            </div>
+          </section>
+        </main>
+      </div>
+    );
+  }
 
   if (analysis.status !== "complete" || !analysis.report) {
     return (
@@ -398,7 +469,7 @@ export default async function ReportPage({
   if (employmentRatePct !== null) {
     macroCards.push({ icon: <BadgeCheckIcon className="h-3.5 w-3.5" />, label: "Sysselsättningsgrad", value: `${employmentRatePct.toFixed(1)}%` });
   }
-  if (plannedProjectsCount !== null) {
+  if (!isFree && plannedProjectsCount !== null) {
     macroCards.push({ icon: <CraneIcon className="h-3.5 w-3.5" />, label: "Planerade projekt", value: String(plannedProjectsCount) });
   }
 
@@ -671,7 +742,7 @@ export default async function ReportPage({
           </ChapterTitle>
           <Prose paragraphs={areaAnalysis.paragraphs.slice(0, 3)} />
 
-          {areaAnalysis.amenities.some((a) => a.value !== "Uppgift saknas") && (
+          {!isFree && areaAnalysis.amenities.some((a) => a.value !== "Uppgift saknas") && (
             <>
               <SubHeading icon={<ShoppingBagIcon className="h-4 w-4" />}>Service inom 1 km</SubHeading>
               <div className="relative">
@@ -796,7 +867,7 @@ export default async function ReportPage({
 
           <Prose paragraphs={investmentOutlook.paragraphs.slice(0, 3)} />
 
-          {investmentOutlook.futureProjects.length > 0 && (
+          {!isFree && investmentOutlook.futureProjects.length > 0 && (
             <>
               <SubHeading icon={<CraneIcon className="h-4 w-4" />}>Planerad utveckling i närområdet</SubHeading>
               <div className="relative grid grid-cols-1 gap-2.5 sm:grid-cols-2">
