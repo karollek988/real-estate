@@ -4,7 +4,7 @@ import { PremiumAnalysisCard } from "@/components/dashboard/buy/PremiumAnalysisC
 import { PlanCard } from "@/components/dashboard/buy/PlanCard";
 import { TrustStrip } from "@/components/dashboard/buy/TrustStrip";
 import { PaymentMethodsCard } from "@/components/dashboard/buy/PaymentMethodsCard";
-import { ClipboardIcon, TrendingUpIcon, ArrowRightIcon } from "@/components/icons";
+import { ClipboardIcon, TrendingUpIcon, ArrowRightIcon, CheckIcon, WarningIcon } from "@/components/icons";
 import { PREMIUM_ANALYSIS_PRICE_SEK, PREMIUM_SUBSCRIPTION_PRICE_SEK, ULTRA_SUBSCRIPTION_PRICE_SEK } from "@/lib/pricing";
 
 const PLANS = [
@@ -61,11 +61,33 @@ const VISIBLE_PLANS = PLANS.filter((plan) => !plan.hidden);
 
 const stagger = (n: number) => ({ "--dash-stagger": n }) as React.CSSProperties;
 
-export default function BuyPage() {
+export default async function BuyPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ checkout?: string }>;
+}) {
+  const { checkout } = await searchParams;
+
   return (
     <div className="mx-auto flex max-w-[1400px] flex-col gap-8 lg:flex-row">
       {/* Main column */}
       <div className="flex min-w-0 flex-1 flex-col gap-10">
+        {checkout === "success" && (
+          <div className="dash-enter flex items-center gap-3 rounded-2xl border border-green-500/30 bg-green-500/[0.08] p-4 text-sm text-green-300">
+            <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-green-500/15">
+              <CheckIcon className="h-4 w-4" />
+            </span>
+            Ditt köp lyckades! Ditt saldo är uppdaterat och redo att användas.
+          </div>
+        )}
+        {checkout === "cancel" && (
+          <div className="dash-enter flex items-center gap-3 rounded-2xl border border-amber-500/30 bg-amber-500/[0.08] p-4 text-sm text-amber-300">
+            <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-amber-500/15">
+              <WarningIcon className="h-4 w-4" />
+            </span>
+            Betalningen avbröts. Inget drogs från ditt kort — försök gärna igen.
+          </div>
+        )}
         <div className="dash-enter" style={stagger(0)}>
           <h1 className="text-2xl font-semibold tracking-tight text-white sm:text-[28px]">
             Köp <span className="text-green-400">analys</span> eller{" "}
