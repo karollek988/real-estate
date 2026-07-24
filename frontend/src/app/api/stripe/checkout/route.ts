@@ -28,7 +28,7 @@ export async function POST(request: Request) {
     return errorResponse(400, "invalid_request", "Invalid request body.");
   }
 
-  const { priceKey } = body as { priceKey?: unknown };
+  const { priceKey, unlockAnalysisId } = body as { priceKey?: unknown; unlockAnalysisId?: unknown };
 
   if (typeof priceKey !== "string") {
     console.log("[Stripe Checkout] ✗ Missing or invalid priceKey");
@@ -67,13 +67,14 @@ export async function POST(request: Request) {
     }
 
     if ((ALLOWED_ONE_TIME as readonly string[]).includes(priceKey)) {
-      console.log("[Stripe Checkout] Creating one-time checkout for:", priceKey);
+      console.log("[Stripe Checkout] Creating one-time checkout for:", priceKey, "unlockAnalysisId:", unlockAnalysisId ?? "none");
       const result = await createOneTimeCheckout(
         customerId,
         priceKey as "premium_analysis",
         user.id,
         successUrl,
-        cancelUrl
+        cancelUrl,
+        typeof unlockAnalysisId === "string" ? unlockAnalysisId : undefined
       );
       console.log("[Stripe Checkout] ✓ One-time session created:", result.sessionId);
       console.log("[Stripe Checkout] Redirecting user to:", result.url);

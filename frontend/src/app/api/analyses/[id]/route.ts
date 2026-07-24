@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { getAnalysisWithProperty } from "@/lib/analysis/store";
 import { requireUser } from "@/lib/auth/requireUser";
+import { getAnalysisRequestRow } from "@/lib/analysis/ownership";
 
 /** GET /api/analyses/:id — one analysis (any version) with its property. */
 export async function GET(
@@ -9,7 +10,7 @@ export async function GET(
 ) {
   const { id } = await params;
 
-  const { response: authError } = await requireUser();
+  const { user, response: authError } = await requireUser();
   if (authError) return authError;
 
   try {
@@ -20,7 +21,11 @@ export async function GET(
         { status: 404 }
       );
     }
-    return NextResponse.json(found);
+
+    const requestRow = user ? await getAnalysisRequestRow(user.id, id) : null;
+    const locked = requestRow !== null && requestRow.analysisType === "premium" && !requestRow.unlocked;
+
+    return NextResponse.json({ ...found, locked: locked || undefined });
   } catch (err) {
     console.error(`GET /api/analyses/${id} failed:`, err);
     return NextResponse.json(

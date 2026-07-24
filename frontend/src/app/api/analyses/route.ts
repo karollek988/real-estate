@@ -111,18 +111,23 @@ export async function POST(request: Request) {
     // contradicting that promise once quotas exist.
     const devAdmin = isDevAdmin(user.email);
     let quotaConsumed = false;
+    let unlocked = true;
     if (!devAdmin) {
       const remaining = await consumeAnalysisQuota(user.id, analysisType);
       if (remaining === null) {
-        return errorResponse(
-          402,
-          "quota_exhausted",
-          analysisType === "premium"
-            ? "You have no Premium analyses left this period."
-            : "You have no free analyses left this period."
-        );
+        // Premium: run anyway and create a locked (paywalled) request.
+        // Free: reject as before.
+        if (analysisType === "free") {
+          return errorResponse(
+            402,
+            "quota_exhausted",
+            "You have no free analyses left this period."
+          );
+        }
+        unlocked = false;
+      } else {
+        quotaConsumed = true;
       }
-      quotaConsumed = true;
     }
 
     const result = await requestAnalysis(input, { force: body.force === true });
@@ -132,6 +137,7 @@ export async function POST(request: Request) {
       propertyId: result.property.id,
       analysisType,
       quotaConsumed,
+      unlocked,
     });
     return resultResponse(result);
   } catch (err) {

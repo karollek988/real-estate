@@ -39,12 +39,18 @@ export async function createOneTimeCheckout(
   priceKey: "premium_analysis",
   userId: string,
   successUrl: string,
-  cancelUrl: string
+  cancelUrl: string,
+  unlockAnalysisId?: string
 ): Promise<CreateCheckoutResult> {
   const stripe = createStripeClient();
   console.log("[Stripe] Getting price ID for:", priceKey);
   const priceId = getPriceId(priceKey);
   console.log("[Stripe] Price ID resolved:", priceId);
+
+  const metadata: Record<string, string> = { userId, priceKey };
+  if (unlockAnalysisId) {
+    metadata.unlockAnalysisId = unlockAnalysisId;
+  }
 
   console.log("[Stripe] Creating Checkout Session...");
   const session = await stripe.checkout.sessions.create({
@@ -53,7 +59,7 @@ export async function createOneTimeCheckout(
     managed_payments: { enabled: false },
     ...(customerId ? { customer: customerId } : {}),
     client_reference_id: userId,
-    metadata: { userId, priceKey },
+    metadata,
     success_url: successUrl,
     cancel_url: cancelUrl,
   });

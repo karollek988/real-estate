@@ -6,9 +6,10 @@ import { SparkleIcon, CheckIcon } from "@/components/icons";
 
 interface PremiumAnalysisCardProps {
   price: number;
+  unlockAnalysisId?: string;
 }
 
-export function PremiumAnalysisCard({ price }: PremiumAnalysisCardProps) {
+export function PremiumAnalysisCard({ price, unlockAnalysisId }: PremiumAnalysisCardProps) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -19,7 +20,7 @@ export function PremiumAnalysisCard({ price }: PremiumAnalysisCardProps) {
       const res = await fetch("/api/stripe/checkout", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ priceKey: "premium_analysis" }),
+        body: JSON.stringify({ priceKey: "premium_analysis", ...(unlockAnalysisId ? { unlockAnalysisId } : {}) }),
       });
       const data = await res.json();
       if (!res.ok) {

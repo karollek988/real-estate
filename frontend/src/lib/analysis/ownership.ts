@@ -20,6 +20,7 @@ export interface AnalysisRequestRecord {
   propertyId: string;
   analysisType: AnalysisType;
   quotaConsumed: boolean;
+  unlocked: boolean;
   createdAt: string;
 }
 
@@ -30,6 +31,7 @@ interface AnalysisRequestRow {
   property_id: string;
   analysis_type: AnalysisType;
   quota_consumed: boolean;
+  unlocked: boolean;
   created_at: string;
 }
 
@@ -41,6 +43,7 @@ function mapRow(row: AnalysisRequestRow): AnalysisRequestRecord {
     propertyId: row.property_id,
     analysisType: row.analysis_type,
     quotaConsumed: row.quota_consumed,
+    unlocked: row.unlocked,
     createdAt: row.created_at,
   };
 }
@@ -68,6 +71,7 @@ export async function recordAnalysisRequest(input: {
   propertyId: string;
   analysisType: AnalysisType;
   quotaConsumed?: boolean;
+  unlocked?: boolean;
 }): Promise<AnalysisRequestRecord> {
   const { data, error } = await createAdminClient()
     .from("analysis_requests")
@@ -77,6 +81,7 @@ export async function recordAnalysisRequest(input: {
       property_id: input.propertyId,
       analysis_type: input.analysisType,
       quota_consumed: input.quotaConsumed ?? true,
+      unlocked: input.unlocked ?? true,
     })
     .select("*")
     .single();
@@ -171,6 +176,41 @@ export async function listAnalysisRequestsForUser(userId: string): Promise<Owned
       } satisfies OwnedAnalysisSummary;
     })
     .filter((row): row is OwnedAnalysisSummary => row !== null);
+}
+
+/**
+ * Unlocks a specific analysis request for a user — sets unlocked = true.
+ * Used by the Stripe webhook after an "unlock this analysis" payment.
+ */
+export async function unlockAnalysisRequest(userId: string, analysisId: string): Promise<void> {
+  const { error } = await createAdminClient()
+    .from("analysis_requests")
+    .update({ unlocked: true })
+    .eq("user_id", userId)
+    .eq("analysis_id", analysisId);
+  if (error) throw new Error(`unlockAnalysisRequest failed: ${error.message}`);
+}
+
+/**
+ * Returns the full analysis request row (analysisType + unlocked) for a user's
+ * most recent request for this specific analysis, or null if no matching request exists.
+ */
+export async function getAnalysisRequestRow(
+  userId: string,
+  analysisId: string
+): Promise<{ analysisType: AnalysisType; unlocked: boolean } | null> {
+  const { data, error } = await createAdminClient()
+    .from("analysis_requests")
+    .select("analysis_type, unlocked")
+    .eq("user_id", userId)
+    .eq("analysis_id", analysisId)
+    .order("created_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+  if (error) throw new Error(`getAnalysisRequestRow failed: ${error.message}`);
+  const row = data as { analysis_type: AnalysisType; unlocked: boolean } | null;
+  if (!row) return null;
+  return { analysisType: row.analysis_type, unlocked: row.unlocked };
 }
 
 /**
