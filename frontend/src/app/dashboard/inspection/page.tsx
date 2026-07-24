@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { Suspense, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import {
   ShieldIcon,
@@ -78,7 +78,7 @@ function useDebouncedSave(propertyId: string | null) {
   );
 }
 
-export default function InspectionPage() {
+function InspectionPageContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const propertyId = searchParams.get("propertyId");
@@ -508,6 +508,14 @@ export default function InspectionPage() {
         </div>
       )}
     </div>
+  );
+}
+
+export default function InspectionPage() {
+  return (
+    <Suspense fallback={null}>
+      <InspectionPageContent />
+    </Suspense>
   );
 }
 
