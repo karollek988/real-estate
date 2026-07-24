@@ -364,14 +364,14 @@ function RegisterForm({ onSuccess }: { onSuccess: () => void }) {
         <Checkbox id="auth-terms" checked={agree} onChange={setAgree}>
           Jag godkänner{" "}
           <a
-            href="#"
+            href="/terms"
             className="font-medium text-green-400 underline underline-offset-4 transition hover:text-green-300"
           >
             villkoren
           </a>{" "}
           och{" "}
           <a
-            href="#"
+            href="/privacy"
             className="font-medium text-green-400 underline underline-offset-4 transition hover:text-green-300"
           >
             integritetspolicyn
