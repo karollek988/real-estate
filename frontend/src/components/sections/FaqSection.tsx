@@ -3,34 +3,7 @@
 import { useState } from "react";
 import { Reveal } from "@/components/Reveal";
 import { ArrowRightIcon, ChevronDownIcon, QuestionIcon } from "@/components/icons";
-
-const FAQ_ITEMS = [
-  {
-    question: "Hur beräknas analysen?",
-    answer:
-      "Vi kombinerar historiska försäljningar, områdesdata, föreningens ekonomi och det aktuella marknadsläget i en statistisk modell. Varje faktor viktas och redovisas öppet i analysen, så att du ser exakt vad som driver bedömningen.",
-  },
-  {
-    question: "Hur träffsäkert är fair value?",
-    answer:
-      "Fair value är en statistisk uppskattning, inte ett facit. För de flesta bostäder ligger bedömningen inom några procent av slutpriset, och vi visar alltid osäkerhetsspannet i stället för att låtsas ha ett exakt svar.",
-  },
-  {
-    question: "Vilka datakällor används?",
-    answer:
-      "Analysen bygger på över 20 källor: offentliga register, historiska transaktioner, föreningarnas årsredovisningar, ränte- och inflationsdata samt beslutade infrastrukturprojekt.",
-  },
-  {
-    question: "Kan jag analysera hus?",
-    answer:
-      "Ja. Villor och radhus analyseras med samma modell, men utan BRF-delen. I stället väger vi in tomt, byggår, driftskostnader och jämförbara försäljningar i området.",
-  },
-  {
-    question: "Kan jag analysera lägenheter?",
-    answer:
-      "Absolut – bostadsrätter är där analysen är som starkast. Föreningens ekonomi ger en extra signal om den verkliga månadskostnaden och risken i köpet.",
-  },
-];
+import { FAQ_ITEMS } from "@/lib/faq";
 
 export function FaqSection() {
   const [openIndex, setOpenIndex] = useState<number | null>(0);

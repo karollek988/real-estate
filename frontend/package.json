@@ -16,6 +16,7 @@
     "@sparticuz/chromium": "^149.0.0",
     "react": "19.2.4",
     "react-dom": "19.2.4",
+    "resend": "^4.2.0",
     "stripe": "^22.3.2"
   },
   "devDependencies": {

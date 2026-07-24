@@ -1,13 +1,13 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { AuthModal } from "@/components/AuthModal";
 import { OnboardingModal } from "@/components/OnboardingModal";
 import { useAuth } from "@/lib/auth/AuthProvider";
-import { MenuIcon, CloseIcon } from "@/components/icons";
+import { MenuIcon, CloseIcon, LogOutIcon } from "@/components/icons";
 import { OPEN_ONBOARDING_MODAL_EVENT } from "@/lib/onboardingModalEvents";
 
 type NavAction =
@@ -16,6 +16,7 @@ type NavAction =
   | { type: "link"; href: string };
 
 const NAV_ITEMS: { label: string; action: NavAction }[] = [
+  { label: "Startsida", action: { type: "link", href: "/" } },
   { label: "Så fungerar det", action: { type: "modal" } },
   { label: "Exempelrapport", action: { type: "scroll", targetId: "marknadsinsikter" } },
   { label: "Priser", action: { type: "scroll", targetId: "analyze" } },
@@ -78,26 +79,96 @@ function NavLink({
   );
 }
 
-function UserAvatarButton({ label }: { label: string }) {
+function UserDropdown({ label }: { label: string }) {
   const router = useRouter();
+  const { signOut } = useAuth();
+  const [open, setOpen] = useState(false);
+  const menuRef = useRef<HTMLDivElement>(null);
+
+  const close = useCallback(() => setOpen(false), []);
+
+  useEffect(() => {
+    if (!open) return;
+    function onMouseDown(e: MouseEvent) {
+      if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
+        close();
+      }
+    }
+    function onKeyDown(e: KeyboardEvent) {
+      if (e.key === "Escape") close();
+    }
+    document.addEventListener("mousedown", onMouseDown);
+    document.addEventListener("keydown", onKeyDown);
+    return () => {
+      document.removeEventListener("mousedown", onMouseDown);
+      document.removeEventListener("keydown", onKeyDown);
+    };
+  }, [open, close]);
+
+  async function handleSignOut() {
+    await signOut();
+    router.push("/");
+  }
+
+  const items: { label: string; href?: string; onClick?: () => void; danger?: boolean }[] = [
+    { label: "Mina analyser", href: "/dashboard" },
+    { label: "Inställningar", href: "/dashboard/settings" },
+    { label: "Om mig", href: "/dashboard/settings" },
+    { label: "Besiktningshjälp", href: "/dashboard/inspection" },
+    { label: "Sekretess", href: "/dashboard/privacy" },
+    { label: "—" },
+    { label: "Logga ut", onClick: handleSignOut, danger: true },
+  ];
+
   return (
-    <button
-      type="button"
-      onClick={() => router.push("/dashboard")}
-      aria-label="Till översikten"
-      className="flex h-10 w-10 cursor-pointer items-center justify-center rounded-full border border-green-500/30 bg-green-400/10 text-sm font-semibold text-green-400 transition hover:border-green-500/50 hover:bg-green-400/15"
-    >
-      {initialsFor(label) || "?"}
-    </button>
+    <div ref={menuRef} className="relative">
+      <button
+        type="button"
+        onClick={() => setOpen((o) => !o)}
+        aria-label="Användarmeny"
+        aria-expanded={open}
+        className="flex h-10 w-10 cursor-pointer items-center justify-center rounded-full border border-green-500/30 bg-green-400/10 text-sm font-semibold text-green-400 transition hover:border-green-500/50 hover:bg-green-400/15"
+      >
+        {initialsFor(label) || "?"}
+      </button>
+      {open && (
+        <div className="absolute right-0 top-full mt-2 w-56 overflow-hidden rounded-xl border border-white/10 bg-[#0F1417] backdrop-blur-xl">
+          {items.map((item, i) =>
+            item.label === "—" ? (
+              <div key={i} className="mx-3 border-t border-white/10" />
+            ) : (
+              <button
+                key={i}
+                type="button"
+                onClick={() => {
+                  close();
+                  if (item.onClick) item.onClick();
+                  else if (item.href) router.push(item.href);
+                }}
+                className={`flex w-full items-center gap-2.5 px-4 py-2.5 text-left text-sm transition ${
+                  item.danger
+                    ? "text-red-400 hover:bg-red-500/10"
+                    : "text-neutral-300 hover:bg-white/5 hover:text-white"
+                }`}
+              >
+                {item.danger && <LogOutIcon className="h-4 w-4" />}
+                {item.label}
+              </button>
+            )
+          )}
+        </div>
+      )}
+    </div>
   );
 }
 
 export function SiteHeader() {
+  const router = useRouter();
   const [menuOpen, setMenuOpen] = useState(false);
   const [authOpen, setAuthOpen] = useState(false);
   const [onboardingOpen, setOnboardingOpen] = useState(false);
   const [activeSection, setActiveSection] = useState<string | null>(null);
-  const { user } = useAuth();
+  const { user, signOut } = useAuth();
 
   const displayName =
     (user?.user_metadata?.full_name as string | undefined) || user?.email?.split("@")[0] || "";
@@ -154,7 +225,7 @@ export function SiteHeader() {
               />
             ))}
             {user ? (
-              <UserAvatarButton label={displayName} />
+              <UserDropdown label={displayName} />
             ) : (
               <button
                 type="button"
@@ -189,16 +260,46 @@ export function SiteHeader() {
               />
             ))}
             {user ? (
-              <Link
-                href="/dashboard"
-                onClick={() => setMenuOpen(false)}
-                className="mt-5 flex items-center gap-3 rounded-lg border border-white/10 bg-white/5 px-4 py-3 text-sm font-semibold text-white"
-              >
-                <span className="flex h-8 w-8 items-center justify-center rounded-full border border-green-500/30 bg-green-400/10 text-xs font-semibold text-green-400">
-                  {initialsFor(displayName) || "?"}
-                </span>
-                Min översikt
-              </Link>
+              <>
+                <Link
+                  href="/dashboard"
+                  onClick={() => setMenuOpen(false)}
+                  className="mt-5 flex items-center gap-3 rounded-lg border border-white/10 bg-white/5 px-4 py-3 text-sm font-semibold text-white"
+                >
+                  <span className="flex h-8 w-8 items-center justify-center rounded-full border border-green-500/30 bg-green-400/10 text-xs font-semibold text-green-400">
+                    {initialsFor(displayName) || "?"}
+                  </span>
+                  Min översikt
+                </Link>
+                <div className="mt-3 flex flex-col">
+                  <Link
+                    href="/dashboard/settings"
+                    onClick={() => setMenuOpen(false)}
+                    className="border-b border-white/5 py-3 text-left text-[15px] text-neutral-300 transition hover:text-white"
+                  >
+                    Inställningar
+                  </Link>
+                  <Link
+                    href="/dashboard/privacy"
+                    onClick={() => setMenuOpen(false)}
+                    className="border-b border-white/5 py-3 text-left text-[15px] text-neutral-300 transition hover:text-white"
+                  >
+                    Sekretess
+                  </Link>
+                  <button
+                    type="button"
+                    onClick={async () => {
+                      setMenuOpen(false);
+                      await signOut();
+                      router.push("/");
+                    }}
+                    className="flex items-center gap-2 border-b border-white/5 py-3 text-left text-[15px] text-red-400 transition hover:text-red-300"
+                  >
+                    <LogOutIcon className="h-4 w-4" />
+                    Logga ut
+                  </button>
+                </div>
+              </>
             ) : (
               <button
                 type="button"
