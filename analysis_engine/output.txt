@@ -1,0 +1,186 @@
+========================================================================
+  KÖPANALYS — BRF Solbacken
+  Årsredovisning 2025
+  Genererad: Deterministisk analys, ingen AI-gissning
+========================================================================
+
+§ 1. BESKED
+------------------------------------------------------------------------
+  Bedömning:     Inga väsentliga svagheter identifierade
+  Konfidens:     100%
+
+  Nuläge:
+    + Föreningen redovisar en soliditet på 41.8% och ett rörelseresultat på 16.3% av intäkterna, enligt årsredovisningen för räkenskapsåret 2025.
+    + Skulden per lägenhet uppgår till 159 375 kr/lägenhet och räntetäckningsgraden är 1.12x, enligt årsredovisningen för räkenskapsåret 2025.
+    + Likviditeten uppgår till 3.4 månader enligt årsredovisningen för räkenskapsåret 2025.
+    - Föreningens genomsnittliga avgift motsvarar 61.1% av föreningens genomsnittliga intäkt per lägenhet och månad, enligt årsredovisningen för räkenskapsåret 2025.
+
+§ 2. OBJEKTET
+------------------------------------------------------------------------
+  Förening:      BRF Solbacken
+  Org.nr:        769600-1234
+  Kommun:        Stockholm
+  Lägenheter:    32
+  Kommersiella:  2
+  Byggår:        1987
+  Energiklass:   D
+  Byggnadsarea:  3 800 m²
+
+§ 3. BRF:N — FINANSIELL OVERSIKT
+------------------------------------------------------------------------
+
+  Rörelseresultat:
+    Intäkter:              2 640 000 kr
+    Rörelsekostnader:      2 210 000 kr
+    Rörelseresultat:       430 000 kr
+    Finansintäkter:        12 000 kr
+    Finanskostnader:       385 000 kr
+    Resultat efter skatt:  43 000 kr
+
+  Balansräkning:
+    Summa tillgångar:      11 200 000 kr
+    Eget kapital:          4 680 000 kr
+    Skulder totalt:        6 520 000 kr
+    Skulder > 1 år:        5 100 000 kr
+    Skulder < 1 år:        1 420 000 kr
+    Kassa och bank:        620 000 kr
+
+§ 4. BERÄKNADE NYCKELTAL
+------------------------------------------------------------------------
+
+  Per lägenhet:
+    Skuld per lägenhet:     159 375 kr/lgh
+    Eget kapital per lgh:   146 250 kr/lgh
+    Intäkter per lgh:      82 500 kr/lgh
+    Kostnader per lgh:     69 062 kr/lgh
+    Räntekostnad per lgh:  12 031 kr/lgh
+
+  Nyckeltal:
+    Egenkapitalandel:      41.8%
+    Skuldandel:            58.2%
+    Rörelsemarginal:       16.3%
+    Räntetäckning:         1.12x
+    Skuld-egenkapital:     139.3%
+    Kostnad per m²:        Saknas
+    Avgiftstäckning:       61.1%
+    Vägt ränteunderlag:    3.9%
+    Andel kortfristig:     21.8%
+    Likviditet:            3.4 månader
+
+§ 5. LÅNEPORTFÖLJ
+------------------------------------------------------------------------
+
+    Handelsbanken
+      Återstående:   2 800 000 kr
+      Ränta:         3.9%
+      Förfallodatum: 2028-06-30
+    SEB
+      Återstående:   1 800 000 kr
+      Ränta:         4.2%
+      Förfallodatum: 2027-12-31
+    Swedbank
+      Återstående:   920 000 kr
+      Ränta:         3.5%
+      Förfallodatum: 2026-06-30
+
+    Total skuld:     6 520 000 kr
+    Vägt genomsnitt: 3.9%
+
+§ 6. SIGNALER
+------------------------------------------------------------------------
+
+    [++] equity_ratio..................           41.8%   (healthy (40-55%))
+    [+++] operating_margin..............           16.3%   (strong surplus (>15%))
+    [+] interest_coverage.............           1.12x   (tight (1.0-1.5))
+    [+++] debt_per_apartment............  159 375 kr/lgh   (very low (<200k SEK))
+    [-] fee_sustainability............           61.1%   (significantly under-funded (0.6-0.8))
+    [+] short_term_debt_ratio.........           21.8%   (moderate (15-30%))
+    [++] liquidity_months..............     3.4 månader   (adequate (3-6 months))
+
+§ 7. OBSERVATIONER
+------------------------------------------------------------------------
+
+    [FAKTUM  ] Föreningen redovisar en soliditet på 41.8% och ett rörelseresultat på 16.3% av intäkterna, enligt årsredovisningen för räkenskapsåret 2025.
+             Stöds av: equity_ratio=41.8%, operating_margin=16.3%
+             Konfidens: 100%
+
+    [FAKTUM  ] Skulden per lägenhet uppgår till 159 375 kr/lägenhet och räntetäckningsgraden är 1.12x, enligt årsredovisningen för räkenskapsåret 2025.
+             Stöds av: interest_coverage=1.12x, debt_per_apartment=159 375 kr/lgh, short_term_debt_ratio=21.8%
+             Konfidens: 100%
+
+    [FAKTUM  ] Föreningens genomsnittliga avgift motsvarar 61.1% av föreningens genomsnittliga intäkt per lägenhet och månad, enligt årsredovisningen för räkenskapsåret 2025.
+             Stöds av: fee_sustainability=61.1%
+             Konfidens: 100%
+
+    [FAKTUM  ] Likviditeten uppgår till 3.4 månader enligt årsredovisningen för räkenskapsåret 2025.
+             Stöds av: liquidity_months=3.4 månader
+             Konfidens: 100%
+
+§ 8. KONKLUSIONER
+------------------------------------------------------------------------
+
+    FINANCIAL_HEALTH
+    Klassificering: strength
+    Föreningen redovisar en soliditet på 41.8% och ett rörelseresultat på 16.3% av intäkterna, enligt årsredovisningen för räkenskapsåret 2025.
+    Konfidens: 100%
+
+    DEBT_SUSTAINABILITY
+    Klassificering: strength
+    Skulden per lägenhet uppgår till 159 375 kr/lägenhet och räntetäckningsgraden är 1.12x, enligt årsredovisningen för räkenskapsåret 2025.
+    Konfidens: 100%
+
+    FEE_ANALYSIS (Måttlig)
+    Klassificering: weakness
+    Föreningens genomsnittliga avgift motsvarar 61.1% av föreningens genomsnittliga intäkt per lägenhet och månad, enligt årsredovisningen för räkenskapsåret 2025.
+    Konfidens: 100%
+
+    LIQUIDITY
+    Klassificering: strength
+    Likviditeten uppgår till 3.4 månader enligt årsredovisningen för räkenskapsåret 2025.
+    Konfidens: 100%
+
+§ 10. SPÅRBARHET
+------------------------------------------------------------------------
+
+  Varje nyckeltal i denna analys härstammar från:
+  Källa: brf-solbacken_arssredovisning_2025.pdf
+  Extraktionskonfidens: 88%
+
+  Fältprecision:
+    income_statement.revenue                 sida  8  (template, 95%)
+    income_statement.operating_costs         sida  8  (template, 95%)
+    income_statement.operating_profit        sida  8  (template, 95%)
+    income_statement.financial_income        sida  8  (template, 90%)
+    income_statement.financial_costs         sida  8  (template, 95%)
+    income_statement.profit_before_tax       sida  8  (template, 95%)
+    income_statement.profit_after_tax        sida  8  (template, 95%)
+    balance_sheet.total_assets               sida 10  (template, 95%)
+    balance_sheet.current_assets             sida 10  (template, 90%)
+    balance_sheet.fixed_assets               sida 10  (template, 90%)
+    balance_sheet.total_equity               sida 10  (template, 95%)
+    balance_sheet.total_liabilities          sida 10  (template, 95%)
+    balance_sheet.long_term_debt             sida 10  (template, 90%)
+    balance_sheet.short_term_debt            sida 10  (template, 90%)
+    balance_sheet.cash_and_bank              sida 10  (template, 95%)
+    apartment_metrics.number_of_apartments   sida  3  (template, 95%)
+    apartment_metrics.avg_monthly_fee        sida  5  (template, 90%)
+    loans[0].remaining_amount                sida 12  (template, 85%)
+    loans[0].interest_rate_percent           sida 12  (template, 85%)
+    loans[1].remaining_amount                sida 12  (template, 85%)
+    loans[1].interest_rate_percent           sida 12  (template, 85%)
+    loans[2].remaining_amount                sida 12  (template, 85%)
+    loans[2].interest_rate_percent           sida 12  (template, 85%)
+    property_info.year_built                 sida  4  (template, 80%)
+    property_info.building_area_sqm          sida  4  (template, 75%)
+    property_info.energy_class               sida  4  (template, 70%)
+
+  Saknade fält:
+    - land_area_sqm: not found in extracted text
+    - property_designation: not found in extracted text
+
+========================================================================
+  Denna analys är genererad av ett deterministiskt system.
+  Inga värden har gissats eller uppskattats.
+  Alla slutsatser kan spåras tillbaka till källskdocumentet.
+  Systemet utgör inte finansiell rådgivning.
+========================================================================

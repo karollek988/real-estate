@@ -1,0 +1,399 @@
+@import "tailwindcss";
+
+:root {
+  --background: #ffffff;
+  --foreground: #0a0a0a;
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-sans, ui-sans-serif, system-ui, sans-serif);
+}
+
+@keyframes fade-in-up {
+  from {
+    opacity: 0;
+    transform: translateY(14px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-fade-in-up {
+  animation: fade-in-up 0.8s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+.delay-1 {
+  animation-delay: 0.08s;
+}
+.delay-2 {
+  animation-delay: 0.16s;
+}
+.delay-3 {
+  animation-delay: 0.24s;
+}
+.delay-4 {
+  animation-delay: 0.32s;
+}
+
+/* Auth modal entrance */
+@keyframes overlay-fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes modal-pop-in {
+  from {
+    opacity: 0;
+    transform: translateY(10px) scale(0.965);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+.animate-overlay-fade-in {
+  animation: overlay-fade-in 0.3s ease-out both;
+}
+
+.animate-modal-pop-in {
+  animation: modal-pop-in 0.4s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+/* Section atmosphere: backdrop dissolves into the page at both edges */
+.section-bg {
+  -webkit-mask-image: linear-gradient(
+    to bottom,
+    transparent 0%,
+    black 20%,
+    black 80%,
+    transparent 100%
+  );
+  mask-image: linear-gradient(
+    to bottom,
+    transparent 0%,
+    black 20%,
+    black 80%,
+    transparent 100%
+  );
+}
+
+/* Section divider: dark gray hairline with a faint green glow */
+.section-divider {
+  background: linear-gradient(
+    to right,
+    transparent,
+    rgba(115, 125, 120, 0.35) 30%,
+    rgba(74, 222, 128, 0.4) 50%,
+    rgba(115, 125, 120, 0.35) 70%,
+    transparent
+  );
+  box-shadow: 0 0 12px rgba(74, 222, 128, 0.18);
+}
+
+/* Scroll reveal */
+.reveal {
+  opacity: 0;
+  transition:
+    opacity 0.75s cubic-bezier(0.16, 1, 0.3, 1),
+    transform 0.75s cubic-bezier(0.16, 1, 0.3, 1);
+  will-change: opacity, transform;
+}
+
+.reveal-up {
+  transform: translateY(26px);
+}
+
+.reveal-left {
+  transform: translateX(-30px);
+}
+
+.reveal-right {
+  transform: translateX(30px);
+}
+
+.reveal.is-visible {
+  opacity: 1;
+  transform: none;
+}
+
+/* Chart entrance choreography (scoped to a Reveal wrapper) */
+.reveal .chart-line {
+  stroke-dasharray: 1;
+  stroke-dashoffset: 1;
+}
+
+.reveal.is-visible .chart-line {
+  stroke-dashoffset: 0;
+  transition: stroke-dashoffset 1.2s cubic-bezier(0.65, 0, 0.35, 1) 0.2s;
+}
+
+.reveal .chart-area,
+.reveal .chart-fade {
+  opacity: 0;
+}
+
+.reveal.is-visible .chart-area {
+  opacity: 1;
+  transition: opacity 0.9s ease-out 0.55s;
+}
+
+.reveal.is-visible .chart-fade {
+  opacity: 1;
+  transition: opacity 0.5s ease-out 0.8s;
+}
+
+.reveal .chart-bar {
+  transform: scaleX(0);
+  transform-origin: left;
+}
+
+.reveal.is-visible .chart-bar {
+  transform: scaleX(1);
+  transition: transform 0.9s cubic-bezier(0.16, 1, 0.3, 1) var(--chart-bar-delay, 0ms);
+}
+
+/* === Dashboard micro-interactions === */
+
+/* Content enter: fade + gentle rise, staggered per section (~55ms apart) */
+@keyframes dash-enter {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.dash-enter {
+  animation: dash-enter 0.3s cubic-bezier(0.16, 1, 0.3, 1) both;
+  animation-delay: calc(var(--dash-stagger, 0) * 55ms);
+}
+
+/* Sliding active-tab underline */
+.dash-nav-indicator {
+  transition:
+    transform 0.3s cubic-bezier(0.16, 1, 0.3, 1),
+    width 0.3s cubic-bezier(0.16, 1, 0.3, 1),
+    opacity 0.3s ease;
+  will-change: transform, width;
+}
+
+/* Nav tabs: text color fades, quick press response, soft glow on hover */
+.dash-tab {
+  transition:
+    color 0.3s ease,
+    transform 0.12s ease;
+}
+
+.dash-tab:active {
+  transform: scale(0.97);
+}
+
+.dash-tab::before {
+  content: "";
+  position: absolute;
+  inset: 6px 0;
+  border-radius: 10px;
+  background: radial-gradient(70% 90% at 50% 100%, rgba(74, 222, 128, 0.12), transparent 70%);
+  opacity: 0;
+  transition: opacity 0.3s ease;
+  pointer-events: none;
+}
+
+.dash-tab:hover::before {
+  opacity: 1;
+}
+
+.dash-tab-premium::before {
+  background: radial-gradient(70% 90% at 50% 100%, rgba(251, 191, 36, 0.12), transparent 70%);
+}
+
+.dash-tab-icon {
+  transition:
+    transform 0.25s ease,
+    color 0.3s ease;
+}
+
+.dash-tab:hover .dash-tab-icon {
+  transform: scale(1.08);
+}
+
+@keyframes dash-icon-pop {
+  0% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.08);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+.dash-tab[data-active="true"] .dash-tab-icon {
+  animation: dash-icon-pop 0.35s ease-in-out;
+}
+
+/* Premium tab: slow gold shimmer sweep, roughly every 9 seconds */
+.dash-shimmer {
+  position: absolute;
+  inset: 4px 0;
+  overflow: hidden;
+  border-radius: 10px;
+  pointer-events: none;
+}
+
+.dash-shimmer::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  width: 45%;
+  background: linear-gradient(100deg, transparent, rgba(251, 191, 36, 0.13), transparent);
+  transform: translateX(-160%) skewX(-18deg);
+  animation: dash-shimmer 9s ease-in-out infinite;
+}
+
+@keyframes dash-shimmer {
+  0% {
+    transform: translateX(-160%) skewX(-18deg);
+  }
+  15% {
+    transform: translateX(390%) skewX(-18deg);
+  }
+  100% {
+    transform: translateX(390%) skewX(-18deg);
+  }
+}
+
+/* Interactive cards: lift, brighten and deepen shadow on hover.
+   card-lift keeps a card's own border/shadow (for highlighted variants);
+   card-interactive also brightens the border and strengthens the shadow. */
+.card-lift,
+.card-interactive {
+  position: relative;
+  transition:
+    transform 0.25s cubic-bezier(0.16, 1, 0.3, 1),
+    border-color 0.25s ease,
+    box-shadow 0.25s ease;
+}
+
+.card-lift::after,
+.card-interactive::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: rgba(255, 255, 255, 0.03);
+  opacity: 0;
+  transition: opacity 0.25s ease;
+  pointer-events: none;
+}
+
+.card-lift:hover,
+.card-interactive:hover {
+  transform: translateY(-2px);
+}
+
+.card-lift:hover::after,
+.card-interactive:hover::after {
+  opacity: 1;
+}
+
+.card-interactive:hover {
+  border-color: rgba(255, 255, 255, 0.18);
+  box-shadow: 0 12px 32px -12px rgba(0, 0, 0, 0.55);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .dash-enter {
+    animation: none;
+  }
+
+  .dash-nav-indicator,
+  .dash-tab,
+  .dash-tab-icon,
+  .card-lift,
+  .card-interactive,
+  .card-lift::after,
+  .card-interactive::after {
+    transition: none;
+  }
+
+  .dash-tab[data-active="true"] .dash-tab-icon,
+  .dash-shimmer::after {
+    animation: none;
+  }
+
+  .dash-tab:active,
+  .dash-tab:hover .dash-tab-icon,
+  .card-lift:hover,
+  .card-interactive:hover {
+    transform: none;
+  }
+}
+
+/* Decision score ring: draws from empty to its value on entrance */
+@keyframes score-ring-draw {
+  from {
+    stroke-dashoffset: var(--ring-circumference);
+  }
+  to {
+    stroke-dashoffset: var(--ring-offset);
+  }
+}
+
+.score-ring-progress {
+  animation: score-ring-draw 1.1s cubic-bezier(0.16, 1, 0.3, 1) 0.25s both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .score-ring-progress {
+    animation: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-fade-in-up,
+  .animate-overlay-fade-in,
+  .animate-modal-pop-in {
+    animation: none;
+    opacity: 1;
+    transform: none;
+  }
+
+  .reveal {
+    opacity: 1 !important;
+    transform: none !important;
+    transition: none;
+  }
+
+  .reveal .chart-line {
+    stroke-dasharray: none;
+    stroke-dashoffset: 0;
+    transition: none;
+  }
+
+  .reveal .chart-area,
+  .reveal .chart-fade {
+    opacity: 1;
+    transition: none;
+  }
+
+  .reveal .chart-bar {
+    transform: none;
+    transition: none;
+  }
+}

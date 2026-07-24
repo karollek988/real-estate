@@ -1,0 +1,92 @@
+{
+  "$schema_version": "1.0.0",
+  "brf": {
+    "name": "BRF Solbacken",
+    "organization_number": "769600-1234",
+    "municipality": "Stockholm",
+    "number_of_apartments": 32,
+    "number_of_commercial": 2,
+    "number_of_rental": 0
+  },
+  "annual_reports": [
+    {
+      "fiscal_year": 2025,
+      "pdf": {
+        "path": "brf-solbacken_arssredovisning_2025.pdf",
+        "hash": "sha256:a1b2c3d4e5f6...",
+        "size_bytes": 245000
+      },
+      "extraction_confidence": 0.88,
+      "income_statement": {
+        "revenue": {"value": 2640000.0, "unit": "SEK", "source": {"page": 8, "field": "Bruttointäkter", "method": "template", "confidence": 0.95}},
+        "operating_costs": {"value": 2210000.0, "unit": "SEK", "source": {"page": 8, "field": "Rörelsekostnader", "method": "template", "confidence": 0.95}},
+        "operating_profit": {"value": 430000.0, "unit": "SEK", "source": {"page": 8, "field": "Rörelseresultat", "method": "template", "confidence": 0.95}},
+        "financial_income": {"value": 12000.0, "unit": "SEK", "source": {"page": 8, "field": "Finansintäkter", "method": "template", "confidence": 0.90}},
+        "financial_costs": {"value": 385000.0, "unit": "SEK", "source": {"page": 8, "field": "Finanskostnader", "method": "template", "confidence": 0.95}},
+        "profit_before_tax": {"value": 57000.0, "unit": "SEK", "source": {"page": 8, "field": "Resultat före skatt", "method": "template", "confidence": 0.95}},
+        "profit_after_tax": {"value": 43000.0, "unit": "SEK", "source": {"page": 8, "field": "Resultat efter skatt", "method": "template", "confidence": 0.95}}
+      },
+      "balance_sheet": {
+        "total_assets": {"value": 11200000.0, "unit": "SEK", "source": {"page": 10, "field": "Summa tillgångar", "method": "template", "confidence": 0.95}},
+        "current_assets": {"value": 890000.0, "unit": "SEK", "source": {"page": 10, "field": "Omsättningstillgångar", "method": "template", "confidence": 0.90}},
+        "fixed_assets": {"value": 10310000.0, "unit": "SEK", "source": {"page": 10, "field": "Anläggningstillgångar", "method": "template", "confidence": 0.90}},
+        "total_equity": {"value": 4680000.0, "unit": "SEK", "source": {"page": 10, "field": "Eget kapital", "method": "template", "confidence": 0.95}},
+        "total_liabilities": {"value": 6520000.0, "unit": "SEK", "source": {"page": 10, "field": "Skulder totalt", "method": "template", "confidence": 0.95}},
+        "long_term_debt": {"value": 5100000.0, "unit": "SEK", "source": {"page": 10, "field": "Skulder > 1 år", "method": "template", "confidence": 0.90}},
+        "short_term_debt": {"value": 1420000.0, "unit": "SEK", "source": {"page": 10, "field": "Skulder < 1 år", "method": "template", "confidence": 0.90}},
+        "cash_and_bank": {"value": 620000.0, "unit": "SEK", "source": {"page": 10, "field": "Kassa och bank", "method": "template", "confidence": 0.95}}
+      },
+      "apartment_metrics": {
+        "number_of_apartments": {"value": 32, "unit": "count", "source": {"page": 3, "field": "Antal lägenheter", "method": "template", "confidence": 0.95}},
+        "avg_monthly_fee": {"value": 4200.0, "unit": "SEK/month", "source": {"page": 5, "field": "Genomsnittlig avgift", "method": "template", "confidence": 0.90}}
+      },
+      "loans": [
+        {
+          "lender": "Handelsbanken",
+          "original_amount": {"value": 3500000.0, "unit": "SEK", "source": {"page": 12, "field": "Låneportfolio", "method": "template", "confidence": 0.85}},
+          "remaining_amount": {"value": 2800000.0, "unit": "SEK", "source": {"page": 12, "field": "Låneportfolio", "method": "template", "confidence": 0.85}},
+          "interest_rate_percent": {"value": 3.85, "unit": "%", "source": {"page": 12, "field": "Låneportfolio", "method": "template", "confidence": 0.85}},
+          "maturity_date": "2028-06-30",
+          "amortization_required": true
+        },
+        {
+          "lender": "SEB",
+          "original_amount": {"value": 2500000.0, "unit": "SEK", "source": {"page": 12, "field": "Låneportfolio", "method": "template", "confidence": 0.85}},
+          "remaining_amount": {"value": 1800000.0, "unit": "SEK", "source": {"page": 12, "field": "Låneportfolio", "method": "template", "confidence": 0.85}},
+          "interest_rate_percent": {"value": 4.15, "unit": "%", "source": {"page": 12, "field": "Låneportfolio", "method": "template", "confidence": 0.85}},
+          "maturity_date": "2027-12-31",
+          "amortization_required": true
+        },
+        {
+          "lender": "Swedbank",
+          "original_amount": {"value": 1200000.0, "unit": "SEK", "source": {"page": 12, "field": "Låneportfolio", "method": "template", "confidence": 0.85}},
+          "remaining_amount": {"value": 920000.0, "unit": "SEK", "source": {"page": 12, "field": "Låneportfolio", "method": "template", "confidence": 0.85}},
+          "interest_rate_percent": {"value": 3.50, "unit": "%", "source": {"page": 12, "field": "Låneportfolio", "method": "template", "confidence": 0.85}},
+          "maturity_date": "2026-06-30",
+          "amortization_required": false
+        }
+      ],
+      "board": {
+        "chairman": {"value": "Erik Lindqvist", "source": {"page": 2, "field": "Ordförande", "method": "template", "confidence": 0.90}},
+        "auditor": {"value": "KPMG AB", "source": {"page": 2, "field": "Revisor", "method": "template", "confidence": 0.90}},
+        "members_count": {"value": 5, "unit": "count", "source": {"page": 2, "field": "Styrelse", "method": "template", "confidence": 0.85}}
+      },
+      "property_info": {
+        "year_built": {"value": 1987, "unit": "year", "source": {"page": 4, "field": "Byggår", "method": "template", "confidence": 0.80}},
+        "building_area_sqm": {"value": 3800.0, "unit": "m²", "source": {"page": 4, "field": "Byggnadsarea", "method": "template", "confidence": 0.75}},
+        "energy_class": {"value": "D", "source": {"page": 4, "field": "Energiklass", "method": "template", "confidence": 0.70}}
+      },
+      "missing_fields": [
+        {"field": "land_area_sqm", "reason": "not found in extracted text", "expected_in": "standard Swedish årsredovisning"},
+        {"field": "property_designation", "reason": "not found in extracted text", "expected_in": "standard Swedish årsredovisning"}
+      ]
+    }
+  ],
+  "extraction_metadata": {
+    "total_pdfs_processed": 1,
+    "total_pdfs_succeeded": 1,
+    "average_confidence": 0.88,
+    "years_extracted": [2025],
+    "years_requested": [2025]
+  }
+}

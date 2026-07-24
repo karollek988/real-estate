@@ -1,0 +1,1119 @@
+{
+  "results": [
+    {
+      "hemnet_url": "https://www.hemnet.se/bostad/lagenhet-3rum-kungsholmen-stockholms-kommun-hantverkargatan-30-21706845",
+      "municipality": "Stockholms kommun",
+      "description": "Kungsholmen - older building (1884)",
+      "success": true,
+      "elapsed_seconds": 32.7,
+      "coverage": {
+        "hemnet_url": "https://www.hemnet.se/bostad/lagenhet-3rum-kungsholmen-stockholms-kommun-hantverkargatan-30-21706845",
+        "brf_name": "Bostadsrättsföreningen Valnöten 11 Hantverkargatan 30B, Stockholm",
+        "address": "Hantverkargatan 30",
+        "municipality": null,
+        "hemnet_found": true,
+        "booli_matched": true,
+        "allabrf_matched": true,
+        "official_website_found": false,
+        "annual_reports_found": 1,
+        "statutes_found": 1,
+        "maintenance_info_found": false,
+        "fields": [
+          {
+            "field": "name",
+            "category": "identity",
+            "populated": true,
+            "value": "Bostadsrättsföreningen Valnöten 11 Hantverkargatan 30B, Stockholm",
+            "source": "allabrf",
+            "confidence": 0.95
+          },
+          {
+            "field": "organization_number",
+            "category": "identity",
+            "populated": true,
+            "value": "716421-6280",
+            "source": "allabrf",
+            "confidence": 1.0
+          },
+          {
+            "field": "municipality",
+            "category": "identity",
+            "populated": false,
+            "value": null,
+            "source": null,
+            "confidence": null
+          },
+          {
+            "field": "county",
+            "category": "identity",
+            "populated": true,
+            "value": "Stockholm",
+            "source": "allabrf",
+            "confidence": 0.9
+          },
+          {
+            "field": "address",
+            "category": "identity",
+            "populated": true,
+            "value": "Hantverkargatan 30",
+            "source": "hemnet",
+            "confidence": 0.95
+          },
+          {
+            "field": "postal_code",
+            "category": "identity",
+            "populated": false,
+            "value": null,
+            "source": null,
+            "confidence": null
+          },
+          {
+            "field": "website_url",
+            "category": "identity",
+            "populated": false,
+            "value": null,
+            "source": null,
+            "confidence": null
+          },
+          {
+            "field": "founding_year",
+            "category": "identity",
+            "populated": true,
+            "value": 1991,
+            "source": "allabrf",
+            "confidence": 0.9
+          },
+          {
+            "field": "owner_occupied",
+            "category": "apartments",
+            "populated": true,
+            "value": 43,
+            "source": "allabrf",
+            "confidence": 0.9
+          },
+          {
+            "field": "rental",
+            "category": "apartments",
+            "populated": false,
+            "value": null,
+            "source": null,
+            "confidence": null
+          },
+          {
+            "field": "commercial",
+            "category": "apartments",
+            "populated": false,
+            "value": null,
+            "source": null,
+            "confidence": null
+          },
+          {
+            "field": "avg_monthly_fee",
+            "category": "apartments",
+            "populated": false,
+            "value": null,
+            "source": null,
+            "confidence": null
+          },
+          {
+            "field": "year_built",
+            "category": "property",
+            "populated": true,
+            "value": 1927,
+            "source": "booli",
+            "confidence": 0.8
+          },
+          {
+            "field": "building_area_sqm",
+            "category": "property",
+            "populated": true,
+            "value": 58.0,
+            "source": "booli",
+            "confidence": 0.7
+          },
+          {
+            "field": "residential_area_sqm",
+            "category": "property",
+            "populated": false,
+            "value": null,
+            "source": null,
+            "confidence": null
+          },
+          {
+            "field": "commercial_area_sqm",
+            "category": "property",
+            "populated": false,
+            "value": null,
+            "source": null,
+            "confidence": null
+          },
+          {
+            "field": "energy_class",
+            "category": "property",
+            "populated": false,
+            "value": null,
+            "source": null,
+            "confidence": null
+          },
+          {
+            "field": "land_ownership",
+            "category": "property",
+            "populated": false,
+            "value": null,
+            "source": null,
+            "confidence": null
+          },
+          {
+            "field": "renovation_history",
+            "category": "property",
+            "populated": false,
+            "value": null,
+            "source": null,
+            "confidence": null
+          },
+          {
+            "field": "property_manager",
+            "category": "personnel",
+            "populated": false,
+            "value": null,
+            "source": null,
+            "confidence": null
+          },
+          {
+            "field": "technical_manager",
+            "category": "personnel",
+            "populated": false,
+            "value": null,
+            "source": null,
+            "confidence": null
+          },
+          {
+            "field": "chairman",
+            "category": "personnel",
+            "populated": false,
+            "value": null,
+            "source": null,
+            "confidence": null
+          },
+          {
+            "field": "vice_chairman",
+            "category": "personnel",
+            "populated": false,
+            "value": null,
+            "source": null,
+            "confidence": null
+          },
+          {
+            "field": "treasurer",
+            "category": "personnel",
+            "populated": false,
+            "value": null,
+            "source": null,
+            "confidence": null
+          },
+          {
+            "field": "secretary",
+            "category": "personnel",
+            "populated": false,
+            "value": null,
+            "source": null,
+            "confidence": null
+          },
+          {
+            "field": "auditor",
+            "category": "personnel",
+            "populated": false,
+            "value": null,
+            "source": null,
+            "confidence": null
+          },
+          {
+            "field": "auditor_firm",
+            "category": "personnel",
+            "populated": false,
+            "value": null,
+            "source": null,
+            "confidence": null
+          },
+          {
+            "field": "fiscal_year",
+            "category": "financials",
+            "populated": false,
+            "value": null,
+            "source": null,
+            "confidence": null
+          },
+          {
+            "field": "income_statement",
+            "category": "financials",
+            "populated": false,
+            "value": null,
+            "source": "financials",
+            "confidence": null
+          },
+          {
+            "field": "balance_sheet",
+            "category": "financials",
+            "populated": false,
+            "value": null,
+            "source": "financials",
+            "confidence": null
+          },
+          {
+            "field": "loans",
+            "category": "financials",
+            "populated": false,
+            "value": 0,
+            "source": "financials",
+            "confidence": null
+          },
+          {
+            "field": "annual_reports",
+            "category": "documents",
+            "populated": true,
+            "value": 1,
+            "source": "allabrf",
+            "confidence": null
+          },
+          {
+            "field": "statutes",
+            "category": "documents",
+            "populated": true,
+            "value": 1,
+            "source": "allabrf",
+            "confidence": null
+          },
+          {
+            "field": "maintenance_info",
+            "category": "documents",
+            "populated": false,
+            "value": null,
+            "source": "allabrf",
+            "confidence": null
+          }
+        ],
+        "overall_coverage": 0.29411764705882354,
+        "overall_confidence": 0.8875,
+        "errors": [],
+        "missing_fields": {
+          "identity": [
+            "municipality",
+            "postal_code",
+            "website_url"
+          ],
+          "apartments": [
+            "rental",
+            "commercial",
+            "avg_monthly_fee"
+          ],
+          "property": [
+            "residential_area_sqm",
+            "commercial_area_sqm",
+            "energy_class",
+            "land_ownership",
+            "renovation_history"
+          ],
+          "personnel": [
+            "property_manager",
+            "technical_manager",
+            "chairman",
+            "vice_chairman",
+            "treasurer",
+            "secretary",
+            "auditor",
+            "auditor_firm"
+          ],
+          "financials": [
+            "fiscal_year",
+            "income_statement",
+            "balance_sheet",
+            "loans"
+          ],
+          "documents": [
+            "maintenance_info"
+          ]
+        }
+      }
+    },
+    {
+      "hemnet_url": "https://www.hemnet.se/bostad/lagenhet-2rum-gardet-stockholms-kommun-carl-akrells-gata-4-21705061",
+      "municipality": "Stockholms kommun",
+      "description": "Gardet - mid-century building",
+      "success": true,
+      "elapsed_seconds": 28.5,
+      "coverage": {
+        "hemnet_url": "https://www.hemnet.se/bostad/lagenhet-2rum-gardet-stockholms-kommun-carl-akrells-gata-4-21705061",
+        "brf_name": null,
+        "address": "Carl Akrells Gata 4",
+        "municipality": null,
+        "hemnet_found": true,
+        "booli_matched": true,
+        "allabrf_matched": true,
+        "official_website_found": false,
+        "annual_reports_found": 0,
+        "statutes_found": 0,
+        "maintenance_info_found": false,
+        "fields": [
+          {
+            "field": "name",
+            "category": "identity",
+            "populated": false,
+            "value": null,
+            "source": null,
+            "confidence": null
+          },
+          {
+            "field": "organization_number",
+            "category": "identity",
+            "populated": false,
+            "value": null,
+            "source": null,
+            "confidence": null
+          },
+          {
+            "field": "municipality",
+            "category": "identity",
+            "populated": false,
+            "value": null,
+            "source": null,
+            "confidence": null
+          },
+          {
+            "field": "county",
+            "category": "identity",
+            "populated": false,
+            "value": null,
+            "source": null,
+            "confidence": null
+          },
+          {
+            "field": "address",
+            "category": "identity",
+            "populated": true,
+            "value": "Carl Akrells Gata 4",
+            "source": "hemnet",
+            "confidence": 0.95
+          },
+          {
+            "field": "postal_code",
+            "category": "identity",
+            "populated": false,
+            "value": null,
+            "source": null,
+            "confidence": null
+          },
+          {
+            "field": "website_url",
+            "category": "identity",
+            "populated": false,
+            "value": null,
+            "source": null,
+            "confidence": null
+          },
+          {
+            "field": "founding_year",
+            "category": "identity",
+            "populated": false,
+            "value": null,
+            "source": null,
+            "confidence": null
+          },
+          {
+            "field": "owner_occupied",
+            "category": "apartments",
+            "populated": false,
+            "value": null,
+            "source": null,
+            "confidence": null
+          },
+          {
+            "field": "rental",
+            "category": "apartments",
+            "populated": false,
+            "value": null,
+            "source": null,
+            "confidence": null
+          },
+          {
+            "field": "commercial",
+            "category": "apartments",
+            "populated": false,
+            "value": null,
+            "source": null,
+            "confidence": null
+          },
+          {
+            "field": "avg_monthly_fee",
+            "category": "apartments",
+            "populated": false,
+            "value": null,
+            "source": null,
+            "confidence": null
+          },
+          {
+            "field": "year_built",
+            "category": "property",
+            "populated": true,
+            "value": 1927,
+            "source": "booli",
+            "confidence": 0.8
+          },
+          {
+            "field": "building_area_sqm",
+            "category": "property",
+            "populated": true,
+            "value": 58.0,
+            "source": "booli",
+            "confidence": 0.7
+          },
+          {
+            "field": "residential_area_sqm",
+            "category": "property",
+            "populated": false,
+            "value": null,
+            "source": null,
+            "confidence": null
+          },
+          {
+            "field": "commercial_area_sqm",
+            "category": "property",
+            "populated": false,
+            "value": null,
+            "source": null,
+            "confidence": null
+          },
+          {
+            "field": "energy_class",
+            "category": "property",
+            "populated": false,
+            "value": null,
+            "source": null,
+            "confidence": null
+          },
+          {
+            "field": "land_ownership",
+            "category": "property",
+            "populated": false,
+            "value": null,
+            "source": null,
+            "confidence": null
+          },
+          {
+            "field": "renovation_history",
+            "category": "property",
+            "populated": false,
+            "value": null,
+            "source": null,
+            "confidence": null
+          },
+          {
+            "field": "property_manager",
+            "category": "personnel",
+            "populated": false,
+            "value": null,
+            "source": null,
+            "confidence": null
+          },
+          {
+            "field": "technical_manager",
+            "category": "personnel",
+            "populated": false,
+            "value": null,
+            "source": null,
+            "confidence": null
+          },
+          {
+            "field": "chairman",
+            "category": "personnel",
+            "populated": false,
+            "value": null,
+            "source": null,
+            "confidence": null
+          },
+          {
+            "field": "vice_chairman",
+            "category": "personnel",
+            "populated": false,
+            "value": null,
+            "source": null,
+            "confidence": null
+          },
+          {
+            "field": "treasurer",
+            "category": "personnel",
+            "populated": false,
+            "value": null,
+            "source": null,
+            "confidence": null
+          },
+          {
+            "field": "secretary",
+            "category": "personnel",
+            "populated": false,
+            "value": null,
+            "source": null,
+            "confidence": null
+          },
+          {
+            "field": "auditor",
+            "category": "personnel",
+            "populated": false,
+            "value": null,
+            "source": null,
+            "confidence": null
+          },
+          {
+            "field": "auditor_firm",
+            "category": "personnel",
+            "populated": false,
+            "value": null,
+            "source": null,
+            "confidence": null
+          },
+          {
+            "field": "fiscal_year",
+            "category": "financials",
+            "populated": false,
+            "value": null,
+            "source": null,
+            "confidence": null
+          },
+          {
+            "field": "income_statement",
+            "category": "financials",
+            "populated": false,
+            "value": null,
+            "source": "financials",
+            "confidence": null
+          },
+          {
+            "field": "balance_sheet",
+            "category": "financials",
+            "populated": false,
+            "value": null,
+            "source": "financials",
+            "confidence": null
+          },
+          {
+            "field": "loans",
+            "category": "financials",
+            "populated": false,
+            "value": 0,
+            "source": "financials",
+            "confidence": null
+          },
+          {
+            "field": "annual_reports",
+            "category": "documents",
+            "populated": false,
+            "value": 0,
+            "source": "allabrf",
+            "confidence": null
+          },
+          {
+            "field": "statutes",
+            "category": "documents",
+            "populated": false,
+            "value": 0,
+            "source": "allabrf",
+            "confidence": null
+          },
+          {
+            "field": "maintenance_info",
+            "category": "documents",
+            "populated": false,
+            "value": null,
+            "source": "allabrf",
+            "confidence": null
+          }
+        ],
+        "overall_coverage": 0.08823529411764706,
+        "overall_confidence": 0.8166666666666668,
+        "errors": [],
+        "missing_fields": {
+          "identity": [
+            "name",
+            "organization_number",
+            "municipality",
+            "county",
+            "postal_code",
+            "website_url",
+            "founding_year"
+          ],
+          "apartments": [
+            "owner_occupied",
+            "rental",
+            "commercial",
+            "avg_monthly_fee"
+          ],
+          "property": [
+            "residential_area_sqm",
+            "commercial_area_sqm",
+            "energy_class",
+            "land_ownership",
+            "renovation_history"
+          ],
+          "personnel": [
+            "property_manager",
+            "technical_manager",
+            "chairman",
+            "vice_chairman",
+            "treasurer",
+            "secretary",
+            "auditor",
+            "auditor_firm"
+          ],
+          "financials": [
+            "fiscal_year",
+            "income_statement",
+            "balance_sheet",
+            "loans"
+          ],
+          "documents": [
+            "annual_reports",
+            "statutes",
+            "maintenance_info"
+          ]
+        }
+      }
+    }
+  ],
+  "summary": {
+    "total_listings": 2,
+    "successful": 2,
+    "failed": 0,
+    "average_coverage": 19.1,
+    "average_confidence": 85.2,
+    "source_availability": {
+      "hemnet": {
+        "count": 2,
+        "pct": 100.0
+      },
+      "booli": {
+        "count": 2,
+        "pct": 100.0
+      },
+      "allabrf": {
+        "count": 2,
+        "pct": 100.0
+      },
+      "official_website": {
+        "count": 0,
+        "pct": 0.0
+      }
+    },
+    "document_stats": {
+      "annual_reports": 1,
+      "statutes": 1,
+      "maintenance_info": 0
+    },
+    "field_coverage": [
+      {
+        "field": "municipality",
+        "category": "identity",
+        "coverage_pct": 0.0,
+        "populated": 0,
+        "total": 2
+      },
+      {
+        "field": "postal_code",
+        "category": "identity",
+        "coverage_pct": 0.0,
+        "populated": 0,
+        "total": 2
+      },
+      {
+        "field": "website_url",
+        "category": "identity",
+        "coverage_pct": 0.0,
+        "populated": 0,
+        "total": 2
+      },
+      {
+        "field": "rental",
+        "category": "apartments",
+        "coverage_pct": 0.0,
+        "populated": 0,
+        "total": 2
+      },
+      {
+        "field": "commercial",
+        "category": "apartments",
+        "coverage_pct": 0.0,
+        "populated": 0,
+        "total": 2
+      },
+      {
+        "field": "avg_monthly_fee",
+        "category": "apartments",
+        "coverage_pct": 0.0,
+        "populated": 0,
+        "total": 2
+      },
+      {
+        "field": "residential_area_sqm",
+        "category": "property",
+        "coverage_pct": 0.0,
+        "populated": 0,
+        "total": 2
+      },
+      {
+        "field": "commercial_area_sqm",
+        "category": "property",
+        "coverage_pct": 0.0,
+        "populated": 0,
+        "total": 2
+      },
+      {
+        "field": "energy_class",
+        "category": "property",
+        "coverage_pct": 0.0,
+        "populated": 0,
+        "total": 2
+      },
+      {
+        "field": "land_ownership",
+        "category": "property",
+        "coverage_pct": 0.0,
+        "populated": 0,
+        "total": 2
+      },
+      {
+        "field": "renovation_history",
+        "category": "property",
+        "coverage_pct": 0.0,
+        "populated": 0,
+        "total": 2
+      },
+      {
+        "field": "property_manager",
+        "category": "personnel",
+        "coverage_pct": 0.0,
+        "populated": 0,
+        "total": 2
+      },
+      {
+        "field": "technical_manager",
+        "category": "personnel",
+        "coverage_pct": 0.0,
+        "populated": 0,
+        "total": 2
+      },
+      {
+        "field": "chairman",
+        "category": "personnel",
+        "coverage_pct": 0.0,
+        "populated": 0,
+        "total": 2
+      },
+      {
+        "field": "vice_chairman",
+        "category": "personnel",
+        "coverage_pct": 0.0,
+        "populated": 0,
+        "total": 2
+      },
+      {
+        "field": "treasurer",
+        "category": "personnel",
+        "coverage_pct": 0.0,
+        "populated": 0,
+        "total": 2
+      },
+      {
+        "field": "secretary",
+        "category": "personnel",
+        "coverage_pct": 0.0,
+        "populated": 0,
+        "total": 2
+      },
+      {
+        "field": "auditor",
+        "category": "personnel",
+        "coverage_pct": 0.0,
+        "populated": 0,
+        "total": 2
+      },
+      {
+        "field": "auditor_firm",
+        "category": "personnel",
+        "coverage_pct": 0.0,
+        "populated": 0,
+        "total": 2
+      },
+      {
+        "field": "fiscal_year",
+        "category": "financials",
+        "coverage_pct": 0.0,
+        "populated": 0,
+        "total": 2
+      },
+      {
+        "field": "income_statement",
+        "category": "financials",
+        "coverage_pct": 0.0,
+        "populated": 0,
+        "total": 2
+      },
+      {
+        "field": "balance_sheet",
+        "category": "financials",
+        "coverage_pct": 0.0,
+        "populated": 0,
+        "total": 2
+      },
+      {
+        "field": "loans",
+        "category": "financials",
+        "coverage_pct": 0.0,
+        "populated": 0,
+        "total": 2
+      },
+      {
+        "field": "maintenance_info",
+        "category": "documents",
+        "coverage_pct": 0.0,
+        "populated": 0,
+        "total": 2
+      },
+      {
+        "field": "name",
+        "category": "identity",
+        "coverage_pct": 50.0,
+        "populated": 1,
+        "total": 2
+      },
+      {
+        "field": "organization_number",
+        "category": "identity",
+        "coverage_pct": 50.0,
+        "populated": 1,
+        "total": 2
+      },
+      {
+        "field": "county",
+        "category": "identity",
+        "coverage_pct": 50.0,
+        "populated": 1,
+        "total": 2
+      },
+      {
+        "field": "founding_year",
+        "category": "identity",
+        "coverage_pct": 50.0,
+        "populated": 1,
+        "total": 2
+      },
+      {
+        "field": "owner_occupied",
+        "category": "apartments",
+        "coverage_pct": 50.0,
+        "populated": 1,
+        "total": 2
+      },
+      {
+        "field": "annual_reports",
+        "category": "documents",
+        "coverage_pct": 50.0,
+        "populated": 1,
+        "total": 2
+      },
+      {
+        "field": "statutes",
+        "category": "documents",
+        "coverage_pct": 50.0,
+        "populated": 1,
+        "total": 2
+      },
+      {
+        "field": "address",
+        "category": "identity",
+        "coverage_pct": 100.0,
+        "populated": 2,
+        "total": 2
+      },
+      {
+        "field": "year_built",
+        "category": "property",
+        "coverage_pct": 100.0,
+        "populated": 2,
+        "total": 2
+      },
+      {
+        "field": "building_area_sqm",
+        "category": "property",
+        "coverage_pct": 100.0,
+        "populated": 2,
+        "total": 2
+      }
+    ],
+    "missing_by_category": {
+      "identity": [
+        "municipality",
+        "postal_code",
+        "website_url",
+        "name",
+        "organization_number",
+        "county",
+        "founding_year"
+      ],
+      "apartments": [
+        "rental",
+        "commercial",
+        "avg_monthly_fee",
+        "owner_occupied"
+      ],
+      "property": [
+        "residential_area_sqm",
+        "commercial_area_sqm",
+        "energy_class",
+        "land_ownership",
+        "renovation_history"
+      ],
+      "personnel": [
+        "property_manager",
+        "technical_manager",
+        "chairman",
+        "vice_chairman",
+        "treasurer",
+        "secretary",
+        "auditor",
+        "auditor_firm"
+      ],
+      "financials": [
+        "fiscal_year",
+        "income_statement",
+        "balance_sheet",
+        "loans"
+      ],
+      "documents": [
+        "maintenance_info",
+        "annual_reports",
+        "statutes"
+      ]
+    },
+    "priority_fixes": [
+      {
+        "field": "municipality",
+        "category": "identity",
+        "coverage_pct": 0.0,
+        "missing_count": 2,
+        "total_listings": 2,
+        "primary_source": "none"
+      },
+      {
+        "field": "postal_code",
+        "category": "identity",
+        "coverage_pct": 0.0,
+        "missing_count": 2,
+        "total_listings": 2,
+        "primary_source": "none"
+      },
+      {
+        "field": "website_url",
+        "category": "identity",
+        "coverage_pct": 0.0,
+        "missing_count": 2,
+        "total_listings": 2,
+        "primary_source": "none"
+      },
+      {
+        "field": "rental",
+        "category": "apartments",
+        "coverage_pct": 0.0,
+        "missing_count": 2,
+        "total_listings": 2,
+        "primary_source": "none"
+      },
+      {
+        "field": "commercial",
+        "category": "apartments",
+        "coverage_pct": 0.0,
+        "missing_count": 2,
+        "total_listings": 2,
+        "primary_source": "none"
+      },
+      {
+        "field": "avg_monthly_fee",
+        "category": "apartments",
+        "coverage_pct": 0.0,
+        "missing_count": 2,
+        "total_listings": 2,
+        "primary_source": "none"
+      },
+      {
+        "field": "residential_area_sqm",
+        "category": "property",
+        "coverage_pct": 0.0,
+        "missing_count": 2,
+        "total_listings": 2,
+        "primary_source": "none"
+      },
+      {
+        "field": "commercial_area_sqm",
+        "category": "property",
+        "coverage_pct": 0.0,
+        "missing_count": 2,
+        "total_listings": 2,
+        "primary_source": "none"
+      },
+      {
+        "field": "energy_class",
+        "category": "property",
+        "coverage_pct": 0.0,
+        "missing_count": 2,
+        "total_listings": 2,
+        "primary_source": "none"
+      },
+      {
+        "field": "land_ownership",
+        "category": "property",
+        "coverage_pct": 0.0,
+        "missing_count": 2,
+        "total_listings": 2,
+        "primary_source": "none"
+      },
+      {
+        "field": "renovation_history",
+        "category": "property",
+        "coverage_pct": 0.0,
+        "missing_count": 2,
+        "total_listings": 2,
+        "primary_source": "none"
+      },
+      {
+        "field": "property_manager",
+        "category": "personnel",
+        "coverage_pct": 0.0,
+        "missing_count": 2,
+        "total_listings": 2,
+        "primary_source": "none"
+      },
+      {
+        "field": "technical_manager",
+        "category": "personnel",
+        "coverage_pct": 0.0,
+        "missing_count": 2,
+        "total_listings": 2,
+        "primary_source": "none"
+      },
+      {
+        "field": "chairman",
+        "category": "personnel",
+        "coverage_pct": 0.0,
+        "missing_count": 2,
+        "total_listings": 2,
+        "primary_source": "none"
+      },
+      {
+        "field": "vice_chairman",
+        "category": "personnel",
+        "coverage_pct": 0.0,
+        "missing_count": 2,
+        "total_listings": 2,
+        "primary_source": "none"
+      }
+    ],
+    "failed_listings": []
+  }
+}

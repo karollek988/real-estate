@@ -1,0 +1,608 @@
+[
+  {
+    "filename": "Brf_Essinge_Malarstrand_2024.pdf",
+    "fiscal_year": null,
+    "pages": 20,
+    "chars": 20000,
+    "text_based": true,
+    "income_extracted": 6,
+    "balance_extracted": 8,
+    "total_extracted": 14,
+    "coverage": 0.933,
+    "avg_confidence": 0.85,
+    "board_count": 3,
+    "loans_count": 0,
+    "missing_fields": [
+      {
+        "field": "financial_income",
+        "reason": "not found in extracted text"
+      },
+      {
+        "field": "avg_monthly_fee",
+        "reason": "not found in extracted text"
+      },
+      {
+        "field": "storage_units",
+        "reason": "not found in extracted text"
+      },
+      {
+        "field": "number_of_rental",
+        "reason": "not found in extracted text"
+      },
+      {
+        "field": "number_of_commercial",
+        "reason": "not found in extracted text"
+      },
+      {
+        "field": "commercial_area_sqm",
+        "reason": "not found in extracted text"
+      },
+      {
+        "field": "year_built",
+        "reason": "not found in extracted text"
+      },
+      {
+        "field": "building_area_sqm",
+        "reason": "not found in extracted text"
+      },
+      {
+        "field": "energy_class",
+        "reason": "not found in extracted text"
+      },
+      {
+        "field": "residential_area_sqm",
+        "reason": "not found in extracted text"
+      },
+      {
+        "field": "land_ownership",
+        "reason": "not found in extracted text"
+      },
+      {
+        "field": "remaining_amount",
+        "reason": "not found in extracted loans"
+      },
+      {
+        "field": "lender",
+        "reason": "not found in extracted loans"
+      },
+      {
+        "field": "interest_rate_percent",
+        "reason": "not found in extracted loans"
+      }
+    ],
+    "errors": [
+      "missing_value",
+      "no_loans_found"
+    ],
+    "elapsed_seconds": 0.8
+  },
+  {
+    "filename": "HSB_Gjutaren_2024.pdf",
+    "fiscal_year": 2024,
+    "pages": 24,
+    "chars": 24000,
+    "text_based": true,
+    "income_extracted": 6,
+    "balance_extracted": 7,
+    "total_extracted": 13,
+    "coverage": 0.867,
+    "avg_confidence": 0.842,
+    "board_count": 3,
+    "loans_count": 0,
+    "missing_fields": [
+      {
+        "field": "financial_income",
+        "reason": "not found in extracted text"
+      },
+      {
+        "field": "long_term_debt",
+        "reason": "not found in extracted text"
+      },
+      {
+        "field": "avg_monthly_fee",
+        "reason": "not found in extracted text"
+      },
+      {
+        "field": "number_of_rental",
+        "reason": "not found in extracted text"
+      },
+      {
+        "field": "commercial_area_sqm",
+        "reason": "not found in extracted text"
+      },
+      {
+        "field": "year_built",
+        "reason": "not found in extracted text"
+      },
+      {
+        "field": "building_area_sqm",
+        "reason": "not found in extracted text"
+      },
+      {
+        "field": "energy_class",
+        "reason": "not found in extracted text"
+      },
+      {
+        "field": "residential_area_sqm",
+        "reason": "not found in extracted text"
+      },
+      {
+        "field": "remaining_amount",
+        "reason": "not found in extracted loans"
+      },
+      {
+        "field": "lender",
+        "reason": "not found in extracted loans"
+      },
+      {
+        "field": "interest_rate_percent",
+        "reason": "not found in extracted loans"
+      }
+    ],
+    "errors": [
+      "missing_value",
+      "no_loans_found"
+    ],
+    "elapsed_seconds": 14.0
+  },
+  {
+    "filename": "HSB_Hagaborg_2024.pdf",
+    "fiscal_year": 2024,
+    "pages": 29,
+    "chars": 29000,
+    "text_based": true,
+    "income_extracted": 6,
+    "balance_extracted": 8,
+    "total_extracted": 14,
+    "coverage": 0.933,
+    "avg_confidence": 0.793,
+    "board_count": 4,
+    "loans_count": 1,
+    "missing_fields": [
+      {
+        "field": "financial_income",
+        "reason": "not found in extracted text"
+      },
+      {
+        "field": "avg_monthly_fee",
+        "reason": "not found in extracted text"
+      },
+      {
+        "field": "storage_units",
+        "reason": "not found in extracted text"
+      },
+      {
+        "field": "number_of_rental",
+        "reason": "not found in extracted text"
+      },
+      {
+        "field": "commercial_area_sqm",
+        "reason": "not found in extracted text"
+      },
+      {
+        "field": "year_built",
+        "reason": "not found in extracted text"
+      },
+      {
+        "field": "building_area_sqm",
+        "reason": "not found in extracted text"
+      },
+      {
+        "field": "energy_class",
+        "reason": "not found in extracted text"
+      },
+      {
+        "field": "residential_area_sqm",
+        "reason": "not found in extracted text"
+      }
+    ],
+    "errors": [
+      "missing_value"
+    ],
+    "elapsed_seconds": 20.3
+  },
+  {
+    "filename": "HSB_Hembo_2024.pdf",
+    "fiscal_year": 2024,
+    "pages": 17,
+    "chars": 15000,
+    "text_based": true,
+    "income_extracted": 6,
+    "balance_extracted": 8,
+    "total_extracted": 14,
+    "coverage": 0.933,
+    "avg_confidence": 0.821,
+    "board_count": 4,
+    "loans_count": 1,
+    "missing_fields": [
+      {
+        "field": "financial_income",
+        "reason": "not found in extracted text"
+      },
+      {
+        "field": "garage_spaces",
+        "reason": "not found in extracted text"
+      },
+      {
+        "field": "avg_monthly_fee",
+        "reason": "not found in extracted text"
+      },
+      {
+        "field": "storage_units",
+        "reason": "not found in extracted text"
+      },
+      {
+        "field": "number_of_rental",
+        "reason": "not found in extracted text"
+      },
+      {
+        "field": "parking_spaces",
+        "reason": "not found in extracted text"
+      },
+      {
+        "field": "commercial_area_sqm",
+        "reason": "not found in extracted text"
+      },
+      {
+        "field": "year_built",
+        "reason": "not found in extracted text"
+      },
+      {
+        "field": "building_area_sqm",
+        "reason": "not found in extracted text"
+      },
+      {
+        "field": "energy_class",
+        "reason": "not found in extracted text"
+      },
+      {
+        "field": "residential_area_sqm",
+        "reason": "not found in extracted text"
+      }
+    ],
+    "errors": [
+      "missing_value"
+    ],
+    "elapsed_seconds": 4.0
+  },
+  {
+    "filename": "HSB_Idrottshallen_2024.pdf",
+    "fiscal_year": 2024,
+    "pages": 21,
+    "chars": 21000,
+    "text_based": true,
+    "income_extracted": 6,
+    "balance_extracted": 8,
+    "total_extracted": 14,
+    "coverage": 0.933,
+    "avg_confidence": 0.85,
+    "board_count": 3,
+    "loans_count": 1,
+    "missing_fields": [
+      {
+        "field": "financial_income",
+        "reason": "not found in extracted text"
+      },
+      {
+        "field": "avg_monthly_fee",
+        "reason": "not found in extracted text"
+      },
+      {
+        "field": "number_of_rental",
+        "reason": "not found in extracted text"
+      },
+      {
+        "field": "commercial_area_sqm",
+        "reason": "not found in extracted text"
+      },
+      {
+        "field": "year_built",
+        "reason": "not found in extracted text"
+      },
+      {
+        "field": "building_area_sqm",
+        "reason": "not found in extracted text"
+      },
+      {
+        "field": "energy_class",
+        "reason": "not found in extracted text"
+      },
+      {
+        "field": "residential_area_sqm",
+        "reason": "not found in extracted text"
+      },
+      {
+        "field": "interest_rate_percent",
+        "reason": "not found in extracted loans"
+      }
+    ],
+    "errors": [
+      "missing_value"
+    ],
+    "elapsed_seconds": 10.9
+  },
+  {
+    "filename": "HSB_Kvillebacken_2024.pdf",
+    "fiscal_year": 2024,
+    "pages": 22,
+    "chars": 22000,
+    "text_based": true,
+    "income_extracted": 6,
+    "balance_extracted": 8,
+    "total_extracted": 14,
+    "coverage": 0.933,
+    "avg_confidence": 0.85,
+    "board_count": 2,
+    "loans_count": 3,
+    "missing_fields": [
+      {
+        "field": "financial_income",
+        "reason": "not found in extracted text"
+      },
+      {
+        "field": "avg_monthly_fee",
+        "reason": "not found in extracted text"
+      },
+      {
+        "field": "number_of_rental",
+        "reason": "not found in extracted text"
+      },
+      {
+        "field": "commercial_area_sqm",
+        "reason": "not found in extracted text"
+      },
+      {
+        "field": "year_built",
+        "reason": "not found in extracted text"
+      },
+      {
+        "field": "building_area_sqm",
+        "reason": "not found in extracted text"
+      },
+      {
+        "field": "energy_class",
+        "reason": "not found in extracted text"
+      },
+      {
+        "field": "residential_area_sqm",
+        "reason": "not found in extracted text"
+      },
+      {
+        "field": "interest_rate_percent",
+        "reason": "not found in extracted loans"
+      }
+    ],
+    "errors": [
+      "missing_value"
+    ],
+    "elapsed_seconds": 14.1
+  },
+  {
+    "filename": "HSB_Peralbinshem_2024.pdf",
+    "fiscal_year": 2024,
+    "pages": 29,
+    "chars": 29000,
+    "text_based": true,
+    "income_extracted": 4,
+    "balance_extracted": 5,
+    "total_extracted": 9,
+    "coverage": 0.6,
+    "avg_confidence": 0.85,
+    "board_count": 4,
+    "loans_count": 0,
+    "missing_fields": [
+      {
+        "field": "financial_income",
+        "reason": "not found in extracted text"
+      },
+      {
+        "field": "profit_after_tax",
+        "reason": "not found in extracted text"
+      },
+      {
+        "field": "profit_before_tax",
+        "reason": "not found in extracted text"
+      },
+      {
+        "field": "long_term_debt",
+        "reason": "not found in extracted text"
+      },
+      {
+        "field": "short_term_debt",
+        "reason": "not found in extracted text"
+      },
+      {
+        "field": "total_equity",
+        "reason": "not found in extracted text"
+      },
+      {
+        "field": "avg_monthly_fee",
+        "reason": "not found in extracted text"
+      },
+      {
+        "field": "storage_units",
+        "reason": "not found in extracted text"
+      },
+      {
+        "field": "number_of_rental",
+        "reason": "not found in extracted text"
+      },
+      {
+        "field": "commercial_area_sqm",
+        "reason": "not found in extracted text"
+      },
+      {
+        "field": "year_built",
+        "reason": "not found in extracted text"
+      },
+      {
+        "field": "building_area_sqm",
+        "reason": "not found in extracted text"
+      },
+      {
+        "field": "energy_class",
+        "reason": "not found in extracted text"
+      },
+      {
+        "field": "residential_area_sqm",
+        "reason": "not found in extracted text"
+      },
+      {
+        "field": "land_ownership",
+        "reason": "not found in extracted text"
+      },
+      {
+        "field": "remaining_amount",
+        "reason": "not found in extracted loans"
+      },
+      {
+        "field": "lender",
+        "reason": "not found in extracted loans"
+      },
+      {
+        "field": "interest_rate_percent",
+        "reason": "not found in extracted loans"
+      }
+    ],
+    "errors": [
+      "missing_value",
+      "no_loans_found",
+      "multi_column_layout"
+    ],
+    "elapsed_seconds": 13.8
+  },
+  {
+    "filename": "HSB_Sparet_2024.pdf",
+    "fiscal_year": 2024,
+    "pages": 35,
+    "chars": 31000,
+    "text_based": true,
+    "income_extracted": 6,
+    "balance_extracted": 8,
+    "total_extracted": 14,
+    "coverage": 0.933,
+    "avg_confidence": 0.85,
+    "board_count": 3,
+    "loans_count": 1,
+    "missing_fields": [
+      {
+        "field": "financial_income",
+        "reason": "not found in extracted text"
+      },
+      {
+        "field": "avg_monthly_fee",
+        "reason": "not found in extracted text"
+      },
+      {
+        "field": "storage_units",
+        "reason": "not found in extracted text"
+      },
+      {
+        "field": "number_of_rental",
+        "reason": "not found in extracted text"
+      },
+      {
+        "field": "commercial_area_sqm",
+        "reason": "not found in extracted text"
+      },
+      {
+        "field": "year_built",
+        "reason": "not found in extracted text"
+      },
+      {
+        "field": "building_area_sqm",
+        "reason": "not found in extracted text"
+      },
+      {
+        "field": "energy_class",
+        "reason": "not found in extracted text"
+      },
+      {
+        "field": "residential_area_sqm",
+        "reason": "not found in extracted text"
+      },
+      {
+        "field": "interest_rate_percent",
+        "reason": "not found in extracted loans"
+      }
+    ],
+    "errors": [
+      "missing_value"
+    ],
+    "elapsed_seconds": 13.3
+  },
+  {
+    "filename": "MBF_Viksang_2024.pdf",
+    "fiscal_year": 2025,
+    "pages": 18,
+    "chars": 18000,
+    "text_based": true,
+    "income_extracted": 6,
+    "balance_extracted": 7,
+    "total_extracted": 13,
+    "coverage": 0.867,
+    "avg_confidence": 0.85,
+    "board_count": 3,
+    "loans_count": 0,
+    "missing_fields": [
+      {
+        "field": "financial_income",
+        "reason": "not found in extracted text"
+      },
+      {
+        "field": "cash_and_bank",
+        "reason": "not found in extracted text"
+      },
+      {
+        "field": "avg_monthly_fee",
+        "reason": "not found in extracted text"
+      },
+      {
+        "field": "storage_units",
+        "reason": "not found in extracted text"
+      },
+      {
+        "field": "number_of_rental",
+        "reason": "not found in extracted text"
+      },
+      {
+        "field": "commercial_area_sqm",
+        "reason": "not found in extracted text"
+      },
+      {
+        "field": "year_built",
+        "reason": "not found in extracted text"
+      },
+      {
+        "field": "building_area_sqm",
+        "reason": "not found in extracted text"
+      },
+      {
+        "field": "energy_class",
+        "reason": "not found in extracted text"
+      },
+      {
+        "field": "residential_area_sqm",
+        "reason": "not found in extracted text"
+      },
+      {
+        "field": "remaining_amount",
+        "reason": "not found in extracted loans"
+      },
+      {
+        "field": "lender",
+        "reason": "not found in extracted loans"
+      },
+      {
+        "field": "interest_rate_percent",
+        "reason": "not found in extracted loans"
+      }
+    ],
+    "errors": [
+      "missing_value",
+      "no_loans_found",
+      "multi_column_layout"
+    ],
+    "elapsed_seconds": 1.5
+  }
+]

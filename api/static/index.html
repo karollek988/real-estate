@@ -1,0 +1,365 @@
+<!DOCTYPE html>
+<html lang="sv">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Köpanalys — BRF-analys</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #f5f5f5; color: #333; line-height: 1.6; }
+        .container { max-width: 800px; margin: 0 auto; padding: 20px; }
+        h1 { font-size: 1.8rem; margin-bottom: 8px; }
+        .subtitle { color: #666; margin-bottom: 24px; }
+        .card { background: #fff; border-radius: 8px; padding: 24px; margin-bottom: 16px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+        .card h2 { font-size: 1.2rem; margin-bottom: 16px; color: #1a5276; }
+        label { display: block; font-weight: 500; margin-bottom: 4px; font-size: 0.9rem; }
+        input, select { width: 100%; padding: 8px 12px; border: 1px solid #ddd; border-radius: 4px; font-size: 0.95rem; margin-bottom: 12px; }
+        input:focus { outline: none; border-color: #2980b9; box-shadow: 0 0 0 2px rgba(41,128,185,0.2); }
+        .row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+        .row-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; }
+        .section-label { font-size: 0.8rem; text-transform: uppercase; color: #888; letter-spacing: 0.5px; margin: 16px 0 8px; font-weight: 600; }
+        button { background: #2980b9; color: #fff; border: none; padding: 10px 24px; border-radius: 4px; font-size: 1rem; cursor: pointer; font-weight: 500; }
+        button:hover { background: #1a6da3; }
+        button:disabled { background: #95a5a6; cursor: not-allowed; }
+        .btn-row { display: flex; gap: 12px; margin-top: 16px; }
+        .loading { display: none; color: #666; font-style: italic; margin: 12px 0; }
+        .error { color: #c0392b; font-weight: 500; margin: 8px 0; display: none; }
+        .report-container { white-space: pre-wrap; font-family: 'SF Mono', 'Consolas', 'Courier New', monospace; font-size: 0.85rem; background: #fafafa; padding: 20px; border-radius: 4px; border: 1px solid #e0e0e0; max-height: 600px; overflow-y: auto; line-height: 1.5; }
+        #report-section { display: none; }
+        .resolved-info { background: #eaf2f8; padding: 12px; border-radius: 4px; margin-bottom: 16px; font-size: 0.9rem; }
+        .resolved-info strong { color: #1a5276; }
+        .loan-row { background: #f9f9f9; padding: 12px; border-radius: 4px; margin-bottom: 8px; border: 1px solid #eee; position: relative; }
+        .loan-row .remove-loan { position: absolute; top: 8px; right: 8px; background: #e74c3c; color: #fff; border: none; width: 24px; height: 24px; border-radius: 50%; cursor: pointer; font-size: 0.8rem; line-height: 1; }
+        .loan-row .remove-loan:hover { background: #c0392b; }
+        .hint { font-size: 0.8rem; color: #888; margin-top: -8px; margin-bottom: 12px; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Köpanalys</h1>
+        <p class="subtitle">AI-stöd för köp av bostadsrätt</p>
+
+        <!-- Step 1: Hemnet URL -->
+        <div class="card" id="step1">
+            <h2>1. Hemnet-länk</h2>
+            <label for="hemnet-url">Klistra in länken från Hemnet</label>
+            <input type="url" id="hemnet-url" placeholder="https://www.hemnet.se/bostader/...">
+            <div class="btn-row">
+                <button onclick="resolveHemnet()" id="resolve-btn">Hämta uppgifter</button>
+            </div>
+            <div class="loading" id="resolve-loading">Hämtar från Hemnet och Allabrf...</div>
+            <div class="error" id="resolve-error"></div>
+            <div class="resolved-info" id="resolved-info" style="display:none"></div>
+        </div>
+
+        <!-- Step 2: Financial Data -->
+        <div class="card" id="step2">
+            <h2>2. Ekonomiska uppgifter</h2>
+            <p style="font-size:0.9rem;color:#666;margin-bottom:16px">Fyll i nyckeltal från årsredovisningen. Alla fält är frivilliga — analysen anpassas till vad som fylls i.</p>
+
+            <div class="row">
+                <div>
+                    <label for="brf-name">BRF-namn</label>
+                    <input type="text" id="brf-name" placeholder="BRF Namn">
+                </div>
+                <div>
+                    <label for="org-number">Organisationsnummer</label>
+                    <input type="text" id="org-number" placeholder="XXXXXX-XXXX">
+                </div>
+            </div>
+            <div class="row">
+                <div>
+                    <label for="municipality">Kommun</label>
+                    <input type="text" id="municipality" placeholder="Stockholm">
+                </div>
+                <div>
+                    <label for="num-apartments">Antal lägenheter</label>
+                    <input type="number" id="num-apartments" placeholder="32">
+                </div>
+            </div>
+
+            <div class="section-label">Räkenskapsresultat</div>
+            <div class="row">
+                <div>
+                    <label for="revenue">Intäkter (SEK)</label>
+                    <input type="number" id="revenue" placeholder="2 640 000">
+                </div>
+                <div>
+                    <label for="op-costs">Rörelsekostnader (SEK)</label>
+                    <input type="number" id="op-costs" placeholder="2 210 000">
+                </div>
+            </div>
+            <div class="row">
+                <div>
+                    <label for="op-profit">Rörelseresultat (SEK)</label>
+                    <input type="number" id="op-profit" placeholder="430 000">
+                </div>
+                <div>
+                    <label for="fin-costs">Finanskostnader (SEK)</label>
+                    <input type="number" id="fin-costs" placeholder="385 000">
+                </div>
+            </div>
+            <div class="row">
+                <div>
+                    <label for="fin-income">Finansintäkter (SEK)</label>
+                    <input type="number" id="fin-income" placeholder="12 000">
+                </div>
+                <div>
+                    <label for="profit-before-tax">Resultat före skatt (SEK)</label>
+                    <input type="number" id="profit-before-tax" placeholder="57 000">
+                </div>
+            </div>
+
+            <div class="section-label">Balansräkning</div>
+            <div class="row">
+                <div>
+                    <label for="total-assets">Summa tillgångar (SEK)</label>
+                    <input type="number" id="total-assets" placeholder="11 200 000">
+                </div>
+                <div>
+                    <label for="total-equity">Eget kapital (SEK)</label>
+                    <input type="number" id="total-equity" placeholder="4 680 000">
+                </div>
+            </div>
+            <div class="row">
+                <div>
+                    <label for="total-liabilities">Skulder totalt (SEK)</label>
+                    <input type="number" id="total-liabilities" placeholder="6 520 000">
+                </div>
+                <div>
+                    <label for="lt-debt">Skulder > 1 år (SEK)</label>
+                    <input type="number" id="lt-debt" placeholder="5 100 000">
+                </div>
+            </div>
+            <div class="row">
+                <div>
+                    <label for="st-debt">Skulder < 1 år (SEK)</label>
+                    <input type="number" id="st-debt" placeholder="1 420 000">
+                </div>
+                <div>
+                    <label for="cash">Kassa och bank (SEK)</label>
+                    <input type="number" id="cash" placeholder="620 000">
+                </div>
+            </div>
+
+            <div class="section-label">Lägenheter och egendom</div>
+            <div class="row">
+                <div>
+                    <label for="avg-fee">Genomsnittlig avgift (SEK/mån)</label>
+                    <input type="number" id="avg-fee" placeholder="4 200">
+                </div>
+                <div>
+                    <label for="fiscal-year">Räkenskapsår</label>
+                    <input type="number" id="fiscal-year" placeholder="2025">
+                </div>
+            </div>
+            <div class="row">
+                <div>
+                    <label for="year-built">Byggår</label>
+                    <input type="number" id="year-built" placeholder="1987">
+                </div>
+                <div>
+                    <label for="building-area">Byggnadsarea (m²)</label>
+                    <input type="number" id="building-area" placeholder="3 800">
+                </div>
+            </div>
+
+            <div class="section-label">Lån</div>
+            <div class="hint">Lägg till befintliga lån med ränta och återstående belopp</div>
+            <div id="loans-container"></div>
+            <button onclick="addLoan()" style="background:#27ae60;margin-top:8px">+ Lägg till lån</button>
+
+            <div class="btn-row" style="margin-top:24px">
+                <button onclick="runAnalysis()" id="analyze-btn">Generera Köpanalys</button>
+            </div>
+            <div class="loading" id="analyze-loading">Beräknar nyckeltal och genererar analys...</div>
+            <div class="error" id="analyze-error"></div>
+        </div>
+
+        <!-- Step 3: Report -->
+        <div class="card" id="report-section">
+            <h2>3. Köpanalys</h2>
+            <div class="report-container" id="report-output"></div>
+            <div class="btn-row" style="margin-top:16px">
+                <button onclick="copyReport()" style="background:#8e44ad">Kopiera rapport</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let loanCount = 0;
+
+        function showError(id, msg) {
+            const el = document.getElementById(id);
+            el.textContent = msg;
+            el.style.display = 'block';
+        }
+        function hideError(id) {
+            document.getElementById(id).style.display = 'none';
+        }
+
+        async function resolveHemnet() {
+            const url = document.getElementById('hemnet-url').value.trim();
+            if (!url) return showError('resolve-error', 'Ange en Hemnet-länk');
+
+            hideError('resolve-error');
+            document.getElementById('resolve-loading').style.display = 'block';
+            document.getElementById('resolve-btn').disabled = true;
+
+            try {
+                const resp = await fetch('/api/resolve', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({hemnet_url: url})
+                });
+                if (!resp.ok) {
+                    const err = await resp.json();
+                    throw new Error(err.detail || 'Misslyckades');
+                }
+                const data = await resp.json();
+
+                // Fill in form fields
+                if (data.brf_name) document.getElementById('brf-name').value = data.brf_name;
+                if (data.municipality) document.getElementById('municipality').value = data.municipality;
+
+                if (data.allabrf) {
+                    if (data.allabrf.org_number) document.getElementById('org-number').value = data.allabrf.org_number;
+                    if (data.allabrf.metadata) {
+                        const m = data.allabrf.metadata;
+                        if (m['Antal l\u00e4genheter']) document.getElementById('num-apartments').value = m['Antal l\u00e4genheter'];
+                    }
+                }
+
+                // Show resolved info
+                const info = document.getElementById('resolved-info');
+                let html = '<strong>Hittat:</strong> ';
+                html += data.brf_name || data.address || 'Okänd';
+                if (data.allabrf) html += ` (${data.allabrf.name})`;
+                if (data.allabrf && data.allabrf.org_number) html += ` — Org.nr: ${data.allabrf.org_number}`;
+                info.innerHTML = html;
+                info.style.display = 'block';
+
+            } catch (e) {
+                showError('resolve-error', e.message);
+            } finally {
+                document.getElementById('resolve-loading').style.display = 'none';
+                document.getElementById('resolve-btn').disabled = false;
+            }
+        }
+
+        function addLoan() {
+            loanCount++;
+            const container = document.getElementById('loans-container');
+            const div = document.createElement('div');
+            div.className = 'loan-row';
+            div.id = `loan-${loanCount}`;
+            div.innerHTML = `
+                <button class="remove-loan" onclick="removeLoan(${loanCount})">&times;</button>
+                <div class="row-3">
+                    <div><label>Lån</label><input type="text" id="loan-lender-${loanCount}" placeholder="Handelsbanken"></div>
+                    <div><label>Återstående (SEK)</label><input type="number" id="loan-amount-${loanCount}" placeholder="2 800 000"></div>
+                    <div><label>Ränta (%)</label><input type="number" id="loan-rate-${loanCount}" step="0.01" placeholder="3.85"></div>
+                </div>
+                <div class="row">
+                    <div><label>Förfallodatum</label><input type="text" id="loan-maturity-${loanCount}" placeholder="2028-06-30"></div>
+                </div>
+            `;
+            container.appendChild(div);
+        }
+
+        function removeLoan(n) {
+            document.getElementById(`loan-${n}`).remove();
+        }
+
+        function collectLoans() {
+            const loans = [];
+            for (let i = 1; i <= loanCount; i++) {
+                const el = document.getElementById(`loan-lender-${i}`);
+                if (!el) continue;
+                const lender = el.value.trim();
+                const amount = parseFloat(document.getElementById(`loan-amount-${i}`).value);
+                const rate = parseFloat(document.getElementById(`loan-rate-${i}`).value);
+                const maturity = document.getElementById(`loan-maturity-${i}`).value.trim();
+                if (!isNaN(amount)) {
+                    loans.push({
+                        lender: lender || `Lån ${i}`,
+                        remaining_amount: {value: amount, unit: "SEK", source: {page: 0, field: "remaining_amount", method: "user_input", confidence: 1.0}},
+                        interest_rate_percent: {value: rate || 0, unit: "%", source: {page: 0, field: "interest_rate_percent", method: "user_input", confidence: 1.0}},
+                        maturity_date: maturity || null,
+                        amortization_required: false,
+                    });
+                }
+            }
+            return loans;
+        }
+
+        function val(id) {
+            const v = document.getElementById(id).value;
+            if (v === '' || v === null || v === undefined) return null;
+            const n = parseFloat(v);
+            return isNaN(n) ? null : n;
+        }
+
+        async function runAnalysis() {
+            hideError('analyze-error');
+
+            const payload = {
+                brf_name: document.getElementById('brf-name').value.trim() || 'Okänd BRF',
+                organization_number: document.getElementById('org-number').value.trim() || null,
+                municipality: document.getElementById('municipality').value.trim() || null,
+                number_of_apartments: val('num-apartments') ? Math.round(val('num-apartments')) : null,
+                fiscal_year: val('fiscal-year') || new Date().getFullYear() - 1,
+                revenue: val('revenue'),
+                operating_costs: val('op-costs'),
+                operating_profit: val('op-profit'),
+                financial_income: val('fin-income'),
+                financial_costs: val('fin-costs'),
+                profit_before_tax: val('profit-before-tax'),
+                total_assets: val('total-assets'),
+                total_equity: val('total-equity'),
+                total_liabilities: val('total-liabilities'),
+                long_term_debt: val('lt-debt'),
+                short_term_debt: val('st-debt'),
+                cash_and_bank: val('cash'),
+                avg_monthly_fee: val('avg-fee'),
+                year_built: val('year-built') ? Math.round(val('year-built')) : null,
+                building_area_sqm: val('building-area'),
+                loans: collectLoans(),
+            };
+
+            document.getElementById('analyze-loading').style.display = 'block';
+            document.getElementById('analyze-btn').disabled = true;
+
+            try {
+                const resp = await fetch('/api/analyze', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify(payload)
+                });
+                if (!resp.ok) {
+                    const err = await resp.json();
+                    throw new Error(err.detail || 'Analysen misslyckades');
+                }
+                const data = await resp.json();
+
+                document.getElementById('report-output').textContent = data.report;
+                document.getElementById('report-section').style.display = 'block';
+                document.getElementById('report-section').scrollIntoView({behavior: 'smooth'});
+
+            } catch (e) {
+                showError('analyze-error', e.message);
+            } finally {
+                document.getElementById('analyze-loading').style.display = 'none';
+                document.getElementById('analyze-btn').disabled = false;
+            }
+        }
+
+        function copyReport() {
+            const text = document.getElementById('report-output').textContent;
+            navigator.clipboard.writeText(text).then(() => {
+                alert('Rapporter kopierad!');
+            });
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,60 @@
+# Default configuration for BRF Scraper
+# This file is loaded by default and can be overridden by environment variables
+
+app:
+  name: brf-scraper
+  env: development
+  debug: false
+
+server:
+  host: "0.0.0.0"
+  port: 8000
+  workers: 1
+
+database:
+  url: "sqlite+aiosqlite:///data/brf_scraper.db"
+  echo: false
+
+redis:
+  url: "redis://localhost:6379/0"
+  max_connections: 20
+
+http:
+  timeout: 30
+  max_retries: 3
+  retry_delay: 1.0
+  user_agent: "BRF-Scraper/0.1.0"
+
+rate_limit:
+  requests_per_second: 2.0
+  burst: 5
+
+crawler:
+  max_concurrent_requests: 10
+  respect_robots_txt: true
+  default_depth: 2
+
+downloader:
+  chunk_size: 8192
+  max_file_size: 104857600  # 100MB
+  enable_resume: true
+
+storage:
+  pdf_dir: data/pdfs
+  export_dir: data/exports
+
+extractor:
+  ocr_enabled: false
+  min_confidence: 0.7
+
+export:
+  format: json
+  compress: false
+
+scheduler:
+  enabled: false
+  cron: "0 2 * * 0"
+
+logging:
+  level: INFO
+  format: json
