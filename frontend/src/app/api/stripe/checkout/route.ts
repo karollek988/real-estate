@@ -10,7 +10,7 @@ function errorResponse(status: number, code: string, message: string) {
   return NextResponse.json({ error: { code, message } }, { status });
 }
 
-const ALLOWED_SUBSCRIPTIONS = ["premium_monthly", "ultra_monthly"] as const;
+const ALLOWED_SUBSCRIPTIONS = ["premium_monthly"] as const;
 const ALLOWED_ONE_TIME = ["premium_analysis"] as const;
 
 export async function POST(request: Request) {
@@ -56,7 +56,7 @@ export async function POST(request: Request) {
       console.log("[Stripe Checkout] Creating subscription checkout for:", priceKey);
       const result = await createSubscriptionCheckout(
         customerId,
-        priceKey as "premium_monthly" | "ultra_monthly",
+        priceKey as "premium_monthly",
         user.id,
         successUrl,
         cancelUrl

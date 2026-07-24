@@ -3,6 +3,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { CookieSettingsLinkInline } from "@/components/CookieSettingsLinkInline";
+import { FacebookIcon, InstagramIcon } from "@/components/icons";
 import { OPEN_ONBOARDING_MODAL_EVENT } from "@/lib/onboardingModalEvents";
 
 const PRODUKT_LINKS = [
@@ -98,6 +99,26 @@ export function SiteFooter() {
           <p className="text-[12px] text-neutral-500">
             &copy; {year} Köpanalys. Org.nr 9811048793
           </p>
+          <div className="flex items-center gap-3">
+            <a
+              href="https://www.facebook.com/profile.php?id=61592039229644&locale=sv_SE"
+              target="_blank"
+              rel="noopener noreferrer"
+              aria-label="Köpanalys på Facebook"
+              className="text-neutral-500 transition hover:text-green-400"
+            >
+              <FacebookIcon className="h-4 w-4" />
+            </a>
+            <a
+              href="https://www.instagram.com/kopanalys/"
+              target="_blank"
+              rel="noopener noreferrer"
+              aria-label="Köpanalys på Instagram"
+              className="text-neutral-500 transition hover:text-green-400"
+            >
+              <InstagramIcon className="h-4 w-4" />
+            </a>
+          </div>
           <CookieSettingsLinkInline />
         </div>
       </div>

@@ -21,6 +21,7 @@ const NAV_ITEMS: { label: string; action: NavAction }[] = [
   { label: "Exempelrapport", action: { type: "scroll", targetId: "marknadsinsikter" } },
   { label: "Priser", action: { type: "scroll", targetId: "analyze" } },
   { label: "FAQ", action: { type: "scroll", targetId: "faq" } },
+  { label: "Kontakt", action: { type: "link", href: "/contact" } },
 ];
 
 const SCROLL_SPY_IDS = ["analyze", "marknadsinsikter", "faq"];

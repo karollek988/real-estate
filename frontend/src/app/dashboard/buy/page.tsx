@@ -7,6 +7,8 @@ import { PaymentMethodsCard } from "@/components/dashboard/buy/PaymentMethodsCar
 import { ClipboardIcon, TrendingUpIcon, ArrowRightIcon, CheckIcon, WarningIcon } from "@/components/icons";
 import { PREMIUM_ANALYSIS_PRICE_SEK, PREMIUM_SUBSCRIPTION_PRICE_SEK, ULTRA_SUBSCRIPTION_PRICE_SEK } from "@/lib/pricing";
 
+const ULTRA_ENABLED = false;
+
 const PLANS = [
   {
     eyebrow: "Basic",
@@ -52,7 +54,7 @@ const PLANS = [
       "Tidig tillgång till nya funktioner",
     ],
     highlighted: false,
-    hidden: false,
+    hidden: !ULTRA_ENABLED,
     priceKey: "ultra_monthly" as string,
   },
 ];
