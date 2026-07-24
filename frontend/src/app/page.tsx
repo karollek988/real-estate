@@ -504,13 +504,6 @@ export default function Home() {
       <SectionDivider />
       <FaqSection />
 
-      <footer className="border-t border-white/5">
-        <div className="mx-auto w-full max-w-[1400px] px-6 py-10">
-          <p className="text-center text-[13px] text-neutral-500">
-            Detta är en förhandsvisning. Analysen är inte ännu ansluten.
-          </p>
-        </div>
-      </footer>
     </div>
   );
 }
