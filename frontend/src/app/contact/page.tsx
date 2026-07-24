@@ -1,15 +1,24 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import { useRouter } from "next/navigation";
 import { MailIcon } from "@/components/icons";
 
 export default function ContactPage() {
+  const router = useRouter();
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [message, setMessage] = useState("");
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const redirectTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => {
+    return () => {
+      if (redirectTimer.current) clearTimeout(redirectTimer.current);
+    };
+  }, []);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -38,6 +47,7 @@ export default function ContactPage() {
       setName("");
       setEmail("");
       setMessage("");
+      redirectTimer.current = setTimeout(() => router.push("/"), 2000);
     } catch {
       setError(
         "Kontakt via formulär är inte tillgänglig just nu — mejla oss direkt på kopanalys@gmail.com istället.",

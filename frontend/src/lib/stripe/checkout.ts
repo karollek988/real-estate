@@ -8,7 +8,7 @@ export interface CreateCheckoutResult {
 
 export async function createSubscriptionCheckout(
   customerId: string | undefined,
-  priceKey: "premium_monthly" | "ultra_monthly",
+  priceKey: "premium_monthly",
   userId: string,
   successUrl: string,
   cancelUrl: string
