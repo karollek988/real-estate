@@ -222,11 +222,18 @@ function AnalysisCard({
   const status: "ready" | "processing" | "expired" =
     analysis.status === "complete" ? "ready" : analysis.status === "pending" ? "processing" : "expired";
 
+  const fairPrice =
+    analysis.decisionScore !== null
+      ? `Score ${analysis.decisionScore}`
+      : analysis.status === "pending"
+        ? "Väntar"
+        : "Misslyckades";
+
   return (
     <DecisionAnalysisCard
       address={analysis.address}
       analysisDate={DATE_FORMAT.format(new Date(analysis.requestedAt))}
-      fairPrice={analysis.decisionScore !== null ? `Score ${analysis.decisionScore}` : "Väntar"}
+      fairPrice={fairPrice}
       status={status}
       onOpen={onOpen}
       footer={

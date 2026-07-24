@@ -1,3 +1,4 @@
+import { after } from "next/server";
 import type { AnalysisRecord, ExtractedProperty, FieldProvenance, PropertyRecord } from "./types";
 import { extractFromHemnetUrl } from "./listing/hemnet";
 import { extractFromManualFields, type ManualListingFields } from "./listing/manual";
@@ -120,17 +121,25 @@ export async function rerunAnalysisForProperty(
  * done — the loading experience never had a chance to render. Returning as
  * soon as the pending row exists lets the client navigate to /analyzing
  * right away and poll GET /api/analyses/:id (already implemented) for the
- * real completion. This process (`next dev`/`next start`) stays alive
- * between requests, so the detached promise below runs to completion.
+ * real completion.
+ *
+ * On Vercel's serverless runtime the function can be frozen the instant the
+ * HTTP response is sent — a bare detached promise here isn't guaranteed to
+ * keep running (confirmed in production: some analyses got stuck in
+ * "pending" forever with no error, killed mid-pipeline). `after()` tells
+ * the platform to keep this invocation alive until the callback settles,
+ * while still letting the response return immediately.
  */
 async function startPipelineInBackground(
   property: PropertyRecord,
   extracted: ExtractedProperty
 ): Promise<AnalysisRecord> {
   const pending = await insertPendingAnalysis(property.id, ENGINE_VERSION);
-  runPipeline(pending.id, property, extracted).catch((err) => {
-    console.error(`Background analysis pipeline failed for analysis ${pending.id}:`, err);
-  });
+  after(() =>
+    runPipeline(pending.id, property, extracted).catch((err) => {
+      console.error(`Background analysis pipeline failed for analysis ${pending.id}:`, err);
+    })
+  );
   return pending;
 }
 
