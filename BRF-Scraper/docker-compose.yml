@@ -1,0 +1,77 @@
+version: "3.9"
+
+services:
+  app:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile
+      target: production
+    container_name: brf-scraper
+    restart: unless-stopped
+    ports:
+      - "${SERVER_PORT:-8000}:8000"
+    volumes:
+      - ./data:/app/data
+      - ./configs:/app/configs:ro
+    environment:
+      - APP_ENV=${APP_ENV:-production}
+      - DATABASE_URL=${DATABASE_URL:-sqlite+aiosqlite:///data/brf_scraper.db}
+      - REDIS_URL=redis://redis:6379/0
+    depends_on:
+      redis:
+        condition: service_healthy
+    networks:
+      - brf-network
+    healthcheck:
+      test: ["CMD", "python", "-c", "import httpx; httpx.get('http://localhost:8000/health')"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 5s
+
+  redis:
+    image: redis:7-alpine
+    container_name: brf-redis
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis-data:/data
+    command: redis-server --appendonly yes --maxmemory 256mb --maxmemory-policy allkeys-lru
+    networks:
+      - brf-network
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+
+  scheduler:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile
+      target: production
+    container_name: brf-scheduler
+    restart: unless-stopped
+    command: ["python", "-m", "brf_scraper", "schedule"]
+    volumes:
+      - ./data:/app/data
+      - ./configs:/app/configs:ro
+    environment:
+      - APP_ENV=${APP_ENV:-production}
+      - DATABASE_URL=${DATABASE_URL:-sqlite+aiosqlite:///data/brf_scraper.db}
+      - REDIS_URL=redis://redis:6379/0
+      - SCHEDULER_ENABLED=true
+    depends_on:
+      redis:
+        condition: service_healthy
+    networks:
+      - brf-network
+
+volumes:
+  redis-data:
+    driver: local
+
+networks:
+  brf-network:
+    driver: bridge

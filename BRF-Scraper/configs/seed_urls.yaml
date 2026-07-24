@@ -1,0 +1,33 @@
+# Default seed URLs for BRF discovery, grouped by city.
+#
+# SeedUrlDiscovery loads this file as its default seed list. Add or edit
+# entries here to expand coverage — no code changes required.
+
+stockholm:
+  - https://www.brbacka.se
+  - https://www.brfkista.se
+  - https://www.brfridhemsplan.se
+  - https://www.brfskarpnack.se
+  - https://www.brfringen.se
+  - https://www.brfvasastaden.se
+  - https://www.brfkungsholmen.se
+  - https://www.brfsodermalm.se
+  - https://www.brfinsta.se
+  - https://www.brfsundbyberg.se
+
+goteborg:
+  - https://www.brflundby.se
+  - https://www.brfgodhem.se
+  - https://www.brfmasthugget.se
+  - https://www.brfolivedal.se
+  - https://www.brfvaterland.se
+  - https://www.brflinnestaden.se
+  - https://www.brfhagen.se
+  - https://www.brfjohanneberg.se
+
+malmo:
+  - https://www.brfrosengarden.se
+  - https://www.brfsofi.se
+  - https://www.brfmolin.se
+  - https://www.brfriyalstad.se
+  - https://www.brfslussen.se

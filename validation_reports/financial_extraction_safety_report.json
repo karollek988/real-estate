@@ -1,0 +1,1206 @@
+{
+  "summary": {
+    "reports_processed": 9,
+    "safe_reports": 0,
+    "reports_with_omitted_financial_analysis": 5,
+    "reports_blocked_insufficient_verified_data": 4,
+    "total_raw_fields": 164,
+    "total_verified_fields": 9,
+    "total_discarded_fields": 155
+  },
+  "per_file": [
+    {
+      "filename": "Brf_Essinge_Malarstrand_2024.pdf",
+      "fiscal_year": null,
+      "raw_fields_extracted": 17,
+      "verified_fields": 0,
+      "discarded_fields": 17,
+      "average_raw_confidence": 0.697,
+      "has_verified_financial_data": false,
+      "status": "blocked_insufficient_verified_data",
+      "discarded_detail": [
+        {
+          "field": "revenue",
+          "value": 10299.0,
+          "confidence": 0.55,
+          "tier": "low",
+          "reason": "confidence 0.55 is low, below the 0.85 threshold required to influence scoring"
+        },
+        {
+          "field": "operating_costs",
+          "value": -7593198.0,
+          "confidence": 0.85,
+          "tier": "high",
+          "reason": "value -7593198.0 is outside the plausible range [10000, 200000000] for operating_costs"
+        },
+        {
+          "field": "operating_profit",
+          "value": 2705420.0,
+          "confidence": 0.55,
+          "tier": "low",
+          "reason": "confidence 0.55 is low, below the 0.85 threshold required to influence scoring"
+        },
+        {
+          "field": "financial_costs",
+          "value": 364485253526.0,
+          "confidence": 0.85,
+          "tier": "high",
+          "reason": "value 364485253526.0 is outside the plausible range [0, 50000000] for financial_costs"
+        },
+        {
+          "field": "profit_before_tax",
+          "value": 921.0,
+          "confidence": 0.55,
+          "tier": "low",
+          "reason": "confidence 0.55 is low, below the 0.85 threshold required to influence scoring"
+        },
+        {
+          "field": "profit_after_tax",
+          "value": 921406921406.0,
+          "confidence": 0.85,
+          "tier": "high",
+          "reason": "value 921406921406.0 is outside the plausible range [-100000000, 100000000] for profit_after_tax"
+        },
+        {
+          "field": "total_assets",
+          "value": 4.8546898148693965e+17,
+          "confidence": 0.85,
+          "tier": "high",
+          "reason": "value 4.8546898148693965e+17 is outside the plausible range [100000, 5000000000] for total_assets"
+        },
+        {
+          "field": "current_assets",
+          "value": 3992880.0,
+          "confidence": 0.55,
+          "tier": "low",
+          "reason": "confidence 0.55 is low, below the 0.85 threshold required to influence scoring"
+        },
+        {
+          "field": "fixed_assets",
+          "value": 4.8147610148320525e+17,
+          "confidence": 0.85,
+          "tier": "high",
+          "reason": "value 4.8147610148320525e+17 is outside the plausible range [0, 5000000000] for fixed_assets"
+        },
+        {
+          "field": "total_equity",
+          "value": 3.953752703950681e+17,
+          "confidence": 0.85,
+          "tier": "high",
+          "reason": "value 3.953752703950681e+17 is outside the plausible range [-500000000, 5000000000] for total_equity"
+        },
+        {
+          "field": "long_term_debt",
+          "value": 75375000.0,
+          "confidence": 0.55,
+          "tier": "low",
+          "reason": "confidence 0.55 is low, below the 0.85 threshold required to influence scoring"
+        },
+        {
+          "field": "short_term_debt",
+          "value": 0.0,
+          "confidence": 0.55,
+          "tier": "low",
+          "reason": "confidence 0.55 is low, below the 0.85 threshold required to influence scoring"
+        },
+        {
+          "field": "cash_and_bank",
+          "value": 1694998.0,
+          "confidence": 0.55,
+          "tier": "low",
+          "reason": "confidence 0.55 is low, below the 0.85 threshold required to influence scoring"
+        },
+        {
+          "field": "parking_spaces",
+          "value": 72.0,
+          "confidence": 0.65,
+          "tier": "medium",
+          "reason": "confidence 0.65 is medium, below the 0.85 threshold required to influence scoring"
+        },
+        {
+          "field": "garage_spaces",
+          "value": 72.0,
+          "confidence": 0.65,
+          "tier": "medium",
+          "reason": "confidence 0.65 is medium, below the 0.85 threshold required to influence scoring"
+        },
+        {
+          "field": "number_of_apartments",
+          "value": 152,
+          "confidence": 0.8,
+          "tier": "medium",
+          "reason": "confidence 0.80 is medium, below the 0.85 threshold required to influence scoring"
+        },
+        {
+          "field": "number_of_apartments",
+          "value": 152,
+          "confidence": 0.8,
+          "tier": "medium",
+          "reason": "confidence 0.80 is medium, below the 0.85 threshold required to influence scoring"
+        }
+      ]
+    },
+    {
+      "filename": "HSB_Gjutaren_2024.pdf",
+      "fiscal_year": 2024,
+      "raw_fields_extracted": 19,
+      "verified_fields": 2,
+      "discarded_fields": 17,
+      "average_raw_confidence": 0.729,
+      "has_verified_financial_data": true,
+      "status": "safe_with_omissions",
+      "discarded_detail": [
+        {
+          "field": "revenue",
+          "value": 9217650.0,
+          "confidence": 0.55,
+          "tier": "low",
+          "reason": "confidence 0.55 is low, below the 0.85 threshold required to influence scoring"
+        },
+        {
+          "field": "operating_costs",
+          "value": -10163575.0,
+          "confidence": 0.85,
+          "tier": "high",
+          "reason": "value -10163575.0 is outside the plausible range [10000, 200000000] for operating_costs"
+        },
+        {
+          "field": "financial_costs",
+          "value": -673.0,
+          "confidence": 0.85,
+          "tier": "high",
+          "reason": "value -673.0 is outside the plausible range [0, 50000000] for financial_costs"
+        },
+        {
+          "field": "profit_before_tax",
+          "value": -741746.0,
+          "confidence": 0.85,
+          "tier": "high",
+          "reason": "value -741746.0 is identical to ['profit_after_tax'] in the same statement — likely a column shift or the same number matched twice"
+        },
+        {
+          "field": "profit_after_tax",
+          "value": -741746.0,
+          "confidence": 0.85,
+          "tier": "high",
+          "reason": "value -741746.0 is identical to ['profit_before_tax'] in the same statement — likely a column shift or the same number matched twice"
+        },
+        {
+          "field": "total_assets",
+          "value": 77647998.0,
+          "confidence": 0.55,
+          "tier": "low",
+          "reason": "confidence 0.55 is low, below the 0.85 threshold required to influence scoring"
+        },
+        {
+          "field": "current_assets",
+          "value": 10538353.0,
+          "confidence": 0.55,
+          "tier": "low",
+          "reason": "confidence 0.55 is low, below the 0.85 threshold required to influence scoring"
+        },
+        {
+          "field": "fixed_assets",
+          "value": 67109145.0,
+          "confidence": 0.55,
+          "tier": "low",
+          "reason": "confidence 0.55 is low, below the 0.85 threshold required to influence scoring"
+        },
+        {
+          "field": "total_equity",
+          "value": 77170637.0,
+          "confidence": 0.55,
+          "tier": "low",
+          "reason": "confidence 0.55 is low, below the 0.85 threshold required to influence scoring"
+        },
+        {
+          "field": "total_liabilities",
+          "value": 2961325.0,
+          "confidence": 0.55,
+          "tier": "low",
+          "reason": "confidence 0.55 is low, below the 0.85 threshold required to influence scoring"
+        },
+        {
+          "field": "short_term_debt",
+          "value": 2961325.0,
+          "confidence": 0.55,
+          "tier": "low",
+          "reason": "confidence 0.55 is low, below the 0.85 threshold required to influence scoring"
+        },
+        {
+          "field": "number_of_apartments",
+          "value": 1.23000000123e+17,
+          "confidence": 0.85,
+          "tier": "high",
+          "reason": "value 1.23000000123e+17 is outside the plausible range [1, 3000] for number_of_apartments"
+        },
+        {
+          "field": "number_of_commercial",
+          "value": 177.0,
+          "confidence": 0.75,
+          "tier": "medium",
+          "reason": "confidence 0.75 is medium, below the 0.85 threshold required to influence scoring"
+        },
+        {
+          "field": "parking_spaces",
+          "value": 1920.0,
+          "confidence": 0.85,
+          "tier": "high",
+          "reason": "value 1920.0 is identical to ['garage_spaces'] in the same statement — likely a column shift or the same number matched twice"
+        },
+        {
+          "field": "garage_spaces",
+          "value": 1920.0,
+          "confidence": 0.85,
+          "tier": "high",
+          "reason": "value 1920.0 is identical to ['parking_spaces'] in the same statement — likely a column shift or the same number matched twice"
+        },
+        {
+          "field": "land_ownership",
+          "value": "Tomträtt",
+          "confidence": 0.8,
+          "tier": "medium",
+          "reason": "confidence 0.80 is medium, below the 0.85 threshold required to influence scoring"
+        },
+        {
+          "field": "number_of_apartments",
+          "value": 177,
+          "confidence": 0.8,
+          "tier": "medium",
+          "reason": "confidence 0.80 is medium, below the 0.85 threshold required to influence scoring"
+        }
+      ]
+    },
+    {
+      "filename": "HSB_Hagaborg_2024.pdf",
+      "fiscal_year": 2024,
+      "raw_fields_extracted": 19,
+      "verified_fields": 1,
+      "discarded_fields": 18,
+      "average_raw_confidence": 0.634,
+      "has_verified_financial_data": true,
+      "status": "safe_with_omissions",
+      "discarded_detail": [
+        {
+          "field": "revenue",
+          "value": 16711963.0,
+          "confidence": 0.55,
+          "tier": "low",
+          "reason": "confidence 0.55 is low, below the 0.85 threshold required to influence scoring"
+        },
+        {
+          "field": "operating_costs",
+          "value": 4.0,
+          "confidence": 0.65,
+          "tier": "medium",
+          "reason": "confidence 0.65 is medium, below the 0.85 threshold required to influence scoring"
+        },
+        {
+          "field": "operating_profit",
+          "value": 2042591.0,
+          "confidence": 0.55,
+          "tier": "low",
+          "reason": "confidence 0.55 is low, below the 0.85 threshold required to influence scoring"
+        },
+        {
+          "field": "financial_costs",
+          "value": 16.0,
+          "confidence": 0.65,
+          "tier": "medium",
+          "reason": "confidence 0.65 is medium, below the 0.85 threshold required to influence scoring"
+        },
+        {
+          "field": "profit_before_tax",
+          "value": 968816.0,
+          "confidence": 0.55,
+          "tier": "low",
+          "reason": "confidence 0.55 is low, below the 0.85 threshold required to influence scoring"
+        },
+        {
+          "field": "total_assets",
+          "value": 68050048.0,
+          "confidence": 0.55,
+          "tier": "low",
+          "reason": "confidence 0.55 is low, below the 0.85 threshold required to influence scoring"
+        },
+        {
+          "field": "current_assets",
+          "value": 10066213.0,
+          "confidence": 0.55,
+          "tier": "low",
+          "reason": "confidence 0.55 is low, below the 0.85 threshold required to influence scoring"
+        },
+        {
+          "field": "fixed_assets",
+          "value": 59715970.0,
+          "confidence": 0.55,
+          "tier": "low",
+          "reason": "confidence 0.55 is low, below the 0.85 threshold required to influence scoring"
+        },
+        {
+          "field": "total_equity",
+          "value": 7264345.0,
+          "confidence": 0.55,
+          "tier": "low",
+          "reason": "confidence 0.55 is low, below the 0.85 threshold required to influence scoring"
+        },
+        {
+          "field": "long_term_debt",
+          "value": 14916652.0,
+          "confidence": 0.55,
+          "tier": "low",
+          "reason": "confidence 0.55 is low, below the 0.85 threshold required to influence scoring"
+        },
+        {
+          "field": "short_term_debt",
+          "value": 29221410.0,
+          "confidence": 0.55,
+          "tier": "low",
+          "reason": "confidence 0.55 is low, below the 0.85 threshold required to influence scoring"
+        },
+        {
+          "field": "cash_and_bank",
+          "value": 7578496.0,
+          "confidence": 0.55,
+          "tier": "low",
+          "reason": "confidence 0.55 is low, below the 0.85 threshold required to influence scoring"
+        },
+        {
+          "field": "number_of_apartments",
+          "value": 15132768.0,
+          "confidence": 0.55,
+          "tier": "low",
+          "reason": "confidence 0.55 is low, below the 0.85 threshold required to influence scoring"
+        },
+        {
+          "field": "number_of_commercial",
+          "value": 62584.0,
+          "confidence": 0.55,
+          "tier": "low",
+          "reason": "confidence 0.55 is low, below the 0.85 threshold required to influence scoring"
+        },
+        {
+          "field": "parking_spaces",
+          "value": 252405242980.0,
+          "confidence": 0.85,
+          "tier": "high",
+          "reason": "value 252405242980.0 is outside the plausible range [0, 3000] for parking_spaces"
+        },
+        {
+          "field": "garage_spaces",
+          "value": 252405242980.0,
+          "confidence": 0.85,
+          "tier": "high",
+          "reason": "value 252405242980.0 is outside the plausible range [0, 3000] for garage_spaces"
+        },
+        {
+          "field": "number_of_apartments",
+          "value": 286,
+          "confidence": 0.8,
+          "tier": "medium",
+          "reason": "confidence 0.80 is medium, below the 0.85 threshold required to influence scoring"
+        },
+        {
+          "field": "land_ownership",
+          "value": "tomträtt",
+          "confidence": 0.8,
+          "tier": "medium",
+          "reason": "confidence 0.80 is medium, below the 0.85 threshold required to influence scoring"
+        }
+      ]
+    },
+    {
+      "filename": "HSB_Hembo_2024.pdf",
+      "fiscal_year": 2024,
+      "raw_fields_extracted": 18,
+      "verified_fields": 2,
+      "discarded_fields": 16,
+      "average_raw_confidence": 0.7,
+      "has_verified_financial_data": true,
+      "status": "safe_with_omissions",
+      "discarded_detail": [
+        {
+          "field": "revenue",
+          "value": 91.0,
+          "confidence": 0.85,
+          "tier": "high",
+          "reason": "value 91.0 is outside the plausible range [10000, 200000000] for revenue"
+        },
+        {
+          "field": "operating_costs",
+          "value": -3226781.0,
+          "confidence": 0.85,
+          "tier": "high",
+          "reason": "value -3226781.0 is outside the plausible range [10000, 200000000] for operating_costs"
+        },
+        {
+          "field": "operating_profit",
+          "value": 667663929762.0,
+          "confidence": 0.85,
+          "tier": "high",
+          "reason": "value 667663929762.0 is outside the plausible range [-100000000, 100000000] for operating_profit"
+        },
+        {
+          "field": "financial_costs",
+          "value": 29373.0,
+          "confidence": 0.55,
+          "tier": "low",
+          "reason": "confidence 0.55 is low, below the 0.85 threshold required to influence scoring"
+        },
+        {
+          "field": "profit_before_tax",
+          "value": 165633532903.0,
+          "confidence": 0.85,
+          "tier": "high",
+          "reason": "value 165633532903.0 is outside the plausible range [-100000000, 100000000] for profit_before_tax"
+        },
+        {
+          "field": "total_assets",
+          "value": 22809232.0,
+          "confidence": 0.55,
+          "tier": "low",
+          "reason": "confidence 0.55 is low, below the 0.85 threshold required to influence scoring"
+        },
+        {
+          "field": "current_assets",
+          "value": 2459852.0,
+          "confidence": 0.55,
+          "tier": "low",
+          "reason": "confidence 0.55 is low, below the 0.85 threshold required to influence scoring"
+        },
+        {
+          "field": "fixed_assets",
+          "value": 500500.0,
+          "confidence": 0.65,
+          "tier": "medium",
+          "reason": "confidence 0.65 is medium, below the 0.85 threshold required to influence scoring"
+        },
+        {
+          "field": "total_equity",
+          "value": 9544274.0,
+          "confidence": 0.55,
+          "tier": "low",
+          "reason": "confidence 0.55 is low, below the 0.85 threshold required to influence scoring"
+        },
+        {
+          "field": "total_liabilities",
+          "value": 13264958.0,
+          "confidence": 0.55,
+          "tier": "low",
+          "reason": "confidence 0.55 is low, below the 0.85 threshold required to influence scoring"
+        },
+        {
+          "field": "long_term_debt",
+          "value": -407874.0,
+          "confidence": 0.55,
+          "tier": "low",
+          "reason": "confidence 0.55 is low, below the 0.85 threshold required to influence scoring"
+        },
+        {
+          "field": "cash_and_bank",
+          "value": 1174278271.0,
+          "confidence": 0.65,
+          "tier": "medium",
+          "reason": "confidence 0.65 is medium, below the 0.85 threshold required to influence scoring"
+        },
+        {
+          "field": "number_of_apartments",
+          "value": 33.0,
+          "confidence": 0.65,
+          "tier": "medium",
+          "reason": "confidence 0.65 is medium, below the 0.85 threshold required to influence scoring"
+        },
+        {
+          "field": "number_of_commercial",
+          "value": 33.0,
+          "confidence": 0.65,
+          "tier": "medium",
+          "reason": "confidence 0.65 is medium, below the 0.85 threshold required to influence scoring"
+        },
+        {
+          "field": "land_ownership",
+          "value": "äganderätt",
+          "confidence": 0.8,
+          "tier": "medium",
+          "reason": "confidence 0.80 is medium, below the 0.85 threshold required to influence scoring"
+        },
+        {
+          "field": "number_of_apartments",
+          "value": 4,
+          "confidence": 0.8,
+          "tier": "medium",
+          "reason": "confidence 0.80 is medium, below the 0.85 threshold required to influence scoring"
+        }
+      ]
+    },
+    {
+      "filename": "HSB_Idrottshallen_2024.pdf",
+      "fiscal_year": 2024,
+      "raw_fields_extracted": 20,
+      "verified_fields": 0,
+      "discarded_fields": 20,
+      "average_raw_confidence": 0.67,
+      "has_verified_financial_data": false,
+      "status": "blocked_insufficient_verified_data",
+      "discarded_detail": [
+        {
+          "field": "revenue",
+          "value": 6129383.0,
+          "confidence": 0.55,
+          "tier": "low",
+          "reason": "confidence 0.55 is low, below the 0.85 threshold required to influence scoring"
+        },
+        {
+          "field": "operating_costs",
+          "value": -4817363.0,
+          "confidence": 0.85,
+          "tier": "high",
+          "reason": "value -4817363.0 is outside the plausible range [10000, 200000000] for operating_costs"
+        },
+        {
+          "field": "operating_profit",
+          "value": 1312020453400.0,
+          "confidence": 0.85,
+          "tier": "high",
+          "reason": "value 1312020453400.0 is outside the plausible range [-100000000, 100000000] for operating_profit"
+        },
+        {
+          "field": "financial_costs",
+          "value": 68159.0,
+          "confidence": 0.55,
+          "tier": "low",
+          "reason": "confidence 0.55 is low, below the 0.85 threshold required to influence scoring"
+        },
+        {
+          "field": "profit_before_tax",
+          "value": 457679.0,
+          "confidence": 0.85,
+          "tier": "high",
+          "reason": "value 457679.0 is identical to ['profit_after_tax'] in the same statement — likely a column shift or the same number matched twice"
+        },
+        {
+          "field": "profit_after_tax",
+          "value": 457679.0,
+          "confidence": 0.85,
+          "tier": "high",
+          "reason": "value 457679.0 is identical to ['profit_before_tax'] in the same statement — likely a column shift or the same number matched twice"
+        },
+        {
+          "field": "total_assets",
+          "value": 58257643.0,
+          "confidence": 0.55,
+          "tier": "low",
+          "reason": "confidence 0.55 is low, below the 0.85 threshold required to influence scoring"
+        },
+        {
+          "field": "current_assets",
+          "value": 7073161.0,
+          "confidence": 0.55,
+          "tier": "low",
+          "reason": "confidence 0.55 is low, below the 0.85 threshold required to influence scoring"
+        },
+        {
+          "field": "fixed_assets",
+          "value": 51183982.0,
+          "confidence": 0.55,
+          "tier": "low",
+          "reason": "confidence 0.55 is low, below the 0.85 threshold required to influence scoring"
+        },
+        {
+          "field": "total_equity",
+          "value": 8100365.0,
+          "confidence": 0.55,
+          "tier": "low",
+          "reason": "confidence 0.55 is low, below the 0.85 threshold required to influence scoring"
+        },
+        {
+          "field": "total_liabilities",
+          "value": 42684076.0,
+          "confidence": 0.55,
+          "tier": "low",
+          "reason": "confidence 0.55 is low, below the 0.85 threshold required to influence scoring"
+        },
+        {
+          "field": "long_term_debt",
+          "value": 9725000.0,
+          "confidence": 0.55,
+          "tier": "low",
+          "reason": "confidence 0.55 is low, below the 0.85 threshold required to influence scoring"
+        },
+        {
+          "field": "short_term_debt",
+          "value": 32959076.0,
+          "confidence": 0.55,
+          "tier": "low",
+          "reason": "confidence 0.55 is low, below the 0.85 threshold required to influence scoring"
+        },
+        {
+          "field": "cash_and_bank",
+          "value": 539395522779.0,
+          "confidence": 0.85,
+          "tier": "high",
+          "reason": "value 539395522779.0 is outside the plausible range [0, 200000000] for cash_and_bank"
+        },
+        {
+          "field": "number_of_apartments",
+          "value": 80183000.0,
+          "confidence": 0.55,
+          "tier": "low",
+          "reason": "confidence 0.55 is low, below the 0.85 threshold required to influence scoring"
+        },
+        {
+          "field": "number_of_commercial",
+          "value": 0.0,
+          "confidence": 0.55,
+          "tier": "low",
+          "reason": "confidence 0.55 is low, below the 0.85 threshold required to influence scoring"
+        },
+        {
+          "field": "parking_spaces",
+          "value": 10.0,
+          "confidence": 0.75,
+          "tier": "medium",
+          "reason": "confidence 0.75 is medium, below the 0.85 threshold required to influence scoring"
+        },
+        {
+          "field": "garage_spaces",
+          "value": 10.0,
+          "confidence": 0.75,
+          "tier": "medium",
+          "reason": "confidence 0.75 is medium, below the 0.85 threshold required to influence scoring"
+        },
+        {
+          "field": "number_of_apartments",
+          "value": 74,
+          "confidence": 0.8,
+          "tier": "medium",
+          "reason": "confidence 0.80 is medium, below the 0.85 threshold required to influence scoring"
+        },
+        {
+          "field": "land_ownership",
+          "value": "TOMTRÄTT",
+          "confidence": 0.8,
+          "tier": "medium",
+          "reason": "confidence 0.80 is medium, below the 0.85 threshold required to influence scoring"
+        }
+      ]
+    },
+    {
+      "filename": "HSB_Kvillebacken_2024.pdf",
+      "fiscal_year": 2024,
+      "raw_fields_extracted": 20,
+      "verified_fields": 1,
+      "discarded_fields": 19,
+      "average_raw_confidence": 0.645,
+      "has_verified_financial_data": false,
+      "status": "blocked_insufficient_verified_data",
+      "discarded_detail": [
+        {
+          "field": "revenue",
+          "value": 8440803.0,
+          "confidence": 0.55,
+          "tier": "low",
+          "reason": "confidence 0.55 is low, below the 0.85 threshold required to influence scoring"
+        },
+        {
+          "field": "operating_costs",
+          "value": -7068603.0,
+          "confidence": 0.85,
+          "tier": "high",
+          "reason": "value -7068603.0 is outside the plausible range [10000, 200000000] for operating_costs"
+        },
+        {
+          "field": "operating_profit",
+          "value": 1372200.0,
+          "confidence": 0.55,
+          "tier": "low",
+          "reason": "confidence 0.55 is low, below the 0.85 threshold required to influence scoring"
+        },
+        {
+          "field": "financial_costs",
+          "value": -636.0,
+          "confidence": 0.85,
+          "tier": "high",
+          "reason": "value -636.0 is outside the plausible range [0, 50000000] for financial_costs"
+        },
+        {
+          "field": "profit_before_tax",
+          "value": -43379.0,
+          "confidence": 0.55,
+          "tier": "low",
+          "reason": "confidence 0.55 is low, below the 0.85 threshold required to influence scoring"
+        },
+        {
+          "field": "profit_after_tax",
+          "value": -43379.0,
+          "confidence": 0.55,
+          "tier": "low",
+          "reason": "confidence 0.55 is low, below the 0.85 threshold required to influence scoring"
+        },
+        {
+          "field": "total_assets",
+          "value": 55670453.0,
+          "confidence": 0.55,
+          "tier": "low",
+          "reason": "confidence 0.55 is low, below the 0.85 threshold required to influence scoring"
+        },
+        {
+          "field": "current_assets",
+          "value": 4226240.0,
+          "confidence": 0.55,
+          "tier": "low",
+          "reason": "confidence 0.55 is low, below the 0.85 threshold required to influence scoring"
+        },
+        {
+          "field": "fixed_assets",
+          "value": 51443513.0,
+          "confidence": 0.55,
+          "tier": "low",
+          "reason": "confidence 0.55 is low, below the 0.85 threshold required to influence scoring"
+        },
+        {
+          "field": "total_equity",
+          "value": 7318090.0,
+          "confidence": 0.55,
+          "tier": "low",
+          "reason": "confidence 0.55 is low, below the 0.85 threshold required to influence scoring"
+        },
+        {
+          "field": "total_liabilities",
+          "value": 47901174.0,
+          "confidence": 0.55,
+          "tier": "low",
+          "reason": "confidence 0.55 is low, below the 0.85 threshold required to influence scoring"
+        },
+        {
+          "field": "long_term_debt",
+          "value": 9600000.0,
+          "confidence": 0.55,
+          "tier": "low",
+          "reason": "confidence 0.55 is low, below the 0.85 threshold required to influence scoring"
+        },
+        {
+          "field": "short_term_debt",
+          "value": 38301174.0,
+          "confidence": 0.55,
+          "tier": "low",
+          "reason": "confidence 0.55 is low, below the 0.85 threshold required to influence scoring"
+        },
+        {
+          "field": "cash_and_bank",
+          "value": 5157.0,
+          "confidence": 0.55,
+          "tier": "low",
+          "reason": "confidence 0.55 is low, below the 0.85 threshold required to influence scoring"
+        },
+        {
+          "field": "number_of_apartments",
+          "value": 85000000.0,
+          "confidence": 0.55,
+          "tier": "low",
+          "reason": "confidence 0.55 is low, below the 0.85 threshold required to influence scoring"
+        },
+        {
+          "field": "number_of_commercial",
+          "value": 5.0,
+          "confidence": 0.75,
+          "tier": "medium",
+          "reason": "confidence 0.75 is medium, below the 0.85 threshold required to influence scoring"
+        },
+        {
+          "field": "parking_spaces",
+          "value": 315140310620.0,
+          "confidence": 0.85,
+          "tier": "high",
+          "reason": "value 315140310620.0 is outside the plausible range [0, 3000] for parking_spaces"
+        },
+        {
+          "field": "number_of_apartments",
+          "value": 148,
+          "confidence": 0.8,
+          "tier": "medium",
+          "reason": "confidence 0.80 is medium, below the 0.85 threshold required to influence scoring"
+        },
+        {
+          "field": "land_ownership",
+          "value": "tomträtt",
+          "confidence": 0.8,
+          "tier": "medium",
+          "reason": "confidence 0.80 is medium, below the 0.85 threshold required to influence scoring"
+        }
+      ]
+    },
+    {
+      "filename": "HSB_Peralbinshem_2024.pdf",
+      "fiscal_year": 2024,
+      "raw_fields_extracted": 13,
+      "verified_fields": 1,
+      "discarded_fields": 12,
+      "average_raw_confidence": 0.8,
+      "has_verified_financial_data": false,
+      "status": "blocked_insufficient_verified_data",
+      "discarded_detail": [
+        {
+          "field": "revenue",
+          "value": 3.0,
+          "confidence": 0.55,
+          "tier": "low",
+          "reason": "confidence 0.55 is low, below the 0.85 threshold required to influence scoring"
+        },
+        {
+          "field": "operating_costs",
+          "value": -38.0,
+          "confidence": 0.85,
+          "tier": "high",
+          "reason": "value -38.0 is outside the plausible range [10000, 200000000] for operating_costs"
+        },
+        {
+          "field": "operating_profit",
+          "value": 10.0,
+          "confidence": 0.85,
+          "tier": "high",
+          "reason": "value 10.0 is implausibly small for operating_profit — a real BRF figure is either exactly 0 or at least 1000 SEK; this looks like a page number, footnote marker, or stray digit fragment"
+        },
+        {
+          "field": "financial_costs",
+          "value": -2.0,
+          "confidence": 0.85,
+          "tier": "high",
+          "reason": "value -2.0 is outside the plausible range [0, 50000000] for financial_costs"
+        },
+        {
+          "field": "total_assets",
+          "value": 189.0,
+          "confidence": 0.85,
+          "tier": "high",
+          "reason": "value 189.0 is outside the plausible range [100000, 5000000000] for total_assets"
+        },
+        {
+          "field": "current_assets",
+          "value": 28.0,
+          "confidence": 0.85,
+          "tier": "high",
+          "reason": "value 28.0 is implausibly small for current_assets — a real BRF figure is either exactly 0 or at least 1000 SEK; this looks like a page number, footnote marker, or stray digit fragment"
+        },
+        {
+          "field": "fixed_assets",
+          "value": 9.0,
+          "confidence": 0.85,
+          "tier": "high",
+          "reason": "value 9.0 is implausibly small for fixed_assets — a real BRF figure is either exactly 0 or at least 1000 SEK; this looks like a page number, footnote marker, or stray digit fragment"
+        },
+        {
+          "field": "cash_and_bank",
+          "value": 14.0,
+          "confidence": 0.55,
+          "tier": "low",
+          "reason": "confidence 0.55 is low, below the 0.85 threshold required to influence scoring"
+        },
+        {
+          "field": "number_of_commercial",
+          "value": 550.0,
+          "confidence": 0.85,
+          "tier": "high",
+          "reason": "value 550.0 is outside the plausible range [0, 500] for number_of_commercial"
+        },
+        {
+          "field": "parking_spaces",
+          "value": 2011.0,
+          "confidence": 0.85,
+          "tier": "high",
+          "reason": "value 2011.0 is identical to ['garage_spaces'] in the same statement — likely a column shift or the same number matched twice"
+        },
+        {
+          "field": "garage_spaces",
+          "value": 2011.0,
+          "confidence": 0.85,
+          "tier": "high",
+          "reason": "value 2011.0 is identical to ['parking_spaces'] in the same statement — likely a column shift or the same number matched twice"
+        },
+        {
+          "field": "number_of_apartments",
+          "value": 692,
+          "confidence": 0.8,
+          "tier": "medium",
+          "reason": "confidence 0.80 is medium, below the 0.85 threshold required to influence scoring"
+        }
+      ]
+    },
+    {
+      "filename": "HSB_Sparet_2024.pdf",
+      "fiscal_year": 2024,
+      "raw_fields_extracted": 20,
+      "verified_fields": 1,
+      "discarded_fields": 19,
+      "average_raw_confidence": 0.765,
+      "has_verified_financial_data": true,
+      "status": "safe_with_omissions",
+      "discarded_detail": [
+        {
+          "field": "revenue",
+          "value": 18548006.0,
+          "confidence": 0.55,
+          "tier": "low",
+          "reason": "confidence 0.55 is low, below the 0.85 threshold required to influence scoring"
+        },
+        {
+          "field": "operating_costs",
+          "value": -17834323.0,
+          "confidence": 0.85,
+          "tier": "high",
+          "reason": "value -17834323.0 is outside the plausible range [10000, 200000000] for operating_costs"
+        },
+        {
+          "field": "financial_costs",
+          "value": -22514.0,
+          "confidence": 0.85,
+          "tier": "high",
+          "reason": "value -22514.0 is outside the plausible range [0, 50000000] for financial_costs"
+        },
+        {
+          "field": "profit_before_tax",
+          "value": -1181639.0,
+          "confidence": 0.85,
+          "tier": "high",
+          "reason": "value -1181639.0 is identical to ['profit_after_tax'] in the same statement — likely a column shift or the same number matched twice"
+        },
+        {
+          "field": "profit_after_tax",
+          "value": -1181639.0,
+          "confidence": 0.85,
+          "tier": "high",
+          "reason": "value -1181639.0 is identical to ['profit_before_tax'] in the same statement — likely a column shift or the same number matched twice"
+        },
+        {
+          "field": "total_assets",
+          "value": 1.2051804211036344e+17,
+          "confidence": 0.85,
+          "tier": "high",
+          "reason": "value 1.2051804211036344e+17 is outside the plausible range [100000, 5000000000] for total_assets"
+        },
+        {
+          "field": "current_assets",
+          "value": 7289624.0,
+          "confidence": 0.55,
+          "tier": "low",
+          "reason": "confidence 0.55 is low, below the 0.85 threshold required to influence scoring"
+        },
+        {
+          "field": "fixed_assets",
+          "value": 1.132279181059977e+17,
+          "confidence": 0.85,
+          "tier": "high",
+          "reason": "value 1.132279181059977e+17 is outside the plausible range [0, 5000000000] for fixed_assets"
+        },
+        {
+          "field": "total_equity",
+          "value": 14460819.0,
+          "confidence": 0.55,
+          "tier": "low",
+          "reason": "confidence 0.55 is low, below the 0.85 threshold required to influence scoring"
+        },
+        {
+          "field": "total_liabilities",
+          "value": 99182279.0,
+          "confidence": 0.55,
+          "tier": "low",
+          "reason": "confidence 0.55 is low, below the 0.85 threshold required to influence scoring"
+        },
+        {
+          "field": "long_term_debt",
+          "value": 74442962.0,
+          "confidence": 0.55,
+          "tier": "low",
+          "reason": "confidence 0.55 is low, below the 0.85 threshold required to influence scoring"
+        },
+        {
+          "field": "short_term_debt",
+          "value": 198597179935.0,
+          "confidence": 0.85,
+          "tier": "high",
+          "reason": "value 198597179935.0 is outside the plausible range [0, 500000000] for short_term_debt"
+        },
+        {
+          "field": "cash_and_bank",
+          "value": 875736271787.0,
+          "confidence": 0.85,
+          "tier": "high",
+          "reason": "value 875736271787.0 is outside the plausible range [0, 200000000] for cash_and_bank"
+        },
+        {
+          "field": "number_of_apartments",
+          "value": 1.89000000189e+17,
+          "confidence": 0.85,
+          "tier": "high",
+          "reason": "value 1.89000000189e+17 is outside the plausible range [1, 3000] for number_of_apartments"
+        },
+        {
+          "field": "number_of_commercial",
+          "value": 5.0,
+          "confidence": 0.75,
+          "tier": "medium",
+          "reason": "confidence 0.75 is medium, below the 0.85 threshold required to influence scoring"
+        },
+        {
+          "field": "parking_spaces",
+          "value": 301.0,
+          "confidence": 0.85,
+          "tier": "high",
+          "reason": "value 301.0 is identical to ['garage_spaces'] in the same statement — likely a column shift or the same number matched twice"
+        },
+        {
+          "field": "garage_spaces",
+          "value": 301.0,
+          "confidence": 0.85,
+          "tier": "high",
+          "reason": "value 301.0 is identical to ['parking_spaces'] in the same statement — likely a column shift or the same number matched twice"
+        },
+        {
+          "field": "number_of_apartments",
+          "value": 259,
+          "confidence": 0.8,
+          "tier": "medium",
+          "reason": "confidence 0.80 is medium, below the 0.85 threshold required to influence scoring"
+        },
+        {
+          "field": "land_ownership",
+          "value": "TOMTRÄTT",
+          "confidence": 0.8,
+          "tier": "medium",
+          "reason": "confidence 0.80 is medium, below the 0.85 threshold required to influence scoring"
+        }
+      ]
+    },
+    {
+      "filename": "MBF_Viksang_2024.pdf",
+      "fiscal_year": 2025,
+      "raw_fields_extracted": 18,
+      "verified_fields": 1,
+      "discarded_fields": 17,
+      "average_raw_confidence": 0.733,
+      "has_verified_financial_data": true,
+      "status": "safe_with_omissions",
+      "discarded_detail": [
+        {
+          "field": "revenue",
+          "value": 3898170.0,
+          "confidence": 0.55,
+          "tier": "low",
+          "reason": "confidence 0.55 is low, below the 0.85 threshold required to influence scoring"
+        },
+        {
+          "field": "operating_costs",
+          "value": -3303882.0,
+          "confidence": 0.85,
+          "tier": "high",
+          "reason": "value -3303882.0 is outside the plausible range [10000, 200000000] for operating_costs"
+        },
+        {
+          "field": "financial_costs",
+          "value": -129760.0,
+          "confidence": 0.85,
+          "tier": "high",
+          "reason": "value -129760.0 is outside the plausible range [0, 50000000] for financial_costs"
+        },
+        {
+          "field": "profit_before_tax",
+          "value": 618394.0,
+          "confidence": 0.85,
+          "tier": "high",
+          "reason": "value 618394.0 is identical to ['profit_after_tax'] in the same statement — likely a column shift or the same number matched twice"
+        },
+        {
+          "field": "profit_after_tax",
+          "value": 618394.0,
+          "confidence": 0.85,
+          "tier": "high",
+          "reason": "value 618394.0 is identical to ['profit_before_tax'] in the same statement — likely a column shift or the same number matched twice"
+        },
+        {
+          "field": "total_assets",
+          "value": 12653987.0,
+          "confidence": 0.55,
+          "tier": "low",
+          "reason": "confidence 0.55 is low, below the 0.85 threshold required to influence scoring"
+        },
+        {
+          "field": "current_assets",
+          "value": 1502336.0,
+          "confidence": 0.55,
+          "tier": "low",
+          "reason": "confidence 0.55 is low, below the 0.85 threshold required to influence scoring"
+        },
+        {
+          "field": "fixed_assets",
+          "value": -384557.0,
+          "confidence": 0.85,
+          "tier": "high",
+          "reason": "value -384557.0 is outside the plausible range [0, 5000000000] for fixed_assets"
+        },
+        {
+          "field": "total_equity",
+          "value": 4246617.0,
+          "confidence": 0.55,
+          "tier": "low",
+          "reason": "confidence 0.55 is low, below the 0.85 threshold required to influence scoring"
+        },
+        {
+          "field": "long_term_debt",
+          "value": 2015625.0,
+          "confidence": 0.55,
+          "tier": "low",
+          "reason": "confidence 0.55 is low, below the 0.85 threshold required to influence scoring"
+        },
+        {
+          "field": "short_term_debt",
+          "value": 3264344.0,
+          "confidence": 0.55,
+          "tier": "low",
+          "reason": "confidence 0.55 is low, below the 0.85 threshold required to influence scoring"
+        },
+        {
+          "field": "number_of_apartments",
+          "value": 9.0,
+          "confidence": 0.65,
+          "tier": "medium",
+          "reason": "confidence 0.65 is medium, below the 0.85 threshold required to influence scoring"
+        },
+        {
+          "field": "number_of_commercial",
+          "value": 116098225417.0,
+          "confidence": 0.85,
+          "tier": "high",
+          "reason": "value 116098225417.0 is outside the plausible range [0, 500] for number_of_commercial"
+        },
+        {
+          "field": "parking_spaces",
+          "value": 369239322619.0,
+          "confidence": 0.85,
+          "tier": "high",
+          "reason": "value 369239322619.0 is outside the plausible range [0, 3000] for parking_spaces"
+        },
+        {
+          "field": "garage_spaces",
+          "value": -2170.0,
+          "confidence": 0.85,
+          "tier": "high",
+          "reason": "value -2170.0 is outside the plausible range [0, 3000] for garage_spaces"
+        },
+        {
+          "field": "number_of_apartments",
+          "value": 69,
+          "confidence": 0.8,
+          "tier": "medium",
+          "reason": "confidence 0.80 is medium, below the 0.85 threshold required to influence scoring"
+        },
+        {
+          "field": "land_ownership",
+          "value": "äganderätt",
+          "confidence": 0.8,
+          "tier": "medium",
+          "reason": "confidence 0.80 is medium, below the 0.85 threshold required to influence scoring"
+        }
+      ]
+    }
+  ]
+}

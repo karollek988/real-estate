@@ -1,0 +1,56 @@
+[tool.poetry]
+name = "real-estate"
+version = "0.1.0"
+description = "Property valuation and investment-analysis platform. Reuses the shared probability engine; adds real-estate domain data and features."
+authors = ["Karol Elwart <karollek98@gmail.com>"]
+readme = "README.md"
+packages = [
+    { include = "real_estate", from = "src" },
+    { include = "location_intelligence", from = "src" },
+    { include = "market_intelligence", from = "src" },
+]
+
+[tool.poetry.dependencies]
+python = ">=3.13,<3.15"
+# The shared domain-agnostic modeling core. When this project is lifted
+# into its own repository, replace the path dependency with a published
+# version or a git dependency - see docs/architecture.md "Migration".
+probability-engine = { path = "../../shared/probability-engine", develop = true }
+pandas = "^2.2"
+openai = "^2.46"
+
+[tool.poetry.group.dev.dependencies]
+ruff = "^0.8"
+mypy = "^1.13"
+pytest = "^8.3"
+
+[build-system]
+requires = ["poetry-core>=2.0"]
+build-backend = "poetry.core.masonry.api"
+
+[tool.ruff]
+target-version = "py313"
+line-length = 100
+src = ["src", "tests"]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B", "SIM", "C4"]
+
+[tool.ruff.lint.isort]
+known-first-party = ["real_estate", "location_intelligence", "market_intelligence"]
+
+[tool.mypy]
+python_version = "3.13"
+mypy_path = "src"
+explicit_package_bases = true
+disallow_untyped_defs = true
+warn_return_any = true
+warn_unused_ignores = true
+no_implicit_optional = true
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-ra -m 'not integration'"
+markers = [
+    "integration: makes a real network call to an external data source (excluded by default)",
+]

@@ -1,0 +1,40 @@
+project_path: "."
+
+models:
+  developer:
+    provider: opencode
+    model: deepseek-chat
+    role: developer
+
+  reviewer:
+    provider: claude
+    model: claude-sonnet-4-20250514
+    role: reviewer
+    api_key_env: ANTHROPIC_API_KEY
+
+  planner:
+    provider: opencode
+    model: deepseek-chat
+    role: planner
+
+workflow:
+  max_iterations: 10
+  opencode_path: opencode
+  state_dir: .orchestrator
+  log_dir: .orchestrator/logs
+
+checks:
+  lint:
+    enabled: false
+    command: ""
+  build:
+    enabled: false
+    command: ""
+  test:
+    enabled: false
+    command: ""
+
+prompts:
+  developer: prompts/developer.md
+  reviewer: prompts/reviewer.md
+  planner: prompts/planner.md

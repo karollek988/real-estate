@@ -1,0 +1,28 @@
+services:
+  market-intelligence:
+    build:
+      context: ..
+      dockerfile: Market_Intelligence_Engine/docker/Dockerfile
+    container_name: market-intelligence
+    restart: unless-stopped
+    environment:
+      - MI_CACHE_DIR=/data/cache
+      - MI_HTTP_TIMEOUT_S=15
+      - MI_MAX_WORKERS=8
+      - MI_DEFAULT_DEADLINE_S=20
+    volumes:
+      - mi-cache:/data/cache
+    networks:
+      - mi-network
+    healthcheck:
+      test: ["CMD", "python", "-c", "import market_intelligence; print('ok')"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+
+volumes:
+  mi-cache:
+
+networks:
+  mi-network:
+    driver: bridge
