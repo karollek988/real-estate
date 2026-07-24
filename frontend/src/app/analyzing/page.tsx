@@ -4,15 +4,15 @@ import { Suspense, useEffect, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 
 const STAGES = [
-  { message: "Locating property in public records", duration: 800 },
-  { message: "Verifying address and coordinates", duration: 900 },
-  { message: "Collecting market data", duration: 1200 },
-  { message: "Gathering neighbourhood information", duration: 1000 },
-  { message: "Analysing housing association finances", duration: 1400 },
-  { message: "Reading financial statements", duration: 1100 },
-  { message: "Evaluating risk factors", duration: 900 },
-  { message: "Assessing future development potential", duration: 800 },
-  { message: "Building your decision report", duration: 600 },
+  { message: "Locating property in public records", duration: 8300 },
+  { message: "Verifying address and coordinates", duration: 9300 },
+  { message: "Collecting market data", duration: 12400 },
+  { message: "Gathering neighbourhood information", duration: 10300 },
+  { message: "Analysing housing association finances", duration: 14500 },
+  { message: "Reading financial statements", duration: 11400 },
+  { message: "Evaluating risk factors", duration: 9300 },
+  { message: "Assessing future development potential", duration: 8300 },
+  { message: "Building your decision report", duration: 6200 },
 ];
 
 function AnalyzingContent() {
@@ -76,10 +76,10 @@ function AnalyzingContent() {
     return () => clearInterval(pollInterval);
   }, [analysisId, router]);
 
-  const progressPct = Math.round(
-    ((completedStages.length + (currentStage >= 0 && currentStage < STAGES.length ? 0.5 : 0)) /
-      STAGES.length) *
-      100
+  const isCurrentStageActive = currentStage >= 0 && !completedStages.includes(currentStage);
+  const progressPct = Math.min(
+    100,
+    Math.round(((completedStages.length + (isCurrentStageActive ? 0.5 : 0)) / STAGES.length) * 100)
   );
 
   return (
