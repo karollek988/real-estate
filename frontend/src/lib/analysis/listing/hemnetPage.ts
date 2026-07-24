@@ -56,11 +56,23 @@ const BOT_BLOCKED_STATUSES = new Set([403, 429, 503]);
  */
 export async function scrapeHemnetPage(hemnetUrl: string): Promise<HemnetPageData | null> {
   const direct = await fetchDirect(hemnetUrl);
-  if (direct.html !== null) return parseHemnetHtml(direct.html);
-  if (!direct.shouldEscalate) return null;
+  if (direct.html !== null) {
+    console.log(`[hemnetPage] direct fetch OK for ${hemnetUrl}`);
+    return parseHemnetHtml(direct.html);
+  }
+  if (!direct.shouldEscalate) {
+    console.error(`[hemnetPage] direct fetch failed (non-blocked status), no escalation configured for ${hemnetUrl}`);
+    return null;
+  }
 
+  console.warn(`[hemnetPage] direct fetch blocked, escalating to browser bridge for ${hemnetUrl}`);
   const viaBrowser = await fetchViaBrowserBridge(hemnetUrl);
-  return viaBrowser !== null ? parseHemnetHtml(viaBrowser) : null;
+  if (viaBrowser !== null) {
+    console.log(`[hemnetPage] browser bridge OK for ${hemnetUrl}`);
+    return parseHemnetHtml(viaBrowser);
+  }
+  console.error(`[hemnetPage] browser bridge also failed for ${hemnetUrl}`);
+  return null;
 }
 
 async function fetchDirect(hemnetUrl: string): Promise<{ html: string | null; shouldEscalate: boolean }> {
@@ -75,18 +87,25 @@ async function fetchDirect(hemnetUrl: string): Promise<{ html: string | null; sh
       cache: "no-store",
     });
     if (res.ok) return { html: await res.text(), shouldEscalate: false };
-    return { html: null, shouldEscalate: BOT_BLOCKED_STATUSES.has(res.status) };
-  } catch {
-    // Network-level failure (timeout, DNS, TLS) — same "couldn't tell if
-    // it's really down or just blocked" situation _fetch_html() escalates
-    // on, so try the browser bridge before giving up.
+    const blocked = BOT_BLOCKED_STATUSES.has(res.status);
+    if (blocked) {
+      console.warn(`[hemnetPage] fetchDirect blocked with status ${res.status} for ${hemnetUrl}`);
+    } else {
+      console.error(`[hemnetPage] fetchDirect returned status ${res.status} for ${hemnetUrl}`);
+    }
+    return { html: null, shouldEscalate: blocked };
+  } catch (err) {
+    console.error(`[hemnetPage] fetchDirect network error for ${hemnetUrl}:`, err);
     return { html: null, shouldEscalate: true };
   }
 }
 
 async function fetchViaBrowserBridge(hemnetUrl: string): Promise<string | null> {
   const apiBase = process.env.PYTHON_ENGINE_API_URL;
-  if (!apiBase) return null;
+  if (!apiBase) {
+    console.error(`[hemnetPage] PYTHON_ENGINE_API_URL not set — browser bridge unavailable, cannot escalate for ${hemnetUrl}`);
+    return null;
+  }
 
   try {
     const res = await fetch(`${apiBase.replace(/\/$/, "")}/api/browser-fetch`, {
@@ -97,11 +116,19 @@ async function fetchViaBrowserBridge(hemnetUrl: string): Promise<string | null> 
       signal: AbortSignal.timeout(60000),
       cache: "no-store",
     });
-    if (!res.ok) return null;
+    if (!res.ok) {
+      console.error(`[hemnetPage] browser bridge returned status ${res.status} for ${hemnetUrl}`);
+      return null;
+    }
 
     const body = (await res.json()) as { success?: boolean; html?: string };
-    return body.success && typeof body.html === "string" ? body.html : null;
-  } catch {
+    if (!body.success || typeof body.html !== "string") {
+      console.error(`[hemnetPage] browser bridge returned success=false or no html for ${hemnetUrl}`);
+      return null;
+    }
+    return body.html;
+  } catch (err) {
+    console.error(`[hemnetPage] browser bridge network error for ${hemnetUrl}:`, err);
     return null;
   }
 }
