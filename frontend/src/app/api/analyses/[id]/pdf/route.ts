@@ -1,9 +1,11 @@
 import { NextResponse } from "next/server";
-import puppeteer from "puppeteer";
+import puppeteer from "puppeteer-core";
+import chromium from "@sparticuz/chromium";
 import { getAnalysisWithProperty } from "@/lib/analysis/store";
 import { requireUser } from "@/lib/auth/requireUser";
 
 export const runtime = "nodejs";
+export const maxDuration = 60;
 
 /** GET /api/analyses/:id/pdf — render the report page to a downloadable PDF. */
 export async function GET(
@@ -42,7 +44,11 @@ export async function GET(
 
   let browser;
   try {
-    browser = await puppeteer.launch({ headless: true });
+    browser = await puppeteer.launch({
+      args: chromium.args,
+      executablePath: await chromium.executablePath(),
+      headless: true,
+    });
     const page = await browser.newPage();
     await page.setViewport({ width: 1024, height: 1400 });
     if (cookieHeader) {
