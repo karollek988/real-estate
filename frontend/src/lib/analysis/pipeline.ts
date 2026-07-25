@@ -4,7 +4,7 @@ import { extractFromHemnetUrl } from "./listing/hemnet";
 import { extractFromManualFields, type ManualListingFields } from "./listing/manual";
 import { normalizedPropertyKey } from "./normalize";
 import { getProviders } from "./providers/registry";
-import type { PropertyEnrichment, ProviderResult } from "./providers/types";
+import type { DataProvider, PropertyEnrichment, ProviderResult } from "./providers/types";
 import { buildAnalysis, ENGINE_VERSION } from "./engine/buildAnalysis";
 import { applyProtectedIdentityFields } from "./identityTrust";
 import { recordFieldProvenance } from "./providers/providerConfidence";
@@ -184,6 +184,35 @@ async function upsertProperty(extracted: ExtractedProperty): Promise<PropertyRec
   return Object.keys(patch).length > 0 ? updateProperty(existing.id, patch) : existing;
 }
 
+/**
+ * Providers run sequentially (each may enrich the property for the next —
+ * see the comment on ALL_PROVIDERS in registry.ts), so a single provider
+ * that never resolves (a hung fetch with no internal timeout, a dead
+ * upstream API) blocks every provider after it forever. Confirmed in
+ * production: an analysis stuck in "pending" for 9+ hours with no error
+ * ever recorded, because the code never got past the hung `await`. This
+ * bounds every provider call so the pipeline can always finish (or record
+ * a per-provider error and move on) within a predictable time, regardless
+ * of what an individual provider implementation does internally.
+ */
+const PROVIDER_TIMEOUT_MS = 25_000;
+
+async function withProviderTimeout(
+  provider: DataProvider,
+  property: PropertyRecord,
+  extracted: ExtractedProperty
+): Promise<ProviderResult> {
+  return Promise.race([
+    provider.collect({ extracted, property }),
+    new Promise<ProviderResult>((_, reject) =>
+      setTimeout(
+        () => reject(new Error(`Provider "${provider.id}" timed out after ${PROVIDER_TIMEOUT_MS}ms`)),
+        PROVIDER_TIMEOUT_MS
+      )
+    ),
+  ]);
+}
+
 async function runPipeline(
   pendingId: string,
   property: PropertyRecord,
@@ -206,7 +235,7 @@ async function runPipeline(
     for (const provider of getProviders()) {
       let result: ProviderResult;
       try {
-        result = await provider.collect({ extracted, property: currentProperty });
+        result = await withProviderTimeout(provider, currentProperty, extracted);
       } catch (err) {
         result = {
           source: {
