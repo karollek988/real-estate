@@ -11,7 +11,7 @@ import { consumeAnalysisQuota, recordAnalysisRequest, type AnalysisType } from "
 import { requireUser } from "@/lib/auth/requireUser";
 import { isDevAdmin } from "@/lib/auth/devAdmin";
 
-export const maxDuration = 120;
+export const maxDuration = 300;
 
 /**
  * POST /api/analyses — run (or return a cached) analysis for a property.
