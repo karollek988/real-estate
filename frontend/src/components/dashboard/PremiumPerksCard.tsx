@@ -94,7 +94,7 @@ export function PremiumPerksCard() {
         till besiktningshjälp och personliga bevakningar.
       </p>
       <Link
-        href="/dashboard/buy"
+        href="/buy"
         className="mt-3 flex items-center gap-1 text-sm font-medium text-green-400 transition hover:text-green-300"
       >
         Se alla fördelar

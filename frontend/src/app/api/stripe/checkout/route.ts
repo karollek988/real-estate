@@ -48,8 +48,8 @@ export async function POST(request: Request) {
   console.log("[Stripe Checkout] Customer ID:", customerId ?? "none (will create guest checkout)");
 
   const origin = request.headers.get("origin") ?? "http://localhost:3001";
-  const successUrl = `${origin}/dashboard/buy?checkout=success`;
-  const cancelUrl = `${origin}/dashboard/buy?checkout=cancel`;
+  const successUrl = `${origin}/buy?checkout=success`;
+  const cancelUrl = `${origin}/buy?checkout=cancel`;
 
   try {
     if ((ALLOWED_SUBSCRIPTIONS as readonly string[]).includes(priceKey)) {

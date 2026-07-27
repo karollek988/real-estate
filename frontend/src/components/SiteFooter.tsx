@@ -16,7 +16,7 @@ const PRODUKT_LINKS = [
 const FORETAG_LINKS = [
   { label: "Villkor", href: "/terms" },
   { label: "Integritetspolicy", href: "/privacy" },
-  { label: "Kontakt", href: "/contact" },
+  { label: "Kontakt", href: "/#contact" },
 ];
 
 export function SiteFooter() {

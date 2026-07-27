@@ -38,7 +38,7 @@ export function ExampleReportSection() {
             </p>
 
             <Link
-              href="/dashboard/buy"
+              href="/buy"
               className="mt-8 inline-flex items-center gap-2.5 rounded-[10px] bg-green-600 px-6 py-3 text-[15px] font-semibold text-white transition hover:scale-[1.02] hover:bg-green-500 active:scale-[0.99]"
             >
               Skapa analys

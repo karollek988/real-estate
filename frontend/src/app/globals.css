@@ -365,6 +365,15 @@ body {
   }
 }
 
+/* Site header: angled active nav tab — a symmetric parallelogram (top-left and
+   bottom-right corners chamfered, top-right and bottom-left stay square) */
+.nav-tab-active {
+  clip-path: polygon(14px 0, 100% 0, calc(100% - 14px) 100%, 0 100%);
+  transition:
+    clip-path 0.2s ease,
+    background-color 0.2s ease;
+}
+
 @media (prefers-reduced-motion: reduce) {
   .animate-fade-in-up,
   .animate-overlay-fade-in,

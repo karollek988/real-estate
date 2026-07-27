@@ -13,6 +13,7 @@ import { ExampleReportSection } from "@/components/sections/ExampleReportSection
 import { InsightsSection } from "@/components/sections/InsightsSection";
 import { InfoSection } from "@/components/sections/InfoSection";
 import { FaqSection } from "@/components/sections/FaqSection";
+import { ContactSection } from "@/components/sections/ContactSection";
 import { SectionDivider } from "@/components/SectionDivider";
 import {
   BrainIcon,
@@ -506,7 +507,8 @@ export default function Home() {
       <InfoSection />
       <SectionDivider />
       <FaqSection />
-
+      <SectionDivider />
+      <ContactSection />
     </div>
   );
 }

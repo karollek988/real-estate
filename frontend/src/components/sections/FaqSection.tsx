@@ -26,7 +26,7 @@ export function FaqSection() {
                 vad du kan använda den till.
               </p>
               <a
-                href="#"
+                href="#contact"
                 className="mt-6 inline-flex items-center gap-2 text-sm font-semibold text-green-400 transition-all hover:gap-3 hover:text-green-300"
               >
                 Hittar du inte svaret? Kontakta oss
