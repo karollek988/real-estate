@@ -297,7 +297,7 @@ function InspectionPageContent() {
               title="Ingen Premium-analys hittades"
               description="Besiktningshjälp kräver en färdig Premium-analys för en bostad. Köp eller slutför en Premium-analys för att komma igång."
               actionLabel="Se Premium-paket"
-              onAction={() => router.push("/dashboard/buy")}
+              onAction={() => router.push("/buy")}
             />
           )}
         </div>
@@ -312,7 +312,7 @@ function InspectionPageContent() {
           title="Kräver en Premium-analys"
           description="Besiktningshjälp är en Premium-funktion. Den här bostaden har ingen Premium-analys kopplad till ditt konto än."
           actionLabel="Se Premium-paket"
-          onAction={() => router.push("/dashboard/buy")}
+          onAction={() => router.push("/buy")}
         />
       </div>
     );

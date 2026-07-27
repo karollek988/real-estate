@@ -498,6 +498,95 @@ export function CraneIcon(props: React.SVGProps<SVGSVGElement>) {
   );
 }
 
+export function UserIcon(props: React.SVGProps<SVGSVGElement>) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.6} {...props}>
+      <circle cx="12" cy="8" r="3.5" />
+      <path d="M4.5 20c1.2-3.8 4.2-5.5 7.5-5.5s6.3 1.7 7.5 5.5" />
+    </svg>
+  );
+}
+
+export function GemIcon(props: React.SVGProps<SVGSVGElement>) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.6} {...props}>
+      <path d="M5.5 3h13l3.5 5.5L12 21 2 8.5 5.5 3z" strokeLinejoin="round" />
+      <path d="M2 8.5h20M8.5 3L5.5 8.5 12 21l6.5-12.5L15.5 3" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
+export function VisaIcon(props: React.SVGProps<SVGSVGElement>) {
+  return (
+    <svg viewBox="0 0 48 20" {...props}>
+      <text
+        x="0"
+        y="16"
+        fontFamily="Arial, sans-serif"
+        fontSize="18"
+        fontWeight="700"
+        fontStyle="italic"
+        fill="currentColor"
+        letterSpacing="-0.5"
+      >
+        VISA
+      </text>
+    </svg>
+  );
+}
+
+export function MastercardIcon(props: React.SVGProps<SVGSVGElement>) {
+  return (
+    <svg viewBox="0 0 36 22" {...props}>
+      <circle cx="14" cy="11" r="10" fill="#EB001B" />
+      <circle cx="22" cy="11" r="10" fill="#F79E1B" fillOpacity="0.92" />
+    </svg>
+  );
+}
+
+export function SwishIcon(props: React.SVGProps<SVGSVGElement>) {
+  return (
+    <svg viewBox="0 0 92 24" {...props}>
+      <defs>
+        <linearGradient id="swish-gradient" x1="0" y1="0" x2="1" y2="1">
+          <stop offset="0%" stopColor="#0FB4C8" />
+          <stop offset="55%" stopColor="#1C5FA8" />
+          <stop offset="100%" stopColor="#E5457B" />
+        </linearGradient>
+      </defs>
+      <circle cx="12" cy="12" r="11" fill="url(#swish-gradient)" />
+      <path
+        d="M7 15c2.5 1.8 6.5 1.8 8.7-.4 1.7-1.7 1.3-4-.9-4.6-2.6-.7-6.3-.2-7.8-1.9-1.2-1.4-.2-3.3 2.1-3.9 2.3-.6 5 .1 6.8 1.5"
+        fill="none"
+        stroke="#fff"
+        strokeWidth="1.6"
+        strokeLinecap="round"
+      />
+      <text x="28" y="17" fontFamily="Arial, sans-serif" fontSize="14" fontWeight="600" fill="currentColor">
+        Swish
+      </text>
+    </svg>
+  );
+}
+
+export function KlarnaIcon(props: React.SVGProps<SVGSVGElement>) {
+  return (
+    <svg viewBox="0 0 76 24" {...props}>
+      <rect width="76" height="24" rx="6" fill="#FFB3C7" />
+      <text
+        x="10"
+        y="16.5"
+        fontFamily="Arial, sans-serif"
+        fontSize="13"
+        fontWeight="700"
+        fill="#0A0A0A"
+      >
+        Klarna
+      </text>
+    </svg>
+  );
+}
+
 export function LogOutIcon(props: React.SVGProps<SVGSVGElement>) {
   return (
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.6} {...props}>
