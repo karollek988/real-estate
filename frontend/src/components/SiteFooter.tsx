@@ -8,7 +8,7 @@ import { OPEN_ONBOARDING_MODAL_EVENT } from "@/lib/onboardingModalEvents";
 
 const PRODUKT_LINKS = [
   { label: "Startsida", href: "/" },
-  { label: "Exempelrapport", href: "/#marknadsinsikter" },
+  { label: "Exempelrapport", href: "/#example-report" },
   { label: "Priser", href: "/#analyze" },
   { label: "FAQ", href: "/#faq" },
 ];

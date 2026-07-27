@@ -1,9 +1,9 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/Button";
-import { SettingsIcon, MailIcon, WarningIcon, CheckIcon, LockIcon, CrownIcon, CreditCardIcon } from "@/components/icons";
+import { SettingsIcon, MailIcon, WarningIcon, CheckIcon, LockIcon } from "@/components/icons";
 import { useAuth } from "@/lib/auth/AuthProvider";
 import { createClient } from "@/lib/supabase/client";
 
@@ -168,53 +168,6 @@ export default function SettingsPage() {
   const [confirmEmail, setConfirmEmail] = useState("");
   const [deleting, setDeleting] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [subscription, setSubscription] = useState<{
-    status: string | null;
-    tier: string | null;
-    currentPeriodEnd: string | null;
-  } | null>(null);
-  const [portalLoading, setPortalLoading] = useState(false);
-  const [portalError, setPortalError] = useState<string | null>(null);
-
-  const loadSubscription = useCallback(async () => {
-    try {
-      const res = await fetch("/api/profile/summary");
-      if (res.ok) {
-        const data = await res.json();
-        setSubscription({
-          status: data.subscriptionStatus,
-          tier: data.subscriptionTier,
-          currentPeriodEnd: data.currentPeriodEnd,
-        });
-      }
-    } catch {
-      // Silently fail — subscription info is not critical for settings page load
-    }
-  }, []);
-
-  useEffect(() => {
-    loadSubscription();
-  }, [loadSubscription]);
-
-  async function handleManageSubscription() {
-    setPortalLoading(true);
-    setPortalError(null);
-    try {
-      const res = await fetch("/api/stripe/portal", { method: "POST" });
-      const data = await res.json();
-      if (!res.ok) {
-        setPortalError(data?.error?.message ?? "Kunde inte öppna betalningsportalen.");
-        return;
-      }
-      if (data.url) {
-        window.location.href = data.url;
-      }
-    } catch {
-      setPortalError("Något gick fel. Försök igen.");
-    } finally {
-      setPortalLoading(false);
-    }
-  }
 
   async function handleDelete() {
     if (confirmEmail.trim().toLowerCase() !== (user?.email ?? "").toLowerCase()) {
@@ -252,58 +205,6 @@ export default function SettingsPage() {
       </div>
 
       <ProfileEditCard user={user} />
-
-      <div className="dash-enter rounded-2xl border border-green-500/20 bg-green-500/[0.04] p-5 backdrop-blur-xl" style={stagger(2)}>
-        <div className="flex items-center gap-2.5">
-          <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-green-500/10 text-green-400">
-            <CrownIcon className="h-4 w-4" />
-          </span>
-          <h2 className="text-sm font-semibold text-green-300">Abonnemang</h2>
-        </div>
-
-        {subscription === null ? (
-          <p className="mt-3 text-sm text-neutral-400">Laddar...</p>
-        ) : subscription.tier ? (
-          <div className="mt-3 flex flex-col gap-2">
-            <p className="text-sm text-neutral-300">
-              <span className="font-medium text-white">
-                {subscription.tier === "premium" ? "Premium" : "Ultra"}
-              </span>
-              <span className="ml-2 text-xs uppercase tracking-wide text-green-400">
-                {subscription.status === "active" ? "Aktivt" : subscription.status === "past_due" ? "Förfallen" : "Avslutat"}
-              </span>
-            </p>
-            {subscription.currentPeriodEnd && (
-              <p className="text-sm text-neutral-400">
-                Nästa betalning: {new Date(subscription.currentPeriodEnd).toLocaleDateString("sv-SE")}
-              </p>
-            )}
-            {portalError && <p className="text-sm text-red-400">{portalError}</p>}
-            <div className="mt-2">
-              <Button
-                variant="secondary"
-                onClick={handleManageSubscription}
-                disabled={portalLoading}
-                className="flex items-center gap-2"
-              >
-                <CreditCardIcon className="h-4 w-4" />
-                {portalLoading ? "Öppnar portal..." : "Hantera abonnemang"}
-              </Button>
-            </div>
-          </div>
-        ) : (
-          <div className="mt-3">
-            <p className="text-sm text-neutral-400">
-              Du har inget aktivt abonnemang.
-            </p>
-            <div className="mt-3">
-              <Button onClick={() => router.push("/dashboard/buy")}>
-                Se abonnemang
-              </Button>
-            </div>
-          </div>
-        )}
-      </div>
 
       <div
         className="dash-enter rounded-2xl border border-red-500/20 bg-red-500/[0.04] p-5 backdrop-blur-xl"

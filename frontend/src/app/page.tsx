@@ -9,6 +9,7 @@ import { PasteListingForm } from "@/components/PasteListingForm";
 import { ManualEntryForm } from "@/components/ManualEntryForm";
 import { AnalysisTypeChoice, type AnalysisType } from "@/components/AnalysisTypeChoice";
 import { NewsSection } from "@/components/sections/NewsSection";
+import { ExampleReportSection } from "@/components/sections/ExampleReportSection";
 import { InsightsSection } from "@/components/sections/InsightsSection";
 import { InfoSection } from "@/components/sections/InfoSection";
 import { FaqSection } from "@/components/sections/FaqSection";
@@ -497,6 +498,8 @@ export default function Home() {
       {/* Content sections */}
       <SectionDivider />
       <NewsSection />
+      <SectionDivider />
+      <ExampleReportSection />
       <SectionDivider />
       <InsightsSection />
       <SectionDivider />

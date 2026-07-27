@@ -4,3 +4,6 @@ out
 .env*
 *.log
 !.env.example
+
+.vercel
+.env*
