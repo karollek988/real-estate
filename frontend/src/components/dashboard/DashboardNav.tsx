@@ -3,13 +3,13 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useLayoutEffect, useRef, useState } from "react";
-import { HouseIcon, ShieldIcon, SettingsIcon, ShoppingBagIcon, CrownIcon } from "@/components/icons";
+import { HouseIcon, ShieldIcon, SettingsIcon, CreditCardIcon, CrownIcon } from "@/components/icons";
 
 const NAV_ITEMS = [
   { label: "Översikt", href: "/dashboard", icon: HouseIcon },
   { label: "Besiktningshjälp", href: "/dashboard/inspection", icon: ShieldIcon, premium: true },
   { label: "Inställningar", href: "/dashboard/settings", icon: SettingsIcon },
-  { label: "Köp paket/analys", href: "/dashboard/buy", icon: ShoppingBagIcon },
+  { label: "Prenumerationer", href: "/dashboard/subscriptions", icon: CreditCardIcon },
 ] as const;
 
 export function DashboardNav() {

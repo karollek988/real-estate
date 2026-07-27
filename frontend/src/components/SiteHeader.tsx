@@ -18,13 +18,14 @@ type NavAction =
 const NAV_ITEMS: { label: string; action: NavAction }[] = [
   { label: "Startsida", action: { type: "link", href: "/" } },
   { label: "Så fungerar det", action: { type: "modal" } },
-  { label: "Exempelrapport", action: { type: "scroll", targetId: "marknadsinsikter" } },
-  { label: "Priser", action: { type: "scroll", targetId: "analyze" } },
+  { label: "Exempelrapport", action: { type: "scroll", targetId: "example-report" } },
   { label: "FAQ", action: { type: "scroll", targetId: "faq" } },
   { label: "Kontakt", action: { type: "link", href: "/contact" } },
 ];
 
-const SCROLL_SPY_IDS = ["analyze", "marknadsinsikter", "faq"];
+const SCROLL_SPY_IDS = ["example-report", "faq"];
+
+const BUY_ANALYSIS_HREF = "/dashboard/buy";
 
 function scrollToSection(id: string) {
   const target = document.getElementById(id);
@@ -225,6 +226,12 @@ export function SiteHeader() {
                 className="cursor-pointer text-sm text-neutral-300 transition hover:text-white"
               />
             ))}
+            <Link
+              href={BUY_ANALYSIS_HREF}
+              className="cursor-pointer rounded-lg bg-green-600 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-green-500"
+            >
+              Köp analys
+            </Link>
             {user ? (
               <UserDropdown label={displayName} />
             ) : (
@@ -260,12 +267,19 @@ export function SiteHeader() {
                 className="cursor-pointer border-b border-white/5 py-3.5 text-left text-[15px] text-neutral-300 transition hover:text-white"
               />
             ))}
+            <Link
+              href={BUY_ANALYSIS_HREF}
+              onClick={() => setMenuOpen(false)}
+              className="mt-5 flex items-center justify-center rounded-lg bg-green-600 px-5 py-3 text-center text-sm font-semibold text-white transition hover:bg-green-500"
+            >
+              Köp analys
+            </Link>
             {user ? (
               <>
                 <Link
                   href="/dashboard"
                   onClick={() => setMenuOpen(false)}
-                  className="mt-5 flex items-center gap-3 rounded-lg border border-white/10 bg-white/5 px-4 py-3 text-sm font-semibold text-white"
+                  className="mt-3 flex items-center gap-3 rounded-lg border border-white/10 bg-white/5 px-4 py-3 text-sm font-semibold text-white"
                 >
                   <span className="flex h-8 w-8 items-center justify-center rounded-full border border-green-500/30 bg-green-400/10 text-xs font-semibold text-green-400">
                     {initialsFor(displayName) || "?"}
@@ -308,7 +322,7 @@ export function SiteHeader() {
                   setMenuOpen(false);
                   setAuthOpen(true);
                 }}
-                className="mt-5 cursor-pointer rounded-lg bg-white px-5 py-3 text-center text-sm font-semibold text-neutral-900 transition hover:bg-neutral-200"
+                className="mt-3 cursor-pointer rounded-lg bg-white px-5 py-3 text-center text-sm font-semibold text-neutral-900 transition hover:bg-neutral-200"
               >
                 Logga in
               </button>

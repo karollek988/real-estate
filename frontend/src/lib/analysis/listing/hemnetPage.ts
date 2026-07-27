@@ -100,6 +100,12 @@ async function fetchDirect(hemnetUrl: string): Promise<{ html: string | null; sh
   }
 }
 
+/**
+ * Launching a real browser on the Railway side occasionally fails
+ * transiently (confirmed live 2026-07-26: a request got a 502, and the
+ * exact same URL succeeded on immediate retry) — one retry on a 5xx or
+ * network error is worth the extra time before giving up entirely.
+ */
 async function fetchViaBrowserBridge(hemnetUrl: string): Promise<string | null> {
   const apiBase = process.env.PYTHON_ENGINE_API_URL;
   if (!apiBase) {
@@ -107,30 +113,34 @@ async function fetchViaBrowserBridge(hemnetUrl: string): Promise<string | null> 
     return null;
   }
 
-  try {
-    const res = await fetch(`${apiBase.replace(/\/$/, "")}/api/browser-fetch`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ url: hemnetUrl }),
-      // Launching a real browser is much slower than a plain fetch.
-      signal: AbortSignal.timeout(60000),
-      cache: "no-store",
-    });
-    if (!res.ok) {
-      console.error(`[hemnetPage] browser bridge returned status ${res.status} for ${hemnetUrl}`);
-      return null;
-    }
+  for (let attempt = 1; attempt <= 2; attempt++) {
+    try {
+      const res = await fetch(`${apiBase.replace(/\/$/, "")}/api/browser-fetch`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ url: hemnetUrl }),
+        // Launching a real browser is much slower than a plain fetch.
+        signal: AbortSignal.timeout(30000),
+        cache: "no-store",
+      });
+      if (!res.ok) {
+        console.error(`[hemnetPage] browser bridge returned status ${res.status} for ${hemnetUrl} (attempt ${attempt})`);
+        if (res.status >= 500 && attempt < 2) continue;
+        return null;
+      }
 
-    const body = (await res.json()) as { success?: boolean; html?: string };
-    if (!body.success || typeof body.html !== "string") {
-      console.error(`[hemnetPage] browser bridge returned success=false or no html for ${hemnetUrl}`);
-      return null;
+      const body = (await res.json()) as { success?: boolean; html?: string };
+      if (!body.success || typeof body.html !== "string") {
+        console.error(`[hemnetPage] browser bridge returned success=false or no html for ${hemnetUrl} (attempt ${attempt})`);
+        return null;
+      }
+      return body.html;
+    } catch (err) {
+      console.error(`[hemnetPage] browser bridge network error for ${hemnetUrl} (attempt ${attempt}):`, err);
+      if (attempt >= 2) return null;
     }
-    return body.html;
-  } catch (err) {
-    console.error(`[hemnetPage] browser bridge network error for ${hemnetUrl}:`, err);
-    return null;
   }
+  return null;
 }
 
 export function parseHemnetHtml(html: string): HemnetPageData {
