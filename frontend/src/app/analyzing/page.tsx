@@ -15,6 +15,8 @@ const STAGES = [
   { message: "Building your decision report", duration: 6200 },
 ];
 
+const LOADING_VIDEO_SEEK_EPSILON = 0.05;
+
 function AnalyzingContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -22,8 +24,10 @@ function AnalyzingContent() {
   const [currentStage, setCurrentStage] = useState(-1);
   const [completedStages, setCompletedStages] = useState<number[]>([]);
   const [elapsed, setElapsed] = useState(0);
+  const [videoReady, setVideoReady] = useState(false);
   const startTime = useRef(Date.now());
   const redirecting = useRef(false);
+  const videoRef = useRef<HTMLVideoElement>(null);
 
   useEffect(() => {
     startTime.current = Date.now();
@@ -82,15 +86,52 @@ function AnalyzingContent() {
     Math.round(((completedStages.length + (isCurrentStageActive ? 0.5 : 0)) / STAGES.length) * 100)
   );
 
+  useEffect(() => {
+    const video = videoRef.current;
+    if (!video || !videoReady) return;
+    const duration = video.duration;
+    if (!duration || !Number.isFinite(duration)) return;
+
+    const clampedPct = Math.min(100, Math.max(0, progressPct));
+    const targetTime =
+      clampedPct >= 100 ? Math.max(0, duration - LOADING_VIDEO_SEEK_EPSILON) : (clampedPct / 100) * duration;
+
+    let raf = 0;
+    const step = () => {
+      const v = videoRef.current;
+      if (!v) return;
+      const diff = targetTime - v.currentTime;
+      if (Math.abs(diff) < 0.03) {
+        v.currentTime = targetTime;
+        return;
+      }
+      v.currentTime += diff * 0.18;
+      raf = requestAnimationFrame(step);
+    };
+    raf = requestAnimationFrame(step);
+
+    return () => {
+      if (raf) cancelAnimationFrame(raf);
+    };
+  }, [progressPct, videoReady]);
+
   return (
     <div className="flex min-h-screen flex-col items-center justify-center bg-[#111927] px-6 py-16 text-white">
       <div className="flex w-full max-w-lg flex-col items-center gap-10 text-center">
         {/* Logo / brand mark */}
         <div className="flex flex-col items-center gap-4">
-          <div className="relative h-14 w-14">
-            <div className="absolute inset-0 rounded-full border-[1.5px] border-white/[0.08]" />
-            <div className="absolute inset-0 animate-spin rounded-full border-[1.5px] border-transparent border-t-emerald-400" style={{ animationDuration: "1.8s" }} />
-            <div className="absolute inset-2 animate-spin rounded-full border-[1.5px] border-transparent border-t-emerald-400/40" style={{ animationDuration: "2.8s", animationDirection: "reverse" }} />
+          <div className="w-full max-w-[260px] overflow-hidden rounded-2xl bg-white/[0.02] ring-1 ring-white/[0.06]">
+            <video
+              ref={videoRef}
+              src="/Loading_Icon_Official_Video.mp4"
+              className="block aspect-[64/29] w-full object-cover"
+              muted
+              playsInline
+              preload="auto"
+              disablePictureInPicture
+              controls={false}
+              onLoadedMetadata={() => setVideoReady(true)}
+            />
           </div>
           <h1 className="text-[22px] font-semibold tracking-tight">
             Analyserar fastigheten
@@ -100,18 +141,10 @@ function AnalyzingContent() {
           </p>
         </div>
 
-        {/* Progress bar */}
-        <div className="w-full">
-          <div className="relative h-[3px] w-full overflow-hidden rounded-full bg-white/[0.06]">
-            <div
-              className="absolute inset-y-0 left-0 rounded-full bg-gradient-to-r from-emerald-500 to-emerald-400 transition-all duration-700 ease-out"
-              style={{ width: `${progressPct}%` }}
-            />
-          </div>
-          <div className="mt-2 flex items-center justify-between text-[11px] text-neutral-500">
-            <span>{elapsed}s</span>
-            <span>{progressPct}%</span>
-          </div>
+        {/* Progress readout */}
+        <div className="flex w-full items-center justify-between text-[11px] text-neutral-500">
+          <span>{elapsed}s</span>
+          <span>{progressPct}%</span>
         </div>
 
         {/* Stage checklist */}
