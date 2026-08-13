@@ -18,7 +18,7 @@
  * against the same cache.
  */
 import { emptyHemnetPageData, type HemnetPageData } from "./types.ts";
-import { moneyAmount, parseAreaString, readParamField, resolveRef } from "./utils.ts";
+import { moneyAmount, parseAreaString, resolveRef } from "./utils.ts";
 
 /** Amenity `kind` values that map onto a dedicated boolean field on HemnetPageData. */
 const AMENITY_KIND_SETTER: Record<string, (data: HemnetPageData, value: boolean) => void> = {
@@ -177,7 +177,6 @@ function populateFromListing(
   }
 
   populateAmenities(data, listing);
-  populateImages(data, listing);
 }
 
 /**
@@ -239,52 +238,6 @@ function boolFieldForKind(kind: string): keyof HemnetPageData {
     FIREPLACE: "fireplace",
   };
   return map[kind];
-}
-
-function populateImages(data: HemnetPageData, listing: Record<string, unknown>): void {
-  // The main `images(...)` gallery is the only place these entities carry an
-  // actual `url(...)` — the separate `floorPlanImages` field below points at
-  // the same underlying photos but (verified on real listings, 2026-07) is
-  // queried without the `url(...)` argument, so its entries always resolve to
-  // `undefined`. Gallery items self-report which ones are floor plans via
-  // `labels: ["FLOOR_PLAN"]`; route those into floorplan_urls instead of the
-  // photo gallery so floor plan diagrams don't pollute image_urls.
-  const imagesField = readParamField(listing, "images") as Record<string, unknown> | undefined;
-  const images = imagesField?.images;
-  if (Array.isArray(images)) {
-    for (const image of images) {
-      if (!image || typeof image !== "object") continue;
-      const url = readParamField(image as Record<string, unknown>, "url");
-      if (typeof url !== "string" || !url.startsWith("http")) continue;
-
-      const labels = (image as Record<string, unknown>).labels;
-      if (Array.isArray(labels) && labels.includes("FLOOR_PLAN")) {
-        data.floorplan_urls.push(url);
-      } else {
-        data.image_urls.push(url);
-      }
-    }
-  }
-
-  if (data.image_urls.length === 0) {
-    const thumbnail = listing.thumbnail as Record<string, unknown> | undefined;
-    const url = thumbnail ? readParamField(thumbnail, "url") : undefined;
-    if (typeof url === "string" && url.startsWith("http")) {
-      data.image_urls.push(url);
-    }
-  }
-
-  // Fallback in case a future listing variant does populate url() here.
-  const floorPlanImages = listing.floorPlanImages;
-  if (Array.isArray(floorPlanImages)) {
-    for (const image of floorPlanImages) {
-      if (!image || typeof image !== "object") continue;
-      const url = readParamField(image as Record<string, unknown>, "url");
-      if (typeof url === "string" && url.startsWith("http")) {
-        data.floorplan_urls.push(url);
-      }
-    }
-  }
 }
 
 function getIn(obj: unknown, path: string[]): unknown {

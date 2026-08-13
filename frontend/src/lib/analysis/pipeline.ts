@@ -202,13 +202,11 @@ async function withProviderTimeout(
   property: PropertyRecord,
   extracted: ExtractedProperty
 ): Promise<ProviderResult> {
+  const timeout = provider.timeoutMs ?? PROVIDER_TIMEOUT_MS;
   return Promise.race([
     provider.collect({ extracted, property }),
     new Promise<ProviderResult>((_, reject) =>
-      setTimeout(
-        () => reject(new Error(`Provider "${provider.id}" timed out after ${PROVIDER_TIMEOUT_MS}ms`)),
-        PROVIDER_TIMEOUT_MS
-      )
+      setTimeout(() => reject(new Error(`Provider "${provider.id}" timed out after ${timeout}ms`)), timeout)
     ),
   ]);
 }

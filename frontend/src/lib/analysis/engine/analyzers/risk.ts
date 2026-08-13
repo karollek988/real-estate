@@ -1,5 +1,14 @@
 import type { Analyzer } from "./types";
+import type { InspectionFindingsAttribute } from "../../providers/brokerDocuments";
 import { clamp, insufficientDataFactor, numberOrNull, sourceLabel } from "../helpers";
+
+/** Worst-case-driven, not averaged: one critical finding shouldn't be diluted by several minor ones. */
+const INSPECTION_SEVERITY_SCORE: Record<string, number> = {
+  critical: 15,
+  significant: 30,
+  moderate: 55,
+  minor: 70,
+};
 
 const ID = "risk";
 const LABEL = "Risk Level";
@@ -168,6 +177,24 @@ export const riskAnalyzer: Analyzer = {
         score: incomeScore,
         weight: 0.05,
         detail: `Median income in the area is ${Math.round(medianIncome)} tkr, suggesting ${medianIncome > 400 ? "strong" : medianIncome > 320 ? "moderate" : "lower"} financial stability among residents.`,
+      });
+    }
+
+    // Inspection-protocol risk (from a besiktningsprotokoll discovered on
+    // the broker's site and AI-interpreted — see providers/brokerDocuments.ts).
+    const inspectionFindings = attributes.inspection_findings as InspectionFindingsAttribute | undefined;
+    if (inspectionFindings && inspectionFindings.extraction_confidence > 0 && inspectionFindings.findings.length > 0) {
+      const worstScore = Math.min(
+        ...inspectionFindings.findings.map((f) => INSPECTION_SEVERITY_SCORE[f.severity] ?? 55)
+      );
+      supportingData.inspectionFindings = inspectionFindings.findings;
+      supportingData.inspectionOverallCondition = inspectionFindings.overall_condition;
+
+      riskFactors.push({
+        factor: "inspection_findings",
+        score: worstScore,
+        weight: 0.15,
+        detail: inspectionFindings.summary,
       });
     }
 
