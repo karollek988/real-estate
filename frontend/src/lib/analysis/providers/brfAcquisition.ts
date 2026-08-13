@@ -28,6 +28,10 @@ export const brfAcquisitionProvider: DataProvider = {
   id: "brf_acquisition",
   name: "BRF annual report acquisition (Hemnet/Allabrf)",
   kind: "real",
+  // Matches the AbortSignal.timeout(120000) below — previously moot under
+  // pipeline.ts's old universal 25s cap, which killed this provider's
+  // pipeline-visible result long before its own fetch could ever resolve.
+  timeoutMs: 120_000,
 
   async collect({ property, extracted }): Promise<ProviderResult> {
     const base = { id: this.id, name: this.name, kind: this.kind } as const;

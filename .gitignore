@@ -33,6 +33,10 @@ Stripe_API-keys/
 # Misc local caches
 .cache/
 .pytest_tmp/
+BRF-Scraper/data/broker_discovery_downloads/
+
+# Vercel local project link
+.vercel/
 
 # OS / editor junk
 .DS_Store

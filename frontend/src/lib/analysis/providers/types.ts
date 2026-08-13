@@ -36,5 +36,7 @@ export interface DataProvider {
   id: string;
   name: string;
   kind: "real" | "placeholder";
+  /** Overrides pipeline.ts's default per-provider timeout (PROVIDER_TIMEOUT_MS) for sources that are legitimately slower — e.g. a broker-site crawl or a Python-engine PDF extraction. Omit to use the default. */
+  timeoutMs?: number;
   collect(ctx: ProviderContext): Promise<ProviderResult>;
 }

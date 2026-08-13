@@ -1,4 +1,4 @@
-import { ShieldIcon, VisaIcon, MastercardIcon, SwishIcon, KlarnaIcon } from "@/components/icons";
+import { ShieldIcon, VisaIcon, MastercardIcon, KlarnaIcon } from "@/components/icons";
 
 export function BuyPaymentMethodsCard() {
   return (
@@ -12,7 +12,6 @@ export function BuyPaymentMethodsCard() {
       <div className="mt-4 flex flex-wrap items-center gap-4" role="list" aria-label="Betalningsmetoder">
         <VisaIcon role="img" aria-label="Visa" className="h-5 w-auto text-white" />
         <MastercardIcon role="img" aria-label="Mastercard" className="h-6 w-auto" />
-        <SwishIcon role="img" aria-label="Swish" className="h-6 w-auto text-white" />
         <KlarnaIcon role="img" aria-label="Klarna" className="h-6 w-auto" />
       </div>
     </div>

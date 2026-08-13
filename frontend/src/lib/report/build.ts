@@ -674,6 +674,109 @@ export function buildHousingAssociation(report: AnalysisReport, dataSources: Dat
 }
 
 /* ────────────────────────────────────────────────────────────────────── */
+/*  Broker-site documents — discovered via broker_discovery, see           */
+/*  providers/brokerDocuments.ts. Annual reports live in the Housing       */
+/*  Association chapter above (attributes.brf_annual_report); this chapter */
+/*  lists every discovered document as a download plus, for besiktnings-   */
+/*  protokoll, the AI-derived findings (attributes.inspection_findings —   */
+/*  the same signal risk.ts's "inspection_findings" factor already scores). */
+/* ────────────────────────────────────────────────────────────────────── */
+
+export interface BrokerDocumentContent {
+  id: string;
+  docType: string;
+  docTypeLabel: string;
+  filename: string;
+  downloadUrl: string;
+}
+
+export interface InspectionFindingContent {
+  category: string;
+  description: string;
+  severity: string;
+  severityLabel: string;
+  recommendation: string | null;
+}
+
+export interface BrokerDocumentsContent {
+  paragraphs: string[];
+  documents: BrokerDocumentContent[];
+  findings: InspectionFindingContent[];
+  overallCondition: string | null;
+}
+
+const DOC_TYPE_LABEL_SV: Record<string, string> = {
+  annual_report: "Årsredovisning",
+  inspection_report: "Besiktningsprotokoll",
+  energy_declaration: "Energideklaration",
+  bylaws: "Stadgar",
+  floor_plan: "Planritning",
+  other: "Övrigt dokument",
+};
+
+interface BrokerDocumentAttribute {
+  id: string;
+  docType: string;
+  filename: string;
+}
+
+interface InspectionFindingsAttributeShape {
+  findings: Array<{ category: string; description: string; severity: string; recommendation: string | null }>;
+  summary: string;
+  overall_condition: string;
+  extraction_confidence: number;
+}
+
+export function buildBrokerDocuments(
+  report: AnalysisReport,
+  attributes: Record<string, unknown>
+): BrokerDocumentsContent {
+  const documentsRaw = (attributes.broker_documents as BrokerDocumentAttribute[] | undefined) ?? [];
+  const inspection = attributes.inspection_findings as InspectionFindingsAttributeShape | undefined;
+
+  const documents: BrokerDocumentContent[] = documentsRaw.map((d) => ({
+    id: d.id,
+    docType: d.docType,
+    docTypeLabel: DOC_TYPE_LABEL_SV[d.docType] ?? d.docType,
+    filename: d.filename,
+    downloadUrl: `/api/broker-documents/${d.id}/download`,
+  }));
+
+  const paragraphs: string[] = [];
+  if (documents.length === 0) {
+    paragraphs.push(
+      report.property.broker || report.property.agency
+        ? "Inga dokument har hittats på mäklarens webbplats för den här bostaden i denna analys."
+        : "Ingen mäklarlänk kunde hittas på annonsen, så mäklarens webbplats har inte kunnat genomsökas efter dokument."
+    );
+  } else {
+    paragraphs.push(`${documents.length} dokument hittades hos mäklaren: ${listSv(documents.map((d) => d.docTypeLabel))}.`);
+  }
+
+  const hasInspectionText = inspection && inspection.extraction_confidence > 0;
+  if (hasInspectionText) {
+    paragraphs.push(inspection!.summary);
+  } else if (documents.some((d) => d.docType === "inspection_report")) {
+    paragraphs.push("Ett besiktningsprotokoll hittades men kunde inte tolkas automatiskt — se den nedladdningsbara filen ovan.");
+  }
+
+  const findings: InspectionFindingContent[] = (inspection?.findings ?? []).map((f) => ({
+    category: f.category,
+    description: f.description,
+    severity: f.severity,
+    severityLabel: SEVERITY_SV[f.severity] ?? f.severity,
+    recommendation: f.recommendation,
+  }));
+
+  return {
+    paragraphs,
+    documents,
+    findings,
+    overallCondition: hasInspectionText ? inspection!.overall_condition : null,
+  };
+}
+
+/* ────────────────────────────────────────────────────────────────────── */
 /*  Risk assessment — "What are the biggest risks?" — 8 named categories */
 /* ────────────────────────────────────────────────────────────────────── */
 

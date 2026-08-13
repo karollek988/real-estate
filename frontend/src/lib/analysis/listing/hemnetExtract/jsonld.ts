@@ -47,14 +47,6 @@ function processNode(node: Record<string, unknown>, data: HemnetPageData): void 
       else if (typeof price === "string") data.asking_price_sek = parseSekNumber(price);
     }
 
-    if (data.image_urls.length === 0) {
-      const images = node.image;
-      if (typeof images === "string") data.image_urls.push(images);
-      else if (Array.isArray(images)) {
-        for (const img of images) if (typeof img === "string") data.image_urls.push(img);
-      }
-    }
-
     if (data.building_year === null) {
       const yearBuilt = node.yearBuilt;
       if (typeof yearBuilt === "number" && yearBuilt > 1700 && yearBuilt < 2100) {

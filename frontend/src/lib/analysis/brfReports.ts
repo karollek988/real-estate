@@ -113,7 +113,8 @@ export async function insertBrfReport(input: {
   originalFilename: string | null;
   fiscalYear: number | null;
   annualReport: Record<string, unknown>;
-  uploadedBy: string;
+  /** null for reports discovered by the automated background pipeline (no user in context) — the column is nullable for exactly this case. */
+  uploadedBy: string | null;
 }): Promise<BrfAnnualReportRecord> {
   const { data, error } = await createAdminClient()
     .from("brf_annual_reports")

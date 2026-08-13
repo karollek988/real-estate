@@ -11,6 +11,7 @@ import { trafikverketInfrastructureProvider } from "./trafikverket";
 import { locationIntelligenceProvider } from "./locationIntelligence";
 import { marketIntelligenceProvider } from "./marketIntelligence";
 import { brfAcquisitionProvider } from "./brfAcquisition";
+import { brokerDocumentsProvider } from "./brokerDocuments";
 import { brfFinancialsProvider } from "./brfFinancials";
 import { placeholderProviders } from "./placeholders";
 
@@ -41,6 +42,7 @@ const ALL_PROVIDERS: DataProvider[] = [
   locationIntelligenceProvider,
   marketIntelligenceProvider,
   brfAcquisitionProvider,
+  brokerDocumentsProvider,
   brfFinancialsProvider,
   ...placeholderProviders,
 ];

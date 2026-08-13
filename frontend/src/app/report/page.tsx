@@ -23,6 +23,7 @@ import { SourceBadges } from "@/components/report/SourceBadges";
 import { Watermark } from "@/components/report/Watermark";
 import {
   buildAreaAnalysis,
+  buildBrokerDocuments,
   buildExecutiveSummary,
   buildFinalRecommendation,
   buildHousingAssociation,
@@ -59,6 +60,7 @@ import {
   ShieldIcon,
   DatabaseIcon,
   QuestionIcon,
+  DownloadIcon,
 } from "@/components/icons";
 
 const serif = Source_Serif_4({
@@ -415,6 +417,7 @@ export default async function ReportPage({
   const priceAnalysis = buildPriceAnalysis(p);
   const areaAnalysis = buildAreaAnalysis(p, attributes, p.dataSources);
   const brf = buildHousingAssociation(p, p.dataSources);
+  const brokerDocs = buildBrokerDocuments(p, attributes);
   const riskCategories = buildRiskCategories(p, p.dataSources);
   const investmentOutlook = buildInvestmentOutlook(p);
   const recommendation = buildFinalRecommendation(p);
@@ -820,9 +823,73 @@ export default async function ReportPage({
         </Page>
 
         {/* ══════════════════════════════════════════════════════════
-            7. RISK ASSESSMENT
+            7. BROKER-SITE DOCUMENTS
            ══════════════════════════════════════════════════════════ */}
         <Page n={7}>
+          <ChapterTitle icon={<ClipboardIcon className="h-5 w-5" />} sub="Dokument hittade på mäklarens webbplats, samt AI-tolkade fynd från ett eventuellt besiktningsprotokoll.">
+            Dokument hos mäklaren
+          </ChapterTitle>
+          <Prose paragraphs={brokerDocs.paragraphs} />
+
+          {brokerDocs.documents.length > 0 && (
+            <>
+              <SubHeading icon={<DownloadIcon className="h-4 w-4" />}>Nedladdningsbara dokument</SubHeading>
+              <div className="relative grid grid-cols-1 gap-2 sm:grid-cols-2">
+                {brokerDocs.documents.map((doc) => (
+                  <a
+                    key={doc.id}
+                    href={doc.downloadUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center gap-2.5 rounded-md border border-black/[0.08] bg-black/[0.02] px-4 py-3 text-[13px] text-[#12271D] transition hover:bg-black/[0.04]"
+                  >
+                    <DownloadIcon className="h-4 w-4 shrink-0 text-[#8C8471]" />
+                    <span className="min-w-0 flex-1">
+                      <span className="block font-medium">{doc.docTypeLabel}</span>
+                      <span className="block truncate text-[11px] text-[#8C8471]">{doc.filename}</span>
+                    </span>
+                  </a>
+                ))}
+              </div>
+            </>
+          )}
+
+          {brokerDocs.findings.length > 0 && (
+            <>
+              <SubHeading icon={<WarningIcon className="h-4 w-4" />}>Besiktningsfynd</SubHeading>
+              <ul className="relative space-y-2.5">
+                {brokerDocs.findings.map((f, i) => (
+                  <li key={i} className="flex items-start gap-2 text-[13px] leading-relaxed text-[#2A2820]">
+                    <WarningIcon
+                      className={`mt-0.5 h-3.5 w-3.5 shrink-0 ${
+                        f.severity === "minor" || f.severity === "moderate" ? "text-[#8C8471]" : "text-[#A2432F]"
+                      }`}
+                    />
+                    <span>
+                      <span className="font-medium capitalize">{f.category}:</span> {f.description}
+                      {f.severity !== "minor" && (
+                        <span
+                          className={`ml-1 font-medium ${
+                            f.severity === "moderate" ? "text-[#8C8471]" : "text-[#A2432F]"
+                          }`}
+                        >
+                          ({f.severityLabel})
+                        </span>
+                      )}
+                      {f.recommendation && <span className="block text-[#8C8471]">{f.recommendation}</span>}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            </>
+          )}
+          <ChapterSources dataSources={p.dataSources} ids={["broker_documents"]} />
+        </Page>
+
+        {/* ══════════════════════════════════════════════════════════
+            8. RISK ASSESSMENT
+           ══════════════════════════════════════════════════════════ */}
+        <Page n={8}>
           <ChapterTitle icon={<WarningIcon className="h-5 w-5" />} sub="Åtta riskkategorier baserade på tillgänglig data.">
             Riskbedömning
           </ChapterTitle>
@@ -846,13 +913,13 @@ export default async function ReportPage({
               </div>
             ))}
           </div>
-          <ChapterSources dataSources={p.dataSources} ids={["hemnet_page_scrape", "interest_rates", "scb_area_statistics", "osm_amenities", "brf_financials", "location_intelligence", "infrastructure_projects"]} />
+          <ChapterSources dataSources={p.dataSources} ids={["hemnet_page_scrape", "interest_rates", "scb_area_statistics", "osm_amenities", "brf_financials", "location_intelligence", "infrastructure_projects", "broker_documents"]} />
         </Page>
 
         {/* ══════════════════════════════════════════════════════════
-            8. INVESTMENT OUTLOOK
+            9. INVESTMENT OUTLOOK
            ══════════════════════════════════════════════════════════ */}
-        <Page n={8}>
+        <Page n={9}>
           <ChapterTitle icon={<TrendingUpIcon className="h-5 w-5" />} sub="Faktorer som kan påverka bostadens värde framöver, baserat på tillgänglig data.">
             Investeringsutsikt
           </ChapterTitle>
@@ -885,9 +952,9 @@ export default async function ReportPage({
         </Page>
 
         {/* ══════════════════════════════════════════════════════════
-            9. FINAL RECOMMENDATION
+            10. FINAL RECOMMENDATION
            ══════════════════════════════════════════════════════════ */}
-        <Page n={9} source="Sammanställt av Köpanalys analysmotor" className="pb-16">
+        <Page n={10} source="Sammanställt av Köpanalys analysmotor" className="pb-16">
           <ChapterTitle icon={<BadgeCheckIcon className="h-5 w-5" />} sub="En sammanställning av beslutsbetyg, riskbild och de delar av analysen som saknar underlag.">
             Helhetsbild
           </ChapterTitle>

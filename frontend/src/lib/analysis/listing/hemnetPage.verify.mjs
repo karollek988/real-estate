@@ -167,15 +167,15 @@ check(
   parsed.description,
   FULL_DESCRIPTION
 );
-check("images collected from Apollo's parameterized images() field, floor plan excluded by its label", parsed.image_urls, [
-  "https://bilder.hemnet.se/images/photo1.jpg",
-  "https://bilder.hemnet.se/images/photo2.jpg",
-  "https://bilder.hemnet.se/images/og.jpg",
-]);
 check(
-  "floorplan image routed out of the images() gallery by its FLOOR_PLAN label (floorPlanImages itself carries no url())",
+  "images are never extracted from Hemnet (copyright — Hemnet photos aren't ours to redistribute)",
+  parsed.image_urls,
+  []
+);
+check(
+  "floor plan images are never extracted from Hemnet either",
   parsed.floorplan_urls,
-  ["https://bilder.hemnet.se/images/floorplan1.png"]
+  []
 );
 
 // A second fixture: no Apollo state at all (e.g. a template variant, or a

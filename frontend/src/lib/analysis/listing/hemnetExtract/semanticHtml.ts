@@ -38,7 +38,6 @@ function extractMetaTags(html: string, data: HemnetPageData): void {
     if (key && value) meta[key] = value;
   }
 
-  if (meta["og:image"]) data.image_urls.push(meta["og:image"]);
   if (meta["og:description"] && meta["og:description"].length >= MIN_FULL_DESCRIPTION_LENGTH) {
     data.description = meta["og:description"];
   }

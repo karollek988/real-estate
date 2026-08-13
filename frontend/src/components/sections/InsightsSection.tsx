@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import { Reveal } from "@/components/Reveal";
 import { SectionBackground } from "@/components/SectionBackground";
 import { SectionIntro } from "@/components/SectionIntro";
@@ -9,16 +10,43 @@ import {
   PercentIcon,
   TrendingUpIcon,
 } from "@/components/icons";
+import type { MarketStats } from "@/lib/marketStats";
 
 const PLOT = { left: 40, right: 428, top: 14, bottom: 112 };
 const LABEL_Y = 138;
 
 function xAt(i: number, n: number) {
-  return PLOT.left + (i * (PLOT.right - PLOT.left)) / (n - 1);
+  return PLOT.left + (i * (PLOT.right - PLOT.left)) / Math.max(1, n - 1);
 }
 
 function yAt(v: number, min: number, max: number) {
   return PLOT.bottom - ((v - min) / (max - min)) * (PLOT.bottom - PLOT.top);
+}
+
+function niceBounds(values: number[], step: number): { min: number; max: number } {
+  const lo = Math.min(...values);
+  const hi = Math.max(...values);
+  const min = Math.floor(lo / step) * step - step;
+  const max = Math.ceil(hi / step) * step + step;
+  return { min, max };
+}
+
+/** Groups consecutive labels by their leading year (e.g. "2024K3" -> "2024"), one marker per year transition. */
+function yearMarkers(labels: string[]): { label: string; i: number }[] {
+  const markers: { label: string; i: number }[] = [];
+  let lastYear: string | null = null;
+  labels.forEach((label, i) => {
+    const year = label.slice(0, 4);
+    if (year !== lastYear) {
+      markers.push({ label: year, i });
+      lastYear = year;
+    }
+  });
+  return markers;
+}
+
+function formatSwedishNumber(n: number, decimals = 1): string {
+  return n.toFixed(decimals).replace(".", ",").replace(/^-/, "−");
 }
 
 function GridLine({ y, label }: { y: number; label: string }) {
@@ -39,25 +67,40 @@ function GridLine({ y, label }: { y: number; label: string }) {
   );
 }
 
-/* Styrränta — kvartalsvis, stegkurva */
-const RATE_VALUES = [4.0, 4.0, 3.75, 3.5, 3.25, 2.75, 2.5, 2.25, 2.0, 1.75];
-const RATE_MIN = 0.5;
-const RATE_MAX = 4.5;
+function ChartSkeleton() {
+  return (
+    <div className="mt-4 h-[148px] w-full animate-pulse rounded-lg bg-white/[0.03]" />
+  );
+}
 
-function InterestRateChart() {
-  const points = RATE_VALUES.map((v, i) => ({
-    x: xAt(i, RATE_VALUES.length),
-    y: yAt(v, RATE_MIN, RATE_MAX),
-  }));
+function ChartUnavailable() {
+  return (
+    <div className="mt-4 flex h-[148px] w-full items-center justify-center rounded-lg border border-white/5 text-xs text-neutral-600">
+      Data kunde inte hämtas just nu
+    </div>
+  );
+}
+
+/* Styrränta — kvartalsvis, stegkurva */
+function InterestRateChart({ values, quarterLabels }: { values: number[]; quarterLabels: string[] }) {
+  const { min, max } = niceBounds(values, 0.5);
+  const points = values.map((v, i) => ({ x: xAt(i, values.length), y: yAt(v, min, max) }));
   const d = points
     .map((p, i) => (i === 0 ? `M ${p.x} ${p.y}` : `H ${p.x} V ${p.y}`))
     .join(" ");
   const last = points[points.length - 1];
+  const gridSteps = [max, (max + min) / 2, min];
+  const years = yearMarkers(quarterLabels);
 
   return (
-    <svg viewBox="0 0 440 148" className="mt-4 w-full" role="img" aria-label="Styrräntans utveckling 2024 till 2026, från 4,0 till 1,75 procent">
-      {[4, 3, 2, 1].map((v) => (
-        <GridLine key={v} y={yAt(v, RATE_MIN, RATE_MAX)} label={`${v}%`} />
+    <svg
+      viewBox="0 0 440 148"
+      className="mt-4 w-full"
+      role="img"
+      aria-label={`Styrräntans utveckling, senaste till ${formatSwedishNumber(values[values.length - 1], 2)} procent`}
+    >
+      {gridSteps.map((v) => (
+        <GridLine key={v} y={yAt(v, min, max)} label={`${Math.round(v * 10) / 10}%`} />
       ))}
       <path
         d={d}
@@ -73,7 +116,7 @@ function InterestRateChart() {
         <g key={p.x}>
           <circle className="chart-fade" cx={p.x} cy={p.y} r="2.2" fill="#4ade80" />
           <circle cx={p.x} cy={p.y} r="9" fill="transparent">
-            <title>{`${RATE_VALUES[i].toFixed(2).replace(".", ",")} %`}</title>
+            <title>{`${quarterLabels[i]}: ${formatSwedishNumber(values[i], 2)} %`}</title>
           </circle>
         </g>
       ))}
@@ -86,14 +129,10 @@ function InterestRateChart() {
         fontWeight="600"
         fill="#e5e5e5"
       >
-        1,75%
+        {formatSwedishNumber(values[values.length - 1], 2)}%
       </text>
-      {[
-        { label: "2024", i: 0 },
-        { label: "2025", i: 4 },
-        { label: "2026", i: 8 },
-      ].map(({ label, i }) => (
-        <text key={label} x={xAt(i, RATE_VALUES.length)} y={LABEL_Y} textAnchor="middle" fontSize="8.5" fill="#7c847f">
+      {years.map(({ label, i }) => (
+        <text key={label} x={xAt(i, values.length)} y={LABEL_Y} textAnchor="middle" fontSize="8.5" fill="#7c847f">
           {label}
         </text>
       ))}
@@ -101,30 +140,29 @@ function InterestRateChart() {
   );
 }
 
-/* Bostadsprisindex — 12 månader, ytdiagram */
-const HOX_MONTHS = ["Maj", "Jun", "Jul", "Aug", "Sep", "Okt", "Nov", "Dec", "Jan", "Feb", "Mar", "Apr", "Maj"];
-const HOX_VALUES = [100, 99.2, 100.4, 101.2, 100.7, 101.8, 102.6, 102.1, 103.3, 103.9, 104.7, 105.6, 106.4];
-const HOX_MIN = 96;
-const HOX_MAX = 108;
-
-function HousePriceChart() {
-  const points = HOX_VALUES.map((v, i) => ({
-    x: xAt(i, HOX_VALUES.length),
-    y: yAt(v, HOX_MIN, HOX_MAX),
-  }));
+/* Bostadsprisindex — kvartalsvis, ytdiagram */
+function HousePriceChart({ values, quarterLabels }: { values: number[]; quarterLabels: string[] }) {
+  const { min, max } = niceBounds(values, 4);
+  const points = values.map((v, i) => ({ x: xAt(i, values.length), y: yAt(v, min, max) }));
   const line = points.map((p, i) => `${i === 0 ? "M" : "L"} ${p.x} ${p.y}`).join(" ");
   const area = `${line} L ${points[points.length - 1].x} ${PLOT.bottom} L ${points[0].x} ${PLOT.bottom} Z`;
+  const gridSteps = [max, max - (max - min) / 3, max - (2 * (max - min)) / 3, min];
 
   return (
-    <svg viewBox="0 0 440 148" className="mt-4 w-full" role="img" aria-label="Bostadsprisindex senaste 12 månaderna, upp 6,4 procent">
+    <svg
+      viewBox="0 0 440 148"
+      className="mt-4 w-full"
+      role="img"
+      aria-label={`Bostadsprisindex (småhus), senaste noteringen ${values[values.length - 1]}`}
+    >
       <defs>
         <linearGradient id="hox-area" x1="0" y1="0" x2="0" y2="1">
           <stop offset="0%" stopColor="rgba(74,222,128,0.26)" />
           <stop offset="100%" stopColor="rgba(74,222,128,0)" />
         </linearGradient>
       </defs>
-      {[108, 104, 100, 96].map((v) => (
-        <GridLine key={v} y={yAt(v, HOX_MIN, HOX_MAX)} label={`${v}`} />
+      {gridSteps.map((v) => (
+        <GridLine key={v} y={yAt(v, min, max)} label={`${Math.round(v)}`} />
       ))}
       <path className="chart-area" d={area} fill="url(#hox-area)" />
       <path
@@ -139,7 +177,7 @@ function HousePriceChart() {
       />
       {points.map((p, i) => (
         <circle key={p.x} cx={p.x} cy={p.y} r="9" fill="transparent">
-          <title>{`${HOX_MONTHS[i]}: ${HOX_VALUES[i].toFixed(1).replace(".", ",")}`}</title>
+          <title>{`${quarterLabels[i]}: ${values[i]}`}</title>
         </circle>
       ))}
       <circle
@@ -158,12 +196,12 @@ function HousePriceChart() {
         fontWeight="600"
         fill="#e5e5e5"
       >
-        106,4
+        {values[values.length - 1]}
       </text>
-      {HOX_MONTHS.map((month, i) =>
+      {quarterLabels.map((label, i) =>
         i % 2 === 0 ? (
           <text key={i} x={points[i].x} y={LABEL_Y} textAnchor="middle" fontSize="8.5" fill="#7c847f">
-            {month}
+            {label}
           </text>
         ) : null,
       )}
@@ -172,24 +210,16 @@ function HousePriceChart() {
 }
 
 /* Kvadratmeterpris — horisontella staplar per stad */
-const SQM_PRICES = [
-  { name: "Stockholm", value: 89400 },
-  { name: "Uppsala", value: 58900 },
-  { name: "Göteborg", value: 56700 },
-  { name: "Riksgenomsnitt", value: 52345 },
-  { name: "Malmö", value: 41200 },
-];
-const SQM_MAX = 96000;
-
-function SqmPriceChart() {
+function SqmPriceChart({ areas }: { areas: { name: string; pricePerM2: number }[] }) {
+  const max = Math.max(...areas.map((a) => a.pricePerM2)) * 1.07;
   return (
     <div className="mt-5 space-y-4">
-      {SQM_PRICES.map(({ name, value }, i) => (
+      {areas.map(({ name, pricePerM2 }, i) => (
         <div key={name}>
           <div className="flex items-baseline justify-between text-xs">
             <span className="text-neutral-300">{name}</span>
             <span className="font-semibold text-neutral-100">
-              {value.toLocaleString("sv-SE")} kr
+              {pricePerM2.toLocaleString("sv-SE")} kr
             </span>
           </div>
           <div className="mt-1.5 h-2 overflow-hidden rounded-full bg-white/[0.06]">
@@ -197,7 +227,7 @@ function SqmPriceChart() {
               className="chart-bar h-full rounded-full bg-gradient-to-r from-green-600 to-green-400"
               style={
                 {
-                  width: `${(value / SQM_MAX) * 100}%`,
+                  width: `${(pricePerM2 / max) * 100}%`,
                   "--chart-bar-delay": `${i * 90}ms`,
                 } as React.CSSProperties
               }
@@ -209,24 +239,23 @@ function SqmPriceChart() {
   );
 }
 
-/* Inflation (KPIF) — 12 månader, linje med målnivå */
-const KPIF_MONTHS = HOX_MONTHS;
-const KPIF_VALUES = [2.6, 2.4, 2.3, 2.2, 2.0, 1.9, 2.1, 2.0, 1.8, 1.9, 2.0, 1.8, 1.9];
-const KPIF_MIN = 0.5;
-const KPIF_MAX = 3.5;
-
-function InflationChart() {
-  const points = KPIF_VALUES.map((v, i) => ({
-    x: xAt(i, KPIF_VALUES.length),
-    y: yAt(v, KPIF_MIN, KPIF_MAX),
-  }));
+/* Inflation (KPIF) — månadsvis, linje med målnivå */
+function InflationChart({ values, monthLabels }: { values: number[]; monthLabels: string[] }) {
+  const { min, max } = niceBounds([...values, 2], 1);
+  const points = values.map((v, i) => ({ x: xAt(i, values.length), y: yAt(v, min, max) }));
   const line = points.map((p, i) => `${i === 0 ? "M" : "L"} ${p.x} ${p.y}`).join(" ");
-  const targetY = yAt(2, KPIF_MIN, KPIF_MAX);
+  const targetY = yAt(2, min, max);
+  const gridSteps = [max, min].filter((v) => v !== 2);
 
   return (
-    <svg viewBox="0 0 440 148" className="mt-4 w-full" role="img" aria-label="Inflationen KPIF senaste 12 månaderna, 1,9 procent, nära målet på 2 procent">
-      {[3, 1].map((v) => (
-        <GridLine key={v} y={yAt(v, KPIF_MIN, KPIF_MAX)} label={`${v}%`} />
+    <svg
+      viewBox="0 0 440 148"
+      className="mt-4 w-full"
+      role="img"
+      aria-label={`Inflationen KPIF, senaste ${formatSwedishNumber(values[values.length - 1])} procent`}
+    >
+      {gridSteps.map((v) => (
+        <GridLine key={v} y={yAt(v, min, max)} label={`${Math.round(v)}%`} />
       ))}
       <line
         x1={PLOT.left}
@@ -256,11 +285,11 @@ function InflationChart() {
         <g key={p.x}>
           <circle className="chart-fade" cx={p.x} cy={p.y} r="2.2" fill="#4ade80" />
           <circle cx={p.x} cy={p.y} r="9" fill="transparent">
-            <title>{`${KPIF_MONTHS[i]}: ${KPIF_VALUES[i].toFixed(1).replace(".", ",")} %`}</title>
+            <title>{`${monthLabels[i]}: ${formatSwedishNumber(values[i])} %`}</title>
           </circle>
         </g>
       ))}
-      {KPIF_MONTHS.map((month, i) =>
+      {monthLabels.map((month, i) =>
         i % 2 === 0 ? (
           <text key={i} x={points[i].x} y={LABEL_Y} textAnchor="middle" fontSize="8.5" fill="#7c847f">
             {month}
@@ -271,50 +300,105 @@ function InflationChart() {
   );
 }
 
-const INSIGHT_CARDS = [
-  {
-    icon: PercentIcon,
-    label: "Styrränta",
-    sub: "Riksbanken, kvartalsvis",
-    value: "1,75",
-    unit: "%",
-    badge: "−0,25 pp",
-    chart: <InterestRateChart />,
-    source: "Riksbanken",
-  },
-  {
-    icon: TrendingUpIcon,
-    label: "Bostadspriser",
-    sub: "Prisindex, senaste 12 månaderna",
-    value: "+6,4",
-    unit: "% / år",
-    badge: "Stigande",
-    chart: <HousePriceChart />,
-    source: "Prisindex",
-  },
-  {
-    icon: BuildingIcon,
-    label: "Kvadratmeterpris",
-    sub: "Lägenheter, juni 2026",
-    value: "52 345",
-    unit: "kr/kvm i riket",
-    badge: "Juni 2026",
-    chart: <SqmPriceChart />,
-    source: "Transaktionsdata",
-  },
-  {
-    icon: ChartIcon,
-    label: "Inflation",
-    sub: "KPIF, årstakt",
-    value: "1,9",
-    unit: "%",
-    badge: "Nära målet",
-    chart: <InflationChart />,
-    source: "SCB",
-  },
-];
+function trendBadge(changePct: number | null): string {
+  if (changePct === null) return "Okänd trend";
+  if (changePct > 0.5) return "Stigande";
+  if (changePct < -0.5) return "Fallande";
+  return "Stabil";
+}
+
+function inflationBadge(latest: number): string {
+  const distance = latest - 2;
+  if (Math.abs(distance) <= 0.3) return "Nära målet";
+  return distance > 0 ? "Över målet" : "Under målet";
+}
+
+function formatRateChangeBadge(changePtPct: number | null): string {
+  if (changePtPct === null) return "—";
+  if (changePtPct === 0) return "±0 pp";
+  const sign = changePtPct > 0 ? "+" : "−";
+  return `${sign}${formatSwedishNumber(Math.abs(changePtPct), 2)} pp`;
+}
+
+function capitalize(s: string): string {
+  return s.length > 0 ? s[0].toUpperCase() + s.slice(1) : s;
+}
 
 export function InsightsSection() {
+  const [stats, setStats] = useState<MarketStats | null>(null);
+  const [loadFailed, setLoadFailed] = useState(false);
+
+  useEffect(() => {
+    let cancelled = false;
+    fetch("/api/market-stats")
+      .then((res) => (res.ok ? res.json() : Promise.reject(new Error("bad response"))))
+      .then((data: MarketStats) => {
+        if (!cancelled) setStats(data);
+      })
+      .catch(() => {
+        if (!cancelled) setLoadFailed(true);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  const loading = stats === null && !loadFailed;
+
+  const rate = stats?.policyRate ?? null;
+  const hox = stats?.housePriceIndex ?? null;
+  const sqm = stats?.pricePerSqm ?? null;
+  const kpif = stats?.inflation ?? null;
+
+  const cards = [
+    {
+      icon: PercentIcon,
+      label: "Styrränta",
+      sub: "Riksbanken, kvartalsvis",
+      value: rate ? formatSwedishNumber(rate.latest, 2) : null,
+      unit: "%",
+      badge: rate ? formatRateChangeBadge(rate.change12mPtPct) : null,
+      chart: rate ? <InterestRateChart values={rate.values} quarterLabels={rate.quarterLabels} /> : null,
+      source: "Riksbanken",
+      updated: rate?.latestDate,
+    },
+    {
+      icon: TrendingUpIcon,
+      label: "Bostadspriser",
+      sub: "Prisindex för småhus, senaste 12 månaderna",
+      value: hox?.yoyChangePct !== null && hox?.yoyChangePct !== undefined
+        ? `${hox.yoyChangePct > 0 ? "+" : ""}${formatSwedishNumber(hox.yoyChangePct)}`
+        : null,
+      unit: "% / år",
+      badge: hox ? trendBadge(hox.yoyChangePct) : null,
+      chart: hox ? <HousePriceChart values={hox.values} quarterLabels={hox.quarterLabels} /> : null,
+      source: "SCB Fastighetsprisindex",
+      updated: hox?.asOf,
+    },
+    {
+      icon: BuildingIcon,
+      label: "Kvadratmeterpris",
+      sub: "Bostadsrätter, senaste 12 månaderna",
+      value: sqm ? sqm.areas.find((a) => a.name === "Riksgenomsnitt")?.pricePerM2.toLocaleString("sv-SE") ?? null : null,
+      unit: "kr/kvm i riket",
+      badge: sqm?.asOf ? capitalize(sqm.asOf) : null,
+      chart: sqm ? <SqmPriceChart areas={sqm.areas} /> : null,
+      source: "Svensk Mäklarstatistik",
+      updated: sqm?.asOf,
+    },
+    {
+      icon: ChartIcon,
+      label: "Inflation",
+      sub: "KPIF, årstakt",
+      value: kpif ? formatSwedishNumber(kpif.latest) : null,
+      unit: "%",
+      badge: kpif ? inflationBadge(kpif.latest) : null,
+      chart: kpif ? <InflationChart values={kpif.values} monthLabels={kpif.monthLabels} /> : null,
+      source: "SCB (KPIF)",
+      updated: kpif?.latestMonth,
+    },
+  ];
+
   return (
     <section id="marknadsinsikter" className="relative scroll-mt-24">
       <SectionBackground src="/marknads-instinkter.png" />
@@ -323,11 +407,11 @@ export function InsightsSection() {
           icon={ChartIcon}
           label="Marknadsinsikter"
           title="Siffrorna som styr marknaden"
-          description="Samma datapunkter som ligger till grund för varje analys – uppdaterade och samlade på ett ställe."
+          description="Samma datapunkter som ligger till grund för varje analys – hämtade live från Riksbanken, SCB och Svensk Mäklarstatistik."
         />
 
         <div className="mt-10 grid gap-5 lg:grid-cols-2">
-          {INSIGHT_CARDS.map(({ icon: Icon, label, sub, value, unit, badge, chart, source }, i) => (
+          {cards.map(({ icon: Icon, label, sub, value, unit, badge, chart, source, updated }, i) => (
             <Reveal key={label} variant="up" delay={i * 90} className="h-full">
               <div className="flex h-full flex-col rounded-2xl border border-white/10 bg-white/[0.03] p-6 transition duration-300 hover:border-white/20">
                 <div className="flex items-start justify-between gap-3">
@@ -340,20 +424,25 @@ export function InsightsSection() {
                       <p className="text-xs text-neutral-500">{sub}</p>
                     </div>
                   </div>
-                  <span className="rounded-full border border-green-500/25 bg-green-500/10 px-2.5 py-1 text-[11px] font-semibold text-green-400">
-                    {badge}
-                  </span>
+                  {badge && (
+                    <span className="rounded-full border border-green-500/25 bg-green-500/10 px-2.5 py-1 text-[11px] font-semibold text-green-400">
+                      {badge}
+                    </span>
+                  )}
                 </div>
 
                 <div className="mt-4 flex items-baseline gap-2">
-                  <span className="text-[28px] font-bold tracking-tight">{value}</span>
+                  <span className="text-[28px] font-bold tracking-tight">
+                    {value ?? (loading ? "" : "—")}
+                  </span>
                   <span className="text-sm text-neutral-500">{unit}</span>
                 </div>
 
-                {chart}
+                {chart ?? (loading ? <ChartSkeleton /> : <ChartUnavailable />)}
 
                 <p className="mt-auto pt-4 text-[11px] text-neutral-600">
-                  Källa: {source} · Platshållardata
+                  Källa: {source}
+                  {updated ? ` · Uppdaterad ${updated}` : ""}
                 </p>
               </div>
             </Reveal>

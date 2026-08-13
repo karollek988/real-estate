@@ -15,6 +15,7 @@ import { InfoSection } from "@/components/sections/InfoSection";
 import { FaqSection } from "@/components/sections/FaqSection";
 import { ContactSection } from "@/components/sections/ContactSection";
 import { SectionDivider } from "@/components/SectionDivider";
+import type { MarketStats } from "@/lib/marketStats";
 import {
   BrainIcon,
   BuildingIcon,
@@ -35,9 +36,18 @@ import {
 } from "@/components/icons";
 
 type Method = "paste" | "manual";
-type MobileTab = "adress" | "link";
+type MobileTab = "link" | "adress";
 
 const MOBILE_TABS = [
+  {
+    key: "link",
+    label: "Länk till annons",
+    icon: LinkIcon,
+    placeholder: "Klistra in en länk",
+    example: "t.ex. hemnet.se/bostad/...",
+    helper: "Exempel: hemnet.se",
+    inputType: "url",
+  },
   {
     key: "adress",
     label: "Adress",
@@ -47,15 +57,6 @@ const MOBILE_TABS = [
     helper: "Exempel: Storgatan 12, Stockholm eller Drottninggatan 45, Göteborg",
     inputType: "text",
   },
-  {
-    key: "link",
-    label: "Länk till annons",
-    icon: LinkIcon,
-    placeholder: "Klistra in en länk",
-    example: "t.ex. hemnet.se/bostad/...",
-    helper: "Exempel: hemnet.se, booli.se eller boneo.se",
-    inputType: "url",
-  },
 ] as const;
 
 const FEATURE_PILLS = [
@@ -64,12 +65,6 @@ const FEATURE_PILLS = [
   { icon: BuildingIcon, label: "BRF-analys" },
   { icon: ShieldIcon, label: "Riskbedömning" },
   { icon: TrendingUpIcon, label: "Investeringsprognos" },
-];
-
-const MARKET_STATS = [
-  { icon: HouseIcon, label: "Medelpris", value: "52 345", unit: "kr/kvm" },
-  { icon: ChartIcon, label: "Prisutveckling", value: "+6.4%" },
-  { icon: StarIcon, label: "Efterfrågan", value: "Hög" },
 ];
 
 const VALUE_PROPS = [
@@ -95,8 +90,6 @@ const VALUE_PROPS = [
   },
 ];
 
-const CHART_MONTHS = ["Maj", "Jun", "Jul", "Aug", "Sep", "Okt", "Nov", "Dec", "Jan", "Feb", "Mar", "Apr", "Maj"];
-const CHART_VALUES = [0, -0.8, 0.4, 1.2, 0.7, 1.8, 2.6, 2.1, 3.3, 3.9, 4.7, 5.6, 6.4];
 const CHART_GRID = [
   { label: "+10%", y: 12 },
   { label: "+5%", y: 37 },
@@ -105,9 +98,9 @@ const CHART_GRID = [
   { label: "-10%", y: 112 },
 ];
 
-function MarketChart() {
-  const points = CHART_VALUES.map((v, i) => ({
-    x: 34 + (i * (432 - 34)) / (CHART_VALUES.length - 1),
+function MarketChart({ labels, values }: { labels: string[]; values: number[] }) {
+  const points = values.map((v, i) => ({
+    x: 34 + (i * (432 - 34)) / Math.max(1, values.length - 1),
     y: 62 - v * 5,
   }));
 
@@ -132,9 +125,9 @@ function MarketChart() {
       {points.map((p) => (
         <circle key={p.x} cx={p.x} cy={p.y} r="2.2" fill="#4ade80" />
       ))}
-      {CHART_MONTHS.map((month, i) => (
+      {labels.map((label, i) => (
         <text key={i} x={points[i].x} y={128} textAnchor="middle" fontSize="8.5" fill="#7c847f">
-          {month}
+          {label}
         </text>
       ))}
     </svg>
@@ -143,12 +136,28 @@ function MarketChart() {
 
 export default function Home() {
   const [method, setMethod] = useState<Method>("paste");
-  const [mobileTab, setMobileTab] = useState<MobileTab>("adress");
+  const [mobileTab, setMobileTab] = useState<MobileTab>("link");
   const [mobileQuery, setMobileQuery] = useState("");
   const [mobileSubmitting, setMobileSubmitting] = useState(false);
   const [mobileError, setMobileError] = useState<string | null>(null);
   const [mobileAnalysisType, setMobileAnalysisType] = useState<AnalysisType>("premium");
+  const [marketStats, setMarketStats] = useState<MarketStats | null>(null);
   const router = useRouter();
+
+  useEffect(() => {
+    let cancelled = false;
+    fetch("/api/market-stats")
+      .then((res) => (res.ok ? res.json() : Promise.reject(new Error("bad response"))))
+      .then((data: MarketStats) => {
+        if (!cancelled) setMarketStats(data);
+      })
+      .catch(() => {
+        // Leave marketStats null — the hero panel falls back to its own placeholders below.
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   async function handleMobileSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -209,6 +218,39 @@ export default function Home() {
     window.addEventListener(FOCUS_URL_INPUT_EVENT, onFocusUrlInput);
     return () => window.removeEventListener(FOCUS_URL_INPUT_EVENT, onFocusUrlInput);
   }, []);
+
+  const hox = marketStats?.housePriceIndex ?? null;
+  const sqmNational = marketStats?.pricePerSqm?.areas.find((a) => a.name === "Riksgenomsnitt") ?? null;
+
+  // Last ~4 quarters (12 months) of the national house price index, expressed as
+  // cumulative % change from the first point so the chart starts at 0% — same
+  // shape as before, now driven by SCB's real quarterly index instead of a
+  // hardcoded monthly curve (SCB doesn't publish this index monthly).
+  const heroQuarters = hox ? hox.quarterLabels.slice(-5) : [];
+  const heroIndexValues = hox ? hox.values.slice(-5) : [];
+  const heroBase = heroIndexValues[0];
+  const heroChartValues =
+    heroBase && heroIndexValues.length > 1
+      ? heroIndexValues.map((v) => Math.round(((v - heroBase) / heroBase) * 1000) / 10)
+      : [];
+
+  const priceChangeLabel =
+    hox?.yoyChangePct != null
+      ? `${hox.yoyChangePct > 0 ? "+" : ""}${hox.yoyChangePct.toFixed(1).replace(".", ",")}%`
+      : "—";
+  const demandLabel =
+    hox?.yoyChangePct == null ? "—" : hox.yoyChangePct > 0.5 ? "Hög" : hox.yoyChangePct < -0.5 ? "Låg" : "Stabil";
+
+  const marketStatsDisplay = [
+    {
+      icon: HouseIcon,
+      label: "Medelpris",
+      value: sqmNational ? sqmNational.pricePerM2.toLocaleString("sv-SE") : "—",
+      unit: sqmNational ? "kr/kvm" : undefined,
+    },
+    { icon: ChartIcon, label: "Prisutveckling", value: priceChangeLabel },
+    { icon: StarIcon, label: "Efterfrågan", value: demandLabel },
+  ];
 
   return (
     <div className="min-h-screen bg-[#111927] text-white">
@@ -362,15 +404,19 @@ export default function Home() {
                   Prisutveckling senaste 12 månaderna
                 </span>
                 <span className="flex items-center gap-1 text-sm font-semibold text-green-400">
-                  +6.4%
+                  {priceChangeLabel}
                   <TrendingUpIcon className="h-3.5 w-3.5" />
                 </span>
               </div>
 
-              <MarketChart />
+              {heroChartValues.length > 0 ? (
+                <MarketChart labels={heroQuarters} values={heroChartValues} />
+              ) : (
+                <div className="mt-3 h-[132px] w-full animate-pulse rounded-lg bg-white/[0.03]" />
+              )}
 
               <div className="mt-4 grid grid-cols-3 gap-3">
-                {MARKET_STATS.map(({ icon: Icon, label, value, unit }) => (
+                {marketStatsDisplay.map(({ icon: Icon, label, value, unit }) => (
                   <div
                     key={label}
                     className="rounded-xl border border-white/10 bg-white/[0.03] p-4"
