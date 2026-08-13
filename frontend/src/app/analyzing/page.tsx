@@ -2,6 +2,18 @@
 
 import { Suspense, useEffect, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
+import Script from "next/script";
+import "./ldbar.css";
+
+interface LdBarInstance {
+  set: (value: number, doTransition?: boolean) => void;
+}
+
+declare global {
+  interface Window {
+    ldBar?: new (element: HTMLElement) => LdBarInstance;
+  }
+}
 
 const STAGES = [
   { message: "Locating property in public records", duration: 8300 },
@@ -25,9 +37,12 @@ function AnalyzingContent() {
   const [completedStages, setCompletedStages] = useState<number[]>([]);
   const [elapsed, setElapsed] = useState(0);
   const [videoReady, setVideoReady] = useState(false);
+  const [ldBarScriptReady, setLdBarScriptReady] = useState(false);
   const startTime = useRef(Date.now());
   const redirecting = useRef(false);
   const videoRef = useRef<HTMLVideoElement>(null);
+  const ldBarElRef = useRef<HTMLDivElement>(null);
+  const ldBarInstanceRef = useRef<LdBarInstance | null>(null);
 
   useEffect(() => {
     startTime.current = Date.now();
@@ -115,8 +130,30 @@ function AnalyzingContent() {
     };
   }, [progressPct, videoReady]);
 
+  useEffect(() => {
+    const el = ldBarElRef.current as (HTMLDivElement & { ldBar?: LdBarInstance }) | null;
+    if (!ldBarScriptReady || !el || ldBarInstanceRef.current) return;
+    const LdBar = window.ldBar;
+    if (!LdBar) return;
+    // el.ldBar guards against the library's own window "load" auto-init running a second time.
+    const instance = el.ldBar ?? new LdBar(el);
+    el.ldBar = instance;
+    ldBarInstanceRef.current = instance;
+    instance.set(progressPct);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [ldBarScriptReady]);
+
+  useEffect(() => {
+    ldBarInstanceRef.current?.set(progressPct);
+  }, [progressPct]);
+
   return (
     <div className="flex min-h-screen flex-col items-center justify-center bg-[#111927] px-6 py-16 text-white">
+      <Script
+        src="/vendor/ldbar/loading-bar.js"
+        strategy="afterInteractive"
+        onLoad={() => setLdBarScriptReady(true)}
+      />
       <div className="flex w-full max-w-lg flex-col items-center gap-10 text-center">
         {/* Logo / brand mark */}
         <div className="flex flex-col items-center gap-4">
@@ -142,9 +179,16 @@ function AnalyzingContent() {
         </div>
 
         {/* Progress readout */}
-        <div className="flex w-full items-center justify-between text-[11px] text-neutral-500">
-          <span>{elapsed}s</span>
-          <span>{progressPct}%</span>
+        <div className="flex w-full flex-col items-center gap-2">
+          <span className="w-full text-left text-[11px] text-neutral-500">{elapsed}s</span>
+          <div
+            ref={ldBarElRef}
+            className="ldBar w-full"
+            style={{ width: "100%", height: 60 }}
+            data-stroke="data:ldbar/res,gradient(0,1,#9df,#9fd,#df9,#fd9)"
+            data-path="M10 20Q20 15 30 20Q40 25 50 20Q60 15 70 20Q80 25 90 20"
+          />
+          <span className="w-full text-right text-[11px] text-neutral-500">{progressPct}%</span>
         </div>
 
         {/* Stage checklist */}
