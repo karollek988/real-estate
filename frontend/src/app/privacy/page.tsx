@@ -20,10 +20,10 @@ export default function PrivacyPage() {
               av dina personuppgifter. Vid frågor om hur vi behandlar dina uppgifter,
               kontakta oss på{" "}
               <a
-                href="mailto:contact@kopanalys.se"
+                href="mailto:info@kopanalys.se"
                 className="text-green-400 underline underline-offset-4 transition hover:text-green-300"
               >
-                contact@kopanalys.se
+                info@kopanalys.se
               </a>
               .
             </p>
@@ -176,10 +176,10 @@ export default function PrivacyPage() {
             <p className="mt-3">
               För att utöva dina rättigheter, kontakta oss på{" "}
               <a
-                href="mailto:contact@kopanalys.se"
+                href="mailto:info@kopanalys.se"
                 className="text-green-400 underline underline-offset-4 transition hover:text-green-300"
               >
-                contact@kopanalys.se
+                info@kopanalys.se
               </a>
               .
             </p>
@@ -208,10 +208,10 @@ export default function PrivacyPage() {
               <li>
                 Kontakta oss på{" "}
                 <a
-                  href="mailto:contact@kopanalys.se"
+                  href="mailto:info@kopanalys.se"
                   className="text-green-400 underline underline-offset-4 transition hover:text-green-300"
                 >
-                  contact@kopanalys.se
+                  info@kopanalys.se
                 </a>{" "}
                 så hjälper vi dig.
               </li>
@@ -231,10 +231,10 @@ export default function PrivacyPage() {
               Org.nr: 9811048793<br />
               E-post:{" "}
               <a
-                href="mailto:contact@kopanalys.se"
+                href="mailto:info@kopanalys.se"
                 className="text-green-400 underline underline-offset-4 transition hover:text-green-300"
               >
-                contact@kopanalys.se
+                info@kopanalys.se
               </a>
             </p>
           </section>

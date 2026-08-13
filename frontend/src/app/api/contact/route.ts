@@ -20,7 +20,7 @@ export async function POST(request: Request) {
         error: {
           code: "contact_unavailable",
           message:
-            "Kontakt via formulär är inte tillgänglig just nu — mejla oss direkt på kopanalys@gmail.com istället.",
+            "Kontakt via formulär är inte tillgänglig just nu — mejla oss direkt på info@kopanalys.se istället.",
         },
       },
       { status: 503 },
@@ -76,7 +76,7 @@ export async function POST(request: Request) {
         error: {
           code: "contact_unavailable",
           message:
-            "Kontakt via formulär är inte tillgänglig just nu — mejla oss direkt på kopanalys@gmail.com istället.",
+            "Kontakt via formulär är inte tillgänglig just nu — mejla oss direkt på info@kopanalys.se istället.",
         },
       },
       { status: 503 },
