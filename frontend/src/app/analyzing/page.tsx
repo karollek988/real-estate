@@ -96,7 +96,7 @@ function AnalyzingContent() {
             Analyserar fastigheten
           </h1>
           <p className="max-w-xs text-sm leading-relaxed text-neutral-400">
-            Detta tar vanligen mellan 30 sekunder och 2 minuter beroende på hur mängden offentlig data som behöver hämtas.
+            Detta tar vanligen mellan 30 sekunder och 2 minuter beroende på mängden offentlig data som behöver hämtas.
           </p>
         </div>
 

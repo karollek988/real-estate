@@ -544,30 +544,6 @@ export function MastercardIcon(props: React.SVGProps<SVGSVGElement>) {
   );
 }
 
-export function SwishIcon(props: React.SVGProps<SVGSVGElement>) {
-  return (
-    <svg viewBox="0 0 92 24" {...props}>
-      <defs>
-        <linearGradient id="swish-gradient" x1="0" y1="0" x2="1" y2="1">
-          <stop offset="0%" stopColor="#0FB4C8" />
-          <stop offset="55%" stopColor="#1C5FA8" />
-          <stop offset="100%" stopColor="#E5457B" />
-        </linearGradient>
-      </defs>
-      <circle cx="12" cy="12" r="11" fill="url(#swish-gradient)" />
-      <path
-        d="M7 15c2.5 1.8 6.5 1.8 8.7-.4 1.7-1.7 1.3-4-.9-4.6-2.6-.7-6.3-.2-7.8-1.9-1.2-1.4-.2-3.3 2.1-3.9 2.3-.6 5 .1 6.8 1.5"
-        fill="none"
-        stroke="#fff"
-        strokeWidth="1.6"
-        strokeLinecap="round"
-      />
-      <text x="28" y="17" fontFamily="Arial, sans-serif" fontSize="14" fontWeight="600" fill="currentColor">
-        Swish
-      </text>
-    </svg>
-  );
-}
 
 export function KlarnaIcon(props: React.SVGProps<SVGSVGElement>) {
   return (
