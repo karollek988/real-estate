@@ -1,6 +1,6 @@
 import { LockClosedBadgeIcon } from "@/components/icons";
 
-const METHODS = ["Kort", "Swish", "Klarna"];
+const METHODS = ["Kort", "Klarna"];
 
 export function PaymentMethodsCard() {
   return (

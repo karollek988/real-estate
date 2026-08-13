@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { Source_Serif_4 } from "next/font/google";
+import localFont from "next/font/local";
 import { getAnalysisWithProperty } from "@/lib/analysis/store";
 import { findPremiumAnalysisForProperty, getAnalysisRequestRow } from "@/lib/analysis/ownership";
 import { createClient } from "@/lib/supabase/server";
@@ -63,10 +63,19 @@ import {
   DownloadIcon,
 } from "@/components/icons";
 
-const serif = Source_Serif_4({
-  subsets: ["latin"],
-  weight: ["400", "500", "600", "700"],
-  style: ["normal", "italic"],
+const serif = localFont({
+  src: [
+    {
+      path: "./fonts/SourceSerif4-normal.woff2",
+      weight: "400 700",
+      style: "normal",
+    },
+    {
+      path: "./fonts/SourceSerif4-italic.woff2",
+      weight: "400 700",
+      style: "italic",
+    },
+  ],
   variable: "--font-report-serif",
   display: "swap",
 });
