@@ -160,7 +160,7 @@ function AnalyzingContent() {
           <div className="w-full max-w-[260px] overflow-hidden rounded-2xl bg-white/[0.02] ring-1 ring-white/[0.06]">
             <video
               ref={videoRef}
-              src="/Loading_Icon_Official_Video.mp4"
+              src="/Loading_Icon_Video_Davinci.mp4"
               className="block aspect-[64/29] w-full object-cover"
               muted
               playsInline
