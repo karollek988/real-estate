@@ -56,7 +56,7 @@ export function ChatWidget() {
           {
             role: "assistant",
             content:
-              "Chatten är inte tillgänglig just nu – kontakta oss på contact@kopanalys.se istället.",
+              "Chatten är inte tillgänglig just nu – kontakta oss på info@kopanalys.se istället.",
           },
         ]);
       } else if (data?.reply) {
@@ -69,7 +69,7 @@ export function ChatWidget() {
         {
           role: "assistant",
           content:
-            "Chatten är inte tillgänglig just nu – kontakta oss på contact@kopanalys.se istället.",
+            "Chatten är inte tillgänglig just nu – kontakta oss på info@kopanalys.se istället.",
         },
       ]);
     } finally {
