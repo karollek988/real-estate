@@ -157,11 +157,12 @@ function AnalyzingContent() {
       <div className="flex w-full max-w-lg flex-col items-center gap-10 text-center">
         {/* Logo / brand mark */}
         <div className="flex flex-col items-center gap-4">
-          <div className="w-full max-w-[360px] overflow-hidden rounded-2xl bg-white/[0.02] ring-1 ring-white/[0.06]">
+          <div className="w-full max-w-[360px] overflow-hidden rounded-2xl bg-[#FAFAFA] ring-1 ring-white/[0.06]">
             <video
               ref={videoRef}
-              src="/Loading_Icon_Video_Davinci.mp4"
-              className="block aspect-square w-full object-contain"
+              src="/Loading_Icon_Video_Davinci_house.mp4"
+              className="block w-full object-contain"
+              style={{ aspectRatio: "96 / 66" }}
               muted
               playsInline
               preload="auto"
@@ -169,6 +170,20 @@ function AnalyzingContent() {
               controls={false}
               onLoadedMetadata={() => setVideoReady(true)}
             />
+            {/*
+              The percentage counter used to be baked into the video itself,
+              which meant it could never match progressPct exactly (the video
+              seek is eased/damped for a smooth fill animation, so it lags)
+              and the AI-generated digits rendered with near-zero kerning
+              ("100%" read as overlapping glyphs). Rendering it here instead,
+              driven by the same progressPct that feeds the bar below,
+              guarantees the two numbers can never disagree.
+            */}
+            <div className="flex items-center justify-center bg-[#FAFAFA] pb-5 pt-1">
+              <span className="text-[40px] font-black leading-none tracking-tight text-[#111111]">
+                {progressPct}%
+              </span>
+            </div>
           </div>
           <h1 className="text-[22px] font-semibold tracking-tight">
             Analyserar fastigheten

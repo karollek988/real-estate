@@ -485,7 +485,7 @@ export default async function ReportPage({
             <p className="mt-3 text-[14px] text-[#C9D6CC]">
               {[
                 p.property.propertyType,
-                p.property.rooms !== null && p.property.rooms !== undefined && !p.property.propertyType?.includes("room")
+                p.property.rooms !== null && p.property.rooms !== undefined && !p.property.propertyType?.includes("rum")
                   ? `${p.property.rooms} rum`
                   : null,
                 p.property.livingAreaM2 ? `${p.property.livingAreaM2} m²` : null,

@@ -267,7 +267,7 @@ function displayPropertyType(propertyType: string | null, rooms: number | null):
   if (!propertyType) return null;
   if (rooms === null) return propertyType;
   const roomsLabel = Number.isInteger(rooms) ? String(rooms) : rooms.toFixed(1).replace(".", ",");
-  return `${propertyType} · ${roomsLabel} rooms`;
+  return `${propertyType} · ${roomsLabel} rum`;
 }
 
 function capitalize(value: string): string {
