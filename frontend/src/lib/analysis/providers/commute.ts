@@ -13,14 +13,25 @@ import { fetchJson } from "./httpJson";
  * TRAFIKLAB_RESROBOT_API_KEY. Without it this provider reports
  * "not_connected", same pattern as booli.ts without BOOLI_API_KEY.
  *
- * OSRM (https://router.project-osrm.org) is free/keyless but its public
- * demo server explicitly has no uptime SLA and a 1 req/s usage policy
- * ("restricted to reasonable, non-commercial use") — fine for now, should
- * be swapped for a self-hosted or paid routing provider before launch.
+ * OSRM is free/keyless but its public demo servers explicitly have no
+ * uptime SLA and a 1 req/s usage policy ("restricted to reasonable,
+ * non-commercial use") — fine for now, should be swapped for a
+ * self-hosted or paid routing provider before launch.
+ *
+ * Verified live 2026-08-14: router.project-osrm.org's `/foot/` path
+ * silently serves the *driving* graph (identical duration/distance to
+ * `/driving/` on the same coordinates — confirmed with a real ~4.4km
+ * route). routing.openstreetmap.de's dedicated `routed-car`/`routed-foot`
+ * service instances give correctly distinct results (same route: 626s
+ * driving vs. 3046s walking) — use those, not router.project-osrm.org,
+ * for anything that needs the foot profile to actually be the foot profile.
  */
 
 const RESROBOT_BASE = "https://api.resrobot.se/v2.1";
-const OSRM_BASE = "https://router.project-osrm.org/route/v1";
+const OSRM_ROUTE_BASE: Record<"driving" | "foot", string> = {
+  driving: "https://routing.openstreetmap.de/routed-car/route/v1/driving",
+  foot: "https://routing.openstreetmap.de/routed-foot/route/v1/foot",
+};
 const USER_AGENT = "Kopanalys/0.1 (property decision support; contact: karollek98@gmail.com)";
 
 const MAJOR_CITIES = new Set(["Stockholm", "Göteborg", "Malmö"]);
@@ -123,7 +134,7 @@ async function osrmMinutes(
   destLat: number,
   destLon: number
 ): Promise<number | null> {
-  const url = `${OSRM_BASE}/${profile}/${originLon},${originLat};${destLon},${destLat}?overview=false`;
+  const url = `${OSRM_ROUTE_BASE[profile]}/${originLon},${originLat};${destLon},${destLat}?overview=false`;
   const res = await fetchJson<{ routes?: Array<{ duration?: number }> }>(url, {}, 10000);
   if (!res.ok) return null;
   const seconds = res.data.routes?.[0]?.duration;
