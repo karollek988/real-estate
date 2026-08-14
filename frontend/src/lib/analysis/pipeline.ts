@@ -213,18 +213,41 @@ class InsufficientListingDataError extends Error {}
 const ESSENTIAL_FIELD_LABELS: Record<string, string> = {
   asking_price_sek: "utgångspris",
   monthly_fee_sek: "månadsavgift",
-  rooms: "antal rum",
   living_area_m2: "boarea",
 };
 
-/** Mirrors buildAnalysis.ts's own field resolution exactly (rooms: URL-slug extraction wins over the scraped page). */
+/**
+ * A monthly fee ("månadsavgift") only exists for co-op apartments
+ * (bostadsrätt) — a freehold house (Villa/Radhus/Kedjehus/Parhus/
+ * Fritidshus/Tomt, tenure "Äganderätt") legitimately has `fee: null` on
+ * Hemnet's own listing data; that's correct, not a failed scrape (confirmed
+ * live 2026-08-15 against two Villa listings that both had askingPrice and
+ * livingArea but fee: null). Only require it when the listing is actually
+ * an apartment.
+ */
+function requiresMonthlyFee(attributes: Record<string, unknown>, extracted: ExtractedProperty): boolean {
+  const propertyType =
+    (typeof attributes.property_type_hemnet === "string" ? attributes.property_type_hemnet : null) ??
+    extracted.propertyType ??
+    "";
+  return propertyType.toLowerCase().includes("lägenhet");
+}
+
+/**
+ * Mirrors buildAnalysis.ts's own field resolution for the fields it checks.
+ * Room count is deliberately NOT gated here — build.ts's Prisanalys math
+ * (price/m², cost-burden) never reads it, it's purely descriptive, and it
+ * can be genuinely absent from Hemnet's own data for a given listing (not
+ * just an unreliable scrape) — gating on it would fail-and-refund analyses
+ * that would otherwise render a perfectly usable report.
+ */
 function missingEssentialFields(attributes: Record<string, unknown>, extracted: ExtractedProperty): string[] {
-  const rooms = extracted.rooms ?? numberOrNull(attributes.rooms);
   const missing: string[] = [];
   if (numberOrNull(attributes.asking_price_sek) === null) missing.push("asking_price_sek");
-  if (numberOrNull(attributes.monthly_fee_sek) === null) missing.push("monthly_fee_sek");
-  if (rooms === null) missing.push("rooms");
   if (numberOrNull(attributes.living_area_m2) === null) missing.push("living_area_m2");
+  if (requiresMonthlyFee(attributes, extracted) && numberOrNull(attributes.monthly_fee_sek) === null) {
+    missing.push("monthly_fee_sek");
+  }
   return missing;
 }
 
