@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { CheckIcon, ChevronDownIcon } from "@/components/icons";
+import { CheckIcon, ChevronDownIcon, QuestionIcon } from "@/components/icons";
 import { PREP_STEPS, type PrepChecklistState } from "@/lib/inspection/types";
 
 export function PrepChecklist({
@@ -50,7 +50,27 @@ export function PrepChecklist({
                 />
               </button>
             </div>
-            {open && <p className="px-4 pb-3.5 pl-[52px] text-sm text-neutral-400">{step.description}</p>}
+            {open && (
+              <div className="px-4 pb-4 pl-[52px]">
+                <p className="text-sm text-neutral-400">{step.description}</p>
+                {step.items.length > 0 && (
+                  <div className="mt-3 rounded-lg border border-white/10 bg-white/[0.03] p-3">
+                    <p className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wide text-green-400">
+                      <QuestionIcon className="h-3.5 w-3.5 shrink-0" />
+                      Vad du behöver
+                    </p>
+                    <ul className="mt-2.5 flex flex-col gap-2.5">
+                      {step.items.map((item) => (
+                        <li key={item.name} className="text-sm">
+                          <p className="font-medium text-white">{item.name}</p>
+                          <p className="mt-0.5 text-xs leading-relaxed text-neutral-400">{item.whereToFind}</p>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+              </div>
+            )}
           </div>
         );
       })}

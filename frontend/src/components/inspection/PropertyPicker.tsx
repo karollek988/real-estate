@@ -16,7 +16,7 @@ export function PropertyPicker({
 }) {
   return (
     <div className="flex flex-col gap-3">
-      <p className="text-sm text-neutral-400">Välj vilken bostad du vill starta eller fortsätta besiktningshjälpen för.</p>
+      <p className="text-sm text-neutral-400">Välj vilken bostad du vill starta eller fortsätta visningsguiden för.</p>
       {candidates.map((c) => (
         <button
           key={c.propertyId}

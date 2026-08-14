@@ -79,43 +79,90 @@ export interface InspectionSummary {
 
 /* ─── Static workflow definitions ─────────────────────────────────────── */
 
+export interface PrepStepItem {
+  /** The concrete, real-world document or number to look for — never a vague category. */
+  name: string;
+  /** Exactly where to get it, in plain language. */
+  whereToFind: string;
+}
+
 export interface PrepStep {
   id: string;
   order: number;
   title: string;
   description: string;
+  /** What "Vad du behöver" unpacks into — the concrete items behind the icon. */
+  items: PrepStepItem[];
 }
 
 export const PREP_STEPS: PrepStep[] = [
   {
     id: "gather_documents",
     order: 1,
-    title: "Samla in dokument & information",
-    description: "Årsredovisning, stadgar, energideklaration, underhållsplan m.m.",
+    title: "Skaffa rätt dokument",
+    description: "De flesta vet inte vilka dokument de faktiskt behöver be om. Här är de fem viktigaste — och exakt var du hittar dem.",
+    items: [
+      {
+        name: "Årsredovisning (bostadsrättsföreningens senaste)",
+        whereToFind: "Be mäklaren om den, eller sök föreningens namn på allabrf.se — gratis och öppet för alla.",
+      },
+      {
+        name: "Stadgar",
+        whereToFind: "Finns oftast på föreningens egen hemsida under \"Dokument\"; annars skickar mäklaren eller styrelsen dem på begäran.",
+      },
+      {
+        name: "Energideklaration",
+        whereToFind: "Sök adressen på boverket.se/energideklaration — kostnadsfritt och knutet till fastigheten, inte säljaren.",
+      },
+      {
+        name: "Underhållsplan",
+        whereToFind: "Begär av mäklaren eller föreningens styrelse. Visar planerat underhåll och risk för framtida avgiftshöjningar.",
+      },
+      {
+        name: "Planritning",
+        whereToFind: "Finns oftast redan i bostadsannonsen på Hemnet eller Booli; annars hos mäklaren.",
+      },
+    ],
   },
   {
-    id: "check_finances",
+    id: "check_finances_and_property",
     order: 2,
-    title: "Kolla upp föreningens ekonomi",
-    description: "Belåningsgrad, avgiftsutveckling och kassaflöde.",
+    title: "Granska ekonomi & skick",
+    description: "Med dokumenten i hand — det här är de konkreta siffrorna och åren att leta efter, och vad de faktiskt betyder.",
+    items: [
+      {
+        name: "Belåningsgrad (kr per kvadratmeter)",
+        whereToFind: "Räknas ut från föreningens totala lån delat med boarean, i årsredovisningens förvaltningsberättelse. Över cirka 15 000 kr/m² är värt att fråga styrelsen om.",
+      },
+      {
+        name: "Avgiftsutveckling senaste 3–5 åren",
+        whereToFind: "Jämför flera års årsredovisningar, eller fråga styrelsen/mäklaren direkt om avgiften höjts nyligen eller planeras höjas.",
+      },
+      {
+        name: "Resultat- och kassaflöde",
+        whereToFind: "Resultaträkningen i årsredovisningen visar om föreningen går plus eller minus — ett återkommande minus är en varningssignal.",
+      },
+      {
+        name: "Byggår och stora renoveringar (stammar, tak, fasad)",
+        whereToFind: "Fråga mäklaren om renoveringshistorik. Allt äldre än 30–40 år bör antingen vara åtgärdat eller finnas med i underhållsplanen.",
+      },
+    ],
   },
   {
-    id: "check_property",
+    id: "prepare_questions",
     order: 3,
-    title: "Undersök fastigheten",
-    description: "Byggår, renoveringar, planerat underhåll.",
-  },
-  {
-    id: "area_analysis",
-    order: 4,
-    title: "Områdesanalys",
-    description: "Kommunikationer, skolor, service och framtidsplaner.",
-  },
-  {
-    id: "own_notes",
-    order: 5,
-    title: "Egna anteckningar & frågor",
-    description: "Skriv ner dina frågor till mäklaren eller styrelsen.",
+    title: "Förbered dina frågor",
+    description: "Utgå från vad som faktiskt saknas i din analys, inte gissningar — så vet du precis vad du ska fråga på plats.",
+    items: [
+      {
+        name: "Frågor till mäklaren och föreningen",
+        whereToFind: "Redan förifyllda åt dig i korten \"Frågor till mäklaren\" och \"Frågor till föreningen\" här bredvid, baserat på vad som saknas i din analys.",
+      },
+      {
+        name: "Områdets skolor, kommunikationer och framtidsplaner",
+        whereToFind: "Se Områdesanalys-kapitlet i din rapport innan visningen, så kan du ställa uppföljande frågor på plats istället för att läsa in det efteråt.",
+      },
+    ],
   },
 ];
 

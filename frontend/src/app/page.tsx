@@ -277,11 +277,11 @@ export default function Home() {
             <h1 className="text-[36px] font-bold leading-[1.18] tracking-tight">
               Analysera vilken
               <br />
-              bostad <span className="text-green-400">som helst.</span>
+              <span className="text-green-400">bostad</span> som helst.
             </h1>
             <p className="mx-auto mt-5 max-w-[320px] text-[17px] leading-[1.6] text-neutral-300">
               Klistra in en adress eller länk till en bostadsannons så analyserar
-              vi marknadspotentialen åt dig.
+              vi marknadspotentialen åt dig — klart på under 3 minuter.
             </p>
           </div>
 
@@ -378,12 +378,12 @@ export default function Home() {
               <h1 className="text-[40px] font-bold leading-[1.15] tracking-tight sm:text-[48px]">
                 Analysera vilken
                 <br />
-                bostad <span className="text-green-400">som helst.</span>
+                <span className="text-green-400">bostad</span> som helst.
               </h1>
 
               <p className="mt-4 max-w-[310px] text-[17px] leading-[1.6] text-neutral-300">
                 Klistra in en adress eller länka till en bostadsannons så analyserar
-                vi marknadspotentialen åt dig.
+                vi marknadspotentialen åt dig — klart på under 3 minuter.
               </p>
 
               <button

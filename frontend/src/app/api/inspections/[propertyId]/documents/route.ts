@@ -1,7 +1,7 @@
 import { randomUUID } from "node:crypto";
 import { NextResponse } from "next/server";
 import { requireUser } from "@/lib/auth/requireUser";
-import { findPremiumAnalysisForProperty } from "@/lib/analysis/ownership";
+import { findAnalysisForProperty } from "@/lib/analysis/ownership";
 import { findPropertyById } from "@/lib/analysis/store";
 import {
   createSignedUrl,
@@ -37,8 +37,8 @@ export async function POST(request: Request, { params }: { params: Promise<{ pro
   const property = await findPropertyById(propertyId);
   if (!property) return errorResponse(404, "not_found", "No property with that id.");
 
-  const premium = await findPremiumAnalysisForProperty(user.id, propertyId);
-  if (!premium) return errorResponse(403, "premium_required", "Kräver en Premium-analys för den här bostaden.");
+  const owned = await findAnalysisForProperty(user.id, propertyId);
+  if (!owned) return errorResponse(403, "analysis_required", "Kräver en analys av den här bostaden.");
 
   let form: FormData;
   try {

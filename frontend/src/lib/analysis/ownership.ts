@@ -214,9 +214,8 @@ export async function getAnalysisRequestRow(
 }
 
 /**
- * True if this user has ever requested a Premium analysis for this property —
- * the gate for Besiktningshjälp (Premium-only feature) and for resolving
- * which analysis an inspection should read from.
+ * True if this user has ever requested a Premium analysis for this property.
+ * Used by the report page to point back to the original Premium purchase.
  */
 export async function findPremiumAnalysisForProperty(
   userId: string,
@@ -232,6 +231,29 @@ export async function findPremiumAnalysisForProperty(
     .limit(1)
     .maybeSingle();
   if (error) throw new Error(`findPremiumAnalysisForProperty failed: ${error.message}`);
+  const row = data as { analysis_id: string } | null;
+  return row ? { analysisId: row.analysis_id } : null;
+}
+
+/**
+ * True if this user has ever requested ANY analysis (free or Premium) for
+ * this property — the gate for the viewing guide (free for every signed-in
+ * user who has at least started an analysis of this property) and for
+ * resolving which analysis it should read from.
+ */
+export async function findAnalysisForProperty(
+  userId: string,
+  propertyId: string
+): Promise<{ analysisId: string } | null> {
+  const { data, error } = await createAdminClient()
+    .from("analysis_requests")
+    .select("analysis_id")
+    .eq("user_id", userId)
+    .eq("property_id", propertyId)
+    .order("created_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+  if (error) throw new Error(`findAnalysisForProperty failed: ${error.message}`);
   const row = data as { analysis_id: string } | null;
   return row ? { analysisId: row.analysis_id } : null;
 }

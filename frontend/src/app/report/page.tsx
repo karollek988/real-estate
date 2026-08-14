@@ -2,12 +2,12 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import localFont from "next/font/local";
 import { getReportForViewer } from "@/lib/analysis/access";
-import { findPremiumAnalysisForProperty, getAnalysisRequestRow } from "@/lib/analysis/ownership";
 import { createClient } from "@/lib/supabase/server";
 import { analysisAgeDays, FRESH_ANALYSIS_MAX_AGE_DAYS } from "@/lib/analysis/pipeline";
 import type { AnalysisReport, DataSourceReport, DecisionFactorResult } from "@/lib/analysis/types";
 import { UpdateAnalysisButton } from "@/components/report/UpdateAnalysisButton";
 import { KeyValueTable } from "@/components/report/KeyValueTable";
+import { ComparableSalesTable } from "@/components/report/ComparableSalesTable";
 import { IconFactGrid, type IconFactRow } from "@/components/report/IconFactGrid";
 import { RiskCategoryCard } from "@/components/report/RiskCategoryCard";
 import { PriceComparisonBar } from "@/components/report/PriceComparisonBar";
@@ -370,9 +370,9 @@ export default async function ReportPage({
 
   const { analysis, property, access, lockedSections } = found;
 
-  const premiumMatch = user ? await findPremiumAnalysisForProperty(user.id, property.id) : null;
-  const premiumRequestRow = premiumMatch && user ? await getAnalysisRequestRow(user.id, premiumMatch.analysisId) : null;
-  const hasPremiumInspectionAccess = Boolean(premiumRequestRow?.unlocked);
+  // Visningsguiden is free — any signed-in user with a completed analysis of
+  // this property (free or Premium) can continue into it.
+  const hasInspectionAccess = Boolean(user) && analysis.status === "complete";
 
   if (analysis.status !== "complete" || !analysis.report) {
     return (
@@ -734,24 +734,7 @@ export default async function ReportPage({
               unlocked={access.unlocked}
             />
           ) : priceAnalysis.comparableSales.length > 0 ? (
-            <ul className="relative space-y-1.5">
-              {priceAnalysis.comparableSales.slice(0, 10).map((c, i) => (
-                <li key={i} className="flex items-start gap-2 text-[13.5px] text-[#2A2820]">
-                  <span className="mt-2 h-1 w-1 shrink-0 rounded-full bg-[#B98A2E]" />
-                  <span>
-                    {[
-                      c.address ?? "Okänd adress",
-                      c.soldDate,
-                      c.soldPriceSek !== null ? sek(c.soldPriceSek) : null,
-                      c.livingAreaM2 !== null ? `${c.livingAreaM2} m²` : null,
-                      c.pricePerM2Sek !== null ? sekPerM2(c.pricePerM2Sek) : null,
-                    ]
-                      .filter(Boolean)
-                      .join(" · ")}
-                  </span>
-                </li>
-              ))}
-            </ul>
+            <ComparableSalesTable rows={priceAnalysis.comparableSales.slice(0, 10)} />
           ) : (
             <p className="relative text-[13.5px] italic text-[#8C8471]">Inga jämförbara sålda bostäder tillgängliga i denna analys.</p>
           )}
@@ -1118,12 +1101,12 @@ export default async function ReportPage({
         </Page>
       </main>
 
-      {hasPremiumInspectionAccess && (
+      {hasInspectionAccess && (
         <div className="no-print mx-auto mt-6 flex w-full max-w-[880px] flex-wrap items-center justify-between gap-4 rounded-sm border border-[#12271D]/15 bg-[#0E2B1F] px-8 py-6 sm:px-16">
           <div>
-            <p className="text-sm font-semibold text-[#F5F1E4]">Nästa steg: Besiktningshjälp</p>
+            <p className="text-sm font-semibold text-[#F5F1E4]">Nästa steg: Visningsguiden (gratis)</p>
             <p className="mt-1 max-w-md text-xs leading-relaxed text-[#C9D6CC]">
-              Fortsätt till vår besiktningsassistent — den läser automatiskt in den här analysen och guidar dig
+              Fortsätt till vår visningsguide — den läser automatiskt in den här analysen och guidar dig
               genom förberedelser, genomgång och en slutlig sammanfattning.
             </p>
           </div>
@@ -1131,7 +1114,7 @@ export default async function ReportPage({
             href={`/dashboard/inspection?propertyId=${property.id}`}
             className="shrink-0 rounded-sm bg-[#4ADE80] px-5 py-2.5 text-sm font-semibold text-[#0E2B1F] transition hover:bg-[#6EE7A0]"
           >
-            Fortsätt till besiktning
+            Fortsätt till visningsguiden
           </Link>
         </div>
       )}

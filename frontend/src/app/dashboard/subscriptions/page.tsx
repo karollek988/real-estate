@@ -35,7 +35,6 @@ const PLANS = [
     price: PREMIUM_SUBSCRIPTION_PRICE_SEK,
     features: [
       "15 Premium Decision Analyses/månad",
-      "Besiktningshjälp (Inspection Assistant)",
       "Sparade analyser",
       "Bevakningar",
       "Kommande premiumverktyg",

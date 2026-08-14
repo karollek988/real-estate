@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { requireUser } from "@/lib/auth/requireUser";
-import { findPremiumAnalysisForProperty } from "@/lib/analysis/ownership";
+import { findAnalysisForProperty } from "@/lib/analysis/ownership";
 import { findPropertyById, latestCompleteAnalysis } from "@/lib/analysis/store";
 import {
   createInspection,
@@ -18,21 +18,21 @@ function errorResponse(status: number, code: string, message: string) {
 }
 
 /**
- * Confirms the caller has a Premium analysis for this property (the gate
- * for Besiktningshjälp) and returns the property's latest complete analysis,
- * which the inspection reads from (PART 5).
+ * Confirms the caller has requested an analysis (free or Premium) for this
+ * property and returns its latest complete analysis, which the viewing
+ * guide reads from (PART 5). Free feature — any owned analysis qualifies.
  */
-async function requirePremiumProperty(userId: string, propertyId: string) {
+async function requireOwnedProperty(userId: string, propertyId: string) {
   const property = await findPropertyById(propertyId);
   if (!property) return { error: errorResponse(404, "not_found", "No property with that id.") };
 
-  const premium = await findPremiumAnalysisForProperty(userId, propertyId);
-  if (!premium) {
+  const owned = await findAnalysisForProperty(userId, propertyId);
+  if (!owned) {
     return {
       error: errorResponse(
         403,
-        "premium_required",
-        "Besiktningshjälp kräver en Premium-analys för den här bostaden."
+        "analysis_required",
+        "Visningsguiden kräver en analys av den här bostaden."
       ),
     };
   }
@@ -51,7 +51,7 @@ export async function GET(_request: Request, { params }: { params: Promise<{ pro
   const { user, response: authError } = await requireUser();
   if (authError) return authError;
 
-  const gate = await requirePremiumProperty(user.id, propertyId);
+  const gate = await requireOwnedProperty(user.id, propertyId);
   if ("error" in gate) return gate.error;
   const { property, analysis } = gate;
   const report = analysis.report!;
@@ -90,7 +90,7 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ pr
   const { user, response: authError } = await requireUser();
   if (authError) return authError;
 
-  const gate = await requirePremiumProperty(user.id, propertyId);
+  const gate = await requireOwnedProperty(user.id, propertyId);
   if ("error" in gate) return gate.error;
 
   const existing = await findInspection(user.id, propertyId);

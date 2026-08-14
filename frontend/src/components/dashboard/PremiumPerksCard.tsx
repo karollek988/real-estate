@@ -42,8 +42,8 @@ export function PremiumPerksCard() {
           <h3 className="text-sm font-semibold text-amber-300">Premium aktiv · Dev</h3>
         </div>
         <p className="mt-3 text-sm leading-relaxed text-neutral-400">
-          Ditt lokala dev-konto har obegränsad tillgång till Premium Decision Analyses,
-          besiktningshjälp och personliga bevakningar. Inget krävs för test.
+          Ditt lokala dev-konto har obegränsad tillgång till Premium Decision Analyses
+          och personliga bevakningar. Inget krävs för test.
         </p>
       </div>
     );
@@ -91,7 +91,7 @@ export function PremiumPerksCard() {
       </div>
       <p className="mt-3 text-sm leading-relaxed text-neutral-400">
         Som premium-medlem får du fler Premium Decision Analyses varje månad, plus tillgång
-        till besiktningshjälp och personliga bevakningar.
+        till sparade analyser och personliga bevakningar.
       </p>
       <Link
         href="/buy"

@@ -239,14 +239,14 @@ function AnalysisCard({
       onOpen={onOpen}
       footer={
         <>
-          {analysis.status === "complete" && analysis.analysisType === "premium" && (
+          {analysis.status === "complete" && (
             <button
               type="button"
               onClick={() => router.push(`/dashboard/inspection?propertyId=${analysis.propertyId}`)}
-              className="mb-2.5 flex w-fit items-center gap-1.5 rounded-lg border border-amber-400/30 bg-amber-400/10 px-3 py-1.5 text-xs font-semibold text-amber-300 transition hover:bg-amber-400/20"
+              className="mb-2.5 flex w-fit items-center gap-1.5 rounded-lg border border-green-400/30 bg-green-400/10 px-3 py-1.5 text-xs font-semibold text-green-300 transition hover:bg-green-400/20"
             >
               <ShieldIcon className="h-3.5 w-3.5" />
-              Fortsätt till Besiktningshjälp
+              Fortsätt till visningsguiden
               <ArrowRightIcon className="h-3 w-3" />
             </button>
           )}
