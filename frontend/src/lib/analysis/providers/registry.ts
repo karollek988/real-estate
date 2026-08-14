@@ -5,6 +5,7 @@ import { booliListingProvider } from "./booli";
 import { parseBotBooliProvider } from "./parseBotBooli";
 import { scbDemographicsProvider } from "./scb";
 import { osmAmenitiesProvider } from "./osm";
+import { commuteProvider } from "./commute";
 import { riksbankenInterestRateProvider } from "./riksbanken";
 import { smhiClimateProvider } from "./smhi";
 import { trafikverketInfrastructureProvider } from "./trafikverket";
@@ -36,6 +37,7 @@ const ALL_PROVIDERS: DataProvider[] = [
   parseBotBooliProvider,
   scbDemographicsProvider,
   osmAmenitiesProvider,
+  commuteProvider,
   riksbankenInterestRateProvider,
   smhiClimateProvider,
   trafikverketInfrastructureProvider,

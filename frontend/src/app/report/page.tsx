@@ -32,6 +32,7 @@ import {
   sek,
   sekPerM2,
   sourcesUsed,
+  type CommuteInfo,
   type OverviewRow,
 } from "@/lib/report/build";
 import {
@@ -121,6 +122,27 @@ function negotiationBand(score: number): { label: string; bandIndex: number } {
   if (score >= 60) return { label: "Stort utrymme", bandIndex: 2 };
   if (score >= 50) return { label: "Måttligt utrymme", bandIndex: 1 };
   return { label: "Begränsat utrymme", bandIndex: 0 };
+}
+
+function commuteRows(commute: CommuteInfo): { label: string; value: string }[] {
+  const rows: { label: string; value: string }[] = [];
+  const min = (n: number | null) => (n !== null ? `${n} min` : null);
+
+  if (commute.centrumName) {
+    const car = min(commute.centrumCarMinutes);
+    const transit = min(commute.centrumTransitMinutes);
+    const walk = min(commute.centrumWalkMinutes);
+    if (car) rows.push({ label: `Bil till ${commute.centrumName}`, value: car });
+    if (transit) rows.push({ label: `Kollektivt till ${commute.centrumName}`, value: transit });
+    if (walk) rows.push({ label: `Gång till ${commute.centrumName}`, value: walk });
+  }
+  if (commute.cityName) {
+    const car = min(commute.cityCarMinutes);
+    const transit = min(commute.cityTransitMinutes);
+    if (transit) rows.push({ label: `Kollektivt till ${commute.cityName}`, value: transit });
+    if (car) rows.push({ label: `Bil till ${commute.cityName}`, value: car });
+  }
+  return rows;
 }
 
 const AMENITY_ICONS = [
@@ -723,15 +745,24 @@ export default async function ReportPage({
                 </>
               )}
 
+              {areaAnalysis.commute && (
+                <>
+                  <SubHeading icon={<TrainIcon className="h-4 w-4" />}>Pendling</SubHeading>
+                  <div className="relative">
+                    <KeyValueTable rows={commuteRows(areaAnalysis.commute)} />
+                  </div>
+                </>
+              )}
+
               {areaAnalysis.paragraphs[3] && (
                 <Callout icon={<InfoIcon className="h-4 w-4" />}>{areaAnalysis.paragraphs[3]}</Callout>
               )}
-              <ChapterSources dataSources={p.dataSources} ids={["booli_listing", "scb_area_statistics", "osm_amenities", "nominatim_geocoding"]} />
+              <ChapterSources dataSources={p.dataSources} ids={["booli_listing", "scb_area_statistics", "osm_amenities", "nominatim_geocoding", "commute_times"]} />
             </>
           ) : (
             <PaywallSection
               title="Premium — Områdesanalys"
-              description="Få tillgång till statistik och service i närområdet: prisutveckling, befolkning, inkomst och vardagsservice inom 1 km."
+              description="Få tillgång till statistik och service i närområdet: prisutveckling, befolkning, inkomst, vardagsservice och pendlingstider inom 1 km."
               analysisId={id}
               analysisType={access.analysisType}
               unlocked={access.unlocked}
