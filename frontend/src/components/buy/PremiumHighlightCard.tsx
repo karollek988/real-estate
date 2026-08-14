@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { DiscountCodeInput } from "@/components/buy/DiscountCodeInput";
 import { StarFilledIcon, CheckIcon, ArrowRightIcon, LockIcon } from "@/components/icons";
 
 const FEATURES = ["Prisbedömning", "Områdesanalys", "BRF-analys", "Riskbedömning", "Rekommendation"];
@@ -13,6 +14,7 @@ interface PremiumHighlightCardProps {
 export function PremiumHighlightCard({ price, onRequireAuth }: PremiumHighlightCardProps) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [discountCode, setDiscountCode] = useState("");
 
   async function handleBuy() {
     setLoading(true);
@@ -21,7 +23,10 @@ export function PremiumHighlightCard({ price, onRequireAuth }: PremiumHighlightC
       const res = await fetch("/api/stripe/checkout", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ priceKey: "premium_analysis" }),
+        body: JSON.stringify({
+          priceKey: "premium_analysis",
+          ...(discountCode.trim() ? { discountCode: discountCode.trim() } : {}),
+        }),
       });
       if (res.status === 401) {
         onRequireAuth();
@@ -78,6 +83,10 @@ export function PremiumHighlightCard({ price, onRequireAuth }: PremiumHighlightC
           <div className="lg:text-right">
             <p className="text-4xl font-bold tracking-tight text-white">{price} kr</p>
             <p className="mt-1 text-sm text-neutral-400">Engångsköp • Ingen bindningstid</p>
+          </div>
+
+          <div className="w-full lg:max-w-[260px]">
+            <DiscountCodeInput value={discountCode} onChange={setDiscountCode} />
           </div>
 
           {error && <p className="text-sm text-red-400">{error}</p>}

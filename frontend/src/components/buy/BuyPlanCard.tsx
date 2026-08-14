@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { DiscountCodeInput } from "@/components/buy/DiscountCodeInput";
 import { CheckIcon, ArrowRightIcon, LockIcon } from "@/components/icons";
 
 interface BuyPlanCardProps {
@@ -36,6 +37,10 @@ export function BuyPlanCard({
 }: BuyPlanCardProps) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [discountCode, setDiscountCode] = useState("");
+
+  // Only the Premium subscription accepts a First 100 Users code today.
+  const acceptsDiscountCode = priceKey === "premium_monthly";
 
   async function handleCheckout() {
     if (!priceKey) return;
@@ -45,7 +50,10 @@ export function BuyPlanCard({
       const res = await fetch("/api/stripe/checkout", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ priceKey }),
+        body: JSON.stringify({
+          priceKey,
+          ...(acceptsDiscountCode && discountCode.trim() ? { discountCode: discountCode.trim() } : {}),
+        }),
       });
       if (res.status === 401) {
         onRequireAuth();
@@ -109,6 +117,8 @@ export function BuyPlanCard({
       </ul>
 
       <div className="mt-6 flex flex-1 flex-col justify-end gap-3">
+        {acceptsDiscountCode && <DiscountCodeInput value={discountCode} onChange={setDiscountCode} />}
+
         {error && <p className="text-sm text-red-400">{error}</p>}
 
         {priceKey ? (

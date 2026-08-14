@@ -285,6 +285,7 @@ function RegisterForm({ onSuccess }: { onSuccess: () => void }) {
   const [confirmPassword, setConfirmPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [pendingConfirmationEmail, setPendingConfirmationEmail] = useState<string | null>(null);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -300,13 +301,38 @@ function RegisterForm({ onSuccess }: { onSuccess: () => void }) {
     }
 
     setLoading(true);
-    const { error } = await signUp(email, password, `${firstName} ${lastName}`.trim());
+    const { data, error } = await signUp(email, password, `${firstName} ${lastName}`.trim(), firstName.trim());
     setLoading(false);
     if (error) {
       setError(error.message);
       return;
     }
+
+    // Confirmation is required: signUp returns a user but no session until
+    // the emailed link is clicked and verified via /auth/confirm. Redirecting
+    // to /dashboard now would just bounce off the auth-gated middleware.
+    if (data.user && !data.session) {
+      setPendingConfirmationEmail(email);
+      return;
+    }
+
     onSuccess();
+  }
+
+  if (pendingConfirmationEmail) {
+    return (
+      <div className="flex flex-col items-center gap-4 py-6 text-center">
+        <div className="flex h-14 w-14 items-center justify-center rounded-full bg-green-600/20">
+          <MailIcon className="h-7 w-7 text-green-400" />
+        </div>
+        <p className="text-lg font-semibold text-white">Kolla din inkorg!</p>
+        <p className="text-sm text-neutral-400">
+          Vi har skickat ett bekräftelsemail till{" "}
+          <span className="font-medium text-neutral-200">{pendingConfirmationEmail}</span>. Klicka på länken i
+          mejlet för att aktivera ditt konto.
+        </p>
+      </div>
+    );
   }
 
   return (

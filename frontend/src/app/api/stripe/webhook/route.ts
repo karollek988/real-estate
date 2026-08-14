@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { createStripeClient } from "@/lib/stripe/admin";
 import {
   handleCheckoutSessionCompleted,
+  handleCheckoutSessionExpired,
   handleSubscriptionCreatedOrUpdated,
   handleSubscriptionDeleted,
   handleInvoicePaid,
@@ -46,6 +47,13 @@ export async function POST(request: Request) {
         console.log("[Webhook] Handling checkout.session.completed");
         await handleCheckoutSessionCompleted(event.data.object);
         console.log("[Webhook] ✓ checkout.session.completed handled");
+        break;
+      }
+
+      case "checkout.session.expired": {
+        console.log("[Webhook] Handling checkout.session.expired");
+        await handleCheckoutSessionExpired(event.data.object);
+        console.log("[Webhook] ✓ checkout.session.expired handled");
         break;
       }
 
