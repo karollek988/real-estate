@@ -1,25 +1,32 @@
 import { NextResponse } from "next/server";
 import puppeteer from "puppeteer-core";
 import chromium from "@sparticuz/chromium";
-import { getAnalysisWithProperty } from "@/lib/analysis/store";
+import { getReportForViewer } from "@/lib/analysis/access";
 import { requireUser } from "@/lib/auth/requireUser";
 
 export const runtime = "nodejs";
 export const maxDuration = 60;
 
-/** GET /api/analyses/:id/pdf — render the report page to a downloadable PDF. */
+/**
+ * GET /api/analyses/:id/pdf — render the report page to a downloadable PDF.
+ * This route only checks the caller is signed in and the analysis exists;
+ * entitlement (what content actually renders) is resolved by /report itself
+ * — Puppeteer visits that page with this request's own session cookie
+ * forwarded, so it always sees exactly what this caller would see in a
+ * browser, redacted the same way.
+ */
 export async function GET(
   request: Request,
   { params }: { params: Promise<{ id: string }> }
 ) {
   const { id } = await params;
 
-  const { response: authError } = await requireUser();
+  const { user, response: authError } = await requireUser();
   if (authError) return authError;
 
-  let found: Awaited<ReturnType<typeof getAnalysisWithProperty>>;
+  let found: Awaited<ReturnType<typeof getReportForViewer>>;
   try {
-    found = await getAnalysisWithProperty(id);
+    found = await getReportForViewer(id, user.id);
   } catch (err) {
     console.error(`GET /api/analyses/${id}/pdf failed:`, err);
     return NextResponse.json(

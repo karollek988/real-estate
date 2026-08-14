@@ -44,8 +44,6 @@ interface InspectionApiData {
   brfQuestions: string[];
   property: { id: string; address: string; attributes: Record<string, unknown> };
   report: {
-    decisionScore: number;
-    verdict: string;
     summary: string;
     property: AnalysisReport["property"];
     decisionFactors: DecisionFactorResult[];
@@ -56,7 +54,6 @@ interface OwnedAnalysis {
   propertyId: string;
   address: string;
   status: "pending" | "complete" | "failed";
-  decisionScore: number | null;
   analysisType: "free" | "premium";
 }
 

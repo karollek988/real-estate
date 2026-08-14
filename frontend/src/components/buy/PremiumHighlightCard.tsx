@@ -4,7 +4,7 @@ import { useState } from "react";
 import { DiscountCodeInput } from "@/components/buy/DiscountCodeInput";
 import { StarFilledIcon, CheckIcon, ArrowRightIcon, LockIcon } from "@/components/icons";
 
-const FEATURES = ["Prisbedömning", "Områdesanalys", "BRF-analys", "Riskbedömning", "Rekommendation"];
+const FEATURES = ["Prisbedömning", "Områdesanalys", "BRF-analys", "Möjliga risker", "Helhetsbild"];
 
 interface PremiumHighlightCardProps {
   price: number;

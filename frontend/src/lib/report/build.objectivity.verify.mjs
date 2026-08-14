@@ -402,6 +402,12 @@ const BANNED_PATTERNS = [
   /\butmärkt\b/i,
   /\bperfekt\b/i,
   /\bbör (utredas|kontrolleras|bokas|begäras)\b/i,
+  // Köpanalys no longer scores/rates properties (removed alongside the
+  // free/premium paywall fix) — these patterns guard against the scoring
+  // language creeping back into any chapter's prose.
+  /\d+\s*\/\s*100\b/,
+  /beslutsbetyg/i,
+  /riskbilden klassificeras/i,
 ];
 
 for (const [fixtureName, chapters] of [["rich", rich], ["sparse", sparse]]) {
@@ -448,7 +454,7 @@ check("sparse: BRF chapter states no association identified", sparse.brf.paragra
 check("sparse: BRF metrics fall back to an honest placeholder, not an empty grid", sparse.brf.metrics.length === 1 && sparse.brf.metrics[0].label === "Finansiella nyckeltal");
 check("sparse: property overview never silently omits a field (spot check Balkong)", sparse.overview.some((r) => r.label === "Balkong" && r.value === "Uppgift saknas"));
 check("sparse: all 8 risk categories still render with an 'unknown' severity", sparse.risks.length === 8 && sparse.risks.every((r) => r.severity === "unknown"));
-check("sparse: final recommendation still states a decision score, not a purchase verdict", sparse.rec.paragraphs[0].includes("beslutsbetyget"));
+check("sparse: final recommendation opens with a factual data-completeness statement, not a score", sparse.rec.paragraphs[0].includes("anslutna datakällor") && !sparse.rec.paragraphs[0].includes("beslutsbetyg"));
 check("sparse: negotiation fallback sentence appears when no factors are present", sparse.rec.negotiationArguments.some((n) => n.includes("Ingen av de faktorer")));
 
 /* ────────────────────────────────────────────────────────────────────── *
@@ -462,7 +468,8 @@ check("rich: BRF strengths/weaknesses pass through (Python reasoning.py text, ou
 check("rich: risk chapter reports population growth without asserting a single certain outcome", rich.risks.find((r) => r.id === "market").explanation.includes("förknippas generellt"));
 check("rich: future-uncertainty risk category still names its epistemic-humility disclaimer", rich.risks.find((r) => r.id === "future").conclusion.includes("oförutsedda"));
 check("rich: investment outlook mentions the 2 nearby projects factually", rich.outlook.paragraphs.some((p) => p.startsWith("2 planerat")));
-check("rich: final recommendation opens with the decision score, not a buy/avoid verdict", rich.rec.paragraphs[0].includes("Det sammanvägda beslutsbetyget är 58 av 100"));
+check("rich: final recommendation opens with a factual data-completeness statement, not a score", rich.rec.paragraphs[0].includes("anslutna datakällor") && !rich.rec.paragraphs[0].includes("beslutsbetyg"));
+check("rich: no chapter states a decisionScore/verdict-derived X/100 rating anywhere", !rich.allChapterText.some((t) => typeof t === "string" && /\d+\s*\/\s*100\b/.test(t)));
 check("rich: negotiation arguments state factors, not instructions to use them", rich.rec.negotiationArguments.every((n) => !/använd|överväg/i.test(n)));
 
 console.log(failures === 0 ? "\nAll checks passed." : `\n${failures} check(s) FAILED.`);
@@ -479,7 +486,7 @@ if (process.argv.includes("--dump")) {
   const src = (ids) => lines.push("[Källor: " + (sourcesUsed(richReport.dataSources, ids).join(", ") || "(inga)") + "]");
 
   h1(`KÖPANALYS — ${richReport.property.address}`);
-  lines.push(`Sammanvägt betyg: ${richReport.verdict}  |  Beslutsbetyg: ${richReport.decisionScore}/100  |  Tillförlitlighet: ${Math.round(richReport.overallConfidence * 100)}%`);
+  lines.push(`Anslutna källor: ${richReport.dataCompleteness.connectedSources}/${richReport.dataCompleteness.totalSources}`);
 
   h1("2. SAMMANFATTNING");
   rich.exec.forEach((p) => lines.push(p, ""));
@@ -509,7 +516,7 @@ if (process.argv.includes("--dump")) {
   rich.brf.weaknesses.forEach((w) => lines.push("- " + w.text + (w.severity ? ` (${w.severity})` : "")));
   src(["brf_financials", "brf_acquisition"]);
 
-  h1("7. RISKBEDÖMNING");
+  h1("7. MÖJLIGA RISKER");
   rich.risks.forEach((r) => {
     h2(`${r.label} — ${r.headline}`);
     lines.push(r.explanation);

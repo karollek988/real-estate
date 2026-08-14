@@ -1,21 +1,19 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import localFont from "next/font/local";
-import { getAnalysisWithProperty } from "@/lib/analysis/store";
+import { getReportForViewer } from "@/lib/analysis/access";
 import { findPremiumAnalysisForProperty, getAnalysisRequestRow } from "@/lib/analysis/ownership";
 import { createClient } from "@/lib/supabase/server";
 import { analysisAgeDays, FRESH_ANALYSIS_MAX_AGE_DAYS } from "@/lib/analysis/pipeline";
 import type { AnalysisReport, DataSourceReport, DecisionFactorResult } from "@/lib/analysis/types";
 import { UpdateAnalysisButton } from "@/components/report/UpdateAnalysisButton";
-import { UnlockButton } from "@/components/report/UnlockButton";
 import { KeyValueTable } from "@/components/report/KeyValueTable";
 import { IconFactGrid, type IconFactRow } from "@/components/report/IconFactGrid";
 import { RiskCategoryCard } from "@/components/report/RiskCategoryCard";
 import { PriceComparisonBar } from "@/components/report/PriceComparisonBar";
-import { ScoreRing } from "@/components/report/ScoreRing";
-import { ArcGauge } from "@/components/report/ArcGauge";
 import { SegmentedMeter } from "@/components/report/SegmentedMeter";
 import { MetricCard } from "@/components/report/MetricCard";
+import { PaywallSection } from "@/components/report/PaywallSection";
 import { Callout } from "@/components/report/Callout";
 import { AmenityGrid } from "@/components/report/AmenityGrid";
 import { ProjectCard } from "@/components/report/ProjectCard";
@@ -57,7 +55,6 @@ import {
   LightbulbIcon,
   InfoIcon,
   CheckIcon,
-  ShieldIcon,
   DatabaseIcon,
   QuestionIcon,
   DownloadIcon,
@@ -309,86 +306,19 @@ export default async function ReportPage({
   const { id } = await searchParams;
   if (!id) redirect("/");
 
-  const found = await getAnalysisWithProperty(id);
-  if (!found) redirect("/");
-
-  const { analysis, property } = found;
-
   const supabase = await createClient();
   const {
     data: { user },
   } = await supabase.auth.getUser();
-  const hasPremiumInspectionAccess = user ? Boolean(await findPremiumAnalysisForProperty(user.id, property.id)) : false;
-  const requestRow = user ? await getAnalysisRequestRow(user.id, id) : null;
-  const analysisType = requestRow?.analysisType ?? null;
-  const isFree = analysisType === "free";
-  const locked = requestRow !== null && requestRow.analysisType === "premium" && !requestRow.unlocked;
 
-  if (locked) {
-    const generatedDate = new Date(analysis.createdAt).toLocaleDateString("sv-SE", {
-      year: "numeric",
-      month: "long",
-      day: "numeric",
-    });
-    return (
-      <div className="min-h-screen bg-[#F7F4EC]">
-        <div className="no-print mx-auto flex w-full max-w-[880px] items-center px-8 py-5 sm:px-16">
-          <Link href="/" className="text-sm font-medium text-[#5B5648] transition hover:text-[#12271D]">
-            ← Ny analys
-          </Link>
-        </div>
-        <main className="mx-auto w-full max-w-[880px] border-t-[3px] border-[#B98A2E] bg-[#FBF9F4] shadow-[0_0_0_1px_rgba(0,0,0,0.06)]">
-          <section className="report-page relative overflow-hidden bg-[#0E2B1F] text-[#F5F1E4]">
-            <Watermark dark />
-            <CornerAccents color="rgba(216,181,99,0.4)" />
-            <div className="relative flex items-center justify-between px-8 pt-8 sm:px-16">
-              <div className="flex items-center gap-2.5">
-                <span
-                  style={serifStyle}
-                  className="flex h-8 w-8 items-center justify-center rounded-md border border-[#D8B563]/40 bg-white/5 text-[15px] font-semibold text-[#D8B563]"
-                >
-                  K
-                </span>
-                <span className="text-[11px] font-semibold uppercase tracking-[0.18em] text-[#D8CBA3]">Köpanalys</span>
-              </div>
-              <span className="text-[11px] text-[#8AA396]">{generatedDate}</span>
-            </div>
-            {analysis.report?.property.imageUrls?.[0] && (
-              <div className="relative mt-8 h-64 w-full sm:h-80">
-                <img src={analysis.report.property.imageUrls[0]} alt={property.address} className="h-full w-full object-cover blur-xl" />
-                <div className="absolute inset-0 bg-gradient-to-t from-[#0E2B1F] via-[#0E2B1F]/10 to-transparent" />
-              </div>
-            )}
-            <div className="relative px-8 pb-10 pt-6 sm:px-16 sm:pb-14">
-              <h1 style={serifStyle} className="text-[34px] font-semibold leading-[1.15] tracking-tight sm:text-[46px]">
-                {property.address}
-              </h1>
-              <p className="mt-3 text-[14px] text-[#C9D6CC]">{property.propertyType}</p>
-            </div>
-          </section>
-          <section className="report-page relative px-8 py-14 sm:px-16 sm:py-16">
-            <Watermark />
-            <CornerAccents color="rgba(185,138,46,0.35)" />
-            <div className="flex flex-col items-center gap-6 py-12 text-center">
-              <div className="flex h-16 w-16 items-center justify-center rounded-full bg-[#B98A2E]/10">
-                <svg className="h-8 w-8 text-[#B98A2E]" fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M16.5 10.5V6.75a4.5 4.5 0 1 0-9 0v3.75m-.75 11.25h10.5a2.25 2.25 0 0 0 2.25-2.25v-6.75a2.25 2.25 0 0 0-2.25-2.25H6.75a2.25 2.25 0 0 0-2.25 2.25v6.75a2.25 2.25 0 0 0 2.25 2.25Z" />
-                </svg>
-              </div>
-              <h2 style={serifStyle} className="text-[26px] font-semibold tracking-tight text-[#12271D] sm:text-[30px]">
-                Premium-analys låst
-              </h2>
-              <p className="max-w-md text-[14px] leading-relaxed text-[#5B5648]">
-                Den fullständiga Premium-analysen är klar, men du behöver betala för att låsa upp den.
-                Efter betalning får du tillgång till hela rapporten med områdesanalys, riskbedömning och investeringsutsikt.
-              </p>
-              <UnlockButton analysisId={id} />
-            </div>
-          </section>
-        </main>
-      </div>
-    );
-  }
+  const found = await getReportForViewer(id, user?.id ?? null);
+  if (!found) redirect("/");
+
+  const { analysis, property, access, lockedSections } = found;
+
+  const premiumMatch = user ? await findPremiumAnalysisForProperty(user.id, property.id) : null;
+  const premiumRequestRow = premiumMatch && user ? await getAnalysisRequestRow(user.id, premiumMatch.analysisId) : null;
+  const hasPremiumInspectionAccess = Boolean(premiumRequestRow?.unlocked);
 
   if (analysis.status !== "complete" || !analysis.report) {
     return (
@@ -421,21 +351,30 @@ export default async function ReportPage({
     day: "numeric",
   });
 
-  const executiveSummary = buildExecutiveSummary(p);
-  const overviewRows = buildPropertyOverview(p, attributes);
+  // Every chapter builder below runs on the caller's own entitlement-scoped
+  // report (p) — for a locked chapter it's simply not called at all, so a
+  // future rendering bug can't leak content the server never even handed
+  // this page. See lib/analysis/redact.ts for what "p" already had stripped.
   const priceAnalysis = buildPriceAnalysis(p);
-  const areaAnalysis = buildAreaAnalysis(p, attributes, p.dataSources);
+  const overviewRows = buildPropertyOverview(p, attributes);
   const brf = buildHousingAssociation(p, p.dataSources);
-  const brokerDocs = buildBrokerDocuments(p, attributes);
-  const riskCategories = buildRiskCategories(p, p.dataSources);
-  const investmentOutlook = buildInvestmentOutlook(p);
-  const recommendation = buildFinalRecommendation(p);
 
-  // Supplementary numbers read straight from the Decision Engine's public
-  // decisionFactors — never through build.ts — purely to drive a gauge/meter
-  // alongside prose that already states the same fact in words.
+  const executiveSummary = lockedSections.includes("executiveSummary") ? null : buildExecutiveSummary(p);
+  const areaAnalysis = lockedSections.includes("areaAnalysis") ? null : buildAreaAnalysis(p, attributes, p.dataSources);
+  const brokerDocs = lockedSections.includes("brokerDocuments") ? null : buildBrokerDocuments(p, attributes);
+  const riskCategories = lockedSections.includes("riskAssessment") ? null : buildRiskCategories(p, p.dataSources);
+  const investmentOutlook = lockedSections.includes("investmentOutlook") ? null : buildInvestmentOutlook(p);
+  const recommendation = lockedSections.includes("finalRecommendation") ? null : buildFinalRecommendation(p);
+
+  // build.ts's own "no comparables source connected" fallback sentence
+  // assumes the data genuinely doesn't exist — for a paywalled (not
+  // data-less) viewer that's misleading, so that closing sentence is
+  // dropped here in favor of the paywall widget that follows it.
+  const priceParagraphs = lockedSections.includes("priceComparables")
+    ? priceAnalysis.paragraphs.slice(0, -1)
+    : priceAnalysis.paragraphs;
+
   const priceFactor = factorOf(p, "price");
-  const riskFactor = factorOf(p, "risk");
   const marketFactor = factorOf(p, "market");
   const futureFactor = factorOf(p, "futureDevelopment");
   const negotiationFactor = factorOf(p, "negotiation");
@@ -443,7 +382,6 @@ export default async function ReportPage({
   const costBurdenPct = numOf(priceFactor?.supportingData.costBurdenPct);
   const priceRangeRaw = priceFactor?.supportingData.priceRange;
   const priceRange = typeof priceRangeRaw === "string" ? priceRangeRaw : null;
-  const policyRatePct = numOf(riskFactor?.supportingData.policyRatePct);
   const rateChangePctPoints = numOf(marketFactor?.supportingData.policyRateChangePctPoints);
   const currentPolicyRatePct = numOf(marketFactor?.supportingData.currentPolicyRatePct);
   const employmentRatePct = numOf(marketFactor?.supportingData.municipalityEmploymentRatePct);
@@ -481,7 +419,7 @@ export default async function ReportPage({
   if (employmentRatePct !== null) {
     macroCards.push({ icon: <BadgeCheckIcon className="h-3.5 w-3.5" />, label: "Sysselsättningsgrad", value: `${employmentRatePct.toFixed(1)}%` });
   }
-  if (!isFree && plannedProjectsCount !== null) {
+  if (plannedProjectsCount !== null) {
     macroCards.push({ icon: <CraneIcon className="h-3.5 w-3.5" />, label: "Planerade projekt", value: String(plannedProjectsCount) });
   }
 
@@ -557,30 +495,16 @@ export default async function ReportPage({
                 .join(" · ")}
             </p>
 
-            <div className="mt-9 flex flex-wrap items-center gap-8 border-t border-white/15 pt-7">
-              <ScoreRing score={p.decisionScore} />
-              <div className="flex min-w-[180px] flex-1 flex-col gap-5">
-                <div>
-                  <p className="text-[11px] uppercase tracking-wide text-[#8AA396]">Sammanvägt betyg</p>
-                  <p style={serifStyle} className="mt-1 text-[20px] font-semibold text-[#D8B563]">
-                    {p.verdict}
-                  </p>
-                </div>
-                <div>
-                  <p className="text-[11px] uppercase tracking-wide text-[#8AA396]">Tillförlitlighet</p>
-                  <p className="mt-1 text-[20px] font-semibold">{Math.round(p.overallConfidence * 100)}%</p>
-                </div>
-              </div>
-            </div>
-
             {p.property.askingPriceSek && (
-              <div className="mt-6 flex flex-wrap items-baseline gap-x-8 gap-y-1 border-t border-white/15 pt-6">
+              <div className="mt-9 flex flex-wrap items-baseline gap-x-8 gap-y-1 border-t border-white/15 pt-7">
                 <p className="text-[24px] font-semibold">{sek(p.property.askingPriceSek)}</p>
                 {p.property.pricePerM2Sek && <p className="text-[14px] text-[#C9D6CC]">{sekPerM2(p.property.pricePerM2Sek)}</p>}
               </div>
             )}
 
-            <p className="mt-8 max-w-xl text-[13.5px] leading-relaxed text-[#C9D6CC]">{executiveSummary[0]}</p>
+            {priceParagraphs[0] && (
+              <p className="mt-8 max-w-xl text-[13.5px] leading-relaxed text-[#C9D6CC]">{priceParagraphs[0]}</p>
+            )}
           </div>
 
           <div className="relative flex items-center justify-between border-t border-white/15 px-8 py-5 text-[10px] uppercase tracking-wide text-[#8AA396] sm:px-16">
@@ -596,13 +520,23 @@ export default async function ReportPage({
           <ChapterTitle icon={<ClipboardIcon className="h-5 w-5" />} sub="En samlad läsning av hela analysen — pris, styrkor och svagheter utifrån tillgänglig data.">
             Sammanfattning
           </ChapterTitle>
-          <div className="relative mb-8 grid grid-cols-3 gap-3">
-            <MetricCard icon={<BadgeCheckIcon className="h-3.5 w-3.5" />} label="Beslutsbetyg" value={`${p.decisionScore}/100`} />
-            <MetricCard icon={<ShieldIcon className="h-3.5 w-3.5" />} label="Tillförlitlighet" value={`${Math.round(p.overallConfidence * 100)}%`} />
-            <MetricCard icon={<DatabaseIcon className="h-3.5 w-3.5" />} label="Anslutna källor" value={`${p.dataCompleteness.connectedSources}/${p.dataCompleteness.totalSources}`} />
-          </div>
-          <Prose paragraphs={executiveSummary} />
-          <ChapterSources dataSources={p.dataSources} />
+          {executiveSummary ? (
+            <>
+              <div className="relative mb-8 max-w-[220px]">
+                <MetricCard icon={<DatabaseIcon className="h-3.5 w-3.5" />} label="Anslutna källor" value={`${p.dataCompleteness.connectedSources}/${p.dataCompleteness.totalSources}`} />
+              </div>
+              <Prose paragraphs={executiveSummary} />
+              <ChapterSources dataSources={p.dataSources} />
+            </>
+          ) : (
+            <PaywallSection
+              title="Premium — Sammanfattning"
+              description="Få en samlad läsning av hela analysen, med styrkor och svagheter över samtliga kapitel."
+              analysisId={id}
+              analysisType={access.analysisType}
+              unlocked={access.unlocked}
+            />
+          )}
         </Page>
 
         {/* ══════════════════════════════════════════════════════════
@@ -681,7 +615,7 @@ export default async function ReportPage({
             </div>
           )}
 
-          <Prose paragraphs={priceAnalysis.paragraphs} />
+          <Prose paragraphs={priceParagraphs} />
 
           {priceMeter && (
             <>
@@ -705,42 +639,60 @@ export default async function ReportPage({
             </>
           )}
 
-          {priceAnalysis.areaSoldPriceTrend.length > 0 && (
-            <>
-              <SubHeading icon={<ChartIcon className="h-4 w-4" />}>Prisutveckling i området</SubHeading>
-              <div className="relative">
-                <KeyValueTable
-                  rows={priceAnalysis.areaSoldPriceTrend.map((t) => ({
-                    label: t.period,
-                    value: `${sekPerM2(t.medianPricePerM2Sek)} (${t.count} försäljning${t.count === 1 ? "" : "ar"})`,
-                  }))}
-                />
-              </div>
-            </>
+          <SubHeading icon={<ChartIcon className="h-4 w-4" />}>Prisutveckling i området</SubHeading>
+          {lockedSections.includes("priceAreaTrend") ? (
+            <PaywallSection
+              compact
+              title="Premium — Prisutveckling i området"
+              description="Se historisk prisutveckling per kvartal för jämförbara bostäder i området."
+              analysisId={id}
+              analysisType={access.analysisType}
+              unlocked={access.unlocked}
+            />
+          ) : priceAnalysis.areaSoldPriceTrend.length > 0 ? (
+            <div className="relative">
+              <KeyValueTable
+                rows={priceAnalysis.areaSoldPriceTrend.map((t) => ({
+                  label: t.period,
+                  value: `${sekPerM2(t.medianPricePerM2Sek)} (${t.count} försäljning${t.count === 1 ? "" : "ar"})`,
+                }))}
+              />
+            </div>
+          ) : (
+            <p className="relative text-[13.5px] italic text-[#8C8471]">Ingen prisutvecklingsdata tillgänglig för området i denna analys.</p>
           )}
 
-          {priceAnalysis.comparableSales.length > 0 && (
-            <>
-              <SubHeading icon={<ClipboardIcon className="h-4 w-4" />}>Jämförbara sålda bostäder</SubHeading>
-              <ul className="relative space-y-1.5">
-                {priceAnalysis.comparableSales.slice(0, 10).map((c, i) => (
-                  <li key={i} className="flex items-start gap-2 text-[13.5px] text-[#2A2820]">
-                    <span className="mt-2 h-1 w-1 shrink-0 rounded-full bg-[#B98A2E]" />
-                    <span>
-                      {[
-                        c.address ?? "Okänd adress",
-                        c.soldDate,
-                        c.soldPriceSek !== null ? sek(c.soldPriceSek) : null,
-                        c.livingAreaM2 !== null ? `${c.livingAreaM2} m²` : null,
-                        c.pricePerM2Sek !== null ? sekPerM2(c.pricePerM2Sek) : null,
-                      ]
-                        .filter(Boolean)
-                        .join(" · ")}
-                    </span>
-                  </li>
-                ))}
-              </ul>
-            </>
+          <SubHeading icon={<ClipboardIcon className="h-4 w-4" />}>Jämförbara sålda bostäder</SubHeading>
+          {lockedSections.includes("priceComparables") ? (
+            <PaywallSection
+              compact
+              title="Premium — Jämförbara sålda bostäder"
+              description="Se listan över jämförbara sålda bostäder som ligger till grund för prisbedömningen."
+              analysisId={id}
+              analysisType={access.analysisType}
+              unlocked={access.unlocked}
+            />
+          ) : priceAnalysis.comparableSales.length > 0 ? (
+            <ul className="relative space-y-1.5">
+              {priceAnalysis.comparableSales.slice(0, 10).map((c, i) => (
+                <li key={i} className="flex items-start gap-2 text-[13.5px] text-[#2A2820]">
+                  <span className="mt-2 h-1 w-1 shrink-0 rounded-full bg-[#B98A2E]" />
+                  <span>
+                    {[
+                      c.address ?? "Okänd adress",
+                      c.soldDate,
+                      c.soldPriceSek !== null ? sek(c.soldPriceSek) : null,
+                      c.livingAreaM2 !== null ? `${c.livingAreaM2} m²` : null,
+                      c.pricePerM2Sek !== null ? sekPerM2(c.pricePerM2Sek) : null,
+                    ]
+                      .filter(Boolean)
+                      .join(" · ")}
+                  </span>
+                </li>
+              ))}
+            </ul>
+          ) : (
+            <p className="relative text-[13.5px] italic text-[#8C8471]">Inga jämförbara sålda bostäder tillgängliga i denna analys.</p>
           )}
           <ChapterSources dataSources={p.dataSources} ids={["hemnet_page_scrape", "booli_listing", "scb_area_statistics", "interest_rates"]} />
         </Page>
@@ -752,27 +704,39 @@ export default async function ReportPage({
           <ChapterTitle icon={<MapPinIcon className="h-5 w-5" />} sub="Statistik och service i närområdet, baserat på tillgänglig data.">
             Områdesanalys
           </ChapterTitle>
-          <Prose paragraphs={areaAnalysis.paragraphs.slice(0, 3)} />
-
-          {!isFree && areaAnalysis.amenities.some((a) => a.value !== "Uppgift saknas") && (
+          {areaAnalysis ? (
             <>
-              <SubHeading icon={<ShoppingBagIcon className="h-4 w-4" />}>Service inom 1 km</SubHeading>
-              <div className="relative">
-                <AmenityGrid
-                  items={areaAnalysis.amenities.map((a, i) => ({
-                    icon: AMENITY_ICONS[i],
-                    label: AMENITY_SHORT_LABELS[i] ?? a.label,
-                    value: a.value,
-                  }))}
-                />
-              </div>
-            </>
-          )}
+              <Prose paragraphs={areaAnalysis.paragraphs.slice(0, 3)} />
 
-          {areaAnalysis.paragraphs[3] && (
-            <Callout icon={<InfoIcon className="h-4 w-4" />}>{areaAnalysis.paragraphs[3]}</Callout>
+              {areaAnalysis.amenities.some((a) => a.value !== "Uppgift saknas") && (
+                <>
+                  <SubHeading icon={<ShoppingBagIcon className="h-4 w-4" />}>Service inom 1 km</SubHeading>
+                  <div className="relative">
+                    <AmenityGrid
+                      items={areaAnalysis.amenities.map((a, i) => ({
+                        icon: AMENITY_ICONS[i],
+                        label: AMENITY_SHORT_LABELS[i] ?? a.label,
+                        value: a.value,
+                      }))}
+                    />
+                  </div>
+                </>
+              )}
+
+              {areaAnalysis.paragraphs[3] && (
+                <Callout icon={<InfoIcon className="h-4 w-4" />}>{areaAnalysis.paragraphs[3]}</Callout>
+              )}
+              <ChapterSources dataSources={p.dataSources} ids={["booli_listing", "scb_area_statistics", "osm_amenities", "nominatim_geocoding"]} />
+            </>
+          ) : (
+            <PaywallSection
+              title="Premium — Områdesanalys"
+              description="Få tillgång till statistik och service i närområdet: prisutveckling, befolkning, inkomst och vardagsservice inom 1 km."
+              analysisId={id}
+              analysisType={access.analysisType}
+              unlocked={access.unlocked}
+            />
           )}
-          <ChapterSources dataSources={p.dataSources} ids={["booli_listing", "scb_area_statistics", "osm_amenities", "nominatim_geocoding"]} />
         </Page>
 
         {/* ══════════════════════════════════════════════════════════
@@ -838,91 +802,100 @@ export default async function ReportPage({
           <ChapterTitle icon={<ClipboardIcon className="h-5 w-5" />} sub="Dokument hittade på mäklarens webbplats, samt AI-tolkade fynd från ett eventuellt besiktningsprotokoll.">
             Dokument hos mäklaren
           </ChapterTitle>
-          <Prose paragraphs={brokerDocs.paragraphs} />
-
-          {brokerDocs.documents.length > 0 && (
+          {brokerDocs ? (
             <>
-              <SubHeading icon={<DownloadIcon className="h-4 w-4" />}>Nedladdningsbara dokument</SubHeading>
-              <div className="relative grid grid-cols-1 gap-2 sm:grid-cols-2">
-                {brokerDocs.documents.map((doc) => (
-                  <a
-                    key={doc.id}
-                    href={doc.downloadUrl}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="flex items-center gap-2.5 rounded-md border border-black/[0.08] bg-black/[0.02] px-4 py-3 text-[13px] text-[#12271D] transition hover:bg-black/[0.04]"
-                  >
-                    <DownloadIcon className="h-4 w-4 shrink-0 text-[#8C8471]" />
-                    <span className="min-w-0 flex-1">
-                      <span className="block font-medium">{doc.docTypeLabel}</span>
-                      <span className="block truncate text-[11px] text-[#8C8471]">{doc.filename}</span>
-                    </span>
-                  </a>
-                ))}
-              </div>
-            </>
-          )}
+              <Prose paragraphs={brokerDocs.paragraphs} />
 
-          {brokerDocs.findings.length > 0 && (
-            <>
-              <SubHeading icon={<WarningIcon className="h-4 w-4" />}>Besiktningsfynd</SubHeading>
-              <ul className="relative space-y-2.5">
-                {brokerDocs.findings.map((f, i) => (
-                  <li key={i} className="flex items-start gap-2 text-[13px] leading-relaxed text-[#2A2820]">
-                    <WarningIcon
-                      className={`mt-0.5 h-3.5 w-3.5 shrink-0 ${
-                        f.severity === "minor" || f.severity === "moderate" ? "text-[#8C8471]" : "text-[#A2432F]"
-                      }`}
-                    />
-                    <span>
-                      <span className="font-medium capitalize">{f.category}:</span> {f.description}
-                      {f.severity !== "minor" && (
-                        <span
-                          className={`ml-1 font-medium ${
-                            f.severity === "moderate" ? "text-[#8C8471]" : "text-[#A2432F]"
-                          }`}
-                        >
-                          ({f.severityLabel})
+              {brokerDocs.documents.length > 0 && (
+                <>
+                  <SubHeading icon={<DownloadIcon className="h-4 w-4" />}>Nedladdningsbara dokument</SubHeading>
+                  <div className="relative grid grid-cols-1 gap-2 sm:grid-cols-2">
+                    {brokerDocs.documents.map((doc) => (
+                      <a
+                        key={doc.id}
+                        href={doc.downloadUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="flex items-center gap-2.5 rounded-md border border-black/[0.08] bg-black/[0.02] px-4 py-3 text-[13px] text-[#12271D] transition hover:bg-black/[0.04]"
+                      >
+                        <DownloadIcon className="h-4 w-4 shrink-0 text-[#8C8471]" />
+                        <span className="min-w-0 flex-1">
+                          <span className="block font-medium">{doc.docTypeLabel}</span>
+                          <span className="block truncate text-[11px] text-[#8C8471]">{doc.filename}</span>
                         </span>
-                      )}
-                      {f.recommendation && <span className="block text-[#8C8471]">{f.recommendation}</span>}
-                    </span>
-                  </li>
-                ))}
-              </ul>
+                      </a>
+                    ))}
+                  </div>
+                </>
+              )}
+
+              {brokerDocs.findings.length > 0 && (
+                <>
+                  <SubHeading icon={<WarningIcon className="h-4 w-4" />}>Besiktningsfynd</SubHeading>
+                  <ul className="relative space-y-2.5">
+                    {brokerDocs.findings.map((f, i) => (
+                      <li key={i} className="flex items-start gap-2 text-[13px] leading-relaxed text-[#2A2820]">
+                        <WarningIcon
+                          className={`mt-0.5 h-3.5 w-3.5 shrink-0 ${
+                            f.severity === "minor" || f.severity === "moderate" ? "text-[#8C8471]" : "text-[#A2432F]"
+                          }`}
+                        />
+                        <span>
+                          <span className="font-medium capitalize">{f.category}:</span> {f.description}
+                          {f.severity !== "minor" && (
+                            <span
+                              className={`ml-1 font-medium ${
+                                f.severity === "moderate" ? "text-[#8C8471]" : "text-[#A2432F]"
+                              }`}
+                            >
+                              ({f.severityLabel})
+                            </span>
+                          )}
+                          {f.recommendation && <span className="block text-[#8C8471]">{f.recommendation}</span>}
+                        </span>
+                      </li>
+                    ))}
+                  </ul>
+                </>
+              )}
+              <ChapterSources dataSources={p.dataSources} ids={["broker_documents"]} />
             </>
+          ) : (
+            <PaywallSection
+              title="Premium — Dokument hos mäklaren"
+              description="Få tillgång till dokument hittade hos mäklaren och AI-tolkade fynd från ett eventuellt besiktningsprotokoll."
+              analysisId={id}
+              analysisType={access.analysisType}
+              unlocked={access.unlocked}
+            />
           )}
-          <ChapterSources dataSources={p.dataSources} ids={["broker_documents"]} />
         </Page>
 
         {/* ══════════════════════════════════════════════════════════
-            8. RISK ASSESSMENT
+            8. POSSIBLE RISKS
            ══════════════════════════════════════════════════════════ */}
         <Page n={8}>
-          <ChapterTitle icon={<WarningIcon className="h-5 w-5" />} sub="Åtta riskkategorier baserade på tillgänglig data.">
-            Riskbedömning
+          <ChapterTitle icon={<WarningIcon className="h-5 w-5" />} sub="Åtta kategorier av faktorer värda att undersöka vidare, baserat på tillgänglig data.">
+            Möjliga risker
           </ChapterTitle>
-          <div className="relative">
-            {riskCategories.map((risk) => (
-              <div key={risk.id}>
-                <RiskCategoryCard risk={risk} icon={RISK_ICON[risk.id] ?? <WarningIcon className="h-4 w-4" />} />
-                {risk.id === "interest_rate" && policyRatePct !== null && (
-                  <div className="-mt-2 mb-4 flex justify-center rounded-md border border-black/[0.08] bg-white/60 py-4">
-                    <ArcGauge
-                      value={policyRatePct}
-                      min={0}
-                      max={6}
-                      valueLabel={`${policyRatePct.toFixed(1)}%`}
-                      caption="Styrränta (Riksbanken)"
-                      lowLabel="Låg"
-                      highLabel="Hög"
-                    />
-                  </div>
-                )}
+          {riskCategories ? (
+            <>
+              <div className="relative">
+                {riskCategories.map((risk) => (
+                  <RiskCategoryCard key={risk.id} risk={risk} icon={RISK_ICON[risk.id] ?? <WarningIcon className="h-4 w-4" />} />
+                ))}
               </div>
-            ))}
-          </div>
-          <ChapterSources dataSources={p.dataSources} ids={["hemnet_page_scrape", "interest_rates", "scb_area_statistics", "osm_amenities", "brf_financials", "location_intelligence", "infrastructure_projects", "broker_documents"]} />
+              <ChapterSources dataSources={p.dataSources} ids={["hemnet_page_scrape", "interest_rates", "scb_area_statistics", "osm_amenities", "brf_financials", "location_intelligence", "infrastructure_projects", "broker_documents"]} />
+            </>
+          ) : (
+            <PaywallSection
+              title="Premium — Möjliga risker"
+              description="Få en genomgång av åtta kategorier av faktorer värda att undersöka vidare innan köp."
+              analysisId={id}
+              analysisType={access.analysisType}
+              unlocked={access.unlocked}
+            />
+          )}
         </Page>
 
         {/* ══════════════════════════════════════════════════════════
@@ -932,118 +905,141 @@ export default async function ReportPage({
           <ChapterTitle icon={<TrendingUpIcon className="h-5 w-5" />} sub="Faktorer som kan påverka bostadens värde framöver, baserat på tillgänglig data.">
             Investeringsutsikt
           </ChapterTitle>
-
-          {macroCards.length > 0 && (
-            <div className="relative mb-8 grid grid-cols-2 gap-2.5 sm:grid-cols-3">
-              {macroCards.map((c) => (
-                <MetricCard key={c.label} icon={c.icon} label={c.label} value={c.value} sub={c.sub} />
-              ))}
-            </div>
-          )}
-
-          <Prose paragraphs={investmentOutlook.paragraphs.slice(0, 3)} />
-
-          {!isFree && investmentOutlook.futureProjects.length > 0 && (
+          {investmentOutlook ? (
             <>
-              <SubHeading icon={<CraneIcon className="h-4 w-4" />}>Planerad utveckling i närområdet</SubHeading>
-              <div className="relative grid grid-cols-1 gap-2.5 sm:grid-cols-2">
-                {investmentOutlook.futureProjects.map((proj, i) => (
-                  <ProjectCard key={i} name={proj} />
-                ))}
-              </div>
-            </>
-          )}
+              {macroCards.length > 0 && (
+                <div className="relative mb-8 grid grid-cols-2 gap-2.5 sm:grid-cols-3">
+                  {macroCards.map((c) => (
+                    <MetricCard key={c.label} icon={c.icon} label={c.label} value={c.value} sub={c.sub} />
+                  ))}
+                </div>
+              )}
 
-          {investmentOutlook.paragraphs[3] && (
-            <Callout icon={<LightbulbIcon className="h-4 w-4" />}>{investmentOutlook.paragraphs[3]}</Callout>
+              <Prose paragraphs={investmentOutlook.paragraphs.slice(0, 3)} />
+
+              {investmentOutlook.futureProjects.length > 0 && (
+                <>
+                  <SubHeading icon={<CraneIcon className="h-4 w-4" />}>Planerad utveckling i närområdet</SubHeading>
+                  <div className="relative grid grid-cols-1 gap-2.5 sm:grid-cols-2">
+                    {investmentOutlook.futureProjects.map((proj, i) => (
+                      <ProjectCard key={i} name={proj} />
+                    ))}
+                  </div>
+                </>
+              )}
+
+              {investmentOutlook.paragraphs[3] && (
+                <Callout icon={<LightbulbIcon className="h-4 w-4" />}>{investmentOutlook.paragraphs[3]}</Callout>
+              )}
+              <ChapterSources dataSources={p.dataSources} ids={["interest_rates", "scb_area_statistics", "market_intelligence", "location_intelligence", "infrastructure_projects"]} />
+            </>
+          ) : (
+            <PaywallSection
+              title="Premium — Investeringsutsikt"
+              description="Få tillgång till faktorer som kan påverka bostadens värde framöver: ränteläge, sysselsättning och planerad utveckling i närområdet."
+              analysisId={id}
+              analysisType={access.analysisType}
+              unlocked={access.unlocked}
+            />
           )}
-          <ChapterSources dataSources={p.dataSources} ids={["interest_rates", "scb_area_statistics", "market_intelligence", "location_intelligence", "infrastructure_projects"]} />
         </Page>
 
         {/* ══════════════════════════════════════════════════════════
             10. FINAL RECOMMENDATION
            ══════════════════════════════════════════════════════════ */}
         <Page n={10} source="Sammanställt av Köpanalys analysmotor" className="pb-16">
-          <ChapterTitle icon={<BadgeCheckIcon className="h-5 w-5" />} sub="En sammanställning av beslutsbetyg, riskbild och de delar av analysen som saknar underlag.">
+          <ChapterTitle icon={<BadgeCheckIcon className="h-5 w-5" />} sub="En sammanställning av förhandlingsläge och de delar av analysen som saknar underlag.">
             Helhetsbild
           </ChapterTitle>
 
-          {recommendation.paragraphs[0] && (
-            <p style={serifStyle} className="relative mb-5 text-[18px] font-medium leading-snug text-[#12271D]">
-              {recommendation.paragraphs[0]}
-            </p>
-          )}
-          <Prose paragraphs={recommendation.paragraphs.slice(1)} />
-
-          {negotiationScore !== null && (
+          {recommendation ? (
             <>
-              <SubHeading icon={<ChartIcon className="h-4 w-4" />}>Förhandlingsläge</SubHeading>
-              <div className="relative">
-                <SegmentedMeter bands={["Begränsat utrymme", "Måttligt utrymme", "Stort utrymme"]} activeIndex={negotiationBand(negotiationScore).bandIndex} />
+              {recommendation.paragraphs[0] && (
+                <p style={serifStyle} className="relative mb-5 text-[18px] font-medium leading-snug text-[#12271D]">
+                  {recommendation.paragraphs[0]}
+                </p>
+              )}
+              <Prose paragraphs={recommendation.paragraphs.slice(1)} />
+
+              {negotiationScore !== null && (
+                <>
+                  <SubHeading icon={<ChartIcon className="h-4 w-4" />}>Förhandlingsläge</SubHeading>
+                  <div className="relative">
+                    <SegmentedMeter bands={["Begränsat utrymme", "Måttligt utrymme", "Stort utrymme"]} activeIndex={negotiationBand(negotiationScore).bandIndex} />
+                  </div>
+                </>
+              )}
+
+              <div className="relative mt-8 grid grid-cols-1 gap-8 sm:grid-cols-2">
+                {recommendation.strengths.length > 0 && (
+                  <div>
+                    <p className="text-[11px] font-semibold uppercase tracking-wide text-[#4B7A57]">Huvudsakliga styrkor</p>
+                    <ul className="mt-2 space-y-2">
+                      {recommendation.strengths.map((s, i) => (
+                        <li key={i} className="flex items-start gap-2 text-[13px] leading-relaxed text-[#2A2820]">
+                          <CheckIcon className="mt-0.5 h-3.5 w-3.5 shrink-0 text-[#4B7A57]" />
+                          <span>{s}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+                {recommendation.weaknesses.length > 0 && (
+                  <div>
+                    <p className="text-[11px] font-semibold uppercase tracking-wide text-[#A2432F]">Huvudsakliga svagheter</p>
+                    <ul className="mt-2 space-y-2">
+                      {recommendation.weaknesses.map((w, i) => (
+                        <li key={i} className="flex items-start gap-2 text-[13px] leading-relaxed text-[#2A2820]">
+                          <WarningIcon className="mt-0.5 h-3.5 w-3.5 shrink-0 text-[#A2432F]" />
+                          <span>{w}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
               </div>
+
+              <SubHeading icon={<ClipboardIcon className="h-4 w-4" />}>Avgränsningar i analysen</SubHeading>
+              <ul className="relative space-y-1.5">
+                {recommendation.actions.map((a, i) => (
+                  <li key={i} className="flex items-start gap-2 text-[13.5px] text-[#2A2820]">
+                    <span className="mt-2 h-1 w-1 shrink-0 rounded-full bg-[#12271D]" />
+                    <span>{a}</span>
+                  </li>
+                ))}
+              </ul>
+
+              <SubHeading icon={<QuestionIcon className="h-4 w-4" />}>Uppgifter som saknas för denna bostad</SubHeading>
+              <ul className="relative space-y-1.5">
+                {recommendation.questionsToAsk.map((q, i) => (
+                  <li key={i} className="flex items-start gap-2 text-[13.5px] text-[#2A2820]">
+                    <span className="mt-2 h-1 w-1 shrink-0 rounded-full bg-[#12271D]" />
+                    <span>{q}</span>
+                  </li>
+                ))}
+              </ul>
+
+              <SubHeading icon={<ChartIcon className="h-4 w-4" />}>Faktorer kopplade till förhandlingsläget</SubHeading>
+              <ul className="relative space-y-1.5">
+                {recommendation.negotiationArguments.map((n, i) => (
+                  <li key={i} className="flex items-start gap-2 text-[13.5px] text-[#2A2820]">
+                    <span className="mt-2 h-1 w-1 shrink-0 rounded-full bg-[#B98A2E]" />
+                    <span>{n}</span>
+                  </li>
+                ))}
+              </ul>
+
+              <ChapterSources dataSources={p.dataSources} ids={["hemnet_page_scrape", "booli_listing", "scb_area_statistics", "interest_rates"]} />
             </>
+          ) : (
+            <PaywallSection
+              title="Premium — Helhetsbild"
+              description="Få en sammanställning av förhandlingsläge, huvudsakliga styrkor/svagheter och vad som saknar underlag i analysen."
+              analysisId={id}
+              analysisType={access.analysisType}
+              unlocked={access.unlocked}
+            />
           )}
-
-          <div className="relative mt-8 grid grid-cols-1 gap-8 sm:grid-cols-2">
-            {recommendation.strengths.length > 0 && (
-              <div>
-                <p className="text-[11px] font-semibold uppercase tracking-wide text-[#4B7A57]">Huvudsakliga styrkor</p>
-                <ul className="mt-2 space-y-2">
-                  {recommendation.strengths.map((s, i) => (
-                    <li key={i} className="flex items-start gap-2 text-[13px] leading-relaxed text-[#2A2820]">
-                      <CheckIcon className="mt-0.5 h-3.5 w-3.5 shrink-0 text-[#4B7A57]" />
-                      <span>{s}</span>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            )}
-            {recommendation.weaknesses.length > 0 && (
-              <div>
-                <p className="text-[11px] font-semibold uppercase tracking-wide text-[#A2432F]">Huvudsakliga svagheter</p>
-                <ul className="mt-2 space-y-2">
-                  {recommendation.weaknesses.map((w, i) => (
-                    <li key={i} className="flex items-start gap-2 text-[13px] leading-relaxed text-[#2A2820]">
-                      <WarningIcon className="mt-0.5 h-3.5 w-3.5 shrink-0 text-[#A2432F]" />
-                      <span>{w}</span>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            )}
-          </div>
-
-          <SubHeading icon={<ClipboardIcon className="h-4 w-4" />}>Avgränsningar i analysen</SubHeading>
-          <ul className="relative space-y-1.5">
-            {recommendation.actions.map((a, i) => (
-              <li key={i} className="flex items-start gap-2 text-[13.5px] text-[#2A2820]">
-                <span className="mt-2 h-1 w-1 shrink-0 rounded-full bg-[#12271D]" />
-                <span>{a}</span>
-              </li>
-            ))}
-          </ul>
-
-          <SubHeading icon={<QuestionIcon className="h-4 w-4" />}>Uppgifter som saknas för denna bostad</SubHeading>
-          <ul className="relative space-y-1.5">
-            {recommendation.questionsToAsk.map((q, i) => (
-              <li key={i} className="flex items-start gap-2 text-[13.5px] text-[#2A2820]">
-                <span className="mt-2 h-1 w-1 shrink-0 rounded-full bg-[#12271D]" />
-                <span>{q}</span>
-              </li>
-            ))}
-          </ul>
-
-          <SubHeading icon={<ChartIcon className="h-4 w-4" />}>Faktorer kopplade till förhandlingsläget</SubHeading>
-          <ul className="relative space-y-1.5">
-            {recommendation.negotiationArguments.map((n, i) => (
-              <li key={i} className="flex items-start gap-2 text-[13.5px] text-[#2A2820]">
-                <span className="mt-2 h-1 w-1 shrink-0 rounded-full bg-[#B98A2E]" />
-                <span>{n}</span>
-              </li>
-            ))}
-          </ul>
-
-          <ChapterSources dataSources={p.dataSources} ids={["hemnet_page_scrape", "booli_listing", "scb_area_statistics", "interest_rates"]} />
 
           <div className="relative mt-10 border-t border-black/10 pt-5 text-[11px] text-[#8C8471]">
             Analys v{analysis.version} · genererad {generatedDate} · motor {p.engineVersion} · {p.dataCompleteness.connectedSources} av{" "}

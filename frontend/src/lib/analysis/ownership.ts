@@ -236,6 +236,24 @@ export async function findPremiumAnalysisForProperty(
   return row ? { analysisId: row.analysis_id } : null;
 }
 
+/**
+ * True if this user has ever requested (free or premium) an analysis for
+ * this property — the minimal ownership check for routes that only expose
+ * version metadata or trigger a rerun (not report content), so it doesn't
+ * need to distinguish free/premium/locked the way findPremiumAnalysisForProperty does.
+ */
+export async function hasAnyAnalysisRequestForProperty(userId: string, propertyId: string): Promise<boolean> {
+  const { data, error } = await createAdminClient()
+    .from("analysis_requests")
+    .select("id")
+    .eq("user_id", userId)
+    .eq("property_id", propertyId)
+    .limit(1)
+    .maybeSingle();
+  if (error) throw new Error(`hasAnyAnalysisRequestForProperty failed: ${error.message}`);
+  return data !== null;
+}
+
 /** Deletes one ownership row (the user's copy in "my analyses"); never touches the shared analysis/property row. */
 export async function deleteAnalysisRequest(userId: string, requestId: string): Promise<boolean> {
   if (!UUID_RE.test(requestId)) return false;

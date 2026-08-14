@@ -83,7 +83,7 @@ const CHAPTER_FOR_FACTOR: Record<string, string> = {
   price: "Prisanalys",
   area: "Områdesanalys",
   housingAssociation: "Bostadsrättsförening",
-  risk: "Riskbedömning",
+  risk: "Möjliga risker",
   futureDevelopment: "Investeringsutsikt",
   market: "Investeringsutsikt",
 };
@@ -171,9 +171,8 @@ export function buildExecutiveSummary(report: AnalysisReport): string[] {
     : `${report.property.address} analyseras utan ett registrerat utgångspris.`;
 
   paragraphs.push(
-    `${priceLine} Det sammanvägda beslutsbetyget är ${report.decisionScore} av 100 (${report.verdict}), ` +
-      `med en tillförlitlighet på ${Math.round(report.overallConfidence * 100)}% baserat på ` +
-      `${report.dataCompleteness.connectedSources} av ${report.dataCompleteness.totalSources} anslutna datakällor.`
+    `${priceLine} Analysen baseras på ${report.dataCompleteness.connectedSources} av ` +
+      `${report.dataCompleteness.totalSources} anslutna datakällor.`
   );
 
   const scored = (report.decisionFactors ?? []).filter(
@@ -208,12 +207,11 @@ export function buildExecutiveSummary(report: AnalysisReport): string[] {
 
   const unresolved = (report.decisionFactors ?? []).filter((f) => f.id !== "confidence" && f.score === null);
   paragraphs.push(
-    `Analysens samlade tillförlitlighet är ${Math.round(report.overallConfidence * 100)}%. ` +
-      (unresolved.length > 0
-        ? `Följande områden kunde inte bedömas fullt ut i denna omgång: ${listSv(
-            unresolved.map((f) => svLabel(f.id))
-          )} — se respektive kapitel för en förklaring av vilka källor som saknas och varför.`
-        : "Samtliga analysområden kunde bedömas utifrån de datakällor som är anslutna idag.")
+    unresolved.length > 0
+      ? `Följande områden kunde inte bedömas fullt ut i denna omgång: ${listSv(
+          unresolved.map((f) => svLabel(f.id))
+        )} — se respektive kapitel för en förklaring av vilka källor som saknas och varför.`
+      : "Samtliga analysområden kunde bedömas utifrån de datakällor som är anslutna idag."
   );
 
   return paragraphs.filter((p) => p && p.trim().length > 0);
@@ -869,12 +867,6 @@ function riskNoiseSv(risk: DecisionFactorResult | undefined): string {
   );
 }
 
-function conclusionFromScore(score: number, topic: string): string {
-  if (score >= 65) return `Tillgänglig data indikerar en låg risknivå kopplad till ${topic}.`;
-  if (score >= 40) return `Tillgänglig data indikerar en måttlig risknivå kopplad till ${topic}.`;
-  return `Tillgänglig data indikerar en förhöjd risknivå kopplad till ${topic}.`;
-}
-
 export function buildRiskCategories(report: AnalysisReport, dataSources: DataSourceReport[]): RiskCategory[] {
   const risk = factor(report, "risk");
   const brf = factor(report, "housingAssociation");
@@ -897,7 +889,9 @@ export function buildRiskCategories(report: AnalysisReport, dataSources: DataSou
         ? `${riskPopulationSv(risk)} En bredare marknadsbild (ränteläge, sysselsättning) finns i kapitlet Investeringsutsikt.`
         : "Inga marknadsindikatorer är kopplade till denna analys ännu.",
       evidence: [],
-      conclusion: pop ? conclusionFromScore(pop.score, "marknadsläget") : "Kan inte bedömas utan mer marknadsdata.",
+      conclusion: pop
+        ? "Efterfrågeläget på orten är en faktor att väga in tillsammans med de övriga observationerna i denna analys."
+        : "Kan inte bedömas utan mer marknadsdata.",
     });
   }
 
@@ -911,7 +905,9 @@ export function buildRiskCategories(report: AnalysisReport, dataSources: DataSou
       headline: "Känslighet för förändrat ränteläge",
       explanation: ir ? riskInterestRateSv(risk) : "Ingen aktuell styrränta är kopplad till denna analys.",
       evidence: [],
-      conclusion: ir ? conclusionFromScore(ir.score, "ränteläget") : "Kan inte bedömas utan ränteuppgifter.",
+      conclusion: ir
+        ? "Ränteläget påverkar den löpande boendekostnaden och kan vara värt att stämma av med en långivare eller rådgivare."
+        : "Kan inte bedömas utan ränteuppgifter.",
     });
   }
 
@@ -930,7 +926,10 @@ export function buildRiskCategories(report: AnalysisReport, dataSources: DataSou
           ? `${weaknesses.length} svaghet${weaknesses.length === 1 ? "" : "er"} identifierad${weaknesses.length === 1 ? "" : "e"} i föreningens senaste årsredovisning. Se kapitlet Bostadsrättsförening för en fullständig genomgång.`
           : "Föreningens ekonomi kunde inte bedömas i denna analys.",
       evidence: [],
-      conclusion: brfScore !== null ? conclusionFromScore(brfScore, "föreningens ekonomi") : "Kräver en verifierad årsredovisning för en säker bedömning.",
+      conclusion:
+        brfScore !== null
+          ? "Föreningens ekonomi är värd att undersöka vidare, till exempel genom att läsa hela årsredovisningen."
+          : "Kräver en verifierad årsredovisning för en säker bedömning.",
     });
   }
 
@@ -944,7 +943,9 @@ export function buildRiskCategories(report: AnalysisReport, dataSources: DataSou
       headline: "Service, tillgänglighet och läge",
       explanation: amenity ? riskAmenitySv(risk) : "Ingen data om närservice är kopplad till denna adress i denna analys.",
       evidence: [],
-      conclusion: amenity ? conclusionFromScore(amenity.score, "närområdets service") : "Kan inte bedömas utan data om närservice.",
+      conclusion: amenity
+        ? "Närservicen påverkar vardagen och kan vara värd att uppleva på plats vid ett besök."
+        : "Kan inte bedömas utan data om närservice.",
     });
   }
 
@@ -962,7 +963,10 @@ export function buildRiskCategories(report: AnalysisReport, dataSources: DataSou
           ? `Föreningen har en uppskattad likviditetsbuffert motsvarande ${liquidityMonths} månaders löpande kostnader.`
           : "Föreningens likviditet (kassabuffert) kunde inte beräknas — detta kräver en verifierad årsredovisning, som inte är ansluten för denna förening idag.",
       evidence: [],
-      conclusion: score !== null ? conclusionFromScore(score, "likviditeten") : "Kräver en verifierad årsredovisning.",
+      conclusion:
+        score !== null
+          ? "Föreningens likviditet kan vara värd att fråga föreningen eller mäklaren om vid behov."
+          : "Kräver en verifierad årsredovisning.",
     });
   }
 
@@ -979,7 +983,9 @@ export function buildRiskCategories(report: AnalysisReport, dataSources: DataSou
         (noise ? riskNoiseSv(risk) : "Ingen data om vägbuller är kopplad till denna adress.") +
         (envSource && envSource.status !== "ok" ? ` ${capitalize(NOT_CONNECTED_SV.environmental_data)}` : ""),
       evidence: [],
-      conclusion: noise ? conclusionFromScore(noise.score, "miljöexponeringen") : "Endast delvis kartlagt — se ovan.",
+      conclusion: noise
+        ? "Buller- och miljöexponering kan vara värt att uppleva på plats, gärna vid olika tider på dygnet."
+        : "Endast delvis kartlagt — se ovan.",
     });
   }
 
@@ -993,7 +999,9 @@ export function buildRiskCategories(report: AnalysisReport, dataSources: DataSou
       headline: "Byggnadens ålder och underhållsbehov",
       explanation: age ? riskBuildingAgeSv(risk) : "Byggår saknas för denna bostad, så underhållsrisk kan inte bedömas.",
       evidence: [],
-      conclusion: age ? conclusionFromScore(age.score, "byggnadens skick") : "Kräver uppgift om byggår.",
+      conclusion: age
+        ? "Byggnadens ålder och skick kan vara värt att undersöka närmare, till exempel via en besiktning."
+        : "Kräver uppgift om byggår.",
     });
   }
 
@@ -1100,13 +1108,6 @@ export interface FinalRecommendation {
   negotiationArguments: string[];
 }
 
-const RISK_STATUS_SV: Record<string, string> = {
-  "Low risk": "låg risk",
-  "Moderate risk": "måttlig risk",
-  "Elevated risk": "förhöjd risk",
-  "High risk": "hög risk",
-};
-
 /** Composed straight from negotiation.ts's supportingData (days on market,
  *  price/income ratio, policy rate, population trend) — never the
  *  analyzer's English `explanation`. This is negotiation's one canonical
@@ -1193,23 +1194,21 @@ export function buildFinalRecommendation(report: AnalysisReport): FinalRecommend
   );
   const strengths = scored
     .filter((f) => f.score >= 65)
-    .map((f) => `${capitalize(svLabel(f.id))} (${f.score}/100) — se kapitlet ${CHAPTER_FOR_FACTOR[f.id] ?? capitalize(svLabel(f.id))}.`);
+    .map((f) => `${capitalize(svLabel(f.id))} — se kapitlet ${CHAPTER_FOR_FACTOR[f.id] ?? capitalize(svLabel(f.id))}.`);
   const weaknesses = scored
     .filter((f) => f.score < 45)
-    .map((f) => `${capitalize(svLabel(f.id))} (${f.score}/100) — se kapitlet ${CHAPTER_FOR_FACTOR[f.id] ?? capitalize(svLabel(f.id))}.`);
+    .map((f) => `${capitalize(svLabel(f.id))} — se kapitlet ${CHAPTER_FOR_FACTOR[f.id] ?? capitalize(svLabel(f.id))}.`);
 
   const risk = factor(report, "risk");
   const negotiation = factor(report, "negotiation");
   const brf = factor(report, "housingAssociation");
 
   const paragraphs: string[] = [
-    `Det sammanvägda beslutsbetyget är ${report.decisionScore} av 100 (${report.verdict}), med en tillförlitlighet på ` +
-      `${Math.round(report.overallConfidence * 100)}% baserat på ${report.dataCompleteness.connectedSources} av ` +
-      `${report.dataCompleteness.totalSources} anslutna datakällor.`,
+    `Analysen baseras på ${report.dataCompleteness.connectedSources} av ${report.dataCompleteness.totalSources} anslutna datakällor.`,
     negotiationSv(negotiation),
     risk && risk.score !== null
-      ? `Riskbilden klassificeras sammantaget som ${RISK_STATUS_SV[risk.status] ?? risk.status.toLowerCase()}. Se kapitlet Riskbedömning för en genomgång av samtliga åtta riskkategorier.`
-      : "Riskbilden kunde inte sammanfattas fullt ut — se kapitlet Riskbedömning för detaljer om vad som saknas.",
+      ? "En genomgång av åtta möjliga riskkategorier finns i kapitlet Möjliga risker."
+      : "Riskbilden kunde inte sammanfattas fullt ut — se kapitlet Möjliga risker för detaljer om vad som saknas.",
   ];
 
   const actions: string[] = [
@@ -1232,7 +1231,7 @@ export function buildFinalRecommendation(report: AnalysisReport): FinalRecommend
   if (risk && risk.score !== null && risk.score < 50) {
     negotiationArguments = [
       ...negotiationArguments,
-      "En förhöjd riskbild, som beskrivs i kapitlet Riskbedömning, är en av de faktorer som generellt förknippas med förhandlingsutrymme.",
+      "Flera av observationerna i kapitlet Möjliga risker kan vara värda att lyfta i en förhandling.",
     ];
   }
   if (negotiationArguments.length === 0) {
