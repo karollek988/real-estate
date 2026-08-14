@@ -35,22 +35,14 @@ function AnalyzingContent() {
   const analysisId = searchParams.get("id");
   const [currentStage, setCurrentStage] = useState(-1);
   const [completedStages, setCompletedStages] = useState<number[]>([]);
-  const [elapsed, setElapsed] = useState(0);
   const [videoReady, setVideoReady] = useState(false);
   const [ldBarScriptReady, setLdBarScriptReady] = useState(false);
-  const startTime = useRef(Date.now());
   const redirecting = useRef(false);
   const videoRef = useRef<HTMLVideoElement>(null);
   const ldBarElRef = useRef<HTMLDivElement>(null);
   const ldBarInstanceRef = useRef<LdBarInstance | null>(null);
 
   useEffect(() => {
-    startTime.current = Date.now();
-
-    const elapsedInterval = setInterval(() => {
-      setElapsed(Math.floor((Date.now() - startTime.current) / 1000));
-    }, 500);
-
     let stageTimer: ReturnType<typeof setTimeout>;
     let stageIndex = -1;
 
@@ -68,7 +60,6 @@ function AnalyzingContent() {
     advanceStage();
 
     return () => {
-      clearInterval(elapsedInterval);
       clearTimeout(stageTimer);
     };
   }, []);
@@ -157,6 +148,9 @@ function AnalyzingContent() {
       <div className="flex w-full max-w-lg flex-col items-center gap-10 text-center">
         {/* Logo / brand mark */}
         <div className="flex flex-col items-center gap-4">
+          <h1 className="text-[22px] font-semibold tracking-tight">
+            Analyserar fastigheten
+          </h1>
           <div className="w-full max-w-[360px] overflow-hidden rounded-2xl bg-[#FAFAFA] ring-1 ring-white/[0.06]">
             <video
               ref={videoRef}
@@ -185,17 +179,13 @@ function AnalyzingContent() {
               </span>
             </div>
           </div>
-          <h1 className="text-[22px] font-semibold tracking-tight">
-            Analyserar fastigheten
-          </h1>
           <p className="max-w-xs text-sm leading-relaxed text-neutral-400">
             Detta tar vanligen mellan 30 sekunder och 2 minuter beroende på mängden offentlig data som behöver hämtas.
           </p>
         </div>
 
-        {/* Progress readout */}
-        <div className="flex w-full flex-col items-center gap-2">
-          <span className="w-full text-left text-[11px] text-neutral-500">{elapsed}s</span>
+        {/* Progress bar */}
+        <div className="flex w-full flex-col items-center">
           <div
             ref={ldBarElRef}
             className="ldBar w-full"
@@ -203,7 +193,6 @@ function AnalyzingContent() {
             data-stroke="data:ldbar/res,gradient(0,1,#9df,#9fd,#df9,#fd9)"
             data-path="M10 20Q20 15 30 20Q40 25 50 20Q60 15 70 20Q80 25 90 20"
           />
-          <span className="w-full text-right text-[11px] text-neutral-500">{progressPct}%</span>
         </div>
 
         {/* Stage checklist */}
