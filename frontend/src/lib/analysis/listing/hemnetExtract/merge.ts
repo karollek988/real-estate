@@ -72,6 +72,9 @@ export function mergeExtractions(results: ExtractionResult[]): HemnetPageData {
   data.image_urls = dedupe([...apollo.image_urls, ...jsonld.image_urls, ...html.image_urls]);
   data.floorplan_urls = dedupe([...apollo.floorplan_urls, ...html.floorplan_urls]);
   data.features = dedupe([...apollo.features, ...html.features]);
+  // Only Apollo's structured state carries this (verified 2026-08-14) — no
+  // other source produces it, so nothing to union/prioritize against.
+  data.nearby_sold_comparables = apollo.nearby_sold_comparables;
 
   enrichFromDescription(data);
 
