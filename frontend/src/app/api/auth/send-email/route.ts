@@ -85,8 +85,11 @@ export async function POST(request: Request) {
     return hookError(400, "Missing required hook fields.");
   }
 
+  // emailData.site_url is GoTrue's own API base URL, not the app's domain —
+  // using it here would send users to <project>.supabase.co instead of
+  // kopanalys.se. NEXT_PUBLIC_SITE_URL is the correct base for this link.
   const confirmUrl =
-    `${emailData.site_url}/auth/confirm` +
+    `${process.env.NEXT_PUBLIC_SITE_URL}/auth/confirm` +
     `?token_hash=${encodeURIComponent(emailData.token_hash)}` +
     `&type=${encodeURIComponent(emailData.email_action_type)}` +
     `&next=${encodeURIComponent(emailData.redirect_to || "/dashboard")}`;

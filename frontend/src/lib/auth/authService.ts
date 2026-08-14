@@ -10,7 +10,7 @@ export function signUpWithPassword(email: string, password: string, fullName: st
       // Destination after the confirmation link is clicked and verified by
       // /auth/confirm — not /auth/callback, which is the OAuth code-exchange
       // route used by signInWithGoogle below.
-      emailRedirectTo: `${window.location.origin}/dashboard`,
+      emailRedirectTo: `${window.location.origin}/auth/confirmed`,
     },
   });
 }
