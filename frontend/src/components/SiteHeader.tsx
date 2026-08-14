@@ -285,7 +285,7 @@ export function SiteHeader() {
                 priority
                 className="h-9 w-9 rounded-full"
               />
-              <span className="text-lg font-semibold tracking-tight">Köpanalys</span>
+              <span className="text-lg font-semibold tracking-tight text-white">Köpanalys</span>
             </Link>
             <span aria-hidden className="hidden h-6 w-px bg-white/15 lg:block" />
             <nav className="hidden items-center gap-6 lg:flex">

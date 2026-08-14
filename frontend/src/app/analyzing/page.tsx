@@ -157,11 +157,11 @@ function AnalyzingContent() {
       <div className="flex w-full max-w-lg flex-col items-center gap-10 text-center">
         {/* Logo / brand mark */}
         <div className="flex flex-col items-center gap-4">
-          <div className="w-full max-w-[260px] overflow-hidden rounded-2xl bg-white/[0.02] ring-1 ring-white/[0.06]">
+          <div className="w-full max-w-[360px] overflow-hidden rounded-2xl bg-white/[0.02] ring-1 ring-white/[0.06]">
             <video
               ref={videoRef}
               src="/Loading_Icon_Video_Davinci.mp4"
-              className="block aspect-[64/29] w-full object-cover"
+              className="block aspect-square w-full object-contain"
               muted
               playsInline
               preload="auto"
