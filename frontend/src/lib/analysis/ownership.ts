@@ -237,6 +237,35 @@ export async function findPremiumAnalysisForProperty(
 }
 
 /**
+ * Refunds every quota-consuming request tied to this analysis — called when
+ * the pipeline can't gather the essential listing fields (price, fee, rooms,
+ * living area) after all retries/fallbacks and the analysis is marked
+ * failed instead of complete. A shared (cached-per-property) analysis can
+ * have more than one requester; each gets their own unit back via the
+ * atomic refund_analysis_quota RPC (mirrors consume_analysis_quota).
+ * Requests that never consumed quota (quotaConsumed=false — the dev-admin
+ * bypass, or a paywalled premium request) are skipped, nothing to refund.
+ */
+export async function refundAnalysisRequestsQuota(analysisId: string): Promise<void> {
+  const client = createAdminClient();
+  const { data, error } = await client
+    .from("analysis_requests")
+    .select("user_id, analysis_type")
+    .eq("analysis_id", analysisId)
+    .eq("quota_consumed", true);
+  if (error) throw new Error(`refundAnalysisRequestsQuota failed: ${error.message}`);
+
+  const rows = data as Array<{ user_id: string; analysis_type: AnalysisType }>;
+  for (const row of rows) {
+    const { error: rpcError } = await client.rpc("refund_analysis_quota", {
+      p_user_id: row.user_id,
+      p_type: row.analysis_type,
+    });
+    if (rpcError) throw new Error(`refundAnalysisRequestsQuota RPC failed for user ${row.user_id}: ${rpcError.message}`);
+  }
+}
+
+/**
  * True if this user has ever requested (free or premium) an analysis for
  * this property — the minimal ownership check for routes that only expose
  * version metadata or trigger a rerun (not report content), so it doesn't

@@ -6,8 +6,10 @@ import { normalizedPropertyKey } from "./normalize";
 import { getProviders } from "./providers/registry";
 import type { DataProvider, PropertyEnrichment, ProviderResult } from "./providers/types";
 import { buildAnalysis, ENGINE_VERSION } from "./engine/buildAnalysis";
+import { numberOrNull } from "./engine/helpers";
 import { applyProtectedIdentityFields } from "./identityTrust";
 import { recordFieldProvenance } from "./providers/providerConfidence";
+import { refundAnalysisRequestsQuota } from "./ownership";
 import {
   completeAnalysis,
   failAnalysis,
@@ -197,6 +199,35 @@ async function upsertProperty(extracted: ExtractedProperty): Promise<PropertyRec
  */
 const PROVIDER_TIMEOUT_MS = 25_000;
 
+/**
+ * Thrown when the pipeline can't gather the essential listing fields — the
+ * report can't be meaningfully generated without them, and the customer
+ * shouldn't be charged for one that couldn't be. Distinct from a generic
+ * pipeline exception so the catch block below knows to also refund the
+ * quota this analysis consumed (a genuine bug/DB error shouldn't trigger a
+ * refund the same way — those are retried by the user via "Update analysis"
+ * against the same already-consumed request).
+ */
+class InsufficientListingDataError extends Error {}
+
+const ESSENTIAL_FIELD_LABELS: Record<string, string> = {
+  asking_price_sek: "utgångspris",
+  monthly_fee_sek: "månadsavgift",
+  rooms: "antal rum",
+  living_area_m2: "boarea",
+};
+
+/** Mirrors buildAnalysis.ts's own field resolution exactly (rooms: URL-slug extraction wins over the scraped page). */
+function missingEssentialFields(attributes: Record<string, unknown>, extracted: ExtractedProperty): string[] {
+  const rooms = extracted.rooms ?? numberOrNull(attributes.rooms);
+  const missing: string[] = [];
+  if (numberOrNull(attributes.asking_price_sek) === null) missing.push("asking_price_sek");
+  if (numberOrNull(attributes.monthly_fee_sek) === null) missing.push("monthly_fee_sek");
+  if (rooms === null) missing.push("rooms");
+  if (numberOrNull(attributes.living_area_m2) === null) missing.push("living_area_m2");
+  return missing;
+}
+
 async function withProviderTimeout(
   provider: DataProvider,
   property: PropertyRecord,
@@ -286,6 +317,14 @@ async function runPipeline(
       });
     }
 
+    const missing = missingEssentialFields(enriched.attributes, extracted);
+    if (missing.length > 0) {
+      const labels = missing.map((f) => ESSENTIAL_FIELD_LABELS[f] ?? f).join(", ");
+      throw new InsufficientListingDataError(
+        `Could not gather the essential listing data (${labels}) for ${property.address} after all retries/fallbacks.`
+      );
+    }
+
     const report = buildAnalysis(enriched, extracted, results);
     return await completeAnalysis(pendingId, report);
   } catch (err) {
@@ -293,6 +332,11 @@ async function runPipeline(
     await failAnalysis(pendingId, message).catch(() => {
       // The original pipeline error is the one worth surfacing.
     });
+    if (err instanceof InsufficientListingDataError) {
+      await refundAnalysisRequestsQuota(pendingId).catch((refundErr) => {
+        console.error(`refundAnalysisRequestsQuota failed for analysis ${pendingId}:`, refundErr);
+      });
+    }
     throw err;
   }
 }
