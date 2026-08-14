@@ -6,6 +6,16 @@
  * merge.ts can compare same-shaped candidates from every source field-by-field
  * instead of juggling partial objects.
  */
+/** One "recently sold nearby" comparable from Hemnet's own similarSaleCards widget. */
+export interface HemnetComparableSale {
+  address: string | null;
+  soldPriceSek: number | null;
+  soldDate: string | null;
+  livingAreaM2: number | null;
+  rooms: number | null;
+  pricePerM2Sek: number | null;
+}
+
 export interface HemnetPageData {
   street_address: string | null;
   asking_price_sek: number | null;
@@ -42,6 +52,7 @@ export interface HemnetPageData {
   features: string[];
   fireplace: boolean | null;
   new_construction: boolean | null;
+  nearby_sold_comparables: HemnetComparableSale[];
 }
 
 export function emptyHemnetPageData(): HemnetPageData {
@@ -81,6 +92,7 @@ export function emptyHemnetPageData(): HemnetPageData {
     features: [],
     fireplace: null,
     new_construction: null,
+    nearby_sold_comparables: [],
   };
 }
 

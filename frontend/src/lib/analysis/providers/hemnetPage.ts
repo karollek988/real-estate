@@ -119,5 +119,14 @@ export function mapPageDataToAttributes(pageData: HemnetPageData): Record<string
   // the field in when nothing has claimed it yet).
   if (pageData.housing_association !== null) attrs.housing_association = pageData.housing_association;
 
+  // Nearby sold comparables straight from this listing's own Hemnet page
+  // (similarSaleCards). Kept under a distinct key from Booli's
+  // `comparable_sales` — see engine/analyzers/price.ts, which prefers this
+  // one when present rather than letting registry ordering silently pick a
+  // winner between two real (non-placeholder) sources.
+  if (pageData.nearby_sold_comparables.length > 0) {
+    attrs.hemnet_comparable_sales = pageData.nearby_sold_comparables;
+  }
+
   return attrs;
 }

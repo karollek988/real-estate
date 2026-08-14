@@ -44,10 +44,16 @@ export const priceAnalyzer: Analyzer = {
 
     const supportingData: Record<string, unknown> = { askingPriceSek: askingPrice };
 
-    // Booli /sold comparables (providers/booli.ts::summarizeSoldListings) —
-    // passed through as-is for the report's price chapter to render; this
+    // Comparable sales: prefer this listing's own Hemnet-page-sourced
+    // comparables (providers/hemnetPage.ts, `similarSaleCards` — specific to
+    // this exact listing) over Booli's area-wide /sold search
+    // (providers/booli.ts::summarizeSoldListings) when both exist; passed
+    // through as-is for the report's price chapter to render. This
     // analyzer's own score only uses the derived areaMedianPerM2 above.
-    if (Array.isArray(attributes.comparable_sales) && attributes.comparable_sales.length > 0) {
+    if (Array.isArray(attributes.hemnet_comparable_sales) && attributes.hemnet_comparable_sales.length > 0) {
+      supportingData.comparableSales = attributes.hemnet_comparable_sales;
+      supportingData.comparableSalesCount = attributes.hemnet_comparable_sales.length;
+    } else if (Array.isArray(attributes.comparable_sales) && attributes.comparable_sales.length > 0) {
       supportingData.comparableSales = attributes.comparable_sales;
       supportingData.comparableSalesCount = numberOrNull(attributes.comparable_sales_count) ?? attributes.comparable_sales.length;
     }

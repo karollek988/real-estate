@@ -17,8 +17,8 @@
  * entity, then resolves every ref it needs (broker, agency, BRF, municipality)
  * against the same cache.
  */
-import { emptyHemnetPageData, type HemnetPageData } from "./types.ts";
-import { moneyAmount, parseAreaString, resolveRef } from "./utils.ts";
+import { emptyHemnetPageData, type HemnetComparableSale, type HemnetPageData } from "./types.ts";
+import { moneyAmount, parseAreaString, parseSekNumber, readParamField, resolveRef } from "./utils.ts";
 
 /** Amenity `kind` values that map onto a dedicated boolean field on HemnetPageData. */
 const AMENITY_KIND_SETTER: Record<string, (data: HemnetPageData, value: boolean) => void> = {
@@ -177,6 +177,59 @@ function populateFromListing(
   }
 
   populateAmenities(data, listing);
+  data.nearby_sold_comparables = extractNearbySoldComparables(apollo, listing);
+}
+
+/**
+ * `similarSaleCards({"limit":10})` on the listing entity — Hemnet's own
+ * "recently sold nearby" widget (verified live 2026-08-14 on real listing
+ * pages: an array of `{ __ref: "SaleCard:<id>" }` pointers, each resolving
+ * to a SaleCard with a sold address, sold date, final/asking price,
+ * price/m², living area, room count, and coordinates). Distinct from
+ * `saleHistory` (the *subject* property's own past sales, unrelated) and
+ * from `PropertySale` entities (also the subject property's own history).
+ */
+function extractNearbySoldComparables(
+  apollo: Record<string, unknown>,
+  listing: Record<string, unknown>
+): HemnetComparableSale[] {
+  const refs = readParamField(listing, "similarSaleCards");
+  if (!Array.isArray(refs)) return [];
+
+  const out: HemnetComparableSale[] = [];
+  for (const ref of refs) {
+    const card = resolveRef(apollo, ref);
+    if (!card) continue;
+
+    const address = typeof card.streetAddress === "string" && card.streetAddress.trim() ? card.streetAddress.trim() : null;
+    const soldPriceSek = typeof card.finalPrice === "string" ? parseSekNumber(card.finalPrice) : null;
+    const pricePerM2Sek = typeof card.squareMeterPrice === "string" ? parseSekNumber(card.squareMeterPrice) : null;
+    const livingAreaM2 = parseAreaString(card.livingArea);
+    const rooms = parseRoomsString(card.rooms);
+    const soldDate = parseSoldAtDate(card.soldAt);
+
+    // Skip a card that resolved to nothing usable (e.g. a stale/broken ref).
+    if (address === null && soldPriceSek === null) continue;
+    out.push({ address, soldPriceSek, soldDate, livingAreaM2, rooms, pricePerM2Sek });
+  }
+  return out;
+}
+
+/** "4 rum" / "2,5 rum" → 4 / 2.5. */
+function parseRoomsString(value: unknown): number | null {
+  if (typeof value !== "string") return null;
+  const match = /[\d]+(?:[.,]\d+)?/.exec(value);
+  if (!match) return null;
+  const parsed = parseFloat(match[0].replace(",", "."));
+  return Number.isFinite(parsed) && parsed > 0 ? parsed : null;
+}
+
+/** SaleCard.soldAt is a Unix-seconds timestamp, stringly-typed (e.g. "1780039800.0") — → "YYYY-MM-DD". */
+function parseSoldAtDate(value: unknown): string | null {
+  if (typeof value !== "string" && typeof value !== "number") return null;
+  const seconds = typeof value === "string" ? parseFloat(value) : value;
+  if (!Number.isFinite(seconds) || seconds <= 0) return null;
+  return new Date(seconds * 1000).toISOString().slice(0, 10);
 }
 
 /**
