@@ -271,8 +271,6 @@ export function buildPropertyOverview(
     { label: "Öppen budgivning", value: boolSv(p.biddingOpen) },
     { label: "Föregående försäljning", value: p.previousSalePriceSek ? `${sek(p.previousSalePriceSek)}${p.previousSaleDate ? ` (${dateSv(p.previousSaleDate)})` : ""}` : NA },
     { label: "Upplåtelseform", value: p.ownershipType ?? str(attributes.ownership_type) ?? NA },
-    { label: "Mäklare", value: p.broker ?? str(attributes.broker) ?? NA },
-    { label: "Mäklarbyrå", value: p.agency ?? str(attributes.agency) ?? NA },
     { label: "Annonsdatum", value: dateSv(p.listingDate ?? str(attributes.listing_date)) },
     { label: "Objekt-ID", value: p.objectId ?? NA },
     { label: "Planritning", value: (p.floorplanUrls ?? []).length > 0 ? "Ja" : NA },
