@@ -209,25 +209,41 @@ function ErrorMessage({ message }: { message: string | null }) {
   );
 }
 
+function isEmailNotConfirmedError(error: { code?: string; message: string }): boolean {
+  return error.code === "email_not_confirmed" || error.message.toLowerCase().includes("email not confirmed");
+}
+
 function LoginForm({ onSuccess }: { onSuccess: () => void }) {
-  const { signIn } = useAuth();
+  const { signIn, resendSignupConfirmation } = useAuth();
   const [remember, setRemember] = useState(true);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [needsConfirmation, setNeedsConfirmation] = useState(false);
+  const [resendState, setResendState] = useState<"idle" | "sending" | "sent">("idle");
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError(null);
+    setNeedsConfirmation(false);
+    setResendState("idle");
     setLoading(true);
     const { error } = await signIn(email, password);
     setLoading(false);
     if (error) {
       setError(error.message);
+      setNeedsConfirmation(isEmailNotConfirmedError(error));
       return;
     }
     onSuccess();
+  }
+
+  async function handleResend() {
+    setResendState("sending");
+    const { error } = await resendSignupConfirmation(email);
+    setResendState(error ? "idle" : "sent");
+    if (error) setError(error.message);
   }
 
   return (
@@ -267,6 +283,25 @@ function LoginForm({ onSuccess }: { onSuccess: () => void }) {
         </button>
       </div>
       <ErrorMessage message={error} />
+      {needsConfirmation && (
+        <div className="mt-3">
+          {resendState === "sent" ? (
+            <p className="flex items-center gap-1.5 text-sm text-green-400">
+              <CheckIcon className="h-4 w-4" />
+              Ny bekräftelselänk skickad! Kolla din inkorg.
+            </p>
+          ) : (
+            <button
+              type="button"
+              onClick={handleResend}
+              disabled={resendState === "sending"}
+              className="cursor-pointer text-sm font-medium text-green-400 underline underline-offset-4 transition hover:text-green-300 disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              {resendState === "sending" ? "Skickar..." : "Skicka bekräftelselänk igen"}
+            </button>
+          )}
+        </div>
+      )}
       <SubmitButton disabled={loading}>
         <LockIcon className="h-5 w-5" />
         {loading ? "Loggar in..." : "Logga in"}
