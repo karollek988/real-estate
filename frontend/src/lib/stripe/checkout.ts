@@ -11,7 +11,8 @@ export async function createSubscriptionCheckout(
   priceKey: "premium_monthly",
   userId: string,
   successUrl: string,
-  cancelUrl: string
+  cancelUrl: string,
+  couponId?: string
 ): Promise<CreateCheckoutResult> {
   const stripe = createStripeClient();
   console.log("[Stripe] Getting price ID for:", priceKey);
@@ -24,6 +25,7 @@ export async function createSubscriptionCheckout(
     line_items: [{ price: priceId, quantity: 1 }],
     managed_payments: { enabled: false },
     ...(customerId ? { customer: customerId } : {}),
+    ...(couponId ? { discounts: [{ coupon: couponId }] } : {}),
     client_reference_id: userId,
     metadata: { userId, priceKey },
     success_url: successUrl,
@@ -40,7 +42,8 @@ export async function createOneTimeCheckout(
   userId: string,
   successUrl: string,
   cancelUrl: string,
-  unlockAnalysisId?: string
+  unlockAnalysisId?: string,
+  couponId?: string
 ): Promise<CreateCheckoutResult> {
   const stripe = createStripeClient();
   console.log("[Stripe] Getting price ID for:", priceKey);
@@ -58,6 +61,7 @@ export async function createOneTimeCheckout(
     line_items: [{ price: priceId, quantity: 1 }],
     managed_payments: { enabled: false },
     ...(customerId ? { customer: customerId } : {}),
+    ...(couponId ? { discounts: [{ coupon: couponId }] } : {}),
     client_reference_id: userId,
     metadata,
     success_url: successUrl,

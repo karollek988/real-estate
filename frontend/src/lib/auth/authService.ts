@@ -1,13 +1,16 @@
 import { createClient } from "@/lib/supabase/client";
 
-export function signUpWithPassword(email: string, password: string, fullName: string) {
+export function signUpWithPassword(email: string, password: string, fullName: string, firstName: string) {
   const supabase = createClient();
   return supabase.auth.signUp({
     email,
     password,
     options: {
-      data: { full_name: fullName },
-      emailRedirectTo: `${window.location.origin}/auth/callback`,
+      data: { full_name: fullName, first_name: firstName },
+      // Destination after the confirmation link is clicked and verified by
+      // /auth/confirm — not /auth/callback, which is the OAuth code-exchange
+      // route used by signInWithGoogle below.
+      emailRedirectTo: `${window.location.origin}/dashboard`,
     },
   });
 }

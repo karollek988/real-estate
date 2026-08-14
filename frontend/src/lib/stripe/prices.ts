@@ -61,3 +61,22 @@ export function isSubscriptionPriceId(priceId: string): boolean {
   }
   return false;
 }
+
+// Stripe Coupon ids for the First 100 Users campaign — created once in the
+// Stripe Dashboard (50% off, duration "once"), referenced by id here the
+// same way price ids are above.
+const DISCOUNT_CODE_KIND_TO_COUPON_ENV = {
+  premium_analysis: "STRIPE_COUPON_ANALYSIS_50OFF",
+  premium_subscription: "STRIPE_COUPON_SUBSCRIPTION_50OFF",
+} as const;
+
+export type DiscountCodeKind = keyof typeof DISCOUNT_CODE_KIND_TO_COUPON_ENV;
+
+export function getCouponId(kind: DiscountCodeKind): string {
+  const envVar = DISCOUNT_CODE_KIND_TO_COUPON_ENV[kind];
+  const couponId = process.env[envVar];
+  if (!couponId) {
+    throw new Error(`Missing Stripe Coupon ID for "${kind}". Set ${envVar} environment variable.`);
+  }
+  return couponId;
+}

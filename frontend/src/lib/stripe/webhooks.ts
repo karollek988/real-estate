@@ -115,8 +115,13 @@ export async function handleCheckoutSessionCompleted(session: Stripe.Checkout.Se
   const customerId = getCustomerId(session);
   console.log("[Webhook] checkout.session.completed — userId:", userId, "customerId:", customerId, "mode:", session.mode);
 
+  const admin = createAdminClient();
+  const { error: finalizeError } = await admin.rpc("finalize_discount_code", { p_session_id: session.id });
+  if (finalizeError) {
+    console.error("[Webhook] ✗ Failed to finalize discount code for session", session.id, ":", finalizeError.message);
+  }
+
   if (customerId) {
-    const admin = createAdminClient();
     const { error } = await admin
       .from("profiles")
       .update({ stripe_customer_id: customerId })
@@ -142,8 +147,7 @@ export async function handleCheckoutSessionCompleted(session: Stripe.Checkout.Se
 
   if (session.mode === "payment" && session.metadata?.priceKey === "premium_analysis") {
     console.log("[Webhook] Processing one-time premium analysis purchase");
-    const adminClient = createAdminClient();
-    const { data: profile } = await adminClient
+    const { data: profile } = await admin
       .from("profiles")
       .select("premium_analyses_remaining")
       .eq("id", userId)
@@ -166,7 +170,7 @@ export async function handleCheckoutSessionCompleted(session: Stripe.Checkout.Se
       console.log("[Webhook] ✓ Unlocked analysis, decrementing balance to compensate. Net: balance unchanged");
     }
 
-    await adminClient
+    await admin
       .from("profiles")
       .update({ premium_analyses_remaining: newRemaining })
       .eq("id", userId);
@@ -175,6 +179,20 @@ export async function handleCheckoutSessionCompleted(session: Stripe.Checkout.Se
   }
 
   console.log("[Webhook] ✓ Purchase Completed for user:", userId);
+}
+
+// Checkout Sessions expire (24h by default) if the user never pays — release
+// any discount code reserved for that session back to 'active' so it isn't
+// burned by an abandoned checkout.
+export async function handleCheckoutSessionExpired(session: Stripe.Checkout.Session) {
+  console.log("[Webhook] checkout.session.expired — sessionId:", session.id);
+  const admin = createAdminClient();
+  const { error } = await admin.rpc("release_discount_code", { p_session_id: session.id });
+  if (error) {
+    console.error("[Webhook] ✗ Failed to release discount code for session", session.id, ":", error.message);
+  } else {
+    console.log("[Webhook] ✓ Released any discount code reserved for expired session:", session.id);
+  }
 }
 
 export async function handleSubscriptionCreatedOrUpdated(subscription: Stripe.Subscription) {

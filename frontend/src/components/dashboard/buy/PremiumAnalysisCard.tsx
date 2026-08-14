@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { Button } from "@/components/Button";
+import { DiscountCodeInput } from "@/components/buy/DiscountCodeInput";
 import { SparkleIcon, CheckIcon } from "@/components/icons";
 
 interface PremiumAnalysisCardProps {
@@ -12,6 +13,7 @@ interface PremiumAnalysisCardProps {
 export function PremiumAnalysisCard({ price, unlockAnalysisId }: PremiumAnalysisCardProps) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [discountCode, setDiscountCode] = useState("");
 
   async function handleBuy() {
     setLoading(true);
@@ -20,7 +22,11 @@ export function PremiumAnalysisCard({ price, unlockAnalysisId }: PremiumAnalysis
       const res = await fetch("/api/stripe/checkout", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ priceKey: "premium_analysis", ...(unlockAnalysisId ? { unlockAnalysisId } : {}) }),
+        body: JSON.stringify({
+          priceKey: "premium_analysis",
+          ...(unlockAnalysisId ? { unlockAnalysisId } : {}),
+          ...(discountCode.trim() ? { discountCode: discountCode.trim() } : {}),
+        }),
       });
       const data = await res.json();
       if (!res.ok) {
@@ -70,6 +76,8 @@ export function PremiumAnalysisCard({ price, unlockAnalysisId }: PremiumAnalysis
           Omedelbar tillgång
         </span>
       </div>
+
+      <DiscountCodeInput value={discountCode} onChange={setDiscountCode} />
 
       {error && <p className="text-sm text-red-400">{error}</p>}
 
