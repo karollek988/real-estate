@@ -56,7 +56,7 @@ export function InfoSection() {
           icon={ShieldIcon}
           label="Bra att veta"
           title="Fatta beslut på fakta – inte magkänsla"
-          description="Tre saker som avgör om en bostad är ett bra köp, och som är svåra att bedöma på egen hand."
+          description="Tre saker som är svåra att bedöma på egen hand, men som vi belyser med fakta och jämförelser."
         />
 
         <div className="mt-10 grid gap-5 lg:grid-cols-3">

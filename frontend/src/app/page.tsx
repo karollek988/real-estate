@@ -63,7 +63,7 @@ const FEATURE_PILLS = [
   { icon: ChartIcon, label: "Prisanalys" },
   { icon: MapPinIcon, label: "Områdesanalys" },
   { icon: BuildingIcon, label: "BRF-analys" },
-  { icon: ShieldIcon, label: "Riskbedömning" },
+  { icon: ShieldIcon, label: "Möjliga risker" },
   { icon: TrendingUpIcon, label: "Investeringsprognos" },
 ];
 

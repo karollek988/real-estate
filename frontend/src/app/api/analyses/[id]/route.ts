@@ -1,9 +1,8 @@
 import { NextResponse } from "next/server";
-import { getAnalysisWithProperty } from "@/lib/analysis/store";
+import { getReportForViewer } from "@/lib/analysis/access";
 import { requireUser } from "@/lib/auth/requireUser";
-import { getAnalysisRequestRow } from "@/lib/analysis/ownership";
 
-/** GET /api/analyses/:id — one analysis (any version) with its property. */
+/** GET /api/analyses/:id — one analysis (any version) with its property, redacted to the caller's entitlement. */
 export async function GET(
   _request: Request,
   { params }: { params: Promise<{ id: string }> }
@@ -14,7 +13,7 @@ export async function GET(
   if (authError) return authError;
 
   try {
-    const found = await getAnalysisWithProperty(id);
+    const found = await getReportForViewer(id, user.id);
     if (!found) {
       return NextResponse.json(
         { error: { code: "not_found", message: "No analysis with that id." } },
@@ -22,10 +21,13 @@ export async function GET(
       );
     }
 
-    const requestRow = user ? await getAnalysisRequestRow(user.id, id) : null;
-    const locked = requestRow !== null && requestRow.analysisType === "premium" && !requestRow.unlocked;
-
-    return NextResponse.json({ ...found, locked: locked || undefined });
+    return NextResponse.json({
+      analysis: found.analysis,
+      property: found.property,
+      analysisType: found.access.analysisType,
+      locked: !found.access.fullAccess || undefined,
+      lockedSections: found.lockedSections,
+    });
   } catch (err) {
     console.error(`GET /api/analyses/${id} failed:`, err);
     return NextResponse.json(

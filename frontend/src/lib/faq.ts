@@ -37,7 +37,7 @@ export const FAQ_ITEMS = [
   {
     question: "Vad är skillnaden mellan gratis- och Premium-analys?",
     answer:
-      "Gratisanalysen visar grundläggande bostadsfakta (adress, storlek, pris, avgift) och prisbedömningen – om priset är lågt eller högt jämfört med liknande försäljningar. Premiumanalysen innehåller allt detta plus analys av närliggande serviceutbud, infrastrukturprojekt, BRF-ekonomi i detalj och full tillgång till beslutsunderlaget.",
+      "Gratisanalysen visar grundläggande bostadsfakta (adress, storlek, pris, avgift, bilder) samt kapitlen Prisanalys och Bostadsrättsförening – prisbedömning mot områdets medianpris och föreningens ekonomiska nyckeltal. Premiumanalysen låser upp resten av rapporten: jämförbara sålda bostäder och historisk prisutveckling, områdesanalys, möjliga risker värda att undersöka vidare, dokument hos mäklaren, investeringsutsikt och en samlad helhetsbild.",
   },
   {
     question: "Vad kostar en Premium-analys? Hur betalar jag?",
@@ -63,6 +63,11 @@ export const FAQ_ITEMS = [
     question: "Var kommer datan ifrån?",
     answer:
       "Datan hämtas från ett antal offentliga och kommersiella källor – bland annat Booli, SCB, Riksbanken, SMHI, Trafikverket, Lantmäteriet via geokodning, samt OpenStreetMap för områdesdata. Varje källa redovisas i rapporten med källhänvisning.",
+  },
+  {
+    question: "Används AI i analysen?",
+    answer:
+      "I begränsad omfattning. En AI-språkmodell (OpenAI) driver vår chattassistent och används även för att tolka innehållet i mäklarens dokument och BRF-årsredovisningar, till exempel för att sammanfatta ett besiktningsprotokoll. AI:n används aldrig för att sätta ett betyg eller en poäng på bostaden – Köpanalys bedömer inte om en bostad är ett \"bra\" eller \"dåligt\" köp. Den sammanställer och sammanfattar bara sakuppgifter som redan finns i de faktiska dokumenten.",
   },
   {
     question: "Sparar ni min sökhistorik och mina analyser?",

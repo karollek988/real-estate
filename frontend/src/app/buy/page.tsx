@@ -158,8 +158,8 @@ function BuyPageContent() {
                     "Marknadsvärde och prisjämförelse",
                     "Detaljerad områdesanalys",
                     "Djupgående BRF-analys",
-                    "Riskbedömning och framtidsutsikter",
-                    "Tydlig rekommendation (Köp / Avvakta)",
+                    "Möjliga risker och framtidsutsikter",
+                    "Samlad helhetsbild av analysen",
                   ].map((item) => (
                     <li key={item} className="flex items-start gap-2 text-sm text-neutral-300">
                       <CheckIcon className="mt-0.5 h-3.5 w-3.5 shrink-0 text-green-400" />

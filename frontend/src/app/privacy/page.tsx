@@ -7,7 +7,7 @@ export default function PrivacyPage() {
         </h1>
 
         <p className="mt-6 text-[15px] leading-relaxed text-neutral-400">
-          Senast uppdaterad: 24 juli 2026
+          Senast uppdaterad: 14 augusti 2026
         </p>
 
         <div className="mt-10 flex flex-col gap-8 text-[15px] leading-relaxed text-neutral-200">
@@ -55,34 +55,26 @@ export default function PrivacyPage() {
                 fastighetsanalysrapporter du begär (adresser, länkade annonser,
                 sparade analysresultat)
               </li>
+              <li>
+                Innehåll du skickar till vår chattassistent, samt innehållet i
+                dokument (till exempel besiktningsprotokoll eller BRF-årsredovisningar)
+                du laddar upp för att få dem sammanfattade — se punkt 4 om hur detta
+                behandlas av vår AI-leverantör.
+              </li>
             </ul>
 
             <h3 className="mb-2 mt-5 text-[15px] font-semibold text-white">
               Marknadsföring & analys (kräver samtycke)
             </h3>
             <p>
-              Dessa uppgifter samlas endast in om du aktivt samtycker via vår
-              cookie-banner (genom att välja &quot;Acceptera alla&quot; eller
-              motsvarande inställning):
-            </p>
-            <ul className="mt-2 list-disc space-y-1 pl-5 text-neutral-300">
-              <li>
-                Användningsstatistik (vilka sidor du besöker, hur du interagerar med
-                tjänsten)
-              </li>
-              <li>
-                Marknadsförings- och lead-trackingdata som används för Köpanalys egen
-                marknadsföring och produktförbättring
-              </li>
-            </ul>
-            <p className="mt-3 text-neutral-400">
-              Dessa uppgifter säljs inte till tredje part. De används uteslutande för
-              Köpanalys interna marknadsförings- och produktutvecklingsändamål.
-            </p>
-            <p className="mt-2 text-neutral-400">
-              Tills du gör ett val i cookie-bannern, och om du inte väljer
-              &quot;Acceptera alla&quot;, samlas inga uppgifter i kategorin
-              marknadsföring & analys in.
+              I dagsläget använder Köpanalys inga analys- eller
+              marknadsföringsverktyg (till exempel besöksstatistik eller
+              annonsspårning) — endast de nödvändiga sessionscookies som beskrivs
+              ovan sätts. Cookie-bannerns val för &quot;Acceptera alla&quot; finns
+              på plats i förberedande syfte: om vi i framtiden börjar samla in
+              användningsstatistik eller marknadsförings-/lead-trackingdata kommer
+              det endast att ske för besökare som aktivt samtyckt, och denna policy
+              uppdateras då med vad som samlas in och varför.
             </p>
           </section>
 
@@ -121,10 +113,24 @@ export default function PrivacyPage() {
                 <strong>Stripe</strong> — betalningshantering
                 (personuppgiftsbiträde)
               </li>
+              <li>
+                <strong>OpenAI</strong> (USA) — driver vår chattassistent och tolkar
+                innehållet i uppladdade mäklardokument/BRF-årsredovisningar för att
+                sammanfatta dem åt dig (personuppgiftsbiträde). Används aldrig för att
+                sätta ett betyg eller en poäng på en bostad.
+              </li>
+              <li>
+                <strong>Resend</strong> — leverans av transaktionsmejl (till exempel
+                bekräftelse av din e-postadress och kontaktformulärssvar)
+                (personuppgiftsbiträde)
+              </li>
             </ul>
             <p className="mt-3 text-neutral-400">
               Samtliga biträden är avtalsbundna att följa gällande dataskyddslagstiftning
               och får endast behandla uppgifterna i enlighet med Köpanalys instruktioner.
+              När ett biträde (till exempel OpenAI) är etablerat utanför EU/EES säkerställs
+              överföringen genom EU-kommissionens standardavtalsklausuler (SCC) eller
+              motsvarande skyddsåtgärder.
             </p>
           </section>
 

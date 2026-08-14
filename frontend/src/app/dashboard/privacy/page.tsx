@@ -111,7 +111,7 @@ export default function PrivacyPage() {
           <Link href="/dashboard" className="text-green-400 underline underline-offset-4 transition hover:text-green-300">
             Mina analyser
           </Link>
-          . Själva analysdata (bedömningar, poäng, marknadsdata) delas och cachas
+          . Själva analysdata (bedömningar, marknadsdata, jämförelser) delas och cachas
           mellan användare — den är inte personlig för dig. Det innebär att andra
           användare som analyserar samma bostad kan se samma underliggande data,
           men inte att just du har begärt analysen.

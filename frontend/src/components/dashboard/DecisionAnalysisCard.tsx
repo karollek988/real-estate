@@ -4,7 +4,7 @@ import { StatusBadge } from "@/components/dashboard/StatusBadge";
 interface DecisionAnalysisCardProps {
   address: string;
   analysisDate: string;
-  fairPrice: string;
+  planLabel: string;
   status: "ready" | "processing" | "expired";
   growthPct?: number;
   onOpen?: () => void;
@@ -16,7 +16,7 @@ interface DecisionAnalysisCardProps {
 export function DecisionAnalysisCard({
   address,
   analysisDate,
-  fairPrice,
+  planLabel,
   status,
   growthPct,
   onOpen,
@@ -42,8 +42,8 @@ export function DecisionAnalysisCard({
 
       <div className="flex items-center justify-between gap-5 sm:justify-end sm:gap-6">
         <div className="text-right">
-          <p className="text-xs text-neutral-400">Marknadsvärde</p>
-          <p className="text-sm font-semibold text-white">{fairPrice}</p>
+          <p className="text-xs text-neutral-400">Analystyp</p>
+          <p className="text-sm font-semibold text-white">{planLabel}</p>
         </div>
 
         {growthPct !== undefined && (

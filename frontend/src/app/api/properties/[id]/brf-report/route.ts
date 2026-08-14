@@ -9,6 +9,7 @@ import {
   getBrfReportById,
   insertBrfReport,
 } from "@/lib/analysis/brfReports";
+import { hasAnyAnalysisRequestForProperty } from "@/lib/analysis/ownership";
 import { requireUser } from "@/lib/auth/requireUser";
 
 function errorResponse(status: number, code: string, message: string) {
@@ -42,6 +43,9 @@ export async function POST(
 
   const property = await findPropertyById(propertyId);
   if (!property) {
+    return errorResponse(404, "not_found", "No property with that id.");
+  }
+  if (!(await hasAnyAnalysisRequestForProperty(user.id, propertyId))) {
     return errorResponse(404, "not_found", "No property with that id.");
   }
 
@@ -155,11 +159,14 @@ export async function GET(
 ) {
   const { id: propertyId } = await params;
 
-  const { response: authError } = await requireUser();
+  const { user, response: authError } = await requireUser();
   if (authError) return authError;
 
   const property = await findPropertyById(propertyId);
   if (!property) {
+    return errorResponse(404, "not_found", "No property with that id.");
+  }
+  if (!(await hasAnyAnalysisRequestForProperty(user.id, propertyId))) {
     return errorResponse(404, "not_found", "No property with that id.");
   }
 

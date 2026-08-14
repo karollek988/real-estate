@@ -27,7 +27,6 @@ interface OwnedAnalysis {
   propertyId: string;
   address: string;
   status: "pending" | "complete" | "failed";
-  decisionScore: number | null;
   analysisType: "free" | "premium";
   requestedAt: string;
 }
@@ -222,18 +221,20 @@ function AnalysisCard({
   const status: "ready" | "processing" | "expired" =
     analysis.status === "complete" ? "ready" : analysis.status === "pending" ? "processing" : "expired";
 
-  const fairPrice =
-    analysis.decisionScore !== null
-      ? `Score ${analysis.decisionScore}`
-      : analysis.status === "pending"
-        ? "Väntar"
-        : "Misslyckades";
+  const planLabel =
+    analysis.status === "pending"
+      ? "Väntar"
+      : analysis.status === "failed"
+        ? "Misslyckades"
+        : analysis.analysisType === "premium"
+          ? "Premium"
+          : "Gratis";
 
   return (
     <DecisionAnalysisCard
       address={analysis.address}
       analysisDate={DATE_FORMAT.format(new Date(analysis.requestedAt))}
-      fairPrice={fairPrice}
+      planLabel={planLabel}
       status={status}
       onOpen={onOpen}
       footer={

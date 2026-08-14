@@ -5,7 +5,6 @@ import { ArrowRightIcon, HouseIcon } from "@/components/icons";
 interface Candidate {
   propertyId: string;
   address: string;
-  decisionScore: number | null;
 }
 
 export function PropertyPicker({
@@ -31,9 +30,6 @@ export function PropertyPicker({
             </span>
             <div>
               <p className="text-sm font-medium text-white">{c.address}</p>
-              {c.decisionScore !== null && (
-                <p className="text-xs text-neutral-500">Decision Score {c.decisionScore}</p>
-              )}
             </div>
           </div>
           <ArrowRightIcon className="h-4 w-4 shrink-0 text-neutral-500" />

@@ -77,8 +77,6 @@ export async function GET(_request: Request, { params }: { params: Promise<{ pro
     brfQuestions: buildBrfQuestions(report, gaps),
     property: { id: property.id, address: property.address, attributes: property.attributes },
     report: {
-      decisionScore: report.decisionScore,
-      verdict: report.verdict,
       summary: report.summary,
       property: report.property,
       decisionFactors: report.decisionFactors,
