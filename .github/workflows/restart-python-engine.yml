@@ -1,0 +1,41 @@
+name: Daily restart — Python engine (Camoufox memory safety net)
+
+# Camoufox (real Firefox) launches can accumulate memory pressure over a
+# long-running container's uptime; api/server.py now caps how many run
+# concurrently and railway.json retries harder on an OOM crash, but this
+# adds an unconditional daily restart as a second, independent safety net
+# so the service never runs long enough to build up trouble in the first
+# place. See the "Fix Camoufox OOM crashes" commit for the full incident
+# writeup.
+#
+# Setup (one-time, in the GitHub repo settings):
+#   1. Generate a Railway token: https://railway.app/account/tokens
+#      (an account or project token both work — a project token scoped to
+#      just this project is the more conservative choice).
+#   2. Add it as a repository secret named RAILWAY_TOKEN:
+#      Settings -> Secrets and variables -> Actions -> New repository secret.
+# No other configuration needed — the project/service IDs below are
+# stable identifiers, not secrets.
+
+on:
+  schedule:
+    # 03:00 UTC — low-traffic window (04:00/05:00 Swedish time depending on DST).
+    - cron: "0 3 * * *"
+  workflow_dispatch: {}
+
+jobs:
+  restart:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Install Railway CLI
+        run: npm install -g @railway/cli
+
+      - name: Restart kopanalys-python-api
+        env:
+          RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
+        run: |
+          railway redeploy \
+            --yes \
+            --service kopanalys-python-api \
+            --project aca1bd81-e437-472f-909b-477bf5ad4a95 \
+            --environment production
