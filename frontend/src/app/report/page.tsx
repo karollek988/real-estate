@@ -222,7 +222,7 @@ const FACT_GROUPS: { title: string; icon: React.ReactNode; labels: string[] }[] 
   {
     title: "Försäljning & mäklare",
     icon: <ClipboardIcon className="h-5 w-5" />,
-    labels: ["Upplåtelseform", "Öppen budgivning", "Mäklare", "Mäklarbyrå", "Annonsdatum", "Objekt-ID", "Planritning"],
+    labels: ["Upplåtelseform", "Öppen budgivning", "Annonsdatum", "Objekt-ID", "Planritning"],
   },
 ];
 
