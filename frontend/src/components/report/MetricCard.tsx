@@ -14,13 +14,13 @@ export function MetricCard({
   sub?: string;
 }) {
   return (
-    <div className="rounded-md border border-black/[0.08] bg-white/60 px-4 py-3.5">
-      <div className="flex items-center gap-1.5 text-[10.5px] font-medium uppercase tracking-wide text-[#8C8471]">
+    <div className="rounded-md border border-black/[0.08] bg-white/60 px-4 py-4">
+      <div className="flex items-center gap-1.5 text-[11px] font-medium uppercase tracking-wide text-[#8C8471]">
         {icon && <span className="shrink-0 text-[#B98A2E]">{icon}</span>}
         {label}
       </div>
-      <p className="mt-1.5 text-[16px] font-semibold leading-tight text-[#12271D]">{value}</p>
-      {sub && <p className="mt-0.5 text-[11.5px] text-[#8C8471]">{sub}</p>}
+      <p className="mt-1.5 text-[18px] font-semibold leading-tight text-[#12271D]">{value}</p>
+      {sub && <p className="mt-0.5 text-[12px] text-[#8C8471]">{sub}</p>}
     </div>
   );
 }

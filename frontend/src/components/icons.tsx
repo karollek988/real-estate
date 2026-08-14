@@ -599,3 +599,34 @@ export function InstagramIcon(props: React.SVGProps<SVGSVGElement>) {
     </svg>
   );
 }
+
+export function CarIcon(props: React.SVGProps<SVGSVGElement>) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.6} {...props}>
+      <path d="M5 15.5l1.3-5A2 2 0 018.2 9h7.6a2 2 0 011.9 1.5l1.3 5" strokeLinecap="round" strokeLinejoin="round" />
+      <rect x="3.5" y="15.5" width="17" height="3.5" rx="1.2" />
+      <circle cx="7.5" cy="19" r="1.4" fill="currentColor" stroke="none" />
+      <circle cx="16.5" cy="19" r="1.4" fill="currentColor" stroke="none" />
+    </svg>
+  );
+}
+
+export function BusIcon(props: React.SVGProps<SVGSVGElement>) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.6} {...props}>
+      <rect x="4" y="4" width="16" height="12" rx="2.5" />
+      <path d="M4 9h16M9 4v5M15 4v5" />
+      <circle cx="8" cy="18.5" r="1.4" fill="currentColor" stroke="none" />
+      <circle cx="16" cy="18.5" r="1.4" fill="currentColor" stroke="none" />
+    </svg>
+  );
+}
+
+export function WalkIcon(props: React.SVGProps<SVGSVGElement>) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.6} {...props}>
+      <circle cx="13" cy="4.5" r="1.6" fill="currentColor" stroke="none" />
+      <path d="M10.5 21l1.5-6-2-2 1-4.5 3 1.5 1 3 3 1.5M9 12l3-1.5" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+}
