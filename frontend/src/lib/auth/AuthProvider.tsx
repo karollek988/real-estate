@@ -4,6 +4,7 @@ import type { Session, User } from "@supabase/supabase-js";
 import { createContext, useContext, useEffect, useMemo, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import {
+  resendSignupConfirmation,
   signInWithGoogle,
   signInWithPassword,
   signOut as signOutRequest,
@@ -17,6 +18,7 @@ interface AuthContextValue {
   signIn: typeof signInWithPassword;
   signUp: typeof signUpWithPassword;
   signInWithGoogle: typeof signInWithGoogle;
+  resendSignupConfirmation: typeof resendSignupConfirmation;
   signOut: () => Promise<void>;
 }
 
@@ -50,6 +52,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     signIn: signInWithPassword,
     signUp: signUpWithPassword,
     signInWithGoogle,
+    resendSignupConfirmation,
     signOut: async () => {
       await signOutRequest();
     },

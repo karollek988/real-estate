@@ -20,6 +20,15 @@ export function signInWithPassword(email: string, password: string) {
   return supabase.auth.signInWithPassword({ email, password });
 }
 
+export function resendSignupConfirmation(email: string) {
+  const supabase = createClient();
+  return supabase.auth.resend({
+    type: "signup",
+    email,
+    options: { emailRedirectTo: `${window.location.origin}/auth/confirmed` },
+  });
+}
+
 export function signInWithGoogle() {
   const supabase = createClient();
   return supabase.auth.signInWithOAuth({
