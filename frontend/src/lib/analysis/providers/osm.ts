@@ -20,7 +20,13 @@ import { fetchJson, haversineMeters } from "./httpJson";
  * so that one is real and precise.
  */
 
-const OVERPASS_ENDPOINT = "https://overpass-api.de/api/interpreter";
+// Two independent public mirrors of the same Overpass API — tried in order,
+// each with its own bounded timeout, so a slow/down primary instance doesn't
+// sink the whole provider (see queryOverpass below).
+const OVERPASS_ENDPOINTS: Array<{ url: string; timeoutMs: number }> = [
+  { url: "https://overpass-api.de/api/interpreter", timeoutMs: 14000 },
+  { url: "https://overpass.kumi.systems/api/interpreter", timeoutMs: 7000 },
+];
 const NOMINATIM_ENDPOINT = "https://nominatim.openstreetmap.org/search";
 const USER_AGENT = "Kopanalys/0.1 (property decision support; contact: karollek98@gmail.com)";
 const RADIUS_METERS = 1000;
@@ -55,6 +61,32 @@ function buildQuery(lat: number, lon: number): string {
   return `[out:json][timeout:20];\n${sets}\n${counts}`;
 }
 
+/** Tries each configured Overpass mirror in order, falling back to the next
+ *  one only after the previous one fails or times out — bounded so the
+ *  combined worst case (14s + 7s = 21s) still leaves headroom under the
+ *  pipeline's 25s per-provider timeout when run alongside the distance
+ *  lookup (see collect() above). */
+async function queryOverpass(query: string): Promise<{ ok: true; data: OverpassResponse } | { ok: false; error: string }> {
+  let lastError = "No Overpass endpoint attempted.";
+  for (const { url, timeoutMs } of OVERPASS_ENDPOINTS) {
+    const result = await fetchJson<OverpassResponse>(
+      url,
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/x-www-form-urlencoded",
+          "User-Agent": USER_AGENT,
+        },
+        body: `data=${encodeURIComponent(query)}`,
+      },
+      timeoutMs
+    );
+    if (result.ok) return result;
+    lastError = result.error;
+  }
+  return { ok: false, error: lastError };
+}
+
 export const osmAmenitiesProvider: DataProvider = {
   id: "osm_amenities",
   name: "Nearby amenities & transport (OpenStreetMap)",
@@ -71,18 +103,17 @@ export const osmAmenitiesProvider: DataProvider = {
     }
     const origin = { lat: property.latitude, lon: property.longitude };
 
-    const overpassResult = await fetchJson<OverpassResponse>(
-      OVERPASS_ENDPOINT,
-      {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/x-www-form-urlencoded",
-          "User-Agent": USER_AGENT,
-        },
-        body: `data=${encodeURIComponent(buildQuery(origin.lat, origin.lon))}`,
-      },
-      20000
-    );
+    // The Overpass query and the municipality-distance lookup are
+    // independent of each other — run them concurrently instead of one
+    // after the other. Sequentially, a slow Overpass call (up to ~20s) plus
+    // the two Nominatim calls the distance lookup makes (up to ~16s more)
+    // could exceed the pipeline's 25s per-provider timeout and abort the
+    // whole provider before either result came back, which is what made
+    // amenity data intermittently disappear. Run concurrently instead.
+    const [overpassResult, municipalityDistance] = await Promise.all([
+      queryOverpass(buildQuery(origin.lat, origin.lon)),
+      distanceToMunicipalityCenter(origin),
+    ]);
 
     const data: Record<string, unknown> = {};
     const fields: string[] = [];
@@ -97,7 +128,6 @@ export const osmAmenitiesProvider: DataProvider = {
       });
     }
 
-    const municipalityDistance = await distanceToMunicipalityCenter(origin);
     if (municipalityDistance !== null) {
       data.distance_to_city_center_m = municipalityDistance;
       fields.push("distance_to_city_center_m");
@@ -136,7 +166,7 @@ async function distanceToMunicipalityCenter(origin: { lat: number; lon: number }
   const reverse = await fetchJson<{ address?: Record<string, string> }>(
     `https://nominatim.openstreetmap.org/reverse?${reverseParams}`,
     { headers: { "User-Agent": USER_AGENT } },
-    8000
+    6000
   );
   const municipality = reverse.ok
     ? reverse.data.address?.city ?? reverse.data.address?.town ?? reverse.data.address?.municipality
@@ -152,7 +182,7 @@ async function distanceToMunicipalityCenter(origin: { lat: number; lon: number }
   const search = await fetchJson<NominatimHit[]>(
     `${NOMINATIM_ENDPOINT}?${searchParams}`,
     { headers: { "User-Agent": USER_AGENT } },
-    8000
+    6000
   );
   if (!search.ok || search.data.length === 0) return null;
 

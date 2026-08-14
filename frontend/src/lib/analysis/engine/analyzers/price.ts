@@ -1,9 +1,27 @@
 import type { Analyzer } from "./types";
-import { clamp, formatSek, insufficientDataFactor, numberOrNull, sourceLabel } from "../helpers";
+import { clamp, formatSek, insufficientDataFactor, numberOrNull, sourceLabel, stringOrNull } from "../helpers";
 
 const ID = "price";
 const LABEL = "Price Level";
 const WEIGHT = 0.25;
+
+/** Elapsed time in years from an ISO date string to now, or null if the date doesn't parse. */
+function yearsSince(dateIso: string): number | null {
+  const d = new Date(dateIso);
+  if (Number.isNaN(d.getTime())) return null;
+  return (Date.now() - d.getTime()) / (365.25 * 24 * 60 * 60 * 1000);
+}
+
+/** Pulls `pricePerM2Sek` out of a comparable-sales array without assuming its shape. */
+function extractComparablePricesPerM2(value: unknown): number[] {
+  if (!Array.isArray(value)) return [];
+  const out: number[] = [];
+  for (const v of value) {
+    const p = v && typeof v === "object" ? (v as Record<string, unknown>).pricePerM2Sek : null;
+    if (typeof p === "number" && Number.isFinite(p)) out.push(p);
+  }
+  return out;
+}
 
 /**
  * Price Analyzer — is the asking price reasonable?
@@ -65,6 +83,42 @@ export const priceAnalyzer: Analyzer = {
     if (livingArea !== null && livingArea > 0) {
       pricePerM2 = Math.round(askingPrice / livingArea);
       supportingData.pricePerM2Sek = pricePerM2;
+    }
+
+    // This property's own price appreciation since it last sold (distinct
+    // from the area-wide trend below): total % change, and — when the
+    // previous sale date parses — an annualized rate (CAGR) so a sale from
+    // 10 years ago isn't compared on equal footing with one from last year.
+    // Presentation-only: these numbers feed the report's price chapter via
+    // supportingData but never change this analyzer's own score, to avoid
+    // silently re-calibrating price-level scoring as a side effect of
+    // surfacing this history to the reader.
+    const previousSalePriceSek = numberOrNull(attributes.previous_sale_price_sek);
+    const previousSaleDate = stringOrNull(attributes.previous_sale_date);
+    if (previousSalePriceSek !== null && previousSalePriceSek > 0) {
+      supportingData.priceChangeSincePreviousSalePct =
+        Math.round(((askingPrice - previousSalePriceSek) / previousSalePriceSek) * 1000) / 10;
+
+      const years = previousSaleDate ? yearsSince(previousSaleDate) : null;
+      if (years !== null && years >= 0.25) {
+        const cagrPct = (Math.pow(askingPrice / previousSalePriceSek, 1 / years) - 1) * 100;
+        supportingData.priceChangeSincePreviousSaleCagrPct = Math.round(cagrPct * 10) / 10;
+        supportingData.yearsSincePreviousSale = Math.round(years * 10) / 10;
+      }
+    }
+
+    // Where this asking price's price/m² ranks among the comparable sold
+    // homes already collected above — e.g. "below all 6 comparables" reads
+    // very differently from "in the middle of the pack", and that context
+    // was previously discarded once the comparables were reduced to a
+    // median for the relative-comparison score below.
+    const comparablePricesPerM2 = extractComparablePricesPerM2(supportingData.comparableSales);
+    if (pricePerM2 !== null && comparablePricesPerM2.length > 0) {
+      const lowerCount = comparablePricesPerM2.filter((v) => v < (pricePerM2 as number)).length;
+      supportingData.comparableSalesPricePerM2Percentile = Math.round((lowerCount / comparablePricesPerM2.length) * 100);
+      supportingData.comparableSalesPricePerM2Min = Math.min(...comparablePricesPerM2);
+      supportingData.comparableSalesPricePerM2Max = Math.max(...comparablePricesPerM2);
+      supportingData.comparableSalesPricePerM2Count = comparablePricesPerM2.length;
     }
 
     // If we have area comparables, use the relative comparison

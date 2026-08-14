@@ -52,7 +52,26 @@ export function redactAnalysisReport(
     .filter((f) => FREE_FACTOR_IDS.has(f.id))
     .map((f) =>
       f.id === "price"
-        ? { ...f, supportingData: withoutKeys(f.supportingData, ["comparableSales", "areaSoldPriceTrend"]) }
+        ? {
+            ...f,
+            // The ranking fields are derived from comparableSales at
+            // analysis-time (analyzers/price.ts) and stored as their own
+            // scalar keys, not read fresh from comparableSales by the
+            // report builder — so they must be stripped explicitly here
+            // too, or a locked viewer would get the paywalled comparables'
+            // insight (percentile, min/max range) without the underlying
+            // list. areaSoldPriceTrend has no such derived sibling: its
+            // trend % is computed at report-build time straight from the
+            // (already-stripped) array, so it degrades to null on its own.
+            supportingData: withoutKeys(f.supportingData, [
+              "comparableSales",
+              "areaSoldPriceTrend",
+              "comparableSalesPricePerM2Percentile",
+              "comparableSalesPricePerM2Min",
+              "comparableSalesPricePerM2Max",
+              "comparableSalesPricePerM2Count",
+            ]),
+          }
         : f
     );
 

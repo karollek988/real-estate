@@ -50,7 +50,9 @@ import {
   GraduationCapIcon,
   UtensilsIcon,
   TreeIcon,
-  TrainIcon,
+  CarIcon,
+  BusIcon,
+  WalkIcon,
   MedicalCrossIcon,
   CraneIcon,
   LightbulbIcon,
@@ -124,33 +126,45 @@ function negotiationBand(score: number): { label: string; bandIndex: number } {
   return { label: "Begränsat utrymme", bandIndex: 0 };
 }
 
-function commuteRows(commute: CommuteInfo): { label: string; value: string }[] {
-  const rows: { label: string; value: string }[] = [];
+function commuteRows(commute: CommuteInfo): IconFactRow[] {
+  const rows: IconFactRow[] = [];
   const min = (n: number | null) => (n !== null ? `${n} min` : null);
+  const carIcon = <CarIcon className="h-4 w-4" />;
+  const busIcon = <BusIcon className="h-4 w-4" />;
+  const walkIcon = <WalkIcon className="h-4 w-4" />;
 
   if (commute.centrumName) {
     const car = min(commute.centrumCarMinutes);
     const transit = min(commute.centrumTransitMinutes);
     const walk = min(commute.centrumWalkMinutes);
-    if (car) rows.push({ label: `Bil till ${commute.centrumName}`, value: car });
-    if (transit) rows.push({ label: `Kollektivt till ${commute.centrumName}`, value: transit });
-    if (walk) rows.push({ label: `Gång till ${commute.centrumName}`, value: walk });
+    if (car) rows.push({ icon: carIcon, label: `Bil till ${commute.centrumName}`, value: car });
+    if (transit) rows.push({ icon: busIcon, label: `Kollektivt till ${commute.centrumName}`, value: transit });
+    if (walk) rows.push({ icon: walkIcon, label: `Gång till ${commute.centrumName}`, value: walk });
   }
   if (commute.cityName) {
     const car = min(commute.cityCarMinutes);
     const transit = min(commute.cityTransitMinutes);
-    if (transit) rows.push({ label: `Kollektivt till ${commute.cityName}`, value: transit });
-    if (car) rows.push({ label: `Bil till ${commute.cityName}`, value: car });
+    if (transit) rows.push({ icon: busIcon, label: `Kollektivt till ${commute.cityName}`, value: transit });
+    if (car) rows.push({ icon: carIcon, label: `Bil till ${commute.cityName}`, value: car });
   }
   return rows;
 }
+
+// Per-chapter accent colors for ChapterTitle/SubHeading/Callout — chosen
+// from colors already used elsewhere in this file so a new chapter color
+// never introduces a brand-new hue, just reuses one with a new meaning
+// (green = area/growth, blue = association finances, red = risk).
+// Prisanalys and every other chapter keep the default gold accent.
+const AREA_ACCENT = "#4B7A57";
+const BRF_ACCENT = "#3B5F7A";
+const RISK_ACCENT = "#A2432F";
 
 const AMENITY_ICONS = [
   <ShoppingBagIcon key="grocery" className="h-4 w-4" />,
   <GraduationCapIcon key="school" className="h-4 w-4" />,
   <UtensilsIcon key="restaurant" className="h-4 w-4" />,
   <TreeIcon key="park" className="h-4 w-4" />,
-  <TrainIcon key="transit" className="h-4 w-4" />,
+  <BusIcon key="transit" className="h-4 w-4" />,
   <MedicalCrossIcon key="hospital" className="h-4 w-4" />,
 ];
 const AMENITY_SHORT_LABELS = ["Matbutiker", "Skolor", "Restauranger", "Parker", "Kollektivtrafik", "Vårdinrättning"];
@@ -255,19 +269,34 @@ function Page({
   );
 }
 
-function ChapterTitle({ children, sub, icon }: { children: React.ReactNode; sub?: string; icon: React.ReactNode }) {
+/** `accent` gives each chapter its own identifying color on the title
+ *  underline (and, further down, its SubHeadings/Callouts) so a reader
+ *  flipping through the report can tell which chapter they're on at a
+ *  glance — defaults to the report's gold brand color, unchanged from
+ *  before, for chapters that don't set one. */
+function ChapterTitle({
+  children,
+  sub,
+  icon,
+  accent = "#B98A2E",
+}: {
+  children: React.ReactNode;
+  sub?: string;
+  icon: React.ReactNode;
+  accent?: string;
+}) {
   return (
     <div className="relative mb-9">
       <div className="flex items-center gap-3.5">
         <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-[#12271D] text-white">
           {icon}
         </span>
-        <h2 style={serifStyle} className="text-[26px] font-semibold tracking-tight text-[#12271D] sm:text-[30px]">
+        <h2 style={serifStyle} className="text-[27px] font-semibold tracking-tight text-[#12271D] sm:text-[31px]">
           {children}
         </h2>
       </div>
-      {sub && <p className="mt-2.5 text-[14px] text-[#8C8471]">{sub}</p>}
-      <div className="mt-5 h-px w-16 bg-[#B98A2E]" />
+      {sub && <p className="mt-2.5 text-[14.5px] text-[#8C8471]">{sub}</p>}
+      <div className="mt-5 h-[3px] w-16 rounded-full" style={{ backgroundColor: accent }} />
     </div>
   );
 }
@@ -286,7 +315,7 @@ function Prose({ paragraphs }: { paragraphs: string[] }) {
   return (
     <div className="relative space-y-4">
       {paragraphs.map((p, i) => (
-        <p key={i} className="text-[14.5px] leading-[1.75] text-[#2A2820]">
+        <p key={i} className="text-[15.5px] leading-[1.8] text-[#2A2820]">
           {p}
         </p>
       ))}
@@ -294,10 +323,13 @@ function Prose({ paragraphs }: { paragraphs: string[] }) {
   );
 }
 
-function SubHeading({ children, icon }: { children: React.ReactNode; icon?: React.ReactNode }) {
+function SubHeading({ children, icon, accent = "#B98A2E" }: { children: React.ReactNode; icon?: React.ReactNode; accent?: string }) {
   return (
-    <h3 style={serifStyle} className="relative mb-3 mt-9 flex items-center gap-2 text-[17px] font-semibold text-[#12271D] first:mt-0">
-      {icon && <span className="flex h-6 w-6 shrink-0 items-center justify-center text-[#B98A2E]">{icon}</span>}
+    <h3
+      style={{ ...serifStyle, borderLeftColor: `${accent}66` }}
+      className="relative mb-3 mt-9 flex items-center gap-2 border-l-[3px] py-0.5 pl-3 text-[17.5px] font-semibold text-[#12271D] first:mt-0"
+    >
+      {icon && <span className="flex h-6 w-6 shrink-0 items-center justify-center" style={{ color: accent }}>{icon}</span>}
       {children}
     </h3>
   );
@@ -629,6 +661,13 @@ export default async function ReportPage({
             Prisanalys
           </ChapterTitle>
 
+          {priceAnalysis.verdict && (
+            <Callout icon={<TrendingUpIcon className="h-4 w-4" />}>
+              <span className="font-semibold">Sammanfattande bedömning: </span>
+              {priceAnalysis.verdict}
+            </Callout>
+          )}
+
           {priceCards.length > 0 && (
             <div className="relative mb-8 grid grid-cols-2 gap-2.5 sm:grid-cols-4">
               {priceCards.map((c) => (
@@ -723,7 +762,7 @@ export default async function ReportPage({
             5. AREA ANALYSIS
            ══════════════════════════════════════════════════════════ */}
         <Page n={5}>
-          <ChapterTitle icon={<MapPinIcon className="h-5 w-5" />} sub="Statistik och service i närområdet, baserat på tillgänglig data.">
+          <ChapterTitle icon={<MapPinIcon className="h-5 w-5" />} sub="Statistik och service i närområdet, baserat på tillgänglig data." accent={AREA_ACCENT}>
             Områdesanalys
           </ChapterTitle>
           {areaAnalysis ? (
@@ -732,7 +771,7 @@ export default async function ReportPage({
 
               {areaAnalysis.amenities.some((a) => a.value !== "Uppgift saknas") && (
                 <>
-                  <SubHeading icon={<ShoppingBagIcon className="h-4 w-4" />}>Service inom 1 km</SubHeading>
+                  <SubHeading icon={<ShoppingBagIcon className="h-4 w-4" />} accent={AREA_ACCENT}>Service inom 1 km</SubHeading>
                   <div className="relative">
                     <AmenityGrid
                       items={areaAnalysis.amenities.map((a, i) => ({
@@ -747,15 +786,15 @@ export default async function ReportPage({
 
               {areaAnalysis.commute && (
                 <>
-                  <SubHeading icon={<TrainIcon className="h-4 w-4" />}>Pendling</SubHeading>
+                  <SubHeading icon={<CarIcon className="h-4 w-4" />} accent={AREA_ACCENT}>Pendling</SubHeading>
                   <div className="relative">
-                    <KeyValueTable rows={commuteRows(areaAnalysis.commute)} />
+                    <IconFactGrid rows={commuteRows(areaAnalysis.commute)} />
                   </div>
                 </>
               )}
 
               {areaAnalysis.paragraphs[3] && (
-                <Callout icon={<InfoIcon className="h-4 w-4" />}>{areaAnalysis.paragraphs[3]}</Callout>
+                <Callout icon={<InfoIcon className="h-4 w-4" />} accent={AREA_ACCENT}>{areaAnalysis.paragraphs[3]}</Callout>
               )}
               <ChapterSources dataSources={p.dataSources} ids={["booli_listing", "scb_area_statistics", "osm_amenities", "nominatim_geocoding", "commute_times"]} />
             </>
@@ -774,12 +813,12 @@ export default async function ReportPage({
             6. HOUSING ASSOCIATION
            ══════════════════════════════════════════════════════════ */}
         <Page n={6}>
-          <ChapterTitle icon={<BuildingIcon className="h-5 w-5" />} sub="Föreningens redovisade nyckeltal och ekonomiska ställning.">
+          <ChapterTitle icon={<BuildingIcon className="h-5 w-5" />} sub="Föreningens redovisade nyckeltal och ekonomiska ställning." accent={BRF_ACCENT}>
             Bostadsrättsförening
           </ChapterTitle>
           <Prose paragraphs={brf.paragraphs} />
 
-          <SubHeading icon={<ChartIcon className="h-4 w-4" />}>Nyckeltal</SubHeading>
+          <SubHeading icon={<ChartIcon className="h-4 w-4" />} accent={BRF_ACCENT}>Nyckeltal</SubHeading>
           {brf.metrics.length === 1 && brf.metrics[0].label === "Finansiella nyckeltal" ? (
             <p className="relative text-[13.5px] italic text-[#8C8471]">{brf.metrics[0].value}</p>
           ) : (
@@ -906,7 +945,7 @@ export default async function ReportPage({
             8. POSSIBLE RISKS
            ══════════════════════════════════════════════════════════ */}
         <Page n={8}>
-          <ChapterTitle icon={<WarningIcon className="h-5 w-5" />} sub="Åtta kategorier av faktorer värda att undersöka vidare, baserat på tillgänglig data.">
+          <ChapterTitle icon={<WarningIcon className="h-5 w-5" />} sub="Åtta kategorier av faktorer värda att undersöka vidare, baserat på tillgänglig data." accent={RISK_ACCENT}>
             Möjliga risker
           </ChapterTitle>
           {riskCategories ? (

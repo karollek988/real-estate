@@ -1,4 +1,9 @@
 import type { AnalysisReport, DataSourceReport, DecisionFactorResult } from "@/lib/analysis/types";
+// Relative, not "@/..." — this file is also executed directly by Node's
+// native TS type-stripping in build.verify.mjs, which (unlike Next.js/tsc)
+// doesn't resolve the "@/" tsconfig path alias for real (non type-only)
+// imports.
+import { priceTrendFromSeries } from "../analysis/engine/helpers";
 
 /**
  * Turns the Decision Engine's structured output (scores, explanations,
@@ -368,12 +373,102 @@ function priceAffordabilitySv(price: DecisionFactorResult | undefined): string[]
   return sentences;
 }
 
+export interface PriceAppreciation {
+  totalChangePct: number;
+  cagrPct: number | null;
+  years: number | null;
+}
+
+export interface ComparableRanking {
+  percentile: number;
+  minPricePerM2: number;
+  maxPricePerM2: number;
+  count: number;
+}
+
 export interface PriceAnalysisContent {
   paragraphs: string[];
   comparison: { thisPricePerM2: number; areaMedianPerM2: number; deltaPct: number } | null;
   comparableSales: ComparableSaleRow[];
   areaSoldPriceTrend: AreaSoldPriceTrendPoint[];
   previousSale: { priceSek: number; date: string | null } | null;
+  appreciation: PriceAppreciation | null;
+  comparableRanking: ComparableRanking | null;
+  areaTrendPct: number | null;
+  verdict: string | null;
+}
+
+/** This property's own price appreciation since it last sold, computed by
+ *  analyzers/price.ts (priceChangeSincePreviousSale*) — kept here as a
+ *  distinct signal from the area-wide trend below, since a single property
+ *  can outpace or lag its own area. */
+function appreciationFromSupportingData(
+  price: DecisionFactorResult | undefined,
+  previousSale: { priceSek: number; date: string | null } | null
+): PriceAppreciation | null {
+  if (!previousSale) return null;
+  const totalChangePct = num(price?.supportingData.priceChangeSincePreviousSalePct);
+  if (totalChangePct === null) return null;
+  return {
+    totalChangePct,
+    cagrPct: num(price?.supportingData.priceChangeSincePreviousSaleCagrPct),
+    years: num(price?.supportingData.yearsSincePreviousSale),
+  };
+}
+
+/** Where this asking price's price/m² falls among the comparable sold homes
+ *  — computed by analyzers/price.ts so the ranking always uses the exact
+ *  same comparable set the median-based score above was derived from. */
+function comparableRankingFromSupportingData(price: DecisionFactorResult | undefined): ComparableRanking | null {
+  const percentile = num(price?.supportingData.comparableSalesPricePerM2Percentile);
+  const min = num(price?.supportingData.comparableSalesPricePerM2Min);
+  const max = num(price?.supportingData.comparableSalesPricePerM2Max);
+  const count = num(price?.supportingData.comparableSalesPricePerM2Count);
+  if (percentile === null || min === null || max === null || count === null) return null;
+  return { percentile, minPricePerM2: min, maxPricePerM2: max, count };
+}
+
+/** One synthesized sentence combining every price signal that's actually
+ *  available for this address — the "what does all this mean for the
+ *  asking price" verdict that was previously missing; the chapter used to
+ *  just list the underlying data (comparables table, trend table, previous
+ *  sale) without ever stating what it implies. Each clause is optional so a
+ *  sparse analysis still reads naturally with only one or two signals. */
+function priceVerdictSv(params: {
+  askingPrice: number | null;
+  delta: number | null;
+  appreciation: PriceAppreciation | null;
+  ranking: ComparableRanking | null;
+  areaTrendPct: number | null;
+}): string | null {
+  const { askingPrice, delta, appreciation, ranking, areaTrendPct } = params;
+  if (askingPrice === null) return null;
+
+  const clauses: string[] = [];
+  if (delta !== null) {
+    clauses.push(`${Math.abs(delta)}% ${delta < 0 ? "under" : "över"} områdets medianpris per kvadratmeter`);
+  }
+  if (appreciation?.cagrPct !== null && appreciation !== null) {
+    clauses.push(
+      `en prisförändring på ungefär ${pct(appreciation.cagrPct)} per år sedan bostaden senast såldes` +
+        (appreciation.years !== null ? ` (${Math.round(appreciation.years)} år sedan)` : "")
+    );
+  } else if (appreciation !== null) {
+    clauses.push(`en total prisförändring på ${pct(appreciation.totalChangePct)} sedan bostaden senast såldes`);
+  }
+  if (ranking !== null) {
+    const position = ranking.percentile <= 33 ? "i den lägre delen" : ranking.percentile >= 67 ? "i den högre delen" : "i mitten";
+    clauses.push(
+      `${position} av intervallet för ${ranking.count} jämförbara sålda bostäder ` +
+        `(${sekPerM2(ranking.minPricePerM2)}–${sekPerM2(ranking.maxPricePerM2)})`
+    );
+  }
+  if (areaTrendPct !== null) {
+    clauses.push(`en områdestrend på ${pct(areaTrendPct)} för sålda bostäder i närheten`);
+  }
+
+  if (clauses.length === 0) return null;
+  return `Sammantaget ligger utgångspriset ${listSv(clauses)}.`;
 }
 
 export function buildPriceAnalysis(report: AnalysisReport): PriceAnalysisContent {
@@ -389,6 +484,10 @@ export function buildPriceAnalysis(report: AnalysisReport): PriceAnalysisContent
     report.property.previousSalePriceSek !== null
       ? { priceSek: report.property.previousSalePriceSek, date: report.property.previousSaleDate }
       : null;
+  const appreciation = appreciationFromSupportingData(price, previousSale);
+  const comparableRanking = comparableRankingFromSupportingData(price);
+  const areaTrendPct = priceTrendFromSeries(areaSoldPriceTrend)?.pct ?? null;
+  const verdict = priceVerdictSv({ askingPrice, delta, appreciation, ranking: comparableRanking, areaTrendPct });
 
   paragraphs.push(
     askingPrice !== null
@@ -398,9 +497,17 @@ export function buildPriceAnalysis(report: AnalysisReport): PriceAnalysisContent
   );
 
   if (previousSale) {
-    paragraphs.push(
-      `Bostaden har tidigare sålts${previousSale.date ? ` (${dateSv(previousSale.date)})` : ""} för ${sek(previousSale.priceSek)}.`
-    );
+    const sold = `Bostaden har tidigare sålts${previousSale.date ? ` (${dateSv(previousSale.date)})` : ""} för ${sek(previousSale.priceSek)}.`;
+    if (appreciation !== null) {
+      const changeSentence =
+        appreciation.cagrPct !== null
+          ? ` Det motsvarar en prisförändring på ${pct(appreciation.totalChangePct)} totalt, eller ungefär ` +
+            `${pct(appreciation.cagrPct)} per år över de ${appreciation.years !== null ? Math.round(appreciation.years) : "senaste"} åren.`
+          : ` Det motsvarar en prisförändring på ${pct(appreciation.totalChangePct)} mot dagens utgångspris.`;
+      paragraphs.push(sold + changeSentence);
+    } else {
+      paragraphs.push(sold);
+    }
   }
 
   if (areaMedian !== null && delta !== null) {
@@ -423,14 +530,28 @@ export function buildPriceAnalysis(report: AnalysisReport): PriceAnalysisContent
     }
   }
 
-  paragraphs.push(
-    comparableSales.length > 0
-      ? `${comparableSales.length} jämförbara sålda bostäder i området har identifierats via Booli och ligger till grund ` +
-        "för medianpriset ovan. Se tabellen nedan för de senaste försäljningarna."
-      : "Jämförbara sålda bostäder ingår inte i denna analys: ingen källa för slutpriser (till exempel Mäklarstatistik, " +
+  if (comparableSales.length > 0) {
+    const rankingSentence =
+      comparableRanking !== null
+        ? ` Med avseende på pris per kvadratmeter ligger bostaden ${
+            comparableRanking.percentile <= 33
+              ? "i den lägre delen"
+              : comparableRanking.percentile >= 67
+                ? "i den högre delen"
+                : "i mitten"
+          } av det intervallet (${sekPerM2(comparableRanking.minPricePerM2)}–${sekPerM2(comparableRanking.maxPricePerM2)}).`
+        : "";
+    paragraphs.push(
+      `${comparableSales.length} jämförbara sålda bostäder i området har identifierats via Booli och ligger till grund ` +
+        `för medianpriset ovan. Se tabellen nedan för de senaste försäljningarna.${rankingSentence}`
+    );
+  } else {
+    paragraphs.push(
+      "Jämförbara sålda bostäder ingår inte i denna analys: ingen källa för slutpriser (till exempel Mäklarstatistik, " +
         "eller sålda/avslutade annonser från Booli eller Hemnet) är ansluten i dagsläget. Historiska pristrender för " +
         "området kan därför inte redovisas här — det är den enskilt viktigaste datakällan som skulle stärka detta kapitel."
-  );
+    );
+  }
 
   return {
     paragraphs,
@@ -441,6 +562,10 @@ export function buildPriceAnalysis(report: AnalysisReport): PriceAnalysisContent
     comparableSales,
     areaSoldPriceTrend,
     previousSale,
+    appreciation,
+    comparableRanking,
+    areaTrendPct,
+    verdict,
   };
 }
 
