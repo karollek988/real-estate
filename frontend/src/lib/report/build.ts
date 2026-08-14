@@ -454,9 +454,37 @@ export interface AmenityRow {
   note: string;
 }
 
+export interface CommuteInfo {
+  centrumName: string | null;
+  centrumCarMinutes: number | null;
+  centrumTransitMinutes: number | null;
+  centrumWalkMinutes: number | null;
+  cityName: string | null;
+  cityCarMinutes: number | null;
+  cityTransitMinutes: number | null;
+}
+
 export interface AreaAnalysisContent {
   paragraphs: string[];
   amenities: AmenityRow[];
+  commute: CommuteInfo | null;
+}
+
+/** Null when the commute provider found nothing at all — lets the report
+ *  skip the "Pendling" sub-section cleanly rather than show an empty shell. */
+function buildCommuteInfo(attributes: Record<string, unknown>): CommuteInfo | null {
+  const centrumName = str(attributes.commute_centrum_name);
+  const cityName = str(attributes.commute_city_name);
+  if (!centrumName && !cityName) return null;
+  return {
+    centrumName,
+    centrumCarMinutes: num(attributes.commute_centrum_car_minutes),
+    centrumTransitMinutes: num(attributes.commute_centrum_transit_minutes),
+    centrumWalkMinutes: num(attributes.commute_centrum_walk_minutes),
+    cityName,
+    cityCarMinutes: num(attributes.commute_city_car_minutes),
+    cityTransitMinutes: num(attributes.commute_city_transit_minutes),
+  };
 }
 
 const AMENITY_FIELDS: Array<{ key: string; label: string; note: string }> = [
@@ -541,7 +569,7 @@ export function buildAreaAnalysis(
       )
   );
 
-  return { paragraphs, amenities };
+  return { paragraphs, amenities, commute: buildCommuteInfo(attributes) };
 }
 
 /* ────────────────────────────────────────────────────────────────────── */

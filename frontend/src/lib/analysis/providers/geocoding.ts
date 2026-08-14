@@ -65,6 +65,10 @@ export const nominatimGeocoder: DataProvider = {
     const addr = hit.address ?? {};
     const municipality =
       addr.city ?? addr.town ?? addr.village ?? addr.municipality ?? null;
+    // Sweden's "län" (county) — Nominatim's `state` field for SE addresses.
+    // Used by the commute-times provider to resolve the relevant major city
+    // (Stockholm/Göteborg/etc.) without a second geocoding round-trip.
+    const county = addr.state ?? null;
 
     return {
       source: {
@@ -80,6 +84,7 @@ export const nominatimGeocoder: DataProvider = {
       data: {
         geocoded_display_name: hit.display_name,
         geocoded_result_type: hit.type ?? null,
+        ...(county ? { geocoded_county: county } : {}),
       },
       propertyPatch: {
         latitude: Number.parseFloat(hit.lat),
