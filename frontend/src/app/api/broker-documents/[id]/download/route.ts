@@ -14,9 +14,9 @@ function errorResponse(status: number, code: string, message: string) {
  * broker-discovered document (private bucket, same pattern as
  * inspection-files/brf-annual-reports). Gated on the requesting user having
  * unlocked *any* analysis (free or Premium) for this document's property —
- * broker documents are report content, not a Premium-only feature like
- * Besiktningshjälp, so the gate mirrors the report page's own unlock state
- * rather than findPremiumAnalysisForProperty.
+ * broker documents are paywalled report content specifically, so the gate
+ * mirrors the report page's own unlock state rather than
+ * findAnalysisForProperty (which only checks ownership, not unlock status).
  */
 export async function GET(_request: Request, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;

@@ -152,7 +152,7 @@ function UserDropdown({ label }: { label: string }) {
     { label: "Mina analyser", href: "/dashboard" },
     { label: "Inställningar", href: "/dashboard/settings" },
     { label: "Om mig", href: "/dashboard/settings" },
-    { label: "Besiktningshjälp", href: "/dashboard/inspection" },
+    { label: "Visningsguide", href: "/dashboard/inspection" },
     { label: "Sekretess", href: "/dashboard/privacy" },
     { label: "—" },
     { label: "Logga ut", onClick: handleSignOut, danger: true },

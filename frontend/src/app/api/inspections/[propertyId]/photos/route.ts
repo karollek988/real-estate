@@ -1,7 +1,7 @@
 import { randomUUID } from "node:crypto";
 import { NextResponse } from "next/server";
 import { requireUser } from "@/lib/auth/requireUser";
-import { findPremiumAnalysisForProperty } from "@/lib/analysis/ownership";
+import { findAnalysisForProperty } from "@/lib/analysis/ownership";
 import {
   createSignedUrl,
   findInspection,
@@ -23,8 +23,8 @@ export async function POST(request: Request, { params }: { params: Promise<{ pro
   const { user, response: authError } = await requireUser();
   if (authError) return authError;
 
-  const premium = await findPremiumAnalysisForProperty(user.id, propertyId);
-  if (!premium) return errorResponse(403, "premium_required", "Kräver en Premium-analys för den här bostaden.");
+  const owned = await findAnalysisForProperty(user.id, propertyId);
+  if (!owned) return errorResponse(403, "analysis_required", "Kräver en analys av den här bostaden.");
 
   let form: FormData;
   try {

@@ -1,7 +1,7 @@
 const STEPS = [
-  { step: 1, title: "Innan besiktning", subtitle: "Förberedelser & info" },
-  { step: 2, title: "Under besiktning", subtitle: "Steg för steg" },
-  { step: 3, title: "Efter besiktning", subtitle: "Uppföljning & analys" },
+  { step: 1, title: "Inför visningen", subtitle: "Förberedelser & info" },
+  { step: 2, title: "Under visningen", subtitle: "Steg för steg" },
+  { step: 3, title: "Efter visningen", subtitle: "Uppföljning & analys" },
 ] as const;
 
 export function InspectionStepTabs({

@@ -13,6 +13,7 @@ import {
   QuestionIcon,
 } from "@/components/icons";
 import { InspectionStepTabs } from "@/components/inspection/InspectionStepTabs";
+import { ThreeStepGuide } from "@/components/inspection/ThreeStepGuide";
 import { PrepChecklist } from "@/components/inspection/PrepChecklist";
 import { DocumentDropzone } from "@/components/inspection/DocumentDropzone";
 import { GapsList } from "@/components/inspection/GapsList";
@@ -83,20 +84,20 @@ function InspectionPageContent() {
   const [candidates, setCandidates] = useState<OwnedAnalysis[] | null>(null);
   const [data, setData] = useState<InspectionApiData | null>(null);
   const [loading, setLoading] = useState(true);
-  const [notPremium, setNotPremium] = useState(false);
+  const [noAnalysis, setNoAnalysis] = useState(false);
   const [savedAt, setSavedAt] = useState<number | null>(null);
   const debouncedSave = useDebouncedSave(propertyId);
 
-  // No property chosen yet — offer the user's Premium properties to pick from.
+  // No property chosen yet — offer the user's completed properties to pick from.
   useEffect(() => {
     if (propertyId) return;
     fetch("/api/profile/analyses")
       .then((r) => r.json())
       .then((body) => {
         const owned = (body.analyses ?? []) as OwnedAnalysis[];
-        const premiumComplete = owned.filter((a) => a.analysisType === "premium" && a.status === "complete");
+        const complete = owned.filter((a) => a.status === "complete");
         const seen = new Set<string>();
-        const deduped = premiumComplete.filter((a) => {
+        const deduped = complete.filter((a) => {
           if (seen.has(a.propertyId)) return false;
           seen.add(a.propertyId);
           return true;
@@ -109,11 +110,11 @@ function InspectionPageContent() {
   useEffect(() => {
     if (!propertyId) return;
     setLoading(true);
-    setNotPremium(false);
+    setNoAnalysis(false);
     fetch(`/api/inspections/${propertyId}`)
       .then(async (res) => {
         if (res.status === 403) {
-          setNotPremium(true);
+          setNoAnalysis(true);
           return;
         }
         if (!res.ok) return;
@@ -247,15 +248,19 @@ function InspectionPageContent() {
 
   function downloadChecklist() {
     const lines = [
-      "Köpanalys — Checklista inför besiktning",
+      "Köpanalys — Checklista inför visning",
       "",
-      ...PREP_STEPS.map((s) => `${s.order}. ${s.title}\n   ${s.description}`),
+      ...PREP_STEPS.map(
+        (s) =>
+          `${s.order}. ${s.title}\n   ${s.description}` +
+          (s.items.length > 0 ? `\n   Vad du behöver:\n${s.items.map((i) => `   - ${i.name}: ${i.whereToFind}`).join("\n")}` : "")
+      ),
     ];
     const blob = new Blob([lines.join("\n\n")], { type: "text/plain;charset=utf-8" });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
-    a.download = "checklista-besiktning.txt";
+    a.download = "checklista-infor-visning.txt";
     a.click();
     URL.revokeObjectURL(url);
   }
@@ -281,20 +286,20 @@ function InspectionPageContent() {
       <div className="mx-auto flex max-w-3xl flex-col gap-6">
         <div className="dash-enter" style={stagger(0)}>
           <h1 className="flex items-center gap-2.5 text-2xl font-semibold tracking-tight text-white">
-            <ShieldIcon className="h-6 w-6 text-amber-400" />
-            Besiktningshjälp
+            <ShieldIcon className="h-6 w-6 text-green-400" />
+            Visningsguide
           </h1>
-          <p className="mt-1 text-sm text-neutral-400">Din kompletta guide före, under och efter besiktning.</p>
+          <p className="mt-1 text-sm text-neutral-400">Din kompletta guide inför, under och efter visningen — helt gratis.</p>
         </div>
         <div className="dash-enter" style={stagger(1)}>
           {candidates && candidates.length > 0 ? (
             <PropertyPicker candidates={candidates} onSelect={selectProperty} />
           ) : (
             <EmptyState
-              title="Ingen Premium-analys hittades"
-              description="Besiktningshjälp kräver en färdig Premium-analys för en bostad. Köp eller slutför en Premium-analys för att komma igång."
-              actionLabel="Se Premium-paket"
-              onAction={() => router.push("/buy")}
+              title="Ingen analys hittades"
+              description="Visningsguiden kräver en analys av en bostad. Starta en analys för att komma igång."
+              actionLabel="Starta en analys"
+              onAction={() => router.push("/")}
             />
           )}
         </div>
@@ -302,14 +307,14 @@ function InspectionPageContent() {
     );
   }
 
-  if (notPremium) {
+  if (noAnalysis) {
     return (
       <div className="mx-auto flex max-w-3xl flex-col gap-6">
         <EmptyState
-          title="Kräver en Premium-analys"
-          description="Besiktningshjälp är en Premium-funktion. Den här bostaden har ingen Premium-analys kopplad till ditt konto än."
-          actionLabel="Se Premium-paket"
-          onAction={() => router.push("/buy")}
+          title="Kräver en analys"
+          description="Den här bostaden har ingen analys kopplad till ditt konto än. Starta en analys för att använda visningsguiden."
+          actionLabel="Starta en analys"
+          onAction={() => router.push("/")}
         />
       </div>
     );
@@ -335,11 +340,11 @@ function InspectionPageContent() {
       <div className="dash-enter flex items-center justify-between gap-4" style={stagger(0)}>
         <div>
           <h1 className="flex items-center gap-2.5 text-2xl font-semibold tracking-tight text-white">
-            <ShieldIcon className="h-6 w-6 text-amber-400" />
-            Besiktningshjälp
+            <ShieldIcon className="h-6 w-6 text-green-400" />
+            Visningsguide
           </h1>
           <p className="mt-1 text-sm text-neutral-400">
-            {data.property.address} · Din kompletta guide före, under och efter besiktning.
+            {data.property.address} · Din kompletta guide inför, under och efter visningen.
           </p>
         </div>
         {savedAt && <span className="shrink-0 text-xs text-neutral-500">Sparat</span>}
@@ -352,7 +357,7 @@ function InspectionPageContent() {
       {inspection.step === 1 && (
         <div className="dash-enter grid grid-cols-1 gap-6 lg:grid-cols-[1fr_360px]" style={stagger(2)}>
           <div className="flex flex-col gap-6">
-            <Card title="Före besiktning – att tänka på" subtitle="Förbered dig ordentligt genom att samla in rätt information och dokument för att få en så träffsäker analys som möjligt.">
+            <Card title="Inför din visning" subtitle="Tre steg för att förbereda dig ordentligt — vet exakt vilka dokument du behöver och var du hittar dem.">
               <PrepChecklist state={inspection.prepChecklist} onToggle={togglePrepStep} />
             </Card>
 
@@ -457,7 +462,26 @@ function InspectionPageContent() {
       {inspection.step === 2 && (
         <div className="dash-enter grid grid-cols-1 gap-6 lg:grid-cols-[1fr_360px]" style={stagger(2)}>
           <div className="flex flex-col gap-6">
-            <Card title="Under besiktning" subtitle="Gå igenom bostaden rum för rum. Bocka av, sätt allvarlighetsgrad och lägg till foton.">
+            <Card title="Under visningen" subtitle="Tre saker att göra medan du är på plats — sen går du igenom bostaden rum för rum nedan.">
+              <ThreeStepGuide
+                steps={[
+                  {
+                    title: "Gå igenom varje rum",
+                    description: "Bocka av kontrollpunkterna i checklistan nedan, rum för rum. Hoppa gärna över rum som inte finns i just den här bostaden.",
+                  },
+                  {
+                    title: "Notera skador & fråga på plats",
+                    description: "Skriv ner allt du är osäker på i Egna observationer här bredvid, så har du det kvar när du jämför bostäder efteråt.",
+                  },
+                  {
+                    title: "Fota det du vill dokumentera",
+                    description: "Ladda upp foton direkt vid kontrollpunkten. Särskilt värdefullt vid fukt, sprickor eller annat som är svårt att minnas efteråt.",
+                  },
+                ]}
+              />
+            </Card>
+
+            <Card title="Rum för rum">
               <RoomAccordion
                 checklist={inspection.checklist}
                 onCheckpointChange={updateCheckpoint}
