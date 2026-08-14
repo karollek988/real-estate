@@ -8,7 +8,9 @@ Endpoints:
 
 from __future__ import annotations
 
+import asyncio
 import json
+import os
 import sys
 from pathlib import Path
 from typing import Any
@@ -64,26 +66,47 @@ from market_intelligence.runner import EngineRunner as MIEngineRunner
 
 
 # ── Browser fetch (Camoufox) ─────────────────────────────────────────
+#
+# Root cause of the 2026-08-14 outage: this service runs as a single
+# uvicorn worker (see the Dockerfile CMD — no --workers flag), so every
+# concurrent request shares one process's memory. Each AsyncCamoufox
+# launch spins up a real Firefox instance (150-400MB+ RSS); nothing
+# bounded how many could run at once, so a handful of overlapping
+# requests (this endpoint, /api/resolve, /api/brf-annual-report, and the
+# broker-documents Hemnet-blocked fallback all call this) could add up to
+# more memory than the container has, triggering the OOM killer — visible
+# in `railway logs` as a bare "Killed" with no Python traceback at all,
+# since the kernel terminates the process before it can log anything.
+# This semaphore caps how many Camoufox/Firefox instances run
+# simultaneously in this process; excess callers simply wait their turn
+# instead of piling on more browser processes. Tune via
+# MAX_CONCURRENT_BROWSER_FETCHES if this proves too conservative once
+# real memory headroom on the current Railway plan is confirmed.
+_BROWSER_FETCH_SEMAPHORE = asyncio.Semaphore(
+    int(os.environ.get("MAX_CONCURRENT_BROWSER_FETCHES", "1"))
+)
+
 
 async def _browser_fetch(url: str) -> str:
     """Fetch a URL using Camoufox (real Firefox browser) to bypass bot detection."""
     from camoufox.async_api import AsyncCamoufox
 
-    logger.info("browser_fetch_start: %s", url)
+    async with _BROWSER_FETCH_SEMAPHORE:
+        logger.info("browser_fetch_start: %s", url)
 
-    async with AsyncCamoufox(headless=True) as browser:
-        page = await browser.new_page()
-        try:
-            await page.goto(url, wait_until="load", timeout=30000)
+        async with AsyncCamoufox(headless=True) as browser:
+            page = await browser.new_page()
             try:
-                await page.wait_for_load_state("networkidle", timeout=5000)
-            except Exception:
-                pass
-            html = await page.content()
-            logger.info("browser_fetch_done: %s (%d chars)", url, len(html))
-            return html
-        finally:
-            await page.close()
+                await page.goto(url, wait_until="load", timeout=30000)
+                try:
+                    await page.wait_for_load_state("networkidle", timeout=5000)
+                except Exception:
+                    pass
+                html = await page.content()
+                logger.info("browser_fetch_done: %s (%d chars)", url, len(html))
+                return html
+            finally:
+                await page.close()
 
 
 app = FastAPI(title="Köpanalys API", version="0.2.0")
