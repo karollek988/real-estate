@@ -86,6 +86,44 @@ _BROWSER_FETCH_SEMAPHORE = asyncio.Semaphore(
     int(os.environ.get("MAX_CONCURRENT_BROWSER_FETCHES", "1"))
 )
 
+# Cloudflare's "Managed Challenge" interstitial (confirmed live 2026-09:
+# Camoufox gets past Hemnet's edge block that rejects plain fetch() with a
+# 403, but lands on this page, whose own JS needs a few seconds to run its
+# check and redirect to the real page — the previous fixed ~5s networkidle
+# wait consistently captured the challenge itself, not the real content, on
+# 3/3 live attempts). This exact title is Cloudflare's own, stable across
+# every site using this challenge type, not something specific to Hemnet's
+# page design — so this check doesn't get more fragile as Hemnet's own
+# markup changes, unlike keying off Hemnet-specific selectors would.
+_CLOUDFLARE_CHALLENGE_TITLE = "Just a moment..."
+_CHALLENGE_POLL_INTERVAL_S = 0.5
+_CHALLENGE_MAX_WAIT_S = 15.0
+
+
+class BrowserChallengeError(Exception):
+    """Raised when a Cloudflare (or similar) challenge never clears within
+    the wait budget — the caller must never treat this as success and parse
+    the interstitial as if it were the real page."""
+
+
+async def _wait_for_challenge_to_clear(page) -> None:
+    """Poll the page's own title — the concrete signal that Cloudflare's
+    challenge JS has finished and redirected — rather than a blind sleep.
+    Raises BrowserChallengeError if it never clears within the budget, so a
+    still-challenged page is never silently returned as real content.
+    """
+    elapsed = 0.0
+    while elapsed < _CHALLENGE_MAX_WAIT_S:
+        if await page.title() != _CLOUDFLARE_CHALLENGE_TITLE:
+            return
+        await asyncio.sleep(_CHALLENGE_POLL_INTERVAL_S)
+        elapsed += _CHALLENGE_POLL_INTERVAL_S
+
+    if await page.title() == _CLOUDFLARE_CHALLENGE_TITLE:
+        raise BrowserChallengeError(
+            f"Cloudflare challenge did not resolve within {_CHALLENGE_MAX_WAIT_S}s"
+        )
+
 
 async def _browser_fetch(url: str) -> str:
     """Fetch a URL using Camoufox (real Firefox browser) to bypass bot detection."""
@@ -102,6 +140,19 @@ async def _browser_fetch(url: str) -> str:
                     await page.wait_for_load_state("networkidle", timeout=5000)
                 except Exception:
                     pass
+
+                if await page.title() == _CLOUDFLARE_CHALLENGE_TITLE:
+                    logger.info("browser_fetch_challenge_detected: %s", url)
+                    await _wait_for_challenge_to_clear(page)
+                    logger.info("browser_fetch_challenge_resolved: %s", url)
+                    # The real page's own network activity may still be
+                    # settling right after the challenge redirects — one
+                    # more short, bounded wait, same pattern as above.
+                    try:
+                        await page.wait_for_load_state("networkidle", timeout=5000)
+                    except Exception:
+                        pass
+
                 html = await page.content()
                 logger.info("browser_fetch_done: %s (%d chars)", url, len(html))
                 return html
