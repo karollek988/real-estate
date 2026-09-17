@@ -26,7 +26,8 @@ const PROPERTY_TYPE_PATTERNS: Array<{ pattern: RegExp; value: string }> = [
   { pattern: /arrende/i, value: "Arrende" },
 ];
 
-const NON_ADDRESS_LINE = /kr\b|m²|\brum\b|avgift|byggår|våning|utgångspris|boarea|energiklass|^\d+$/i;
+const NON_ADDRESS_LINE =
+  /kr\b|m²|\brum\b|avgift|byggår|våning|utgångspris|boarea|energiklass|^\d+$|\b(mån|tis|ons|tors|fre|lör|sön)\b|\bkl\.?\s*\d{1,2}[:.]\d{2}\b|\d{1,2}[:.]\d{2}\s*-\s*\d{1,2}[:.]\d{2}|visningstid/i;
 
 /** Best-effort first line that looks like a street address ("Storgatan 12"), not a price/label/pure number. */
 function guessAddress(lines: string[]): string | null {
@@ -65,8 +66,15 @@ export function extractFromScreenshotText(rawTexts: string[]): ScreenshotExtract
   // price starting on the next must never be read as one glued-together
   // number, only actual space-grouped thousands within a single line
   // ("4 500 000") should.
-  const labeledPrice = firstMatch(text, /(?:utgångspris|pris)[^\d]{0,15}(\d[\d ]{4,}\d)[ \t]*kr/i);
-  const fallbackPrice = firstMatch(text, /(\d[\d ]{5,}\d)[ \t]*kr\b/i);
+  // Both patterns reject a trailing "/m²" (or "/kvm") — "pris" alone matches
+  // the "Pris/m²" per-area figure too, which would otherwise outrank the
+  // real price since it's the only "pris...kr" match on the page when the
+  // main price is shown as a bare heading with no "Utgångspris:" label.
+  const labeledPrice = firstMatch(
+    text,
+    /(?:utgångspris|pris)[^\d]{0,15}(\d[\d ]{4,}\d)[ \t]*kr\b(?!\s*\/\s*(?:m2|m²|kvm))/i
+  );
+  const fallbackPrice = firstMatch(text, /(\d[\d ]{5,}\d)[ \t]*kr\b(?!\s*\/\s*(?:m2|m²|kvm))/i);
   const priceRaw = labeledPrice ?? fallbackPrice;
   if (priceRaw) {
     const parsed = parseSekNumber(priceRaw);

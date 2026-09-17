@@ -80,6 +80,25 @@ function check(name, actual, expected) {
   check("garbage yields no foundKeys", foundKeys, []);
 }
 
+// Real bug repro: a two-column listing whose OCR interleaved the
+// broker/viewing-time panel ahead of the header, and whose price appears as
+// a bare heading (no "Utgångspris:" label) alongside a separate "Pris/m²"
+// figure. Neither the viewing-time line nor the per-m² price should win.
+{
+  const text = [
+    "fa] Sön 27 sep kl 15:00-16:00 >",
+    "Augustendalsvägen",
+    "Nacka strand, Nacka kommun",
+    "11 495 000 kr",
+    "Boarea 119 m²",
+    "Pris/m²",
+    "96 597 kr/m²",
+  ].join("\n");
+  const { fields } = extractFromScreenshotText([text]);
+  check("viewing-time line rejected as address", fields.address, undefined);
+  check("real price wins over price-per-m2", fields.askingPrice, 11_495_000);
+}
+
 // Empty/whitespace-only OCR result (unreadable image).
 {
   const { fields, foundKeys } = extractFromScreenshotText(["", "   "]);
