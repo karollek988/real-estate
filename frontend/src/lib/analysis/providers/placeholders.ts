@@ -44,11 +44,6 @@ export const placeholderProviders: DataProvider[] = [
     "Reported-crime levels for the area — BRÅ publishes only static downloadable tables, no query API (verified 2026-07-16, no api.bra.se or similar exists)."
   ),
   notConnected(
-    "school_ratings",
-    "School quality (Skolverket)",
-    "Results and ratings for nearby schools — planned integration (OpenStreetMap covers school presence/count, not quality ratings)."
-  ),
-  notConnected(
     "public_transport",
     "Public transport (Trafiklab)",
     "Realtime transit journey planning — planned integration (OpenStreetMap covers stop presence/count, not schedules or journey times)."

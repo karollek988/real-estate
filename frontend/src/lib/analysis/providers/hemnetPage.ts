@@ -16,6 +16,11 @@ export const hemnetPageProvider: DataProvider = {
   id: "hemnet_page_scrape",
   name: "Hemnet listing data",
   kind: "real",
+  // scrapeHemnetPage's own browser-bridge escalation (listing/hemnetPage.ts)
+  // already budgets up to 3 attempts x 30s + backoff (~98s worst case) —
+  // without this, pipeline.ts's 25s default cut it off before that retry
+  // logic ever got a real chance to finish.
+  timeoutMs: 100_000,
 
   async collect({ extracted }): Promise<ProviderResult> {
     const base = { id: this.id, name: this.name, kind: this.kind } as const;

@@ -1,4 +1,5 @@
 import Link from "next/link";
+import Image from "next/image";
 import { redirect } from "next/navigation";
 import localFont from "next/font/local";
 import { getReportForViewer } from "@/lib/analysis/access";
@@ -16,6 +17,7 @@ import { MetricCard } from "@/components/report/MetricCard";
 import { PaywallSection } from "@/components/report/PaywallSection";
 import { Callout } from "@/components/report/Callout";
 import { AmenityGrid } from "@/components/report/AmenityGrid";
+import { SchoolList } from "@/components/report/SchoolList";
 import { ProjectCard } from "@/components/report/ProjectCard";
 import { SourceBadges } from "@/components/report/SourceBadges";
 import { Watermark } from "@/components/report/Watermark";
@@ -375,21 +377,69 @@ export default async function ReportPage({
   const hasInspectionAccess = Boolean(user) && analysis.status === "complete";
 
   if (analysis.status !== "complete" || !analysis.report) {
+    // "insufficient_data" is the one failure this page explains in detail —
+    // it's the common, expected case (a listing whose source data was too
+    // thin/unreliable to analyze) and quota is *always* refunded for it
+    // (pipeline.ts's InsufficientListingDataError path), so the reassurance
+    // here is never a promise the backend doesn't keep. Any other cause
+    // (a genuine bug, or the rare case of landing here while still
+    // "pending") gets the plainer, no-promises message instead — it must
+    // never claim a refund that isn't guaranteed for it.
+    const isInsufficientData = analysis.status === "failed" && analysis.failureReason === "insufficient_data";
+
     return (
-      <div className="min-h-screen bg-[#F7F4EC] px-6 py-16 text-[#1B1F27]">
-        <main className="mx-auto flex w-full max-w-2xl flex-col gap-6">
-          <h1 style={serifStyle} className="text-2xl font-semibold tracking-tight">
-            Analysen kunde inte slutföras
+      <div className="flex min-h-screen flex-col items-center justify-center bg-[#F7F4EC] px-6 py-16 text-[#1B1F27]">
+        <main className="flex w-full max-w-[480px] flex-col items-center rounded-[28px] border border-[#12271D]/10 bg-white/80 p-9 text-center shadow-[0_30px_70px_-30px_rgba(18,39,29,0.3)] backdrop-blur-sm sm:p-11">
+          <Image
+            src="/kopanalys-bostad-logo.png"
+            alt="Köpanalys"
+            width={56}
+            height={56}
+            className="h-12 w-12 rounded-full sm:h-14 sm:w-14"
+          />
+          <span className="mt-6 flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-[#12271D]/[0.07] text-[#12271D]">
+            <InfoIcon className="h-6 w-6" />
+          </span>
+          <h1 style={serifStyle} className="mt-5 text-[22px] font-semibold leading-snug tracking-tight sm:text-2xl">
+            {isInsufficientData ? "Vi kunde tyvärr inte slutföra analysen" : "Analysen kunde inte slutföras"}
           </h1>
-          <p className="text-sm leading-relaxed text-[#5B5648]">
-            Något gick fel vid analysen av {property.address}. Börja en ny analys så försöker vi igen.
-          </p>
+          {isInsufficientData ? (
+            <div className="mt-4 flex flex-col gap-3.5">
+              <p className="text-sm leading-relaxed text-[#5B5648]">
+                Vi lyckades inte hämta in tillräckligt med tillförlitlig information om {property.address} för
+                att kunna göra en analys du kan lita på. Vi är verkligen ledsna för det.
+              </p>
+              <p className="text-sm leading-relaxed text-[#5B5648]">
+                Din analys har <span className="font-medium text-[#12271D]">inte förbrukats</span> — krediten är
+                automatiskt återförd till ditt konto, så du kan använda den för att analysera en annan bostad
+                istället.
+              </p>
+              <p className="text-sm leading-relaxed text-[#5B5648]">
+                Vi jobbar löpande med att förbättra Köpanalys och kommer att undersöka varför just den här
+                bostaden inte gick att analysera. Målet är att kunna erbjuda en analys för adressen längre fram,
+                när vi löst det underliggande problemet.
+              </p>
+            </div>
+          ) : (
+            <p className="mt-4 text-sm leading-relaxed text-[#5B5648]">
+              Något gick fel vid analysen av {property.address}. Kontakta oss gärna på info@kopanalys.se om
+              problemet kvarstår.
+            </p>
+          )}
           <Link
             href="/"
-            className="mt-2 inline-block w-fit rounded-sm border border-[#12271D]/20 px-5 py-2.5 text-sm font-medium text-[#12271D] transition hover:bg-[#12271D]/5"
+            className="mt-8 inline-flex w-fit items-center justify-center rounded-full bg-[#12271D] px-8 py-3 text-sm font-semibold text-white transition hover:bg-[#0D1D15]"
           >
-            Ny analys
+            Tillbaka till startsidan
           </Link>
+          {isInsufficientData && (
+            <Link
+              href="/dashboard"
+              className="mt-3.5 text-sm font-medium text-[#5B5648] underline-offset-4 transition hover:text-[#12271D] hover:underline"
+            >
+              Till mitt konto
+            </Link>
+          )}
         </main>
       </div>
     );
@@ -776,10 +826,39 @@ export default async function ReportPage({
                 </>
               )}
 
+              {areaAnalysis.schools && (
+                <>
+                  <SubHeading icon={<GraduationCapIcon className="h-4 w-4" />} accent={AREA_ACCENT}>Skolor i närområdet</SubHeading>
+                  {areaAnalysis.paragraphs[4] && (
+                    <p className="relative text-[11.5px] text-[#8C8471]">{areaAnalysis.paragraphs[4]}</p>
+                  )}
+                  <div className="relative space-y-5">
+                    {areaAnalysis.schools.preschools.length > 0 && (
+                      <div>
+                        <p className="text-[11px] font-semibold uppercase tracking-wide text-[#8C8471]">Förskolor</p>
+                        <SchoolList rows={areaAnalysis.schools.preschools} />
+                      </div>
+                    )}
+                    {areaAnalysis.schools.primarySchools.length > 0 && (
+                      <div>
+                        <p className="text-[11px] font-semibold uppercase tracking-wide text-[#8C8471]">Grundskolor</p>
+                        <SchoolList rows={areaAnalysis.schools.primarySchools} />
+                      </div>
+                    )}
+                    {areaAnalysis.schools.highSchools.length > 0 && (
+                      <div>
+                        <p className="text-[11px] font-semibold uppercase tracking-wide text-[#8C8471]">Gymnasieskolor</p>
+                        <SchoolList rows={areaAnalysis.schools.highSchools} />
+                      </div>
+                    )}
+                  </div>
+                </>
+              )}
+
               {areaAnalysis.paragraphs[3] && (
                 <Callout icon={<InfoIcon className="h-4 w-4" />} accent={AREA_ACCENT}>{areaAnalysis.paragraphs[3]}</Callout>
               )}
-              <ChapterSources dataSources={p.dataSources} ids={["booli_listing", "scb_area_statistics", "osm_amenities", "nominatim_geocoding", "commute_times"]} />
+              <ChapterSources dataSources={p.dataSources} ids={["booli_listing", "scb_area_statistics", "osm_amenities", "skolverket_schools", "nominatim_geocoding", "commute_times"]} />
             </>
           ) : (
             <PaywallSection

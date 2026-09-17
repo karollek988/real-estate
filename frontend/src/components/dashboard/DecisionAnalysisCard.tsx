@@ -66,7 +66,7 @@ export function DecisionAnalysisCard({
         <button
           type="button"
           onClick={onOpen}
-          className="hidden shrink-0 items-center gap-1 text-xs font-medium text-green-400 transition hover:text-green-300 sm:flex"
+          className="flex shrink-0 items-center gap-1 text-xs font-medium text-green-400 transition hover:text-green-300"
         >
           Öppna analys
           <ArrowRightIcon className="h-3.5 w-3.5" />

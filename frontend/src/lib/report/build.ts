@@ -125,7 +125,7 @@ const SHORT_SOURCE_NAMES: Record<string, string> = {
   municipality_plans: "Kommunen",
   brf_register: "BRF-register",
   crime_statistics: "BRÅ/Polisen",
-  school_ratings: "Skolverket",
+  skolverket_schools: "Skolverket",
   public_transport: "Trafiklab",
   environmental_data: "Miljödata",
 };
@@ -587,10 +587,34 @@ export interface CommuteInfo {
   cityTransitMinutes: number | null;
 }
 
+export interface SchoolResult {
+  /** Andel (%) elever med lägst betyget E i samtliga ämnen efter årskurs 9. */
+  godkantAllaAmnenPct: number | null;
+  /** Andel (%) elever behöriga till gymnasieskolans nationella program. */
+  gymnasiebehorighetPct: number | null;
+  statisticsYear: string;
+}
+
+export interface SchoolRow {
+  name: string;
+  address: string | null;
+  distanceLabel: string;
+  huvudman: string | null;
+  result: SchoolResult | null;
+}
+
+export interface NearbySchools {
+  preschools: SchoolRow[];
+  primarySchools: SchoolRow[];
+  highSchools: SchoolRow[];
+  registerDate: string | null;
+}
+
 export interface AreaAnalysisContent {
   paragraphs: string[];
   amenities: AmenityRow[];
   commute: CommuteInfo | null;
+  schools: NearbySchools | null;
 }
 
 /** Null when the commute provider found nothing at all — lets the report
@@ -612,7 +636,7 @@ function buildCommuteInfo(attributes: Record<string, unknown>): CommuteInfo | nu
 
 const AMENITY_FIELDS: Array<{ key: string; label: string; note: string }> = [
   { key: "grocery_count_within_1000m", label: "Matbutiker inom 1 km", note: "Antal registrerade i OpenStreetMap." },
-  { key: "school_count_within_1000m", label: "Skolor inom 1 km", note: "Förekomst, ej kvalitetsbetyg — se förklaring nedan." },
+  { key: "school_count_within_1000m", label: "Skolor inom 1 km", note: "Förekomst enligt OpenStreetMap — se \"Skolor i närområdet\" nedan för namn, avstånd och betygsresultat." },
   { key: "restaurant_count_within_1000m", label: "Restauranger & caféer inom 1 km", note: "Antal registrerade i OpenStreetMap." },
   { key: "park_count_within_1000m", label: "Parker & grönområden inom 1 km", note: "Antal registrerade i OpenStreetMap." },
   { key: "transit_count_within_1000m", label: "Kollektivtrafikhållplatser inom 1 km", note: "Förekomst, ej tidtabell — se förklaring nedan." },
@@ -677,22 +701,63 @@ export function buildAreaAnalysis(
     paragraphs.push(sourceExplainer(dataSources, "osm_amenities", "Ingen data om närservice (butiker, skolor, restauranger, kollektivtrafik) kunde hämtas för denna adress i denna körning."));
   }
 
-  // Honest gaps: crime/safety and school quality are known-unconnected sources.
+  // Honest gap: crime/safety is a known-unconnected source.
   paragraphs.push(
-    sourceExplainer(
-      dataSources,
-      "crime_statistics",
-      "Statistik om trygghet och brottslighet ingår inte i denna analys."
-    ) +
-      " " +
-      sourceExplainer(
-        dataSources,
-        "school_ratings",
-        "Skolornas kvalitet (betygsresultat) ingår inte i denna analys."
-      )
+    sourceExplainer(dataSources, "crime_statistics", "Statistik om trygghet och brottslighet ingår inte i denna analys.")
   );
 
-  return { paragraphs, amenities, commute: buildCommuteInfo(attributes) };
+  const schools = buildNearbySchools(attributes);
+  if (schools) {
+    paragraphs.push(
+      "Betygsresultat (andel godkända i årskurs 9 och andel behöriga till gymnasiet) visas endast för fristående skolor som drivs av en huvudman med enbart en skolenhet i kommunen — för kommunala skolor och skolkedjor med flera enheter finns ännu ingen tillförlitlig skolspecifik statistik i denna analys, se förklaring i kapitlets källor."
+    );
+  }
+
+  return { paragraphs, amenities, commute: buildCommuteInfo(attributes), schools };
+}
+
+function distanceLabel(distanceM: number): string {
+  return distanceM < 1000 ? `${Math.round(distanceM)} m` : `${(distanceM / 1000).toFixed(1).replace(".", ",")} km`;
+}
+
+interface RawSchoolEntry {
+  name?: unknown;
+  address?: unknown;
+  distanceM?: unknown;
+  huvudman?: unknown;
+  result?: { godkantAllaAmnenPct?: unknown; gymnasiebehorighetPct?: unknown; statisticsYear?: unknown } | null;
+}
+
+function toSchoolRow(entry: RawSchoolEntry): SchoolRow | null {
+  const name = str(entry.name);
+  const distance = num(entry.distanceM);
+  if (!name || distance === null) return null;
+  const rawResult = entry.result;
+  const godkant = rawResult ? num(rawResult.godkantAllaAmnenPct) : null;
+  const behorig = rawResult ? num(rawResult.gymnasiebehorighetPct) : null;
+  const result: SchoolResult | null =
+    rawResult && (godkant !== null || behorig !== null)
+      ? { godkantAllaAmnenPct: godkant, gymnasiebehorighetPct: behorig, statisticsYear: str(rawResult.statisticsYear) ?? "" }
+      : null;
+  return { name, address: str(entry.address), distanceLabel: distanceLabel(distance), huvudman: str(entry.huvudman), result };
+}
+
+function schoolRows(value: unknown): SchoolRow[] {
+  if (!Array.isArray(value)) return [];
+  return value
+    .map((v) => (v && typeof v === "object" ? toSchoolRow(v as RawSchoolEntry) : null))
+    .filter((r): r is SchoolRow => r !== null);
+}
+
+/** Null when none of the three school sources (Skolverket + OSM) returned
+ *  anything — lets the report skip the "Skolor i närområdet" sub-section
+ *  cleanly rather than show an empty shell. */
+function buildNearbySchools(attributes: Record<string, unknown>): NearbySchools | null {
+  const preschools = schoolRows(attributes.nearby_preschools);
+  const primarySchools = schoolRows(attributes.nearby_primary_schools);
+  const highSchools = schoolRows(attributes.nearby_high_schools);
+  if (preschools.length === 0 && primarySchools.length === 0 && highSchools.length === 0) return null;
+  return { preschools, primarySchools, highSchools, registerDate: str(attributes.schools_register_extract_date) };
 }
 
 /* ────────────────────────────────────────────────────────────────────── */
