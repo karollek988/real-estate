@@ -126,7 +126,6 @@ export function ManualEntryForm({ initialValues, sourceNotice }: ManualEntryForm
             name="address"
             label="Adress"
             type="text"
-            placeholder="Storgatan 12, Stockholm"
             defaultValue={initialValues?.address ?? undefined}
             required
           />
@@ -145,7 +144,6 @@ export function ManualEntryForm({ initialValues, sourceNotice }: ManualEntryForm
           name="livingArea"
           label="Boarea (m²)"
           type="number"
-          placeholder="65"
           min={0}
           defaultValue={initialValues?.livingArea ?? undefined}
           required
@@ -155,7 +153,6 @@ export function ManualEntryForm({ initialValues, sourceNotice }: ManualEntryForm
           name="rooms"
           label="Antal rum"
           type="number"
-          placeholder="3"
           min={0}
           step={0.5}
           defaultValue={initialValues?.rooms ?? undefined}
@@ -165,7 +162,6 @@ export function ManualEntryForm({ initialValues, sourceNotice }: ManualEntryForm
           name="askingPrice"
           label="Utgångspris (kr)"
           type="number"
-          placeholder="4 500 000"
           min={0}
           defaultValue={initialValues?.askingPrice ?? undefined}
           required
@@ -175,7 +171,6 @@ export function ManualEntryForm({ initialValues, sourceNotice }: ManualEntryForm
           name="monthlyFee"
           label="Månadsavgift (kr)"
           type="number"
-          placeholder="3 200"
           min={0}
           defaultValue={initialValues?.monthlyFee ?? undefined}
           required={feeRequired}
@@ -185,7 +180,6 @@ export function ManualEntryForm({ initialValues, sourceNotice }: ManualEntryForm
           name="operatingCosts"
           label="Driftskostnader (kr/mån)"
           type="number"
-          placeholder="1 800"
           min={0}
           defaultValue={initialValues?.operatingCosts ?? undefined}
         />
@@ -194,7 +188,6 @@ export function ManualEntryForm({ initialValues, sourceNotice }: ManualEntryForm
           name="floor"
           label="Våning"
           type="number"
-          placeholder="4"
           defaultValue={initialValues?.floor ?? undefined}
         />
         <Field
@@ -202,7 +195,6 @@ export function ManualEntryForm({ initialValues, sourceNotice }: ManualEntryForm
           name="buildingYear"
           label="Byggår"
           type="number"
-          placeholder="1965"
           min={1800}
           defaultValue={initialValues?.buildingYear ?? undefined}
         />
@@ -252,7 +244,6 @@ export function ManualEntryForm({ initialValues, sourceNotice }: ManualEntryForm
             name="broker"
             label="Mäklare"
             type="text"
-            placeholder="Anna Svensson"
             defaultValue={initialValues?.broker ?? undefined}
           />
         </div>
@@ -262,7 +253,6 @@ export function ManualEntryForm({ initialValues, sourceNotice }: ManualEntryForm
             name="agency"
             label="Mäklarbyrå"
             type="text"
-            placeholder="Fastighetsbyrån"
             defaultValue={initialValues?.agency ?? undefined}
           />
         </div>
@@ -274,7 +264,6 @@ export function ManualEntryForm({ initialValues, sourceNotice }: ManualEntryForm
             id="description"
             name="description"
             rows={4}
-            placeholder="Klistra in beskrivningen från annonsen..."
             defaultValue={initialValues?.description ?? undefined}
             className="mt-2 w-full rounded-xl border border-white/10 bg-black/40 px-4 py-3 text-sm text-white placeholder:text-neutral-500 outline-none transition focus:border-green-500/60 focus:ring-4 focus:ring-green-500/10 resize-none"
           />
