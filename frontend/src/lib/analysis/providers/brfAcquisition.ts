@@ -1,4 +1,5 @@
 import type { DataProvider, ProviderResult } from "./types";
+import { pythonEngineHeaders } from "@/lib/pythonEngine";
 
 /**
  * Bridges BRF-Scraper's ProfileEngine (Hemnet + Booli + Allabrf +
@@ -56,7 +57,7 @@ export const brfAcquisitionProvider: DataProvider = {
     try {
       res = await fetch(`${apiBase.replace(/\/$/, "")}/api/brf-annual-report`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: pythonEngineHeaders(),
         body: JSON.stringify({ hemnet_url: hemnetUrl }),
         // Discovery + crawl + PDF download + extraction can genuinely take
         // over a minute for a cold (unregistered) BRF — much longer than

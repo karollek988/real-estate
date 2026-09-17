@@ -11,6 +11,7 @@ import {
 } from "@/lib/analysis/brfReports";
 import { hasAnyAnalysisRequestForProperty } from "@/lib/analysis/ownership";
 import { requireUser } from "@/lib/auth/requireUser";
+import { pythonEngineHeaders } from "@/lib/pythonEngine";
 
 function errorResponse(status: number, code: string, message: string) {
   return NextResponse.json({ error: { code, message } }, { status });
@@ -117,7 +118,7 @@ export async function POST(
 
       const extractRes = await fetch(`${apiBase.replace(/\/$/, "")}/api/brf-annual-report/upload`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: pythonEngineHeaders(),
         body: JSON.stringify({
           pdf_base64: bytes.toString("base64"),
           filename: file.name,

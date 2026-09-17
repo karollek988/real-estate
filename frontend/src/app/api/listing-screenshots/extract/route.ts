@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { requireUser } from "@/lib/auth/requireUser";
 import { checkRateLimit, clientIp } from "@/lib/rateLimit";
 import { extractFromScreenshotText } from "@/lib/analysis/listing/screenshotExtract";
+import { pythonEngineHeaders } from "@/lib/pythonEngine";
 
 function errorResponse(status: number, code: string, message: string) {
   return NextResponse.json({ error: { code, message } }, { status });
@@ -76,7 +77,7 @@ export async function POST(request: Request) {
   try {
     const ocrRes = await fetch(`${apiBase.replace(/\/$/, "")}/api/ocr/extract-text`, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: pythonEngineHeaders(),
       body: JSON.stringify({ images_base64: imagesBase64 }),
       signal: AbortSignal.timeout(45000),
       cache: "no-store",

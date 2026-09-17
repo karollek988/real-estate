@@ -9,6 +9,7 @@ Endpoints:
 from __future__ import annotations
 
 import asyncio
+import hmac
 import json
 import os
 import sys
@@ -171,6 +172,52 @@ async def global_exception_handler(request: Request, exc: Exception):
         status_code=500,
         content={"success": False, "error": str(exc), "details": type(exc).__name__},
     )
+
+
+# ── Server-to-server authentication ────────────────────────────────
+#
+# This service has no user accounts, sessions, or per-request authorization
+# of its own — every protection a real user interacts with (login, rate
+# limiting, essential-field validation, quota) exists only in the Next.js
+# layer. Until now, that meant anyone who discovered this service's URL
+# could call any endpoint below directly — unlimited, free, bypassing
+# Next.js (and its cost controls) entirely. Every route except the ones in
+# _PUBLIC_PATHS now requires a header matching PYTHON_ENGINE_API_SECRET, a
+# secret shared only between the Vercel and Railway deployments (never sent
+# to, or readable from, the browser — see frontend/src/lib/pythonEngine.ts,
+# the one place on the Next.js side that attaches it).
+#
+# Implemented as middleware (not a per-route `Depends(...)`) so a future
+# endpoint is protected by default the moment it's added, instead of only
+# when someone remembers to annotate it — same "secure by default" reasoning
+# as the profiles/RPC fixes in supabase/migrations.
+INTERNAL_SECRET_ENV_VAR = "PYTHON_ENGINE_API_SECRET"
+INTERNAL_SECRET_HEADER = "x-internal-secret"
+
+# "/" serves only this service's own static demo page (no data, no cost) and
+# doubles as Railway's health-check target — authenticating it risks a
+# correctly-configured deployment being marked unhealthy by the platform.
+_PUBLIC_PATHS = {"/"}
+
+
+@app.middleware("http")
+async def require_internal_secret(request: Request, call_next):
+    if request.url.path in _PUBLIC_PATHS:
+        return await call_next(request)
+
+    expected = os.environ.get(INTERNAL_SECRET_ENV_VAR)
+    if not expected:
+        logger.error("%s is not configured — rejecting all internal requests", INTERNAL_SECRET_ENV_VAR)
+        return JSONResponse(status_code=500, content={"success": False, "error": "Server not configured."})
+
+    provided = request.headers.get(INTERNAL_SECRET_HEADER)
+    if not provided or not hmac.compare_digest(provided, expected):
+        return JSONResponse(
+            status_code=401,
+            content={"success": False, "error": "Missing or invalid internal authentication."},
+        )
+
+    return await call_next(request)
 
 
 # ── Models ──────────────────────────────────────────────────────────
