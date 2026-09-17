@@ -29,6 +29,46 @@ socket file), and the two previously BLOCKED verifications (OCR-in-container,
 live RPC adversarial test) both went to PASS; no code changes in that final
 session, verification only.
 
+**Fifth session — pushed and deployed.** User reported `PYTHON_ENGINE_API_SECRET`
+now manually set on both Vercel and Railway with the same value. This agent
+hit the same blocker as the fourth session (Vercel CLI logged out, no
+interactive re-auth possible, Vercel MCP plugin also unauthenticated) and so
+could not independently check Vercel's side before pushing either. Flagged
+this explicitly to the user given the fourth session's identical "confirmed
+on both platforms" claim had already turned out false for Railway — user
+confirmed to proceed on their word. Pre-push checks: working tree clean,
+local `main` exactly 12 commits ahead of `origin/main` (no divergence), no
+`.env*` files tracked, diff scanned for live-secret patterns (`sk_live_`,
+`AKIA...`, PEM headers, `ghp_`/`whsec_...`) — zero hits. Pushed
+`f66412c..2681632` to `origin/main`.
+
+Both platforms auto-deployed from the push, as expected (no override config
+exists in the repo). **Railway: verified live, not just claimed** —
+`railway status` showed the build, then a fresh deployment ID rolling to
+● Online; `railway logs` showed a clean `Application startup complete` with
+no errors. Then re-verified the *specific* open concern behaviorally rather
+than trusting the CLI variable list alone: `POST /api/ocr/extract-text` with
+no auth header returned **401** (not 500) — per `api/server.py`'s
+fail-closed design (§3c), 500 would mean the secret is unset on Railway, so
+401 confirms it's actually configured on the new deployment, not just
+present in a dashboard screenshot. **Vercel: confirmed reachable and serving
+the new deployment** — `kopanalys.se` loads, and the UI shows the new
+screenshot-upload flow (`Ladda upp skärmdump` / `Manuell inmatning`)
+replacing the old paste-URL form, so the build succeeded and picked up the
+new code. **Not independently tested**: the actual authenticated round trip
+(logged-in user → screenshot upload → Next.js → Python engine with the
+shared secret) — every code path that calls the Python engine sits behind
+`requireUser()`, and this agent does not create accounts or enter
+credentials, so it couldn't log in to drive that call. This is the one
+remaining gap between "deployed" and "confirmed working end-to-end" —
+**recommended manual test for the user**: log in, use "Ladda upp skärmdump"
+with a real listing screenshot, and confirm it reaches OCR extraction
+instead of failing with the generic "Kunde inte läsa bilderna" error (which
+is also the generic message for *any* OCR failure, so a failure here doesn't
+by itself prove a secret mismatch — check Railway logs for a 401 on
+`/api/ocr/extract-text` at the same timestamp to confirm root cause if it
+does fail).
+
 ## 1. Architecture
 
 - **Frontend**: Next.js App Router (`frontend/`), deployed on Vercel. Supabase
