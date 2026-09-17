@@ -21,8 +21,13 @@ export async function GET(
       );
     }
 
+    // error/failureReason are for internal review only (see report/page.tsx's
+    // failed-analysis branch and the 2026-09 failed-analysis UX writeup) —
+    // never forward the raw technical detail to the browser.
+    const { error: _error, failureReason: _failureReason, ...analysisForClient } = found.analysis;
+
     return NextResponse.json({
-      analysis: found.analysis,
+      analysis: analysisForClient,
       property: found.property,
       analysisType: found.access.analysisType,
       locked: !found.access.fullAccess || undefined,

@@ -1,5 +1,6 @@
 import { createAdminClient } from "@/lib/supabase/admin";
 import type {
+  AnalysisFailureReason,
   AnalysisRecord,
   AnalysisReport,
   DataSourceReport,
@@ -46,6 +47,7 @@ interface AnalysisRow {
   result: AnalysisReport | null;
   data_sources: DataSourceReport[];
   error: string | null;
+  failure_reason: AnalysisFailureReason | null;
   created_at: string;
   completed_at: string | null;
 }
@@ -81,6 +83,7 @@ function mapAnalysis(row: AnalysisRow): AnalysisRecord {
     report: row.result,
     dataSources: row.data_sources ?? [],
     error: row.error,
+    failureReason: row.failure_reason,
     createdAt: row.created_at,
     completedAt: row.completed_at,
   };
@@ -211,6 +214,30 @@ export async function latestCompleteAnalysis(propertyId: string): Promise<Analys
 }
 
 /**
+ * A still-running analysis for this property started recently enough that
+ * its pipeline is plausibly still in flight (the request-dedup target — see
+ * pipeline.ts's requestAnalysis). Older than this, a "pending" row almost
+ * certainly means the background pipeline died without reaching failAnalysis
+ * (e.g. a Vercel invocation killed outright) rather than still working, so
+ * it's not returned as if a real analysis were on the way.
+ */
+const PENDING_ANALYSIS_FRESH_MS = 6 * 60_000;
+
+export async function latestPendingAnalysis(propertyId: string): Promise<AnalysisRecord | null> {
+  const { data, error } = await createAdminClient()
+    .from("analyses")
+    .select("*")
+    .eq("property_id", propertyId)
+    .eq("status", "pending")
+    .gte("created_at", new Date(Date.now() - PENDING_ANALYSIS_FRESH_MS).toISOString())
+    .order("created_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+  if (error) throw new Error(`latestPendingAnalysis failed: ${error.message}`);
+  return data ? mapAnalysis(data as AnalysisRow) : null;
+}
+
+/**
  * Creates the next analysis version for a property. Versions are per-property
  * and enforced unique in the database; on a concurrent-insert collision the
  * version is recomputed once.
@@ -264,10 +291,19 @@ export async function completeAnalysis(
   return mapAnalysis(data as AnalysisRow);
 }
 
-export async function failAnalysis(id: string, message: string): Promise<void> {
+export async function failAnalysis(
+  id: string,
+  message: string,
+  reason: AnalysisFailureReason
+): Promise<void> {
   const { error } = await createAdminClient()
     .from("analyses")
-    .update({ status: "failed", error: message, completed_at: new Date().toISOString() })
+    .update({
+      status: "failed",
+      error: message,
+      failure_reason: reason,
+      completed_at: new Date().toISOString(),
+    })
     .eq("id", id);
   if (error) throw new Error(`failAnalysis failed: ${error.message}`);
 }

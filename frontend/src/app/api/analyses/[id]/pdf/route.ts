@@ -3,9 +3,16 @@ import puppeteer from "puppeteer-core";
 import chromium from "@sparticuz/chromium";
 import { getReportForViewer } from "@/lib/analysis/access";
 import { requireUser } from "@/lib/auth/requireUser";
+import { checkRateLimit, clientIp } from "@/lib/rateLimit";
 
 export const runtime = "nodejs";
 export const maxDuration = 60;
+
+// Every call launches a full headless Chromium — by far the most
+// memory/CPU-expensive request in the app. No caching exists yet for the
+// rendered PDF (a real follow-up — see the production-readiness report), so
+// this rate limit is the cheap stopgap against a script spamming downloads.
+const RATE_LIMIT_PER_MINUTE = 5;
 
 /**
  * GET /api/analyses/:id/pdf — render the report page to a downloadable PDF.
@@ -23,6 +30,13 @@ export async function GET(
 
   const { user, response: authError } = await requireUser();
   if (authError) return authError;
+
+  if (!checkRateLimit(`pdf:${clientIp(request)}`, RATE_LIMIT_PER_MINUTE, 60_000)) {
+    return NextResponse.json(
+      { error: { code: "rate_limited", message: "Vänta en liten stund innan du laddar ner fler PDF:er." } },
+      { status: 429 }
+    );
+  }
 
   let found: Awaited<ReturnType<typeof getReportForViewer>>;
   try {

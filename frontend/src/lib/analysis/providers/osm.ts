@@ -18,6 +18,15 @@ import { fetchJson, haversineMeters } from "./httpJson";
  * precision. The one true single-point distance requested (distance to the
  * city/municipality center) doesn't have this problem — it's one lookup —
  * so that one is real and precise.
+ *
+ * Preschools are the one category also reported by name + distance (not
+ * just count): Skolverket's Skolenhetsregistret (skolverketSchools.ts) is
+ * the authoritative named source for grundskola/gymnasieskola, but its
+ * register does not include forskola (ages 1-5) at all - confirmed live
+ * (2026-09), the register only starts at forskoleklass. OSM is the only
+ * nationally-available presence signal for preschools, so for that one
+ * category this adds a named/`out center` sub-query alongside the existing
+ * count query - still one Overpass request, per this file's own rule.
  */
 
 // Two independent public mirrors of the same Overpass API — tried in order,
@@ -34,12 +43,14 @@ const RADIUS_METERS = 1000;
 const CATEGORIES: Array<{ key: string; overpassFilter: string }> = [
   { key: "grocery", overpassFilter: '["shop"="supermarket"]' },
   { key: "school", overpassFilter: '["amenity"="school"]' },
+  { key: "preschool", overpassFilter: '["amenity"="kindergarten"]' },
   { key: "restaurant", overpassFilter: '["amenity"="restaurant"]' },
   { key: "park", overpassFilter: '["leisure"="park"]' },
   { key: "transit", overpassFilter: '["public_transport"="stop_position"]' },
   { key: "hospital", overpassFilter: '["amenity"="hospital"]' },
   { key: "highway_major", overpassFilter: '["highway"~"^(motorway|trunk|primary)$"]' },
 ];
+const NEAREST_PRESCHOOLS = 5;
 
 interface OverpassCountTags {
   total: string;
@@ -48,8 +59,15 @@ interface OverpassCountElement {
   type: "count";
   tags: OverpassCountTags;
 }
+interface OverpassNamedElement {
+  type: "node" | "way";
+  lat?: number;
+  lon?: number;
+  center?: { lat: number; lon: number };
+  tags?: Record<string, string>;
+}
 interface OverpassResponse {
-  elements: OverpassCountElement[];
+  elements: Array<OverpassCountElement | OverpassNamedElement>;
 }
 
 function buildQuery(lat: number, lon: number): string {
@@ -58,7 +76,11 @@ function buildQuery(lat: number, lon: number): string {
       `(node(around:${RADIUS_METERS},${lat},${lon})${c.overpassFilter};way(around:${RADIUS_METERS},${lat},${lon})${c.overpassFilter};)->.${c.key};`
   ).join("\n");
   const counts = CATEGORIES.map((c) => `.${c.key} out count;`).join("\n");
-  return `[out:json][timeout:20];\n${sets}\n${counts}`;
+  // Named details (name + coordinates) for the one category the report
+  // lists individually rather than just counting - see the file-level
+  // comment on why preschools specifically need this and the others don't.
+  const bodies = `.preschool out center ${NEAREST_PRESCHOOLS * 4};`;
+  return `[out:json][timeout:20];\n${sets}\n${counts}\n${bodies}`;
 }
 
 /** Tries each configured Overpass mirror in order, falling back to the next
@@ -119,13 +141,31 @@ export const osmAmenitiesProvider: DataProvider = {
     const fields: string[] = [];
 
     if (overpassResult.ok) {
-      const countBlocks = overpassResult.data.elements.filter((e) => e.type === "count");
+      const countBlocks = overpassResult.data.elements.filter(
+        (e): e is OverpassCountElement => e.type === "count"
+      );
       CATEGORIES.forEach((category, i) => {
         const total = countBlocks[i] ? Number.parseInt(countBlocks[i].tags.total, 10) : null;
         if (total === null || !Number.isFinite(total)) return;
         data[`${category.key}_count_within_${RADIUS_METERS}m`] = total;
         fields.push(`${category.key}_count_within_${RADIUS_METERS}m`);
       });
+
+      const preschools = overpassResult.data.elements
+        .filter((e): e is OverpassNamedElement => e.type === "node" || e.type === "way")
+        .map((e) => {
+          const lat = e.type === "node" ? e.lat : e.center?.lat;
+          const lon = e.type === "node" ? e.lon : e.center?.lon;
+          if (lat === undefined || lon === undefined) return null;
+          return { name: e.tags?.name ?? "Förskola", distanceM: Math.round(haversineMeters(origin, { lat, lon })) };
+        })
+        .filter((p): p is { name: string; distanceM: number } => p !== null)
+        .sort((a, b) => a.distanceM - b.distanceM)
+        .slice(0, NEAREST_PRESCHOOLS);
+      if (preschools.length > 0) {
+        data.nearby_preschools = preschools;
+        fields.push("nearby_preschools");
+      }
     }
 
     if (municipalityDistance !== null) {

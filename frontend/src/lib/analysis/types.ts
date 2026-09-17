@@ -174,6 +174,16 @@ export interface AnalysisReport {
 
 export type AnalysisStatus = "pending" | "complete" | "failed";
 
+/**
+ * Categorized cause of a "failed" analysis, alongside the free-text `error`.
+ * "insufficient_data" is the one customer-facing case (pipeline.ts's
+ * InsufficientListingDataError — quota is always refunded for it) and is
+ * the only reason the report page shows the reassuring "we couldn't gather
+ * enough reliable data" message for; anything else falls back to a plainer
+ * generic message rather than promising a refund that may not apply.
+ */
+export type AnalysisFailureReason = "insufficient_data" | "pipeline_error";
+
 /** A persisted row in the `analyses` table (camelCased). */
 export interface AnalysisRecord {
   id: string;
@@ -185,6 +195,7 @@ export interface AnalysisRecord {
   report: AnalysisReport | null;
   dataSources: DataSourceReport[];
   error: string | null;
+  failureReason: AnalysisFailureReason | null;
   createdAt: string;
   completedAt: string | null;
 }
