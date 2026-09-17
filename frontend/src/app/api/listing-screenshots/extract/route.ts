@@ -108,5 +108,8 @@ export async function POST(request: Request) {
   }
 
   const { fields, foundKeys } = extractFromScreenshotText(texts);
-  return NextResponse.json({ fields, foundKeys });
+  // `texts` (the raw per-image OCR output) is included temporarily so the
+  // review form can offer a debug view — remove once extraction accuracy is
+  // no longer being actively tuned against real screenshots.
+  return NextResponse.json({ fields, foundKeys, texts });
 }

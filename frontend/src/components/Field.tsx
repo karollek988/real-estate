@@ -3,9 +3,11 @@ const inputClasses =
 
 interface FieldProps extends React.InputHTMLAttributes<HTMLInputElement> {
   label: string;
+  /** Short clarifying caption shown below the input, e.g. to disambiguate a field from a similarly-named one. */
+  hint?: string;
 }
 
-export function Field({ label, id, required, ...inputProps }: FieldProps) {
+export function Field({ label, id, required, hint, ...inputProps }: FieldProps) {
   return (
     <div className="flex flex-col gap-2">
       <label htmlFor={id} className="text-sm font-medium text-neutral-200">
@@ -13,6 +15,7 @@ export function Field({ label, id, required, ...inputProps }: FieldProps) {
         {required && <span className="ml-0.5 text-red-400">*</span>}
       </label>
       <input id={id} required={required} {...inputProps} className={inputClasses} />
+      {hint && <p className="text-xs text-neutral-500">{hint}</p>}
     </div>
   );
 }

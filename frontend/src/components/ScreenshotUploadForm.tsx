@@ -13,6 +13,7 @@ const ACCEPTED_TYPES = new Set(["image/png", "image/jpeg", "image/webp"]);
 interface Extraction {
   fields: Partial<ManualListingFields>;
   foundKeys: string[];
+  texts: string[];
 }
 
 /**
@@ -75,7 +76,7 @@ export function ScreenshotUploadForm() {
         return;
       }
 
-      setExtraction({ fields: data.fields ?? {}, foundKeys: data.foundKeys ?? [] });
+      setExtraction({ fields: data.fields ?? {}, foundKeys: data.foundKeys ?? [], texts: data.texts ?? [] });
     } catch {
       setError("Något gick fel. Försök igen.");
     } finally {
@@ -86,14 +87,26 @@ export function ScreenshotUploadForm() {
   if (extraction) {
     const foundCount = extraction.foundKeys.length;
     return (
-      <ManualEntryForm
-        initialValues={extraction.fields}
-        sourceNotice={
-          foundCount > 0
-            ? `Vi läste av ${foundCount} fält från dina skärmdumpar — kontrollera att de stämmer och fyll i resten.`
-            : "Vi kunde inte läsa av några uppgifter automatiskt från bilderna — fyll i formuläret nedan."
-        }
-      />
+      <div className="flex flex-col gap-4">
+        {extraction.texts.length > 0 && (
+          <details className="rounded-xl border border-white/10 bg-white/[0.02] px-4 py-3 text-sm text-neutral-400">
+            <summary className="cursor-pointer select-none font-medium text-neutral-300">
+              Visa rå OCR-text (tillfälligt, för felsökning)
+            </summary>
+            <pre className="mt-3 max-h-64 overflow-auto whitespace-pre-wrap text-xs text-neutral-400">
+              {extraction.texts.join("\n\n---\n\n")}
+            </pre>
+          </details>
+        )}
+        <ManualEntryForm
+          initialValues={extraction.fields}
+          sourceNotice={
+            foundCount > 0
+              ? `Vi läste av ${foundCount} fält från dina skärmdumpar — kontrollera att de stämmer och fyll i resten.`
+              : "Vi kunde inte läsa av några uppgifter automatiskt från bilderna — fyll i formuläret nedan."
+          }
+        />
+      </div>
     );
   }
 
@@ -154,7 +167,7 @@ export function ScreenshotUploadForm() {
         </Button>
         <button
           type="button"
-          onClick={() => setExtraction({ fields: {}, foundKeys: [] })}
+          onClick={() => setExtraction({ fields: {}, foundKeys: [], texts: [] })}
           className="text-sm font-medium text-neutral-400 underline-offset-4 hover:text-neutral-200 hover:underline"
         >
           Fyll i uppgifterna manuellt istället

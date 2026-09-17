@@ -5,6 +5,7 @@ import { AuthProvider } from "@/lib/auth/AuthProvider";
 import { ChatWidget } from "@/components/ChatWidget";
 import { CookieConsentBanner } from "@/components/CookieConsentBanner";
 import { CookieSettingsLink } from "@/components/CookieSettingsLink";
+import { ScrollRestorationReset } from "@/components/ScrollRestorationReset";
 import { SiteFooter } from "@/components/SiteFooter";
 
 const inter = Inter({
@@ -27,6 +28,7 @@ export default function RootLayout({
     <html lang="sv">
       <body className={`${inter.variable} antialiased`}>
         <AuthProvider>
+          <ScrollRestorationReset />
           {children}
           <SiteFooter />
           <CookieConsentBanner />

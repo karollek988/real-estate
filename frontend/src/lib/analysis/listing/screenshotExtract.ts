@@ -168,10 +168,16 @@ function findKnownAgency(text: string): string | null {
 const NAME_LINE = /^[A-ZÅÄÖ][a-zåäö'-]+\s[A-ZÅÄÖ][a-zåäö'-]+$/;
 const CONTACT_PANEL_SIGNAL = /\bmejla\b|visa telefonnummer|kontakta mäklaren/i;
 
-function guessBroker(lines: string[]): string | null {
+function guessBroker(lines: string[], knownAgency: string | null): string | null {
   for (let i = 0; i < lines.length; i++) {
     const trimmed = lines[i].trim();
     if (!NAME_LINE.test(trimmed)) continue;
+    // The agency's own brand name sometimes also appears in a mixed-case
+    // byline near the contact buttons (not just its ALL-CAPS logo text,
+    // which NAME_LINE already excludes) - a real bug: "Fantastic Frank"
+    // was picked as the broker's name for exactly this reason. Once the
+    // agency is already known, its name can never also be the broker.
+    if (knownAgency && trimmed.toLowerCase() === knownAgency.toLowerCase()) continue;
     const nearby = lines.slice(Math.max(0, i - 3), Math.min(lines.length, i + 4)).join(" ");
     if (CONTACT_PANEL_SIGNAL.test(nearby)) return trimmed;
   }
@@ -199,7 +205,10 @@ export function extractFromScreenshotText(rawTexts: string[]): ScreenshotExtract
   // safe because the asking price is essentially always the largest single
   // kr figure a listing shows, regardless of what order OCR read the page
   // in (multi-column layouts do not preserve visual reading order).
-  const RATE_SUFFIX = /^\s*\/\s*(?:m2|m²|kvm|mån(?:ad)?|år)\b/i;
+  // The "/" before the unit is optional - OCR frequently drops thin
+  // punctuation like a slash entirely, which would otherwise let a
+  // per-m²/per-month figure slip back into the candidate pool undetected.
+  const RATE_SUFFIX = /^\s*(?:\/|per\s+)?\s*(?:m2|m²|kvm|mån(?:ad)?|år)\b/i;
 
   function nonRatePriceValues(haystack: string): number[] {
     const values: number[] = [];
@@ -221,7 +230,7 @@ export function extractFromScreenshotText(rawTexts: string[]): ScreenshotExtract
 
   const labeledPrice = firstMatch(
     text,
-    /(?:utgångspris|slutpris)[^\d]{0,15}(\d[\d ]{4,}\d)[ \t]*kr\b(?!\s*\/\s*(?:m2|m²|kvm|mån(?:ad)?|år))/i
+    /(?:utgångspris|slutpris)[^\d]{0,15}(\d[\d ]{4,}\d)[ \t]*kr\b(?!\s*(?:\/|per\s+)?\s*(?:m2|m²|kvm|mån(?:ad)?|år))/i
   );
   const priceCandidates = nonRatePriceValues(text);
   const priceRaw = labeledPrice ? parseSekNumber(labeledPrice) : null;
@@ -348,7 +357,7 @@ export function extractFromScreenshotText(rawTexts: string[]): ScreenshotExtract
     foundKeys.push("agency");
   }
 
-  const broker = guessBroker(lines);
+  const broker = guessBroker(lines, agency);
   if (broker) {
     fields.broker = broker;
     foundKeys.push("broker");

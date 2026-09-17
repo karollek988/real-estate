@@ -120,6 +120,17 @@ function check(name, actual, expected) {
   check("order-independent: real fee still extracted", fields.monthlyFee, 7660);
 }
 
+// A dropped "/" (OCR frequently loses thin punctuation) must not let a
+// per-m2 figure back into the candidate pool.
+{
+  const { fields } = extractFromScreenshotText(["96 597 kr per m2\n11 495 000 kr"]);
+  check("price-per-m2 excluded when the slash reads as 'per' instead", fields.askingPrice, 11_495_000);
+}
+{
+  const { fields } = extractFromScreenshotText(["96 597 kr m2\n11 495 000 kr"]);
+  check("price-per-m2 excluded even with the separator fully dropped", fields.askingPrice, 11_495_000);
+}
+
 // "Slutpris" (sold price) is trusted as an explicit label, same as
 // "Utgångspris" - bare "Pris" deliberately is not.
 {
@@ -178,6 +189,24 @@ function check(name, actual, expected) {
   const { fields } = extractFromScreenshotText(["FANTASTIC FRANK\nMadeleine Almkvist\nMejla"]);
   check("known agency recognized", fields.agency, "Fantastic Frank");
   check("broker name near contact panel", fields.broker, "Madeleine Almkvist");
+}
+
+// Real bug repro: the agency's brand also appears a second time as a
+// mixed-case byline ("Fantastic Frank", not just the ALL-CAPS logo) right
+// next to the contact buttons - that byline must never be mistaken for the
+// broker's own name just because it's the first two-Title-Case-word line
+// in the window.
+{
+  const text = [
+    "FANTASTIC FRANK",
+    "Fantastic Frank",
+    "Mejla",
+    "Visa telefonnummer",
+    "Madeleine Almkvist",
+  ].join("\n");
+  const { fields } = extractFromScreenshotText([text]);
+  check("agency byline not mistaken for broker name", fields.broker, "Madeleine Almkvist");
+  check("agency still correctly identified despite the duplicate byline", fields.agency, "Fantastic Frank");
 }
 
 // Full reconstruction of the real Augustendalsvägen listing (Nacka strand)
