@@ -99,6 +99,35 @@ function check(name, actual, expected) {
   check("real price wins over price-per-m2", fields.askingPrice, 11_495_000);
 }
 
+// Same trap, but the per-m2/per-month figures appear BEFORE the real price
+// in reading order (largest-candidate selection must not depend on order),
+// and "Pris/m2" is glued onto one line with no space before the label.
+{
+  const text = [
+    "Pris/m2 96 597 kr/m2",
+    "Avgift 7 660 kr/mån",
+    "11 495 000 kr",
+    "Boarea 119 m²",
+  ].join("\n");
+  const { fields } = extractFromScreenshotText([text]);
+  check("order-independent: real price still wins", fields.askingPrice, 11_495_000);
+  check("order-independent: real fee still extracted", fields.monthlyFee, 7660);
+}
+
+// "Slutpris" (sold price) is trusted as an explicit label, same as
+// "Utgångspris" - bare "Pris" deliberately is not.
+{
+  const { fields } = extractFromScreenshotText(["Slutpris 5 100 000 kr\nPris/m² 42 000 kr/m²"]);
+  check("slutpris label trusted", fields.askingPrice, 5_100_000);
+}
+
+// No trusted label at all ("Pris:" alone, not "Utgångspris"/"Slutpris") -
+// still resolves correctly via the largest-non-rate-figure fallback.
+{
+  const { fields } = extractFromScreenshotText(["Pris: 2 950 000 kr\nAvgift 2 100 kr/mån"]);
+  check("bare 'pris' label ignored but fallback still finds the real price", fields.askingPrice, 2_950_000);
+}
+
 // Empty/whitespace-only OCR result (unreadable image).
 {
   const { fields, foundKeys } = extractFromScreenshotText(["", "   "]);

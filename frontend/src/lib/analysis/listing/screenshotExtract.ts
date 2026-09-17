@@ -58,30 +58,45 @@ export function extractFromScreenshotText(rawTexts: string[]): ScreenshotExtract
     foundKeys.push("address");
   }
 
-  // Prefer an explicitly labeled price ("Utgångspris"/"Pris"); fall back to
-  // any standalone "N NNN NNN kr" only when no label is present, same
-  // priority order regexFallback.ts uses for Hemnet HTML.
-  // The digit run itself must stay on one line ([\d ], not [\d\s]) — a
-  // trailing house number on one OCR line ("Storgatan 5") followed by a
-  // price starting on the next must never be read as one glued-together
-  // number, only actual space-grouped thousands within a single line
-  // ("4 500 000") should.
-  // Both patterns reject a trailing "/m²" (or "/kvm") — "pris" alone matches
-  // the "Pris/m²" per-area figure too, which would otherwise outrank the
-  // real price since it's the only "pris...kr" match on the page when the
-  // main price is shown as a bare heading with no "Utgångspris:" label.
+  // Price extraction deliberately never trusts a bare "Pris" as a label —
+  // it collides with "Pris/m²", "Prisidé", "Prisutveckling", etc. too often
+  // (a real bug: a per-m² figure outranked the actual price because it was
+  // the only "pris...kr" match on the page). Only "Utgångspris"/"Slutpris"
+  // are specific enough to trust directly. Everything else falls through to
+  // "largest absolute kr amount on the page that isn't a per-unit rate" —
+  // safe because the asking price is essentially always the largest single
+  // kr figure a listing shows, regardless of what order OCR read the page
+  // in (multi-column layouts do not preserve visual reading order).
+  const RATE_SUFFIX = /^\s*\/\s*(?:m2|m²|kvm|mån(?:ad)?|år)\b/i;
+
+  function nonRatePriceValues(haystack: string): number[] {
+    const values: number[] = [];
+    // The digit run itself must stay on one line ([\d ], not [\d\s]) — a
+    // trailing house number on one OCR line ("Storgatan 5") followed by a
+    // price starting on the next must never be read as one glued-together
+    // number, only actual space-grouped thousands within a single line
+    // ("4 500 000") should.
+    const re = /(\d[\d ]{4,}\d)[ \t]*kr\b/gi;
+    let m: RegExpExecArray | null;
+    while ((m = re.exec(haystack))) {
+      const tail = haystack.slice(m.index + m[0].length, m.index + m[0].length + 12);
+      if (RATE_SUFFIX.test(tail)) continue;
+      const parsed = parseSekNumber(m[1]);
+      if (parsed !== null && parsed > 10_000 && parsed < 200_000_000) values.push(parsed);
+    }
+    return values;
+  }
+
   const labeledPrice = firstMatch(
     text,
-    /(?:utgångspris|pris)[^\d]{0,15}(\d[\d ]{4,}\d)[ \t]*kr\b(?!\s*\/\s*(?:m2|m²|kvm))/i
+    /(?:utgångspris|slutpris)[^\d]{0,15}(\d[\d ]{4,}\d)[ \t]*kr\b(?!\s*\/\s*(?:m2|m²|kvm|mån(?:ad)?|år))/i
   );
-  const fallbackPrice = firstMatch(text, /(\d[\d ]{5,}\d)[ \t]*kr\b(?!\s*\/\s*(?:m2|m²|kvm))/i);
-  const priceRaw = labeledPrice ?? fallbackPrice;
-  if (priceRaw) {
-    const parsed = parseSekNumber(priceRaw);
-    if (parsed !== null && parsed > 10_000 && parsed < 200_000_000) {
-      fields.askingPrice = parsed;
-      foundKeys.push("askingPrice");
-    }
+  const priceCandidates = nonRatePriceValues(text);
+  const priceRaw = labeledPrice ? parseSekNumber(labeledPrice) : null;
+  const parsedPrice = priceRaw ?? (priceCandidates.length > 0 ? Math.max(...priceCandidates) : null);
+  if (parsedPrice !== null && parsedPrice > 10_000 && parsedPrice < 200_000_000) {
+    fields.askingPrice = parsedPrice;
+    foundKeys.push("askingPrice");
   }
 
   const feeRaw = firstMatch(text, /(?:månadsavgift|avgift)[^\d]{0,15}(\d[\d ]*\d)[ \t]*kr/i);
