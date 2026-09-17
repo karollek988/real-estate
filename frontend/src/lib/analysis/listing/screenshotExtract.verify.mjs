@@ -131,6 +131,52 @@ function check(name, actual, expected) {
   check("price-per-m2 excluded even with the separator fully dropped", fields.askingPrice, 11_495_000);
 }
 
+// Real bug repro: the asking price's own "kr" position, before "Om
+// bostaden" starts, was never the issue - Pris/m² living *inside* that
+// later table is what actually distinguishes it, regardless of how badly
+// its own punctuation is garbled. Mangled beyond anything a suffix pattern
+// could recognize ("krtm2", no separator, no valid unit token) but still
+// correctly excluded by position alone.
+{
+  const text = [
+    "Augustendalsvägen",
+    "11 495 000 kr",
+    "Om bostaden",
+    "Boarea 119 m²",
+    "Pris/m²",
+    "96 597 krtm2",
+  ].join("\n");
+  const { fields } = extractFromScreenshotText([text]);
+  check("price excluded by position even when its suffix is unrecognizable", fields.askingPrice, 11_495_000);
+}
+
+// Boarea's superscript "2" dropped entirely by OCR ("119 m", not "119 m²")
+// - the actual cause found on a real listing where the labeled value was
+// never missing, just unrecognized.
+{
+  const { fields } = extractFromScreenshotText(["Boarea\n119 m"]);
+  check("boarea recognized when the superscript 2 is dropped entirely", fields.livingArea, 119);
+}
+
+// The bare-"m" unit must never match the "m" inside an unrelated word like
+// "månader" just because a number happens to precede it.
+{
+  const { fields } = extractFromScreenshotText(["Tillträde om 3 månader"]);
+  check("bare-m area unit does not match inside 'månader'", fields.livingArea, undefined);
+}
+
+// Last-resort fallback: the price heading's "kr" is missing entirely (the
+// bold heading font OCR'd worse than the rest of the page), but price/m²
+// and boarea both came through cleanly elsewhere - derives the price from
+// their product rather than leaving it blank or falling through to Pris/m².
+{
+  const text = ["Augustendalsvägen", "11 495 000", "Om bostaden", "Boarea 119 m²", "Pris/m²", "96 597 kr/m²"].join(
+    "\n"
+  );
+  const { fields } = extractFromScreenshotText([text]);
+  check("price derived from price-per-m2 x boarea when no 'kr' price is found at all", fields.askingPrice, 11_495_043);
+}
+
 // "Slutpris" (sold price) is trusted as an explicit label, same as
 // "Utgångspris" - bare "Pris" deliberately is not.
 {
@@ -224,7 +270,7 @@ function check(name, actual, expected) {
     "Antal rum",
     "5 rum",
     "Boarea",
-    "119 m²",
+    "119 m", // superscript "2" dropped - the real cause of Boarea coming back empty in production
     "Våning",
     "9, hiss finns",
     "Avgift",
