@@ -5,7 +5,9 @@
 > otherwise leave it alone. Detailed research/product docs live in `docs/`;
 > this file is the "what's actually true right now" summary.
 
-Last updated: 2026-09-17 (branch `test/ocr-security-verification`, off `main`).
+Last updated: 2026-09-17 (branch `test/ocr-security-verification`, off `main`,
+continued in a second session on the same branch — Railway/FastAPI
+authentication added).
 
 ## 1. Architecture
 
@@ -18,8 +20,9 @@ Last updated: 2026-09-17 (branch `test/ocr-security-verification`, off `main`).
   acquisition, PDF/DOCX/image extraction, broker-document discovery), and the
   standalone `location_intelligence`/`market_intelligence` packages under `src/`.
 - The two deployments talk over plain HTTP: Next.js reads `PYTHON_ENGINE_API_URL`
-  and calls the FastAPI service directly (see §4, gap G1 — that service has no
-  authentication of its own).
+  and calls the FastAPI service directly, authenticated by a shared secret
+  (`PYTHON_ENGINE_API_SECRET`, §3c) — every call site attaches it via
+  `frontend/src/lib/pythonEngine.ts`.
 
 ## 2. Current feature: screenshot upload replacing Hemnet URL scraping
 
@@ -108,22 +111,55 @@ itself; the live reproduction is the one thing a future session with a
 working Docker/Supabase local stack should still do before calling this
 fully closed.
 
-### 3c. NEW finding (medium, not fixed) — Python engine has no authentication
+### 3c. Python engine had no authentication — FIXED this session
 
-`api/server.py` has zero auth/API-key/CORS middleware on any endpoint
+`api/server.py` had zero auth/API-key/CORS middleware on any endpoint
 (verified: no `Depends`, `HTTPBearer`, `APIKeyHeader`, or CORS middleware
 anywhere in the file). Every protection (login, rate limiting, essential-field
-validation, quota) lives only in the Next.js layer. If the Railway URL is
-discoverable, anyone can call `/api/ocr/extract-text`, `/api/browser-fetch`
+validation, quota) lived only in the Next.js layer. If the Railway URL was
+discoverable, anyone could call `/api/ocr/extract-text`, `/api/browser-fetch`
 (spins up a real Firefox/Camoufox instance per call), `/api/analyze`, etc.
-directly — unlimited, free, bypassing Next.js entirely. This doesn't let an
+directly — unlimited, free, bypassing Next.js entirely. This didn't let an
 attacker forge *their own* premium analyses inside the app's database (the
-quota bookkeeping lives in Supabase, untouched by this path), but it is a
-real cost-abuse / infrastructure-DoS vector. **Not fixed** — the fix needs a
-shared secret configured on two separate platforms (Vercel + Railway env
-vars) that this session cannot provision or verify; recommend adding an
-opt-in `X-Internal-Secret` check (no-op until the env var is set on both
-sides) as a follow-up.
+quota bookkeeping lives in Supabase, untouched by this path), but it was a
+real cost-abuse / infrastructure-DoS vector.
+
+**Fix**: `require_internal_secret`, an `@app.middleware("http")` hook in
+`api/server.py`, rejects every request except `GET /` (the static demo page,
+which also doubles as Railway's health check — never gated) unless it carries
+a header (`X-Internal-Secret`) matching the `PYTHON_ENGINE_API_SECRET` env
+var, compared with `hmac.compare_digest` (timing-safe). Fails closed: if the
+env var itself is unset on the Python side, every protected request gets 500,
+never silently passed through. Implemented as middleware rather than a
+per-route dependency so a future endpoint is protected the moment it's added.
+
+On the Next.js side, `frontend/src/lib/pythonEngine.ts` (`pythonEngineHeaders()`)
+is the one place that reads `PYTHON_ENGINE_API_SECRET` and attaches the
+header — a server-only env var (never `NEXT_PUBLIC_`), guarded by the same
+`typeof window !== "undefined"` check `lib/supabase/admin.ts` already uses for
+the Supabase service-role key. All 8 call sites that reach
+`PYTHON_ENGINE_API_URL` were switched from a bare
+`{ "Content-Type": "application/json" }` to this helper: the two API routes
+(`api/listing-screenshots/extract`, `api/properties/[id]/brf-report`) and six
+providers (`hemnetPage.ts`'s browser-bridge escalation, `brfAcquisition`,
+`brfFinancials`, `brokerDocuments`, `locationIntelligence`,
+`marketIntelligence`). If the secret isn't configured on the Next.js side, the
+header is simply omitted — the Python engine then returns 401, which every
+existing caller already handles the same way it handles any other backend
+failure (degrading to that provider's `error`/`not_connected` status, never
+crashing the pipeline).
+
+**Verification**: `api/tests/test_internal_auth.py` — 33 tests against the
+real `app` object via FastAPI's `TestClient`, parametrized over all 10
+protected endpoints (`browser-fetch`, `resolve`, `analyze`,
+`brf-annual-report`, `brf-annual-report/upload`, `ocr/extract-text`,
+`broker-documents`, `brf-financials`, `location-intelligence`,
+`market-intelligence`): missing header → 401, wrong header → 401, secret
+unconfigured on the server → 500 (fail closed), correct header → reaches the
+real handler, `/` stays public with no header at all, and a same-length wrong
+secret is still rejected (guards against a future accidental swap of
+`hmac.compare_digest` for `==`). **PASS — 33/33**, actually run (`pytest
+api/tests/test_internal_auth.py`), not inferred from code review.
 
 ### 3d. NEW finding (low, fixed) — manual-entry numeric fields had no sanity bounds server-side
 
@@ -158,10 +194,15 @@ other admin/debug HTTP routes exist. Stripe webhook verifies signatures
 correctly (`stripe.webhooks.constructEvent`). No `.update`/`.upsert` on
 `profiles` anywhere outside the service-role admin client.
 
-## 4. Known gaps / next steps (not fixed this session)
+## 4. Known gaps / next steps
 
-- **G1**: Python engine has no auth (§3c) — needs a cross-service shared
-  secret; requires access to both Vercel and Railway env var configuration.
+- **G1** (RESOLVED, second session): Python engine had no auth — fixed, see
+  §3c. Remaining action item: **set `PYTHON_ENGINE_API_SECRET` to the same
+  value on both the Vercel and Railway projects before deploying this
+  branch** — until both sides have it, every Python-engine call will 401
+  (Next.js side unset) or every request will 500 (Railway side unset).
+  Generate it with e.g. `openssl rand -hex 32`; there's no default and none
+  is committed anywhere.
 - **G2**: `SEND_EMAIL_HOOK_SECRET` rotation (§3e) — recommended precaution,
   needs the value changed in Supabase Auth Hooks config *and* the app's env
   vars simultaneously (rotating one without the other breaks signup emails).
@@ -174,20 +215,33 @@ correctly (`stripe.webhooks.constructEvent`). No `.update`/`.upsert` on
 - **G5**: `frontend/src/lib/analysis/listing/hemnetPage.verify.mjs` has one
   pre-existing failing check ("fireplace"/unmapped-amenity feature dedup) —
   present on `main` before this session, unrelated to the OCR/security work.
-- **G6**: Docker Desktop would not start in this session's environment (the
+- **G6**: Docker Desktop would not start in the first session (the
   `docker-desktop` WSL2 VM stayed "Stopped" through two clean relaunches, a
-  `wsl --shutdown` reset, and 15+ minutes of waiting — see §5). Two things
-  this task asked for are consequently unverified: Tesseract+Swedish OCR
-  actually running inside the production container, and a live reproduction
-  of the RPC-grant fix (§3b) against a real Postgres role system. Both are
-  ready to run the moment Docker is available: `docker build .` +
-  `pytest tests/unit/test_ocr_extraction.py` inside the image for the first;
-  the prepared `rpc_grant_test.sql` script (this session's scratchpad — not
-  committed, recreate from PROJECT_STATE.md/the migration comments if
-  needed) for the second. This is an environment problem, not a code
-  problem — recommend the user check Docker Desktop's own diagnostics
-  (Windows/WSL2 virtualization settings, or simply restarting the machine)
-  before the next session.
+  `wsl --shutdown` reset, and 15+ minutes of waiting) and reportedly now shows
+  a warning/error popup on startup — per instruction, **not** re-attempted or
+  guessed at in this second session; the user will supply a screenshot of the
+  actual error next time so it can be diagnosed from evidence rather than
+  speculation. Two things this task asked for remain unverified: Tesseract +
+  Swedish OCR actually running inside the production container, and a live
+  reproduction of the RPC-grant fix (§3b) against a real Postgres role
+  system. **Repo-side readiness re-checked this session (no Docker
+  required)** — confirmed still correct and unchanged:
+  - `Dockerfile` installs `tesseract-ocr`, `tesseract-ocr-swe`,
+    `tesseract-ocr-eng`, and `fonts-dejavu-core` (the last one so
+    `test_ocr_extraction.py` has a real TrueType font to render against).
+  - `api/requirements.txt` has `pytesseract`, `pillow`, `python-docx`.
+  - The new internal-auth middleware adds no new dependency (`hmac` is
+    stdlib) and doesn't change the Docker build steps.
+  - **New consideration for the next Docker session**: `PYTHON_ENGINE_API_SECRET`
+    must now be set (`docker run -e PYTHON_ENGINE_API_SECRET=...`) for any
+    `curl`/manual POST test against the container's OCR endpoint to work —
+    it will otherwise correctly return 401, which is the new intended
+    behavior, not a bug. Running `pytest api/tests/test_internal_auth.py` or
+    `pytest BRF-Scraper/tests/unit/test_ocr_extraction.py` directly inside
+    the container doesn't need this (tests set/unset the env var themselves).
+  - The prepared `rpc_grant_test.sql` script for the RPC-grant reproduction
+    (§3b) is in the first session's scratchpad, not committed — recreate
+    from the migration file/comments if the scratchpad is gone.
 
 ## 5. Tests / verification status
 
@@ -197,22 +251,27 @@ PASS = actually run and green. FAIL = actually run and red. BLOCKED = not run.
 |---|---|---|
 | Python unit tests (`BRF-Scraper`, full suite) | **PASS** | 426 passed, 5 skipped — `pytest tests/` via the existing `.venv` |
 | New OCR tests (`test_ocr_extraction.py`) natively on Windows | **BLOCKED** | Skips itself (no `tesseract` binary on this host's PATH) — by design |
-| New OCR tests inside the production Docker image | **[see final report]** | |
+| New OCR tests inside the production Docker image | **BLOCKED** | Docker unavailable both sessions (G6) — repo-side config re-verified without it |
 | TypeScript (`tsc --noEmit`) | **PASS** | Exit 0, no errors, including after this session's edits |
 | ESLint | **BLOCKED** | Pre-existing repo config gap (G4), unrelated to this branch |
 | Screenshot field extraction (`screenshotExtract.verify.mjs`) | **PASS** | 20/20 checks |
 | Analysis engine analyzers + report builder (7 analyzer + 2 report verify scripts) | **PASS** | All green under `npx tsx` |
 | Hemnet extraction (`listing/hemnetPage.verify.mjs`) | **FAIL (pre-existing)** | 1/10 checks red on unmodified `main` code (G5) |
 | RLS/RPC bypass — profiles quota fields | **PASS** | Verified via migration/grant audit; existing fix is sound |
-| RLS/RPC bypass — quota RPCs (§3b) | **[see final report]** | |
-| Docker: Tesseract + Swedish language pack in production image | **[see final report]** | |
+| RLS/RPC bypass — quota RPCs (§3b) | **BLOCKED** | Needs Docker/local Postgres (G6); fix shipped and reasoned through, not live-tested |
+| Railway/FastAPI internal-secret auth (§3c) | **PASS** | 33/33, `pytest api/tests/test_internal_auth.py` — valid/missing/invalid/unconfigured, all 10 protected endpoints + the public `/` |
+| Docker: Tesseract + Swedish language pack in production image | **BLOCKED** | Not attempted this session per instruction (G6) |
 
 ## 6. Deployment requirements
 
 - Env vars needed in production (Vercel): `NEXT_PUBLIC_SUPABASE_URL`,
   `NEXT_PUBLIC_SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY`,
   `SEND_EMAIL_HOOK_SECRET`, `STRIPE_*`, `RESEND_*`, `PYTHON_ENGINE_API_URL`
-  (public Railway URL), `OPENAI_API_KEY` (chat + inspection extraction).
+  (public Railway URL), `PYTHON_ENGINE_API_SECRET` (new, §3c — server-only,
+  never `NEXT_PUBLIC_`), `OPENAI_API_KEY` (chat + inspection extraction).
+- Env vars needed on Railway (the Python engine): `PYTHON_ENGINE_API_SECRET`
+  — **must be the exact same value as Vercel's**, or every request from
+  Next.js gets 401. Nothing generates or ships a default value.
 - Supabase migrations must be applied in order up through
   `20260917010000_revoke_public_execute_on_security_definer_rpcs.sql` before
   deploying this branch's frontend changes — the two are independent
