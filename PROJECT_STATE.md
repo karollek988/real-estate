@@ -8,14 +8,21 @@
 Last updated: 2026-09-17 — `test/ocr-security-verification` merged into
 `main` (fast-forward, no conflicts, no merge commit) after the third
 session's verification pass confirmed every fix live. `main` HEAD is now
-`7a79935`. **Not pushed to `origin` and not deployed** — local `main` is
-ahead of `origin/main`, by design: a pre-deployment audit (fourth session,
-same day) found `PYTHON_ENGINE_API_SECRET` is **not actually set on
-Railway** despite it being reported as configured — see §6. **Do not push
-`main` until that's fixed and re-verified** — both Vercel and Railway are
-git-connected to this repo with no override config found anywhere in it, so
-a push almost certainly auto-deploys both, and the Python engine would come
-up fail-closed (500 on every protected endpoint) with the secret missing.
+`82dbec4`. **Not pushed to `origin` and not deployed yet.**
+
+A pre-deployment audit (fourth session, same day) found
+`PYTHON_ENGINE_API_SECRET` was **not actually set on Railway** despite being
+reported as configured on both platforms — live-checked via `railway
+variable list` rather than trusted at face value. **Railway is now fixed**:
+the user added it through Railway's dashboard (confirmed independently via
+CLI immediately after, same session — 12 variables now present, including
+`PYTHON_ENGINE_API_SECRET`, up from 11). **Vercel remains unverified** — the
+linked Vercel CLI session is invalid in this environment and no interactive
+re-auth is possible here, so its status is still just a claim, not a
+confirmed fact; see §6. **Do not push `main` until Vercel is independently
+confirmed too** (dashboard screenshot or a working `vercel env ls`) — both
+platforms are git-connected to this repo with no override config found
+anywhere in it, so a push almost certainly auto-deploys both.
 
 Session history on the merged branch: Docker fixed (stale Inference Manager
 socket file), and the two previously BLOCKED verifications (OCR-in-container,
@@ -357,9 +364,9 @@ PASS = actually run and green. FAIL = actually run and red. BLOCKED = not run.
     reported to this agent as "now configured on both Vercel and Railway
     with the same value." Verified independently instead of trusting that at
     face value (same discipline as the RPC live-test earlier — don't rely on
-    a claim when a live check is possible and cheap). Result: **Railway does
-    not have it.** `railway status` confirms the CLI is linked to the right
-    project/service (`kopanalys-python-api`, project
+    a claim when a live check is possible and cheap). Initial result:
+    **Railway did not have it.** `railway status` confirms the CLI is linked
+    to the right project/service (`kopanalys-python-api`, project
     `aca1bd81-e437-472f-909b-477bf5ad4a95`, environment `production` — the
     same project ID the `restart-python-engine.yml` workflow already
     targets, so this is definitely the right service, not a lookup mistake).
@@ -382,10 +389,21 @@ PASS = actually run and green. FAIL = actually run and red. BLOCKED = not run.
     set through a different Railway login/workspace, it's worth confirming
     it landed on this exact project/service/environment and not a
     similarly-named one elsewhere.
-  - **Do not push `main` until Railway actually has the secret and this is
-    re-verified live** — see the warning at the top of this file. Generate
-    the real value with `openssl rand -hex 32` (or equivalent) if one
-    doesn't already exist somewhere, and set it identically on both sides.
+  - **Resolved, same session, minutes later**: user added the variable via
+    Railway's own dashboard (they initially described it as "Vercel" but the
+    screenshot was unambiguously Railway's UI — Deployments/Variables/
+    Metrics/**Console**/Settings tabs and the "N variables added by Railway"
+    label are Railway-specific; confirmed with the user, who agreed). Checked
+    again immediately via the same CLI command (still names only, no values
+    shown/logged): now **12 variables**, the new one being exactly
+    `PYTHON_ENGINE_API_SECRET`. Railway's side is confirmed done.
+  - **Vercel is still the open item** — unverified, not confirmed, for the
+    reason above (no working CLI session here). **Do not push `main` until
+    Vercel is independently confirmed too**, and until you've personally
+    checked the value on Vercel is the exact same string as the one now on
+    Railway (a mismatch fails identically to it being missing — 401, not an
+    obvious "these don't match" error — and no agent session can compare two
+    secret values without seeing them, which it shouldn't).
   - **Will pushing `main` trigger a deploy?** Almost certainly yes, on both
     sides, by default — checked for anything that would change that and
     found nothing: no `vercel.json`/`vercel.ts` in the repo (nothing
