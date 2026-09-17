@@ -69,6 +69,13 @@ by itself prove a secret mismatch — check Railway logs for a 401 on
 `/api/ocr/extract-text` at the same timestamp to confirm root cause if it
 does fail).
 
+**Sixth session — screenshot OCR extraction accuracy.** Testing against a
+real listing (Augustendalsvägen, Nacka strand) found the review form only
+filled 2 of the ~15 applicable fields, with `askingPrice` actively wrong
+(picked up `Pris/m²` instead of the real price). Fixed across several
+iterations on `fix/ocr-price-and-boarea-extraction`; coverage is now 9/10
+applicable fields for this listing. Full breakdown in §2a.
+
 ## 1. Architecture
 
 - **Frontend**: Next.js App Router (`frontend/`), deployed on Vercel. Supabase
@@ -116,6 +123,70 @@ screenshot(s) → OCR (Tesseract, deterministic) → regex field extraction
 - OCR engine choice: Tesseract via `pytesseract`, replacing a previously
   planned PaddleOCR integration — deterministic, no AI vision API, matches the
   product's evidence-based/traceable design principle (`BLUEPRINT.md`).
+
+### 2a. Screenshot field-extraction accuracy (`screenshotExtract.ts`) — hardened, not rewritten
+
+Fixes, in the order found (all regex-only, no AI vision, per this
+project's evidence-based design principle):
+
+- **Address**: recognizes a bare street-name line (Swedish suffixes
+  `-vägen`/`-gatan`/`-gränd`/…) combined with a following "…kommun" line —
+  handles a listing showing no house number at all.
+- **askingPrice**: a bare "Pris" is never trusted as a label (it matches
+  inside `Pris/m²`, `Prisidé`, `Prisutveckling`); only `Utgångspris`/
+  `Slutpris` are. Otherwise resolved **by position**, not by pattern-matching
+  the separator: the real price is the largest `N kr` figure appearing
+  *before* the "Om bostaden"/`Boarea`/`Antal rum` detail table starts —
+  `Pris/m²` lives inside that table, so it's excluded structurally. This
+  replaced two earlier rounds that tried to exclude `Pris/m²` by its `/m²`
+  suffix, which OCR renders too inconsistently (`kr/m²`, `kr per m²`, bare
+  `kr m²`) to pattern-match reliably. **Last-resort fallback**: if no
+  `kr`-priced figure is found at all (e.g. the price heading's own "kr"
+  didn't survive OCR next to a large bold font), derive it from
+  `price/m² × boarea` — both already independently extracted from OCR.
+- **livingArea (Boarea)**: was coming back empty because the superscript
+  "2" in "m²" doesn't OCR reliably — neither `m²`/`m2`/`㎡` matched when
+  Tesseract rendered it as a bare `m`. A bare `m` (guarded so it can never
+  match the "m" inside `mån(ad)`/`mejla`/etc.) now also counts.
+- `Boarea`/`Avgift`/`Driftskostnader` fall back to "the only candidate
+  anywhere in the text" when a two-column table OCRs as all-labels-then-
+  all-values — only when that field's own label appears somewhere, so
+  `avgift`/`driftskostnader` (both `N kr/mån`) never borrow each other's
+  figure.
+- `Balkong`/`Hiss`/`Parkering` read Hemnet's amenity tags (`Ja` only — the
+  tags never appear when false), with a negation guard for "ingen hiss".
+- `Mäklarbyrå` matched against a list of known Swedish brokerage brands.
+
+**Known limitation, not fixed**: `Mäklare` (broker's own name) is currently
+empty on the real test listing. The heuristic (a bare two-Title-Case-word
+line near "Mejla"/"Visa telefonnummer") first picked up the agency's own
+mixed-case byline instead — excluding the known agency name fixed that
+specific wrong answer, but the broker's real name still isn't found, for a
+reason not yet diagnosed. `Skick` and `Beskrivning` are not attempted at
+all — a subjective rating and a free-text paragraph, neither has a
+reliable regex boundary in OCR'd text.
+
+**No ground-truth OCR text was available while debugging this** — every
+fix above is based on the real page layout (reference screenshots) plus
+inference from which fields worked across iterations, not the literal
+Tesseract output. A **temporary debug panel** now closes this gap for next
+time: after extracting, a collapsed "Visa rå OCR-text (tillfälligt, för
+felsökning)" section on the review page shows the raw per-image OCR text
+(`extract/route.ts` now also returns `texts`, rendered in
+`ScreenshotUploadForm.tsx`). **Remove once extraction is no longer being
+actively tuned against real screenshots.**
+
+**Tests**: `screenshotExtract.verify.mjs` grew from 21 to 56 checks across
+this work, including a full reconstruction of the real listing (using the
+degraded `"119 m"` form to match the actual failure mode) and isolated
+regressions for each bug fixed. All 56 pass; `tsc --noEmit` clean.
+
+**Also this session, unrelated small UX fixes**: removed placeholder
+example text from every free-text/number field in `ManualEntryForm` (was
+being mistaken for real extracted values, twice); added a hint under
+`Utgångspris` clarifying it's the total price, not price per m²; disabled
+the browser's scroll-position restore on reload (`ScrollRestorationReset.tsx`)
+so a refresh always starts at the top.
 
 ## 3. Security fixes this session
 
@@ -313,6 +384,9 @@ correctly (`stripe.webhooks.constructEvent`). No `.update`/`.upsert` on
 - **G5**: `frontend/src/lib/analysis/listing/hemnetPage.verify.mjs` has one
   pre-existing failing check ("fireplace"/unmapped-amenity feature dedup) —
   present on `main` before this session, unrelated to the OCR/security work.
+- **G7** (sixth session, open): `Mäklare` (broker's own name) extraction —
+  see §2a. Needs the raw-OCR debug panel's actual output from a real
+  listing to diagnose properly; not fixed, out of scope for that session.
 - **G6 (RESOLVED, third session)**: Docker Desktop would not start in the
   first session (WSL2 VM stayed "Stopped") and crashed with a popup on
   launch in the second and third. This session got an actual screenshot of
@@ -374,7 +448,7 @@ PASS = actually run and green. FAIL = actually run and red. BLOCKED = not run.
 | New OCR tests inside the production Docker image | **PASS** (third session) | 5/5, real container from `kopanalys-engine:verify`, incl. the Swedish-text test — see §4/G6 |
 | TypeScript (`tsc --noEmit`) | **PASS** | Exit 0, no errors (last checked second session; no frontend source changed since) |
 | ESLint | **BLOCKED** | Pre-existing repo config gap (G4), unrelated to this branch |
-| Screenshot field extraction (`screenshotExtract.verify.mjs`) | **PASS** | 20/20 checks |
+| Screenshot field extraction (`screenshotExtract.verify.mjs`) | **PASS** (sixth session) | 56/56 checks, up from 20 — see §2a |
 | Analysis engine analyzers + report builder (7 analyzer + 2 report verify scripts) | **PASS** | All green under `npx tsx` |
 | Hemnet extraction (`listing/hemnetPage.verify.mjs`) | **FAIL (pre-existing)** | 1/10 checks red on unmodified `main` code (G5) |
 | RLS/RPC bypass — profiles quota fields | **PASS** | Verified via migration/grant audit second session; **live-reproduced too, third session** (attacker `PATCH` on own `profiles` row rejected, see §3b) |
