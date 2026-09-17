@@ -8,9 +8,14 @@
 Last updated: 2026-09-17 — `test/ocr-security-verification` merged into
 `main` (fast-forward, no conflicts, no merge commit) after the third
 session's verification pass confirmed every fix live. `main` HEAD is now
-`5323007` (this file's own prior commit). **Not pushed to `origin` and not
-deployed** — local `main` is 9 commits ahead of `origin/main`, by design,
-pending the `PYTHON_ENGINE_API_SECRET` deployment step in §6.
+`7a79935`. **Not pushed to `origin` and not deployed** — local `main` is
+ahead of `origin/main`, by design: a pre-deployment audit (fourth session,
+same day) found `PYTHON_ENGINE_API_SECRET` is **not actually set on
+Railway** despite it being reported as configured — see §6. **Do not push
+`main` until that's fixed and re-verified** — both Vercel and Railway are
+git-connected to this repo with no override config found anywhere in it, so
+a push almost certainly auto-deploys both, and the Python engine would come
+up fail-closed (500 on every protected endpoint) with the secret missing.
 
 Session history on the merged branch: Docker fixed (stale Inference Manager
 socket file), and the two previously BLOCKED verifications (OCR-in-container,
@@ -339,21 +344,74 @@ PASS = actually run and green. FAIL = actually run and red. BLOCKED = not run.
   never `NEXT_PUBLIC_`), `OPENAI_API_KEY` (chat + inspection extraction).
 - Env vars needed on Railway (the Python engine): `PYTHON_ENGINE_API_SECRET`
   — **must be the exact same value as Vercel's**, or every request from
-  Next.js gets 401. Nothing generates or ships a default value. **This is
-  still an outstanding deployment action, not done by any session**: nobody
-  has set this on the real Vercel/Railway projects yet (out of scope for a
-  coding session anyway — it's a dashboard/CLI action on live infrastructure,
-  and no production secret was generated, printed, or committed by this
-  verification). What *is* now confirmed (third session): the variable name
-  is spelled identically in all three places that matter
+  Next.js gets 401 (or 500 if Railway's side is simply unset). Nothing
+  generates or ships a default value; no production secret has ever been
+  generated, printed, or committed by any session's verification work.
+  What's confirmed by code/tests (third session, still true): the variable
+  name is spelled identically in all three places that matter
   (`api/server.py`'s `INTERNAL_SECRET_ENV_VAR`, `frontend/.env.example`,
   `frontend/src/lib/pythonEngine.ts`), there's no hardcoded fallback on
-  either side, and the fail-closed behavior (missing/wrong secret → 401,
-  unset on the Python side → 500, never silently open) is exercised by
-  33 passing tests. Generate the real value with `openssl rand -hex 32` (or
-  equivalent) and set it identically via `vercel env add
-  PYTHON_ENGINE_API_SECRET` and the Railway dashboard/CLI before this branch
-  is deployed.
+  either side, and the fail-closed behavior is exercised by 33 passing
+  tests.
+  - **Fourth session (pre-deployment audit) — live-checked, not assumed**:
+    reported to this agent as "now configured on both Vercel and Railway
+    with the same value." Verified independently instead of trusting that at
+    face value (same discipline as the RPC live-test earlier — don't rely on
+    a claim when a live check is possible and cheap). Result: **Railway does
+    not have it.** `railway status` confirms the CLI is linked to the right
+    project/service (`kopanalys-python-api`, project
+    `aca1bd81-e437-472f-909b-477bf5ad4a95`, environment `production` — the
+    same project ID the `restart-python-engine.yml` workflow already
+    targets, so this is definitely the right service, not a lookup mistake).
+    `railway variable list --service kopanalys-python-api --environment
+    production --json` (values never printed/displayed — only key names
+    were extracted, per this task's own "don't print a production secret"
+    instruction) returns **11 variables, all Railway's own auto-injected
+    `RAILWAY_*` ones — zero user-defined variables of any kind**, not just
+    this one missing. Vercel's side could **not** be independently checked
+    this session — the linked Vercel CLI session token is invalid
+    (`vercel whoami` fails) and re-authenticating needs an interactive
+    browser flow this non-interactive session can't run — so Vercel's status
+    is unverified, not confirmed; given Railway's claim just turned out
+    false, don't assume Vercel is fine without checking it directly
+    (dashboard, or `vercel env ls` from a session with a valid login — that
+    command lists names/environments without exposing values).
+    One lead worth checking if this is puzzling: the Railway CLI in this
+    environment is authenticated as `babynestmart@gmail.com`, not this
+    project's usual `karollek98@gmail.com` — if the variable was actually
+    set through a different Railway login/workspace, it's worth confirming
+    it landed on this exact project/service/environment and not a
+    similarly-named one elsewhere.
+  - **Do not push `main` until Railway actually has the secret and this is
+    re-verified live** — see the warning at the top of this file. Generate
+    the real value with `openssl rand -hex 32` (or equivalent) if one
+    doesn't already exist somewhere, and set it identically on both sides.
+  - **Will pushing `main` trigger a deploy?** Almost certainly yes, on both
+    sides, by default — checked for anything that would change that and
+    found nothing: no `vercel.json`/`vercel.ts` in the repo (nothing
+    overriding Vercel's default git-integration auto-deploy-on-push), and
+    `railway.json` only sets build/restart policy, not a deploy trigger
+    (that's a dashboard setting, invisible from the repo either way).
+    `.vercel/project.json` (root and `frontend/`) confirms this repo is
+    linked to Vercel project `real-estate`
+    (`prj_n8HROlyCtZ28Tev94vHB8My98h5N`); `railway status` confirms the
+    Railway service is connected to `karollek988/real-estate` and currently
+    Online. The repo's one GitHub Actions workflow
+    (`.github/workflows/restart-python-engine.yml`) only fires on a daily
+    cron or manual dispatch, **not** on push, so it's not an extra trigger
+    — but it's a real signal Railway auto-deploy is live for this project,
+    since it exists specifically to work around Camoufox memory growth
+    between deploys. Bottom line: treat `git push origin main` as
+    equivalent to hitting "deploy" on both platforms, not just updating a
+    remote branch.
+  - No secrets found committed anywhere: re-scanned tracked files on `main`
+    for live-looking key patterns (`sk_live_`, `AKIA...`, PEM private-key
+    headers, `ghp_`/`github_pat_`, `whsec_...`) and for any `*_SECRET`/
+    `*_KEY` assigned a real-looking literal — zero hits outside the
+    self-labeled `"test-only-secret-not-a-real-credential"` in
+    `api/tests/test_internal_auth.py`. Re-confirmed (§3e's original check,
+    still true) no `.env`/`.env.local` was ever committed in the entire git
+    history, not just the current tree.
 - Supabase migrations must be applied in order up through
   `20260917010000_revoke_public_execute_on_security_definer_rpcs.sql` before
   deploying this branch's frontend changes — the two are independent
