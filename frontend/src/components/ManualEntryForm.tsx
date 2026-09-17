@@ -162,6 +162,7 @@ export function ManualEntryForm({ initialValues, sourceNotice }: ManualEntryForm
           name="askingPrice"
           label="Utgångspris (kr)"
           type="number"
+          hint="Bostadens totala pris, inte pris per kvadratmeter."
           min={0}
           defaultValue={initialValues?.askingPrice ?? undefined}
           required
