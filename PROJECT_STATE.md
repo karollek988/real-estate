@@ -6,8 +6,9 @@
 > this file is the "what's actually true right now" summary.
 
 Last updated: 2026-09-17 (branch `test/ocr-security-verification`, off `main`,
-continued in a second session on the same branch — Railway/FastAPI
-authentication added).
+third session on the same branch — Docker fixed, and the two previously
+BLOCKED verifications (OCR-in-container, live RPC adversarial test) both now
+PASS; no code changes this session, verification only).
 
 ## 1. Architecture
 
@@ -101,15 +102,53 @@ migration's `grant`/`revoke` statements — no revoke existed for any of these
 functions) and by the well-documented, version-stable Postgres default-grant
 behavior (official Postgres `GRANT` docs: "the right to execute a function
 ... is granted to PUBLIC by default when the function is created"; Supabase's
-own docs warn about this exact footgun for RPC functions). **Not verified
-live** — a throwaway Postgres container test was prepared
-(`rpc_grant_test.sql` in this session's scratchpad) to prove both the bug and
-the fix by role-switching (`SET ROLE authenticated/anon/service_role`)
-against the exact function bodies, but Docker Desktop never came up in this
-environment (see §5) — BLOCKED, not PASS. High confidence in the finding
-itself; the live reproduction is the one thing a future session with a
-working Docker/Supabase local stack should still do before calling this
-fully closed.
+own docs warn about this exact footgun for RPC functions). **Now also
+verified live (third session)** — Docker came up this session (see §4/G6),
+`supabase start` + `supabase db reset` ran the full local stack against
+every migration through `20260917010000`, and a live adversarial script hit
+every function directly over `POST /rest/v1/rpc/<fn>` through the real Kong
+gateway/PostgREST, using two real signed-up auth users (not mocks):
+
+- Attacker (authenticated, own valid JWT) tried: `refund_analysis_quota` on
+  their own `free` bucket, their own `premium` bucket, and victim user B's
+  `free` bucket; `consume_analysis_quota` directly; `generate_discount_code`;
+  `mark_campaign_popup_shown`. **All six rejected** — Postgres `42501
+  permission denied for function <name>`, surfaced by PostgREST as HTTP 403.
+- Same `refund_analysis_quota` attempt fully anonymous (no login, anon key
+  only) — **rejected**, HTTP 401, same `42501` underneath.
+- Bonus regression check on §3a: attacker `PATCH`ed their own `profiles` row
+  (`premium_analyses_remaining: 999`) directly — **rejected**, HTTP 403
+  `42501 permission denied for table profiles` (RLS/grant fix from
+  `20260917000000` still holds).
+- Read both users' `free_analyses_remaining`/`premium_analyses_remaining`
+  before and after all eight attempts via the service-role key — **byte-for-
+  byte unchanged**, confirming the rejections weren't just wrong status codes
+  papering over a partial write.
+- **Control** (must keep working, or the fix would have been too strong):
+  called `refund_analysis_quota` as `service_role` (the identity the app's
+  own server routes use) — succeeded, HTTP 200, and the target user's
+  `free_analyses_remaining` actually incremented by 1. The legitimate path is
+  intact.
+
+11/11 checks passed. This is the live reproduction the second session
+flagged as the one remaining gap — finding fully closed now, not just
+reasoned through. Script lived in this session's scratchpad (not committed —
+throwaway/local-only, same treatment as the prior session's
+`rpc_grant_test.sql`; needs a running local Supabase to execute, so it isn't
+a natural fit for the existing CI-less pytest suites without more design
+work than this verification pass called for).
+
+One environment note for whoever runs this next: the *first* attempt at this
+reproduction gave misleading mixed results (two functions 404 "not found",
+two others callable by the attacker) — not a real regression, but a stale
+local Postgres volume that pre-dated the last five migrations (only had
+`schema_migrations` through `20260814000000`). `supabase start` does **not**
+retroactively apply new migrations to an already-initialized volume by
+itself in every case — check `select version from
+supabase_migrations.schema_migrations order by version` (via `docker exec -i
+<db container> psql -U postgres -d postgres -c "..."`) before trusting a
+"local Supabase" result, or just run `supabase db reset` unconditionally
+first, since it's a disposable local dev database.
 
 ### 3c. Python engine had no authentication — FIXED this session
 
@@ -215,33 +254,55 @@ correctly (`stripe.webhooks.constructEvent`). No `.update`/`.upsert` on
 - **G5**: `frontend/src/lib/analysis/listing/hemnetPage.verify.mjs` has one
   pre-existing failing check ("fireplace"/unmapped-amenity feature dedup) —
   present on `main` before this session, unrelated to the OCR/security work.
-- **G6**: Docker Desktop would not start in the first session (the
-  `docker-desktop` WSL2 VM stayed "Stopped" through two clean relaunches, a
-  `wsl --shutdown` reset, and 15+ minutes of waiting) and reportedly now shows
-  a warning/error popup on startup — per instruction, **not** re-attempted or
-  guessed at in this second session; the user will supply a screenshot of the
-  actual error next time so it can be diagnosed from evidence rather than
-  speculation. Two things this task asked for remain unverified: Tesseract +
-  Swedish OCR actually running inside the production container, and a live
-  reproduction of the RPC-grant fix (§3b) against a real Postgres role
-  system. **Repo-side readiness re-checked this session (no Docker
-  required)** — confirmed still correct and unchanged:
-  - `Dockerfile` installs `tesseract-ocr`, `tesseract-ocr-swe`,
-    `tesseract-ocr-eng`, and `fonts-dejavu-core` (the last one so
-    `test_ocr_extraction.py` has a real TrueType font to render against).
-  - `api/requirements.txt` has `pytesseract`, `pillow`, `python-docx`.
-  - The new internal-auth middleware adds no new dependency (`hmac` is
-    stdlib) and doesn't change the Docker build steps.
-  - **New consideration for the next Docker session**: `PYTHON_ENGINE_API_SECRET`
-    must now be set (`docker run -e PYTHON_ENGINE_API_SECRET=...`) for any
-    `curl`/manual POST test against the container's OCR endpoint to work —
-    it will otherwise correctly return 401, which is the new intended
-    behavior, not a bug. Running `pytest api/tests/test_internal_auth.py` or
-    `pytest BRF-Scraper/tests/unit/test_ocr_extraction.py` directly inside
-    the container doesn't need this (tests set/unset the env var themselves).
-  - The prepared `rpc_grant_test.sql` script for the RPC-grant reproduction
-    (§3b) is in the first session's scratchpad, not committed — recreate
-    from the migration file/comments if the scratchpad is gone.
+- **G6 (RESOLVED, third session)**: Docker Desktop would not start in the
+  first session (WSL2 VM stayed "Stopped") and crashed with a popup on
+  launch in the second and third. This session got an actual screenshot of
+  the error (previous sessions correctly declined to guess without one) and
+  diagnosed it precisely instead of dismissing it: Docker's **Inference
+  Manager** (its AI/model-runner subsystem — unrelated to normal containers)
+  failed during startup trying to delete-and-recreate a Unix-domain-socket
+  file at `%LOCALAPPDATA%\Docker\run\dockerInference`, hitting Windows error
+  123 (`ERROR_INVALID_NAME`, ie. "Incorrect syntax for file name..."). The
+  file was a stale, 0-byte `ReparsePoint` last touched over a month earlier,
+  orphaned from a prior crash; no Docker process held it. This crashed the
+  *entire* app, not just the AI feature. Fix: delete that one file (the user
+  did this, not this agent — the harness's own auto-mode classifier flagged
+  the deletion as irreversible-local-destruction and declined to do it
+  automatically, correctly given it's outside the repo) and relaunch — no
+  "Reset to factory defaults" needed, no data lost, sibling runtime sockets
+  in the same folder are recreated by Docker on every clean start anyway.
+  Both blocked verifications are now done:
+  - **Tesseract + Swedish OCR in the production container**: built the image
+    (`docker build -t kopanalys-engine:verify .`, ~81s, 1.2GB content) —
+    clean build, no errors. Inside it: `tesseract --version` → 5.5.0;
+    `tesseract --list-langs` → `eng`, `osd`, `swe` all present, exactly as
+    the `Dockerfile`'s `apt-get install` line promises. Ran
+    `BRF-Scraper/tests/unit/test_ocr_extraction.py` for real inside a
+    container from that image (`pytest`/`pytest-asyncio`/`pytest-mock`
+    installed ad hoc into the running container only — never added to the
+    shipped image/Dockerfile, since these are dev-only tools with no
+    business in a production image) — **5/5 passed**, including
+    `test_extracts_recognizable_swedish_text`, the one that was structurally
+    unable to run on native Windows (no `tesseract` on PATH there, by
+    design/skip). This is the first time this exact test has ever run
+    against the real production image.
+  - **Live RPC-grant reproduction (§3b)**: done, see §3b for the full
+    breakdown — 11/11 checks passed against a real local Postgres/PostgREST
+    stack with real signed-up users, not a static-analysis inference.
+  - **Git-Bash-on-Windows gotcha worth keeping**: running `docker run` from
+    this repo's Git Bash mangles any POSIX-looking path in the command (e.g.
+    `-e PYTHONPATH=/app/BRF-Scraper/src`, or even a relative test path like
+    `BRF-Scraper/tests/...`) into a Windows path before Docker ever sees it,
+    producing confusing `ModuleNotFoundError`s that look like real app bugs
+    but aren't. Fix: prefix the command with `MSYS_NO_PATHCONV=1`. Cost about
+    20 minutes of misdiagnosis this session before the pattern was clear —
+    worth remembering for next time rather than re-discovering it.
+  - Repo-side readiness that was already re-checked pre-Docker two sessions
+    running remains accurate and unchanged: `Dockerfile` installs
+    `tesseract-ocr`, `tesseract-ocr-swe`, `tesseract-ocr-eng`,
+    `fonts-dejavu-core`; `api/requirements.txt` has `pytesseract`, `pillow`,
+    `python-docx`; the internal-auth middleware added no new dependency and
+    doesn't touch the Docker build steps.
 
 ## 5. Tests / verification status
 
@@ -249,18 +310,18 @@ PASS = actually run and green. FAIL = actually run and red. BLOCKED = not run.
 
 | Area | Result | Notes |
 |---|---|---|
-| Python unit tests (`BRF-Scraper`, full suite) | **PASS** | 426 passed, 5 skipped — `pytest tests/` via the existing `.venv` |
+| Python unit tests (`BRF-Scraper`, full suite) | **PASS** | 426 passed, 5 skipped — `pytest tests/` via the existing `.venv` (not re-run this session; no source changed) |
 | New OCR tests (`test_ocr_extraction.py`) natively on Windows | **BLOCKED** | Skips itself (no `tesseract` binary on this host's PATH) — by design |
-| New OCR tests inside the production Docker image | **BLOCKED** | Docker unavailable both sessions (G6) — repo-side config re-verified without it |
-| TypeScript (`tsc --noEmit`) | **PASS** | Exit 0, no errors, including after this session's edits |
+| New OCR tests inside the production Docker image | **PASS** (third session) | 5/5, real container from `kopanalys-engine:verify`, incl. the Swedish-text test — see §4/G6 |
+| TypeScript (`tsc --noEmit`) | **PASS** | Exit 0, no errors (last checked second session; no frontend source changed since) |
 | ESLint | **BLOCKED** | Pre-existing repo config gap (G4), unrelated to this branch |
 | Screenshot field extraction (`screenshotExtract.verify.mjs`) | **PASS** | 20/20 checks |
 | Analysis engine analyzers + report builder (7 analyzer + 2 report verify scripts) | **PASS** | All green under `npx tsx` |
 | Hemnet extraction (`listing/hemnetPage.verify.mjs`) | **FAIL (pre-existing)** | 1/10 checks red on unmodified `main` code (G5) |
-| RLS/RPC bypass — profiles quota fields | **PASS** | Verified via migration/grant audit; existing fix is sound |
-| RLS/RPC bypass — quota RPCs (§3b) | **BLOCKED** | Needs Docker/local Postgres (G6); fix shipped and reasoned through, not live-tested |
-| Railway/FastAPI internal-secret auth (§3c) | **PASS** | 33/33, `pytest api/tests/test_internal_auth.py` — valid/missing/invalid/unconfigured, all 10 protected endpoints + the public `/` |
-| Docker: Tesseract + Swedish language pack in production image | **BLOCKED** | Not attempted this session per instruction (G6) |
+| RLS/RPC bypass — profiles quota fields | **PASS** | Verified via migration/grant audit second session; **live-reproduced too, third session** (attacker `PATCH` on own `profiles` row rejected, see §3b) |
+| RLS/RPC bypass — quota RPCs (§3b) | **PASS** (third session) | 11/11, live adversarial test against real local Supabase/PostgREST — all attacker paths rejected (`42501`), state unchanged, legitimate `service_role` path still works |
+| Railway/FastAPI internal-secret auth (§3c) | **PASS** | 33/33, `pytest api/tests/test_internal_auth.py` — valid/missing/invalid/unconfigured, all 10 protected endpoints + the public `/`. Re-run third session on the unchanged code, still 33/33; env var naming re-verified identical end to end (`PYTHON_ENGINE_API_SECRET` in `api/server.py`'s `INTERNAL_SECRET_ENV_VAR`, `frontend/.env.example`, and `frontend/src/lib/pythonEngine.ts`, with no default/fallback value anywhere) |
+| Docker: Tesseract + Swedish language pack in production image | **PASS** (third session) | `tesseract --version` → 5.5.0; `tesseract --list-langs` → `eng`, `osd`, `swe` all present |
 
 ## 6. Deployment requirements
 
@@ -271,7 +332,21 @@ PASS = actually run and green. FAIL = actually run and red. BLOCKED = not run.
   never `NEXT_PUBLIC_`), `OPENAI_API_KEY` (chat + inspection extraction).
 - Env vars needed on Railway (the Python engine): `PYTHON_ENGINE_API_SECRET`
   — **must be the exact same value as Vercel's**, or every request from
-  Next.js gets 401. Nothing generates or ships a default value.
+  Next.js gets 401. Nothing generates or ships a default value. **This is
+  still an outstanding deployment action, not done by any session**: nobody
+  has set this on the real Vercel/Railway projects yet (out of scope for a
+  coding session anyway — it's a dashboard/CLI action on live infrastructure,
+  and no production secret was generated, printed, or committed by this
+  verification). What *is* now confirmed (third session): the variable name
+  is spelled identically in all three places that matter
+  (`api/server.py`'s `INTERNAL_SECRET_ENV_VAR`, `frontend/.env.example`,
+  `frontend/src/lib/pythonEngine.ts`), there's no hardcoded fallback on
+  either side, and the fail-closed behavior (missing/wrong secret → 401,
+  unset on the Python side → 500, never silently open) is exercised by
+  33 passing tests. Generate the real value with `openssl rand -hex 32` (or
+  equivalent) and set it identically via `vercel env add
+  PYTHON_ENGINE_API_SECRET` and the Railway dashboard/CLI before this branch
+  is deployed.
 - Supabase migrations must be applied in order up through
   `20260917010000_revoke_public_execute_on_security_definer_rpcs.sql` before
   deploying this branch's frontend changes — the two are independent
