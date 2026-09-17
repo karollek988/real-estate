@@ -5,10 +5,17 @@
 > otherwise leave it alone. Detailed research/product docs live in `docs/`;
 > this file is the "what's actually true right now" summary.
 
-Last updated: 2026-09-17 (branch `test/ocr-security-verification`, off `main`,
-third session on the same branch — Docker fixed, and the two previously
-BLOCKED verifications (OCR-in-container, live RPC adversarial test) both now
-PASS; no code changes this session, verification only).
+Last updated: 2026-09-17 — `test/ocr-security-verification` merged into
+`main` (fast-forward, no conflicts, no merge commit) after the third
+session's verification pass confirmed every fix live. `main` HEAD is now
+`5323007` (this file's own prior commit). **Not pushed to `origin` and not
+deployed** — local `main` is 9 commits ahead of `origin/main`, by design,
+pending the `PYTHON_ENGINE_API_SECRET` deployment step in §6.
+
+Session history on the merged branch: Docker fixed (stale Inference Manager
+socket file), and the two previously BLOCKED verifications (OCR-in-container,
+live RPC adversarial test) both went to PASS; no code changes in that final
+session, verification only.
 
 ## 1. Architecture
 
