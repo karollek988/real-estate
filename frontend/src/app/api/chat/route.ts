@@ -1,7 +1,19 @@
 import { NextResponse } from "next/server";
 import { FAQ_ITEMS } from "@/lib/faq";
+import { checkRateLimit, clientIp } from "@/lib/rateLimit";
 
 export const runtime = "nodejs";
+
+// This route is deliberately open to anonymous visitors (it's a marketing-
+// site support widget), which means the request-size/rate limits below are
+// the *only* thing standing between it and an unbounded OpenAI bill - it had
+// none of these before 2026-09's production-readiness pass (confirmed live:
+// an unauthenticated POST with no caps succeeded). Keep all three checks
+// (rate limit, message count, message length) even if one seems redundant.
+const RATE_LIMIT_PER_MINUTE = 8;
+const MAX_MESSAGES = 12;
+const MAX_MESSAGE_LENGTH = 2000;
+const MAX_REPLY_TOKENS = 300;
 
 const SYSTEM_PROMPT = `Du är en kundtjänst-assistent för Köpanalys.se, en svensk tjänst som analyserar bostadsannonser. Du svarar på svenska.
 
@@ -61,6 +73,14 @@ export async function POST(request: Request) {
     );
   }
 
+  const ip = clientIp(request);
+  if (!checkRateLimit(`chat:${ip}`, RATE_LIMIT_PER_MINUTE, 60_000)) {
+    return NextResponse.json(
+      { error: { code: "rate_limited", message: "För många meddelanden – vänta en liten stund och försök igen." } },
+      { status: 429 },
+    );
+  }
+
   let messages: Message[];
   try {
     const body = await request.json();
@@ -70,6 +90,27 @@ export async function POST(request: Request) {
         { error: { code: "invalid_request", message: "messages array is required" } },
         { status: 400 },
       );
+    }
+    if (
+      !messages.every(
+        (m) =>
+          m &&
+          typeof m === "object" &&
+          (m.role === "user" || m.role === "assistant") &&
+          typeof m.content === "string" &&
+          m.content.length > 0 &&
+          m.content.length <= MAX_MESSAGE_LENGTH
+      )
+    ) {
+      return NextResponse.json(
+        { error: { code: "invalid_request", message: `Each message needs a role and content up to ${MAX_MESSAGE_LENGTH} characters.` } },
+        { status: 400 },
+      );
+    }
+    if (messages.length > MAX_MESSAGES) {
+      // Keep the most recent turns rather than rejecting outright — a long
+      // conversation shouldn't suddenly break, just lose older context.
+      messages = messages.slice(-MAX_MESSAGES);
     }
   } catch {
     return NextResponse.json(
@@ -87,6 +128,7 @@ export async function POST(request: Request) {
     body: JSON.stringify({
       model: "gpt-4o-mini",
       temperature: 0.3,
+      max_tokens: MAX_REPLY_TOKENS,
       messages: [
         { role: "system" as const, content: SYSTEM_PROMPT },
         ...messages,

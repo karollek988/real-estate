@@ -16,6 +16,21 @@ function errorResponse(status: number, code: string, message: string) {
   return NextResponse.json({ error: { code, message } }, { status });
 }
 
+const MAX_BRF_REPORT_BYTES = 20 * 1024 * 1024; // 20MB — annual reports can run many pages
+
+const DOCX_MIME = "application/vnd.openxmlformats-officedocument.wordprocessingml.document";
+
+/** Maps an uploaded file's MIME type to the Python engine's file_kind + a storage extension. */
+function classifyBrfUpload(file: File): { fileKind: "pdf" | "docx" | "image"; extension: string } | null {
+  if (file.type === "application/pdf") return { fileKind: "pdf", extension: "pdf" };
+  if (file.type === DOCX_MIME) return { fileKind: "docx", extension: "docx" };
+  if (file.type.startsWith("image/")) {
+    const extension = file.type.split("/")[1]?.split("+")[0] || "img";
+    return { fileKind: "image", extension };
+  }
+  return null;
+}
+
 /**
  * POST /api/properties/:id/brf-report — upload a BRF annual report PDF for
  * this property ("Upload latest BRF annual report").
@@ -58,10 +73,18 @@ export async function POST(
 
   const file = form.get("file");
   if (!(file instanceof File)) {
-    return errorResponse(400, "invalid_request", "Provide the PDF as \"file\".");
+    return errorResponse(400, "invalid_request", "Provide the file as \"file\".");
   }
-  if (file.type && file.type !== "application/pdf") {
-    return errorResponse(422, "invalid_file_type", "Only PDF files are supported.");
+  if (file.size > MAX_BRF_REPORT_BYTES) {
+    return errorResponse(413, "file_too_large", "Filen är för stor (max 20 MB).");
+  }
+  const upload = classifyBrfUpload(file);
+  if (!upload) {
+    return errorResponse(
+      422,
+      "invalid_file_type",
+      "Ladda upp en PDF, ett Word-dokument (.docx) eller en bild av årsredovisningen."
+    );
   }
 
   const bytes = Buffer.from(await file.arrayBuffer());
@@ -95,7 +118,11 @@ export async function POST(
       const extractRes = await fetch(`${apiBase.replace(/\/$/, "")}/api/brf-annual-report/upload`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ pdf_base64: bytes.toString("base64"), filename: file.name }),
+        body: JSON.stringify({
+          pdf_base64: bytes.toString("base64"),
+          filename: file.name,
+          file_kind: upload.fileKind,
+        }),
         signal: AbortSignal.timeout(60000),
         cache: "no-store",
       });
@@ -108,10 +135,10 @@ export async function POST(
         );
       }
 
-      const storagePath = `${knownOrgNumber ?? `property-${propertyId}`}/${contentHash}.pdf`;
+      const storagePath = `${knownOrgNumber ?? `property-${propertyId}`}/${contentHash}.${upload.extension}`;
       const { error: uploadError } = await createAdminClient()
         .storage.from(BRF_REPORTS_BUCKET)
-        .upload(storagePath, bytes, { contentType: "application/pdf", upsert: true });
+        .upload(storagePath, bytes, { contentType: file.type || "application/octet-stream", upsert: true });
       if (uploadError) throw new Error(`Storage upload failed: ${uploadError.message}`);
 
       report = await insertBrfReport({

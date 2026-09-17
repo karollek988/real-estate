@@ -3,7 +3,7 @@ import type { AnalysisRecord, ExtractedProperty, FieldProvenance, PropertyRecord
 import { extractFromHemnetUrl } from "./listing/hemnet";
 import { extractFromManualFields, type ManualListingFields } from "./listing/manual";
 import { normalizedPropertyKey } from "./normalize";
-import { getProviders } from "./providers/registry";
+import { getProviderWaves } from "./providers/registry";
 import type { DataProvider, PropertyEnrichment, ProviderResult } from "./providers/types";
 import { buildAnalysis, ENGINE_VERSION } from "./engine/buildAnalysis";
 import { numberOrNull } from "./engine/helpers";
@@ -19,6 +19,7 @@ import {
   insertPendingAnalysis,
   insertProperty,
   latestCompleteAnalysis,
+  latestPendingAnalysis,
   updateProperty,
 } from "./store";
 
@@ -82,6 +83,19 @@ export async function requestAnalysis(
         stale: ageDays >= FRESH_ANALYSIS_MAX_AGE_DAYS,
         ageDays,
       };
+    }
+  }
+
+  // Two users (or one impatient double-click) requesting the same
+  // not-yet-analyzed property at nearly the same moment must not each pay
+  // for and run the full external-API pipeline — a real risk the moment a
+  // single listing gets shared/goes viral during a traffic spike. Join the
+  // already-running pipeline instead of starting a second one; the caller
+  // polls GET /api/analyses/:id either way, so this is invisible to it.
+  if (!options.force) {
+    const inFlight = await latestPendingAnalysis(property.id);
+    if (inFlight) {
+      return { property, analysis: inFlight, cached: false, stale: false, ageDays: 0 };
     }
   }
 
@@ -210,7 +224,7 @@ const PROVIDER_TIMEOUT_MS = 25_000;
  */
 class InsufficientListingDataError extends Error {}
 
-const ESSENTIAL_FIELD_LABELS: Record<string, string> = {
+export const ESSENTIAL_FIELD_LABELS: Record<string, string> = {
   asking_price_sek: "utgångspris",
   monthly_fee_sek: "månadsavgift",
   living_area_m2: "boarea",
@@ -224,13 +238,19 @@ const ESSENTIAL_FIELD_LABELS: Record<string, string> = {
  * live 2026-08-15 against two Villa listings that both had askingPrice and
  * livingArea but fee: null). Only require it when the listing is actually
  * an apartment.
+ *
+ * Matches "lägenhet" (Hemnet's own listing-type taxonomy, via
+ * attributes.property_type_hemnet) and "bostadsrätt" (the manual-entry and
+ * screenshot-extraction property-type options, none of which ever contain
+ * "lägenhet") — both tenures carry a monthly fee.
  */
-function requiresMonthlyFee(attributes: Record<string, unknown>, extracted: ExtractedProperty): boolean {
+export function requiresMonthlyFee(attributes: Record<string, unknown>, extracted: ExtractedProperty): boolean {
   const propertyType =
     (typeof attributes.property_type_hemnet === "string" ? attributes.property_type_hemnet : null) ??
     extracted.propertyType ??
     "";
-  return propertyType.toLowerCase().includes("lägenhet");
+  const normalized = propertyType.toLowerCase();
+  return normalized.includes("lägenhet") || normalized.includes("bostadsrätt");
 }
 
 /**
@@ -240,12 +260,29 @@ function requiresMonthlyFee(attributes: Record<string, unknown>, extracted: Extr
  * can be genuinely absent from Hemnet's own data for a given listing (not
  * just an unreliable scrape) — gating on it would fail-and-refund analyses
  * that would otherwise render a perfectly usable report.
+ *
+ * Exported so API routes can run the identical check up-front (fast, clear
+ * 4xx before quota is even touched) instead of only discovering
+ * insufficient data deep inside the async pipeline.
  */
-function missingEssentialFields(attributes: Record<string, unknown>, extracted: ExtractedProperty): string[] {
+// Same sanity bounds screenshotExtract.ts already applies to OCR'd values —
+// applied here too so a value that skips OCR entirely (typed directly into
+// the manual-entry form, or posted straight to the API with the frontend's
+// HTML min="0" ignored) is held to the same bar. A present-but-nonsensical
+// value (0, negative, or wildly out of range) is treated as missing, not
+// passed through to price/m² and cost-burden math downstream.
+function isSaneAmount(value: number | null, max: number): value is number {
+  return value !== null && value > 0 && value < max;
+}
+
+export function missingEssentialFields(attributes: Record<string, unknown>, extracted: ExtractedProperty): string[] {
   const missing: string[] = [];
-  if (numberOrNull(attributes.asking_price_sek) === null) missing.push("asking_price_sek");
-  if (numberOrNull(attributes.living_area_m2) === null) missing.push("living_area_m2");
-  if (requiresMonthlyFee(attributes, extracted) && numberOrNull(attributes.monthly_fee_sek) === null) {
+  if (!isSaneAmount(numberOrNull(attributes.asking_price_sek), 200_000_000)) missing.push("asking_price_sek");
+  if (!isSaneAmount(numberOrNull(attributes.living_area_m2), 2_000)) missing.push("living_area_m2");
+  if (
+    requiresMonthlyFee(attributes, extracted) &&
+    !isSaneAmount(numberOrNull(attributes.monthly_fee_sek), 100_000)
+  ) {
     missing.push("monthly_fee_sek");
   }
   return missing;
@@ -284,36 +321,52 @@ async function runPipeline(
     // happens after the loop; this is purely in-memory sequencing.
     let currentProperty = property;
 
-    for (const provider of getProviders()) {
-      let result: ProviderResult;
-      try {
-        result = await withProviderTimeout(provider, currentProperty, extracted);
-      } catch (err) {
-        result = {
-          source: {
-            id: provider.id,
-            name: provider.name,
-            kind: provider.kind,
-            status: "error",
-            fields: [],
-            detail: err instanceof Error ? err.message : String(err),
-          },
-          data: {},
-        };
-      }
-      results.push(result);
-      if (result.propertyPatch) {
-        Object.assign(enrichment, result.propertyPatch);
-        currentProperty = { ...currentProperty, ...result.propertyPatch };
-      }
-      // Only a source that actually found data may write attribute values —
-      // never merge data from a not_connected/error/no_data result, even if
-      // it accidentally included some.
-      if (result.source.status === "ok") {
-        const data = applyProtectedIdentityFields(result.data, currentProperty.attributes, provider.id);
-        Object.assign(attributesPatch, data);
-        currentProperty = { ...currentProperty, attributes: { ...currentProperty.attributes, ...data } };
-        fieldProvenance = recordFieldProvenance(fieldProvenance, Object.keys(data), provider.id);
+    // Providers run in dependency "waves" (registry.ts's getProviderWaves) —
+    // every provider within a wave runs concurrently against the exact same
+    // currentProperty snapshot (none of them can see a wave-sibling's output,
+    // only what earlier waves already merged in), then results are merged
+    // once, sequentially, before the next wave starts. This is the same
+    // per-provider isolation as before (a hung/throwing provider still only
+    // ever produces its own error-shaped result, never rejects the batch) —
+    // just batched per wave instead of one at a time.
+    for (const wave of getProviderWaves()) {
+      if (wave.length === 0) continue;
+
+      const waveResults = await Promise.all(
+        wave.map(async (provider): Promise<ProviderResult> => {
+          try {
+            return await withProviderTimeout(provider, currentProperty, extracted);
+          } catch (err) {
+            return {
+              source: {
+                id: provider.id,
+                name: provider.name,
+                kind: provider.kind,
+                status: "error",
+                fields: [],
+                detail: err instanceof Error ? err.message : String(err),
+              },
+              data: {},
+            };
+          }
+        })
+      );
+
+      for (const result of waveResults) {
+        results.push(result);
+        if (result.propertyPatch) {
+          Object.assign(enrichment, result.propertyPatch);
+          currentProperty = { ...currentProperty, ...result.propertyPatch };
+        }
+        // Only a source that actually found data may write attribute values —
+        // never merge data from a not_connected/error/no_data result, even if
+        // it accidentally included some.
+        if (result.source.status === "ok") {
+          const data = applyProtectedIdentityFields(result.data, currentProperty.attributes, result.source.id);
+          Object.assign(attributesPatch, data);
+          currentProperty = { ...currentProperty, attributes: { ...currentProperty.attributes, ...data } };
+          fieldProvenance = recordFieldProvenance(fieldProvenance, Object.keys(data), result.source.id);
+        }
       }
     }
 
@@ -352,7 +405,8 @@ async function runPipeline(
     return await completeAnalysis(pendingId, report);
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
-    await failAnalysis(pendingId, message).catch(() => {
+    const reason = err instanceof InsufficientListingDataError ? "insufficient_data" : "pipeline_error";
+    await failAnalysis(pendingId, message, reason).catch(() => {
       // The original pipeline error is the one worth surfacing.
     });
     if (err instanceof InsufficientListingDataError) {

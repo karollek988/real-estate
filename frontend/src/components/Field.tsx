@@ -5,13 +5,14 @@ interface FieldProps extends React.InputHTMLAttributes<HTMLInputElement> {
   label: string;
 }
 
-export function Field({ label, id, ...inputProps }: FieldProps) {
+export function Field({ label, id, required, ...inputProps }: FieldProps) {
   return (
     <div className="flex flex-col gap-2">
       <label htmlFor={id} className="text-sm font-medium text-neutral-200">
         {label}
+        {required && <span className="ml-0.5 text-red-400">*</span>}
       </label>
-      <input id={id} {...inputProps} className={inputClasses} />
+      <input id={id} required={required} {...inputProps} className={inputClasses} />
     </div>
   );
 }
@@ -22,15 +23,41 @@ interface SelectFieldProps {
   name?: string;
   options: string[];
   placeholder?: string;
+  required?: boolean;
+  /** Uncontrolled initial value (e.g. pre-filling from screenshot extraction). Ignored if `onChange` is passed. */
+  defaultValue?: string | null;
+  /** Pairs with `onChange` to make this a controlled select (needed when a parent must react to the choice). */
+  value?: string;
+  onChange?: (value: string) => void;
 }
 
-export function SelectField({ label, id, name, options, placeholder }: SelectFieldProps) {
+export function SelectField({
+  label,
+  id,
+  name,
+  options,
+  placeholder,
+  required,
+  defaultValue,
+  value,
+  onChange,
+}: SelectFieldProps) {
+  const controlled = onChange !== undefined;
   return (
     <div className="flex flex-col gap-2">
       <label htmlFor={id} className="text-sm font-medium text-neutral-200">
         {label}
+        {required && <span className="ml-0.5 text-red-400">*</span>}
       </label>
-      <select id={id} name={name} defaultValue="" className={`${inputClasses} bg-[#0d1114]`}>
+      <select
+        id={id}
+        name={name}
+        required={required}
+        className={`${inputClasses} bg-[#0d1114]`}
+        {...(controlled
+          ? { value: value ?? "", onChange: (e: React.ChangeEvent<HTMLSelectElement>) => onChange(e.target.value) }
+          : { defaultValue: defaultValue ?? "" })}
+      >
         <option value="" disabled>
           {placeholder ?? "Select"}
         </option>

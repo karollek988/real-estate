@@ -1,9 +1,11 @@
 import { NextResponse } from "next/server";
 import { Resend } from "resend";
+import { checkRateLimit, clientIp } from "@/lib/rateLimit";
 
 export const runtime = "nodejs";
 
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+const RATE_LIMIT_PER_HOUR = 5;
 
 interface ContactBody {
   name?: string;
@@ -24,6 +26,13 @@ export async function POST(request: Request) {
         },
       },
       { status: 503 },
+    );
+  }
+
+  if (!checkRateLimit(`contact:${clientIp(request)}`, RATE_LIMIT_PER_HOUR, 60 * 60_000)) {
+    return NextResponse.json(
+      { error: { code: "rate_limited", message: "För många meddelanden skickade – försök igen senare eller mejla info@kopanalys.se." } },
+      { status: 429 },
     );
   }
 

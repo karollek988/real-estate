@@ -11,14 +11,15 @@ const STEPS = [
     description: "Registrera dig på några sekunder för att få tillgång till dina analyser.",
   },
   {
-    emoji: "🏠",
-    title: "Hitta en bostad på Hemnet",
-    description: "Kopiera länken till den bostad du vill analysera.",
+    emoji: "📸",
+    title: "Ladda upp skärmdumpar av annonsen",
+    description:
+      "Många bostadssajter blockerar numera automatiserad hämtning av deras sidor, så istället för en länk visar du oss annonsen direkt — en eller flera skärmdumpar fungerar överallt. Du kan även fylla i uppgifterna manuellt.",
   },
   {
-    emoji: "🔗",
-    title: "Klistra in länken",
-    description: "Klistra in Hemnet-länken och välj vilken typ av analys du vill genomföra.",
+    emoji: "✓",
+    title: "Kontrollera uppgifterna",
+    description: "Vi läser av de viktigaste uppgifterna åt dig — du granskar och rättar till innan du går vidare.",
   },
   {
     emoji: "📊",
@@ -102,7 +103,7 @@ export function OnboardingModal({ open, onClose }: { open: boolean; onClose: () 
 
           <div className="px-6 pb-7 pt-8 lg:px-8">
             <h2 className="text-xl font-semibold tracking-tight text-white">Så fungerar det</h2>
-            <p className="mt-1.5 text-sm text-neutral-400">Fyra steg från länk till färdigt beslutsunderlag.</p>
+            <p className="mt-1.5 text-sm text-neutral-400">Fyra steg från skärmdump till färdigt beslutsunderlag.</p>
 
             <ol className="mt-6 flex flex-col gap-4">
               {STEPS.map(({ emoji, title, description }, i) => (
