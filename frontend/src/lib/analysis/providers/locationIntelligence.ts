@@ -1,4 +1,5 @@
 import type { DataProvider, ProviderResult } from "./types";
+import { pythonEngineHeaders } from "@/lib/pythonEngine";
 
 /**
  * Bridges the standalone `location_intelligence` Python package (built and
@@ -124,7 +125,7 @@ export const locationIntelligenceProvider: DataProvider = {
     try {
       res = await fetch(`${apiBase.replace(/\/$/, "")}/api/location-intelligence`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: pythonEngineHeaders(),
         body: JSON.stringify({ latitude: property.latitude, longitude: property.longitude }),
         signal: AbortSignal.timeout(60000),
         cache: "no-store",

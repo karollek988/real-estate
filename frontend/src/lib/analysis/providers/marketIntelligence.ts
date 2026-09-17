@@ -1,4 +1,5 @@
 import type { DataProvider, ProviderResult } from "./types";
+import { pythonEngineHeaders } from "@/lib/pythonEngine";
 
 /**
  * Bridges the standalone `market_intelligence` Python package (built and
@@ -83,7 +84,7 @@ export const marketIntelligenceProvider: DataProvider = {
     try {
       res = await fetch(`${apiBase.replace(/\/$/, "")}/api/market-intelligence`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: pythonEngineHeaders(),
         body: JSON.stringify({ country: "SE", municipality: property.municipality }),
         signal: AbortSignal.timeout(60000),
         cache: "no-store",

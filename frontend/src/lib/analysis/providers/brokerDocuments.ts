@@ -8,6 +8,7 @@ import {
   type BrokerDocumentType,
 } from "@/lib/analysis/brokerDocuments";
 import { findReusableBrfReport, insertBrfReport } from "@/lib/analysis/brfReports";
+import { pythonEngineHeaders } from "@/lib/pythonEngine";
 
 /**
  * Bridges the broker-site document discovery engine
@@ -122,7 +123,7 @@ export const brokerDocumentsProvider: DataProvider = {
     try {
       res = await fetch(`${apiBase.replace(/\/$/, "")}/api/broker-documents`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: pythonEngineHeaders(),
         body: JSON.stringify({ hemnet_url: hemnetUrl }),
         signal: AbortSignal.timeout(100_000),
         cache: "no-store",

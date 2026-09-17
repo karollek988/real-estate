@@ -1,4 +1,5 @@
 import type { DataProvider, ProviderResult } from "./types";
+import { pythonEngineHeaders } from "@/lib/pythonEngine";
 
 /**
  * Bridges the `analysis_engine` Python library (calculator.py + reasoning.py
@@ -169,7 +170,7 @@ export const brfFinancialsProvider: DataProvider = {
     try {
       res = await fetch(`${apiBase.replace(/\/$/, "")}/api/brf-financials`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: pythonEngineHeaders(),
         body: JSON.stringify({ annual_report: annualReport }),
         signal: AbortSignal.timeout(30000),
         cache: "no-store",

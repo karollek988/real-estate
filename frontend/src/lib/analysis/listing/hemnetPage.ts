@@ -21,6 +21,7 @@
  * is the URL slug (which lacks price, area, fees, images, etc.), see
  * listing/hemnet.ts.
  */
+import { pythonEngineHeaders } from "@/lib/pythonEngine";
 import { extractApollo } from "./hemnetExtract/apollo.ts";
 import { extractJsonLd } from "./hemnetExtract/jsonld.ts";
 import { mergeExtractions } from "./hemnetExtract/merge.ts";
@@ -167,7 +168,7 @@ async function fetchViaBrowserBridge(hemnetUrl: string): Promise<string | null> 
     try {
       const res = await fetch(`${apiBase.replace(/\/$/, "")}/api/browser-fetch`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: pythonEngineHeaders(),
         body: JSON.stringify({ url: hemnetUrl }),
         // Launching a real browser is much slower than a plain fetch.
         signal: AbortSignal.timeout(30000),
