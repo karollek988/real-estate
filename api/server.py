@@ -246,6 +246,12 @@ class BrfAnnualReportRequest(BaseModel):
 class BrfAnnualReportUploadRequest(BaseModel):
     pdf_base64: str
     filename: str | None = None
+    # "pdf" (default, backward compatible) | "docx" | "image"
+    file_kind: str = "pdf"
+
+
+class OcrExtractRequest(BaseModel):
+    images_base64: list[str]
 
 
 class BrokerDocumentsRequest(BaseModel):
@@ -489,32 +495,42 @@ async def brf_annual_report(req: BrfAnnualReportRequest):
     }
 
 
+_BRF_UPLOAD_SUFFIXES = {"pdf": ".pdf", "docx": ".docx", "image": ".img"}
+
+
 @app.post("/api/brf-annual-report/upload")
 async def brf_annual_report_upload(req: BrfAnnualReportUploadRequest):
-    """User-uploaded BRF annual report PDF -> PDF extraction, returning one
-    fiscal year's verified annual-report JSON in the exact shape
-    calculate_metrics() consumes (same output contract as
-    /api/brf-annual-report above).
+    """User-uploaded BRF annual report (PDF, Word doc, or a photo of a page)
+    -> extraction, returning one fiscal year's verified annual-report JSON
+    in the exact shape calculate_metrics() consumes (same output contract
+    as /api/brf-annual-report above).
 
     This is the manual counterpart to /api/brf-annual-report: instead of
     discovering and downloading a report via ProfileEngine, the caller
-    already has the PDF bytes (uploaded from the profile page). It reuses
-    extract_annual_report() — the exact same PDF-reading, field-extraction
-    and validation pipeline ProfileEngine.build() calls internally — so a
+    already has the file bytes (uploaded from the profile page). It reuses
+    extract_annual_report() — the exact same field-extraction and
+    validation pipeline ProfileEngine.build() calls internally — so a
     manually uploaded report is held to the identical verification bar
     (only HIGH-confidence, cross-validated fields ever reach the Decision
-    Engine; see BRF-Scraper's extractor/validation.py) as one found by the
-    automated crawler. No organization-number resolution happens here — the
-    PDF text alone doesn't carry it — so the caller (the Next.js upload
-    route) falls back to grouping reports by property when none is known.
+    Engine; see BRF-Scraper's extractor/validation.py) regardless of
+    file_kind. No organization-number resolution happens here — the
+    document text alone doesn't carry it — so the caller (the Next.js
+    upload route) falls back to grouping reports by property when none is
+    known.
     """
     import base64
     import tempfile
 
     from brf_scraper.extractor.engine import extract_annual_report
 
+    if req.file_kind not in _BRF_UPLOAD_SUFFIXES:
+        return JSONResponse(status_code=400, content={
+            "success": False,
+            "error": f"Unknown file_kind: {req.file_kind}",
+        })
+
     try:
-        pdf_bytes = base64.b64decode(req.pdf_base64)
+        file_bytes = base64.b64decode(req.pdf_base64)
     except Exception as e:
         return JSONResponse(status_code=400, content={
             "success": False,
@@ -523,25 +539,31 @@ async def brf_annual_report_upload(req: BrfAnnualReportUploadRequest):
 
     tmp_path = None
     try:
-        with tempfile.NamedTemporaryFile(suffix=".pdf", delete=False) as f:
-            f.write(pdf_bytes)
+        suffix = _BRF_UPLOAD_SUFFIXES[req.file_kind]
+        with tempfile.NamedTemporaryFile(suffix=suffix, delete=False) as f:
+            f.write(file_bytes)
             tmp_path = f.name
 
-        result = extract_annual_report(tmp_path)
+        result = extract_annual_report(tmp_path, file_kind=req.file_kind)
     except Exception as e:
         logger.exception("BRF annual report upload extraction failed")
         return JSONResponse(status_code=422, content={
             "success": False,
-            "error": f"Kunde inte tolka PDF-filen: {e}",
+            "error": f"Kunde inte tolka filen: {e}",
         })
     finally:
         if tmp_path:
             Path(tmp_path).unlink(missing_ok=True)
 
     if not result.is_text_based:
+        message = (
+            "PDF-filen verkar vara en inskannad bild och kunde inte textextraheras."
+            if req.file_kind == "pdf"
+            else "Kunde inte läsa någon text ur den här filen."
+        )
         return JSONResponse(status_code=422, content={
             "success": False,
-            "error": "PDF-filen verkar vara en inskannad bild och kunde inte textextraheras.",
+            "error": message,
         })
 
     # to_profile_financials() already returns the single-fiscal-year shape
@@ -556,6 +578,50 @@ async def brf_annual_report_upload(req: BrfAnnualReportUploadRequest):
         "fiscal_year": result.fiscal_year,
         "verification_status": financials["verification_status"],
     }
+
+
+_MAX_OCR_IMAGES = 6
+
+
+@app.post("/api/ocr/extract-text")
+async def ocr_extract_text(req: OcrExtractRequest):
+    """Pure OCR: image bytes in, raw text out — no domain-specific parsing.
+
+    Backs the Next.js listing-screenshot upload flow; the frontend parses
+    the returned text into property fields itself (see
+    lib/analysis/listing/screenshotExtract.ts), mirroring the existing
+    "OCR extracts text, application code interprets it" split already used
+    for BRF documents. Shares the same Tesseract path
+    (extractor/ocr.py:ocr_image) as scanned-PDF-page and BRF-photo
+    extraction. Images are decoded in memory only — nothing here is ever
+    written to disk or any storage.
+    """
+    import base64
+    import io
+
+    from PIL import Image
+
+    from brf_scraper.extractor.ocr import ocr_image
+
+    if len(req.images_base64) == 0:
+        return JSONResponse(status_code=400, content={"success": False, "error": "No images provided."})
+    if len(req.images_base64) > _MAX_OCR_IMAGES:
+        return JSONResponse(status_code=400, content={
+            "success": False,
+            "error": f"Too many images (max {_MAX_OCR_IMAGES}).",
+        })
+
+    texts: list[str] = []
+    for i, b64 in enumerate(req.images_base64):
+        try:
+            image_bytes = base64.b64decode(b64)
+            with Image.open(io.BytesIO(image_bytes)) as image:
+                texts.append(ocr_image(image))
+        except Exception as e:
+            logger.warning("ocr_extract_text image failed: index=%s error=%s", i, e)
+            texts.append("")
+
+    return {"success": True, "texts": texts}
 
 
 _MAX_BROKER_DOCUMENTS = 8

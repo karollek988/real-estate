@@ -112,8 +112,9 @@ class ExtractorSettings(BaseSettings):
 
     model_config = SettingsConfigDict(env_prefix="EXTRACTOR_")
 
-    ocr_enabled: bool = False
-    ocr_engine: str = "paddleocr"
+    # OCR (extractor/ocr.py, Tesseract via pytesseract) always runs as a
+    # per-page fallback for scanned PDFs/images — no on/off flag, since it
+    # only ever engages for pages pdfplumber already found no text on.
     min_confidence: float = 0.7
     max_pages: int = 100
 
