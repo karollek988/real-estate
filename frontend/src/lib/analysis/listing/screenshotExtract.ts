@@ -196,6 +196,27 @@ export function extractFromScreenshotText(rawTexts: string[]): ScreenshotExtract
     foundKeys.push("address");
   }
 
+  // A dropped/garbled superscript "2" turned out to be the actual cause of
+  // Boarea coming back empty on a real listing where "119 m²" was clearly
+  // visible - Tesseract doesn't render that glyph reliably at typical
+  // screenshot resolutions, so neither "m²"/"m2"/"㎡" ever matched. A bare
+  // "m" now also counts, guarded so it can never match the "m" inside
+  // "mån(ad)"/"mejla"/etc.
+  const AREA_UNIT_SOURCE = "(?:m²|m2|㎡|m(?![a-zA-ZåäöÅÄÖ]))";
+
+  const livingAreaValue = labeledOrUniqueValue(
+    text,
+    null, // no other field competes for an "N m²" figure, so no ownership gate is needed here
+    new RegExp(`boarea[^\\d]{0,15}(\\d+(?:[.,]\\d+)?)\\s*${AREA_UNIT_SOURCE}`, "i"),
+    new RegExp(`(\\d+(?:[.,]\\d+)?)\\s*${AREA_UNIT_SOURCE}`, "i"),
+    parseDecimal,
+    (n) => n > 0 && n < 2000
+  );
+  if (livingAreaValue !== null) {
+    fields.livingArea = livingAreaValue;
+    foundKeys.push("livingArea");
+  }
+
   // Price extraction deliberately never trusts a bare "Pris" as a label —
   // it collides with "Pris/m²", "Prisidé", "Prisutveckling", etc. too often
   // (a real bug: a per-m² figure outranked the actual price because it was
@@ -228,13 +249,45 @@ export function extractFromScreenshotText(rawTexts: string[]): ScreenshotExtract
     return values;
   }
 
+  // The asking price renders as a bare number right after the address,
+  // before the "Om bostaden" detail table even starts - "Pris/m²" only
+  // ever appears inside that later table. Restricting the unlabeled
+  // candidate search to the text *before* that table rules Pris/m² out by
+  // position, which holds up even when excluding it by its "/m²" suffix
+  // doesn't (already tried twice - OCR drops that punctuation
+  // unpredictably, and apparently more unpredictably than this). The
+  // labeled "Utgångspris"/"Slutpris" search is unambiguous by construction
+  // and still covers the whole text.
+  const DETAIL_TABLE_START = /\bom bostaden\b|\bboarea\b|\bantal rum\b/i;
+  const tableStart = DETAIL_TABLE_START.exec(text);
+  const beforeDetailTable = tableStart ? text.slice(0, tableStart.index) : text;
+
   const labeledPrice = firstMatch(
     text,
     /(?:utgångspris|slutpris)[^\d]{0,15}(\d[\d ]{4,}\d)[ \t]*kr\b(?!\s*(?:\/|per\s+)?\s*(?:m2|m²|kvm|mån(?:ad)?|år))/i
   );
-  const priceCandidates = nonRatePriceValues(text);
+  const priceCandidates = nonRatePriceValues(beforeDetailTable);
   const priceRaw = labeledPrice ? parseSekNumber(labeledPrice) : null;
-  const parsedPrice = priceRaw ?? (priceCandidates.length > 0 ? Math.max(...priceCandidates) : null);
+  const positionalPrice = priceCandidates.length > 0 ? Math.max(...priceCandidates) : null;
+
+  // Last resort, only when neither of the above finds anything at all
+  // (e.g. the price heading's own "kr" didn't survive OCR next to a large
+  // bold heading, which OCRs differently than regular body text): derive
+  // it from price/m² × boarea, two numbers OCR already found independently
+  // elsewhere on the page - arithmetic on real data, not a guess.
+  let derivedPrice: number | null = null;
+  if (priceRaw === null && positionalPrice === null && livingAreaValue !== null) {
+    const perAreaRaw = firstMatch(
+      text,
+      new RegExp(`(\\d[\\d ]*\\d)[ \\t]*kr\\s*(?:\\/|per\\s+)?\\s*${AREA_UNIT_SOURCE}`, "i")
+    );
+    const perArea = perAreaRaw ? parseSekNumber(perAreaRaw) : null;
+    if (perArea !== null && perArea > 0) {
+      derivedPrice = Math.round(perArea * livingAreaValue);
+    }
+  }
+
+  const parsedPrice = priceRaw ?? positionalPrice ?? derivedPrice;
   if (parsedPrice !== null && parsedPrice > 10_000 && parsedPrice < 200_000_000) {
     fields.askingPrice = parsedPrice;
     foundKeys.push("askingPrice");
@@ -272,21 +325,6 @@ export function extractFromScreenshotText(rawTexts: string[]): ScreenshotExtract
   if (operatingCostsValue !== null) {
     fields.operatingCosts = operatingCostsValue;
     foundKeys.push("operatingCosts");
-  }
-
-  // "m²" sometimes OCRs as the single CJK compatibility glyph "㎡" instead
-  // of "m" + "²" — recognized everywhere an area unit is matched below.
-  const livingAreaValue = labeledOrUniqueValue(
-    text,
-    null, // no other field competes for an "N m²" figure, so no ownership gate is needed here
-    /boarea[^\d]{0,15}(\d+(?:[.,]\d+)?)\s*(?:m²|m2|㎡)/i,
-    /(\d+(?:[.,]\d+)?)\s*(?:m²|m2|㎡)/i,
-    parseDecimal,
-    (n) => n > 0 && n < 2000
-  );
-  if (livingAreaValue !== null) {
-    fields.livingArea = livingAreaValue;
-    foundKeys.push("livingArea");
   }
 
   const roomsRaw = firstMatch(text, /(\d+(?:[.,]\d+)?)\s*rum\b/i);
