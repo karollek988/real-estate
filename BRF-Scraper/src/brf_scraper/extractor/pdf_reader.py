@@ -1,15 +1,19 @@
 """PDF text extraction using pdfplumber.
 
-Handles text-based PDFs. Scanned image PDFs are detected and flagged.
+Handles text-based PDFs. Pages pdfplumber can't extract text from (scanned
+images) fall back to OCR — see _ocr_page_image below.
 """
 from __future__ import annotations
 
+import io
 from dataclasses import dataclass, field
 from pathlib import Path
 
 import pdfplumber
 
 from brf_scraper.utils.logging import get_logger
+
+from .ocr import ocr_image
 
 logger = get_logger(__name__)
 
@@ -110,11 +114,29 @@ class PDFDocument:
         return results
 
 
+def _ocr_page_image(pdf_path: str, page_index: int, dpi: int = 300) -> str:
+    """Render one PDF page to an image (via PyMuPDF) and OCR it. Returns ""
+    on any failure — a page OCR can't read just stays empty, same as a
+    pdfplumber page with no extractable text."""
+    try:
+        import fitz  # PyMuPDF
+        from PIL import Image
+
+        with fitz.open(pdf_path) as doc:
+            pix = doc[page_index].get_pixmap(dpi=dpi)
+            image = Image.open(io.BytesIO(pix.tobytes("png")))
+        return ocr_image(image)
+    except Exception as e:
+        logger.warning("page_ocr_failed", path=pdf_path, page=page_index + 1, error=str(e))
+        return ""
+
+
 def read_pdf(path: str | Path, max_pages: int = 50) -> PDFDocument:
     """Extract text from a PDF file.
 
-    Returns a PDFDocument with per-page text. If the PDF is a scanned
-    image, pages will have empty text and is_text_based will be False.
+    Returns a PDFDocument with per-page text. A page pdfplumber can't pull
+    text from (a scanned image) falls back to OCR; only a page that still
+    yields nothing after that stays empty.
     """
     path = str(path)
     doc = PDFDocument(path=path)
@@ -125,12 +147,16 @@ def read_pdf(path: str | Path, max_pages: int = 50) -> PDFDocument:
             pages_to_process = pdf.pages[:max_pages]
 
             for i, page in enumerate(pages_to_process):
-                text = page.extract_text() or ""
+                text = (page.extract_text() or "").strip()
                 tables = page.extract_tables() or []
+                if len(text) < MIN_CHARS_PER_PAGE:
+                    ocr_text = _ocr_page_image(path, i).strip()
+                    if len(ocr_text) > len(text):
+                        text = ocr_text
                 doc.pages.append(
                     PageText(
                         page_number=i + 1,
-                        text=text.strip(),
+                        text=text,
                         tables=tables,
                     )
                 )
@@ -152,7 +178,7 @@ def read_pdf(path: str | Path, max_pages: int = 50) -> PDFDocument:
             "pdf_no_text_extracted",
             path=path,
             total_pages=doc.total_pages,
-            hint="PDF appears to be a scanned image; OCR not available",
+            hint="PDF appears to be a scanned image and OCR could not extract readable text from it either",
         )
 
     return doc

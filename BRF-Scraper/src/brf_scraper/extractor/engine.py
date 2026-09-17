@@ -35,26 +35,41 @@ logger = get_logger(__name__)
 def extract_annual_report(
     pdf_path: str | Path,
     max_pages: int = 50,
+    file_kind: str = "pdf",
 ) -> ExtractionResult:
-    """Extract structured data from a single annual report PDF.
+    """Extract structured data from a single annual report file.
 
-    This is the main entry point for the extraction module.
+    This is the main entry point for the extraction module. `file_kind`
+    ("pdf" | "docx" | "image") only changes Step 1 — how raw text/tables are
+    read off disk. Every step after that (financial/apartment/loan/property
+    extraction, board members, validation) operates on the same
+    PDFDocument-shaped object regardless of source, so a Word document or a
+    photo of a report page needs no changes below this branch.
     """
     pdf_path = str(pdf_path)
     result = ExtractionResult(pdf_path=pdf_path)
 
-    # Step 1: Read PDF text
-    doc = read_pdf(pdf_path, max_pages=max_pages)
+    # Step 1: Read the document's text (+ tables, where the source has them)
+    if file_kind == "docx":
+        from .docx_reader import read_docx
+        doc = read_docx(pdf_path)
+    elif file_kind == "image":
+        from .image_reader import read_image
+        doc = read_image(pdf_path)
+    else:
+        doc = read_pdf(pdf_path, max_pages=max_pages)
     result.total_pages = doc.total_pages
     result.is_text_based = doc.is_text_based
     result.pages_with_text = doc.pages_with_text
 
     if not doc.is_text_based:
-        logger.warning("pdf_is_scanned_image", path=pdf_path)
-        result.missing_fields.append({
-            "field": "all",
-            "reason": "PDF is a scanned image; OCR not available",
-        })
+        logger.warning("document_unreadable_by_ocr", path=pdf_path, file_kind=file_kind)
+        reason = (
+            "PDF is a scanned image and OCR could not extract readable text from it"
+            if file_kind == "pdf"
+            else "OCR could not extract readable text from this file"
+        )
+        result.missing_fields.append({"field": "all", "reason": reason})
         return result
 
     # Step 2: Detect fiscal year

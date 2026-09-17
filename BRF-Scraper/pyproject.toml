@@ -38,6 +38,9 @@ dependencies = [
     "pyyaml>=6.0.0",
     "fastapi>=0.139.2",
     "uvicorn[standard]>=0.51.0",
+    "pytesseract>=0.3.10",
+    "pillow>=10.4.0",
+    "python-docx>=1.1.0",
 ]
 
 [project.optional-dependencies]
@@ -62,11 +65,6 @@ camoufox = [
     # both fail with a Browser.setDefaultViewport protocol error).
     "playwright==1.49.1",
 ]
-ocr = [
-    "paddleocr>=2.7.0",
-    "paddlepaddle>=2.6.0",
-]
-
 [project.scripts]
 brf-scraper = "brf_scraper.main:app"
 
