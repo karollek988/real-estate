@@ -1,17 +1,27 @@
 import { NextResponse } from "next/server";
 import { classifyListingUrl } from "@/lib/analysis/listing/classify";
 import { HemnetUrlError } from "@/lib/analysis/listing/hemnet";
-import type { ManualListingFields } from "@/lib/analysis/listing/manual";
+import { extractFromManualFields, type ManualListingFields } from "@/lib/analysis/listing/manual";
 import {
   requestAnalysis,
+  missingEssentialFields,
+  ESSENTIAL_FIELD_LABELS,
   type AnalysisRequestInput,
   type AnalysisRequestResult,
 } from "@/lib/analysis/pipeline";
 import { consumeAnalysisQuota, recordAnalysisRequest, type AnalysisType } from "@/lib/analysis/ownership";
 import { requireUser } from "@/lib/auth/requireUser";
 import { isDevAdmin } from "@/lib/auth/devAdmin";
+import { checkRateLimit, clientIp } from "@/lib/rateLimit";
 
 export const maxDuration = 300;
+
+// Per-user quota (ownership.ts) already caps free analyses, but a single
+// script cycling through disposable accounts from one IP could still trigger
+// many full external-API pipeline runs — each one real cost (Booli, BRF PDF
+// extraction, external geodata APIs). This is defense-in-depth alongside
+// quota, generous enough not to bother a real person testing a few listings.
+const RATE_LIMIT_PER_HOUR = 20;
 
 /**
  * POST /api/analyses — run (or return a cached) analysis for a property.
@@ -46,6 +56,10 @@ function resultResponse(result: AnalysisRequestResult) {
 export async function POST(request: Request) {
   const { user, response: authError } = await requireUser();
   if (authError) return authError;
+
+  if (!checkRateLimit(`analyses:${clientIp(request)}`, RATE_LIMIT_PER_HOUR, 60 * 60_000)) {
+    return errorResponse(429, "rate_limited", "För många analysförfrågningar från din uppkoppling – försök igen om en stund.");
+  }
 
   let body: { url?: unknown; manual?: unknown; force?: unknown; analysisType?: unknown };
   try {
@@ -97,6 +111,16 @@ export async function POST(request: Request) {
         );
     }
   } else if (isManualFields(body.manual)) {
+    const extracted = extractFromManualFields(body.manual);
+    const missing = missingEssentialFields(extracted.attributes, extracted);
+    if (missing.length > 0) {
+      const labels = missing.map((f) => ESSENTIAL_FIELD_LABELS[f] ?? f).join(", ");
+      return errorResponse(
+        422,
+        "insufficient_manual_data",
+        `Fyll i följande för att kunna analysera bostaden: ${labels}.`
+      );
+    }
     input = { kind: "manual", fields: body.manual };
   } else {
     return errorResponse(

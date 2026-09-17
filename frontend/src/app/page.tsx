@@ -2,12 +2,10 @@
 
 import { useEffect, useState } from "react";
 import Image from "next/image";
-import { useRouter } from "next/navigation";
 import { SiteHeader } from "@/components/SiteHeader";
 import { FOCUS_URL_INPUT_EVENT, OPEN_ONBOARDING_MODAL_EVENT } from "@/lib/onboardingModalEvents";
-import { PasteListingForm } from "@/components/PasteListingForm";
+import { ScreenshotUploadForm } from "@/components/ScreenshotUploadForm";
 import { ManualEntryForm } from "@/components/ManualEntryForm";
-import { AnalysisTypeChoice, type AnalysisType } from "@/components/AnalysisTypeChoice";
 import { NewsSection } from "@/components/sections/NewsSection";
 import { ExampleReportSection } from "@/components/sections/ExampleReportSection";
 import { InsightsSection } from "@/components/sections/InsightsSection";
@@ -20,44 +18,46 @@ import {
   BrainIcon,
   BuildingIcon,
   ChartIcon,
-  ClipboardIcon,
   DatabaseIcon,
   HouseIcon,
-  LinkIcon,
+  InfoIcon,
+  LockIcon,
   MapPinIcon,
   PencilIcon,
   PlayCircleIcon,
-  SearchIcon,
   ShieldIcon,
   StarFilledIcon,
   StarIcon,
   TrendingUpIcon,
+  UploadCloudIcon,
   ZapIcon,
 } from "@/components/icons";
 
-type Method = "paste" | "manual";
-type MobileTab = "link" | "adress";
+type Method = "screenshot" | "manual";
 
-const MOBILE_TABS = [
-  {
-    key: "link",
-    label: "Länk till annons",
-    icon: LinkIcon,
-    placeholder: "Klistra in en länk",
-    example: "t.ex. hemnet.se/bostad/...",
-    helper: "Exempel: hemnet.se",
-    inputType: "url",
-  },
-  {
-    key: "adress",
-    label: "Adress",
-    icon: MapPinIcon,
-    placeholder: "Skriv in en adress",
-    example: "t.ex. Storgatan 12, Stockholm",
-    helper: "Exempel: Storgatan 12, Stockholm eller Drottninggatan 45, Göteborg",
-    inputType: "text",
-  },
-] as const;
+/**
+ * Manual entry now has real required-field validation (address, price,
+ * living area, and fee for apartments — see ManualEntryForm.tsx and
+ * api/analyses/route.ts), so it's a real fallback next to screenshot
+ * upload rather than the previously disabled placeholder. Kept as a flag
+ * (rather than deleted) so it can be switched off again in one place if
+ * needed without touching ManualEntryForm itself.
+ */
+const MANUAL_ENTRY_ENABLED = true;
+
+function ManualEntryNotice() {
+  return (
+    <div className="flex flex-col items-center gap-3 rounded-2xl border border-white/10 bg-white/[0.03] px-6 py-10 text-center">
+      <span className="flex h-11 w-11 items-center justify-center rounded-full bg-white/5 text-neutral-400">
+        <InfoIcon className="h-5 w-5" />
+      </span>
+      <p className="max-w-sm text-[15px] leading-relaxed text-neutral-300">
+        Manuell inmatning är under utveckling och vi jobbar kontinuerligt med att förbättra den. Just nu kan
+        du analysera en bostad genom att ladda upp skärmdumpar av annonsen istället.
+      </p>
+    </div>
+  );
+}
 
 const FEATURE_PILLS = [
   { icon: ChartIcon, label: "Prisanalys" },
@@ -135,14 +135,8 @@ function MarketChart({ labels, values }: { labels: string[]; values: number[] })
 }
 
 export default function Home() {
-  const [method, setMethod] = useState<Method>("paste");
-  const [mobileTab, setMobileTab] = useState<MobileTab>("link");
-  const [mobileQuery, setMobileQuery] = useState("");
-  const [mobileSubmitting, setMobileSubmitting] = useState(false);
-  const [mobileError, setMobileError] = useState<string | null>(null);
-  const [mobileAnalysisType, setMobileAnalysisType] = useState<AnalysisType>("premium");
+  const [method, setMethod] = useState<Method>("screenshot");
   const [marketStats, setMarketStats] = useState<MarketStats | null>(null);
-  const router = useRouter();
 
   useEffect(() => {
     let cancelled = false;
@@ -159,61 +153,16 @@ export default function Home() {
     };
   }, []);
 
-  async function handleMobileSubmit(e: React.FormEvent<HTMLFormElement>) {
-    e.preventDefault();
-    if (mobileSubmitting || mobileQuery.trim() === "") return;
-    setMobileSubmitting(true);
-    setMobileError(null);
-
-    const body =
-      mobileTab === "link"
-        ? { url: mobileQuery.trim(), analysisType: mobileAnalysisType }
-        : { manual: { address: mobileQuery.trim() }, analysisType: mobileAnalysisType };
-
-    try {
-      const res = await fetch("/api/analyses", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(body),
-      });
-      const data = await res.json().catch(() => null);
-
-      if (!res.ok) {
-        setMobileError(data?.error?.message ?? "Something went wrong. Please try again.");
-        setMobileSubmitting(false);
-        return;
-      }
-
-      router.push(
-        data.cached ? `/report?id=${data.analysisId}` : `/analyzing?id=${data.analysisId}`
-      );
-    } catch {
-      setMobileError("Something went wrong. Please try again.");
-      setMobileSubmitting(false);
-    }
-  }
-
-  const activeMobileTab = MOBILE_TABS.find((tab) => tab.key === mobileTab) ?? MOBILE_TABS[0];
-  const MobileInputIcon = activeMobileTab.icon;
-
   useEffect(() => {
     function onFocusUrlInput() {
       const desktopCard = document.getElementById("analyze");
       const isDesktop = desktopCard && desktopCard.offsetParent !== null;
 
-      if (isDesktop) {
-        setMethod("paste");
-        requestAnimationFrame(() => {
-          desktopCard.scrollIntoView({ behavior: "smooth" });
-          document.getElementById("listing-url")?.focus();
-        });
-      } else {
-        setMobileTab("link");
-        requestAnimationFrame(() => {
-          document.getElementById("analyze-mobile")?.scrollIntoView({ behavior: "smooth" });
-          document.getElementById("mobile-listing-input")?.focus();
-        });
-      }
+      setMethod("screenshot");
+      requestAnimationFrame(() => {
+        const target = isDesktop ? desktopCard : document.getElementById("analyze-mobile");
+        target?.scrollIntoView({ behavior: "smooth" });
+      });
     }
     window.addEventListener(FOCUS_URL_INPUT_EVENT, onFocusUrlInput);
     return () => window.removeEventListener(FOCUS_URL_INPUT_EVENT, onFocusUrlInput);
@@ -280,8 +229,8 @@ export default function Home() {
               <span className="text-green-400">bostad</span> som helst.
             </h1>
             <p className="mx-auto mt-5 max-w-[320px] text-[17px] leading-[1.6] text-neutral-300">
-              Klistra in en adress eller länk till en bostadsannons så analyserar
-              vi marknadspotentialen åt dig — klart på under 3 minuter.
+              Ladda upp en skärmdump av bostadsannonsen så analyserar vi
+              marknadspotentialen åt dig — klart på under 3 minuter.
             </p>
           </div>
 
@@ -291,24 +240,36 @@ export default function Home() {
             className="animate-fade-in-up delay-2 mt-9 scroll-mt-24 rounded-[24px] border border-white/10 bg-[#0F1417]/90 p-5 shadow-[0_24px_60px_rgba(0,0,0,0.45)] backdrop-blur-xl"
           >
             <div className="flex border-b border-white/10">
-              {MOBILE_TABS.map(({ key, label, icon: Icon }) => {
-                const active = mobileTab === key;
+              {(
+                [
+                  { key: "screenshot", label: "Skärmdump", icon: UploadCloudIcon },
+                  { key: "manual", label: "Manuellt", icon: PencilIcon },
+                ] as const
+              ).map(({ key, label, icon: Icon }) => {
+                const active = method === key;
+                const disabled = key === "manual" && !MANUAL_ENTRY_ENABLED;
                 return (
                   <button
                     key={key}
                     type="button"
-                    onClick={() => {
-                      setMobileTab(key);
-                      setMobileQuery("");
-                      setMobileError(null);
-                    }}
+                    onClick={() => setMethod(key)}
                     className={`relative flex flex-1 items-center justify-center gap-2 pb-3.5 pt-1 text-[15px] font-semibold transition ${
-                      active ? "text-white" : "text-neutral-400 hover:text-neutral-200"
+                      disabled
+                        ? "text-neutral-600"
+                        : active
+                          ? "text-white"
+                          : "text-neutral-400 hover:text-neutral-200"
                     }`}
                   >
-                    <Icon className={`h-[18px] w-[18px] ${active ? "text-green-400" : ""}`} />
+                    <Icon className={`h-[18px] w-[18px] ${active && !disabled ? "text-green-400" : ""}`} />
                     {label}
-                    {active && (
+                    {disabled && (
+                      <span className="flex items-center gap-1 rounded-full bg-white/5 px-2 py-0.5 text-[11px] font-medium text-neutral-500">
+                        <LockIcon className="h-3 w-3" />
+                        Snart
+                      </span>
+                    )}
+                    {active && !disabled && (
                       <span className="absolute inset-x-0 -bottom-px h-[2px] rounded-full bg-green-500" />
                     )}
                   </button>
@@ -316,45 +277,15 @@ export default function Home() {
               })}
             </div>
 
-            <form className="mt-5" onSubmit={handleMobileSubmit}>
-              <label className="block cursor-text rounded-2xl border border-white/10 bg-black/40 px-5 py-5 transition focus-within:border-green-500/60 focus-within:ring-4 focus-within:ring-green-500/10">
-                <span className="flex items-start gap-3.5">
-                  <MobileInputIcon className="mt-0.5 h-5 w-5 shrink-0 text-neutral-400" />
-                  <span className="min-w-0 flex-1">
-                    <input
-                      id="mobile-listing-input"
-                      type={activeMobileTab.inputType}
-                      placeholder={activeMobileTab.placeholder}
-                      value={mobileQuery}
-                      onChange={(e) => setMobileQuery(e.target.value)}
-                      className="w-full bg-transparent text-[17px] text-white outline-none placeholder:text-neutral-400"
-                    />
-                    <span className="mt-1.5 block truncate text-[15px] text-neutral-500">
-                      {activeMobileTab.example}
-                    </span>
-                  </span>
-                </span>
-              </label>
-
-              {mobileError && <p className="mt-3 text-sm text-red-400">{mobileError}</p>}
-
-              <div className="mt-4">
-                <AnalysisTypeChoice value={mobileAnalysisType} onChange={setMobileAnalysisType} />
-              </div>
-
-              <button
-                type="submit"
-                disabled={mobileSubmitting}
-                className="mt-4 flex w-full items-center justify-center gap-2.5 rounded-2xl bg-green-600 py-4 text-[17px] font-semibold text-white transition hover:bg-green-500 disabled:opacity-60"
-              >
-                <SearchIcon className="h-5 w-5" />
-                {mobileSubmitting ? "Analyserar..." : "Analysera"}
-              </button>
-
-              <p className="mx-auto mt-5 max-w-[300px] text-center text-[15px] leading-relaxed text-neutral-400">
-                {activeMobileTab.helper}
-              </p>
-            </form>
+            <div className="mt-5">
+              {method === "screenshot" ? (
+                <ScreenshotUploadForm />
+              ) : MANUAL_ENTRY_ENABLED ? (
+                <ManualEntryForm />
+              ) : (
+                <ManualEntryNotice />
+              )}
+            </div>
           </div>
         </div>
 
@@ -382,8 +313,8 @@ export default function Home() {
               </h1>
 
               <p className="mt-4 max-w-[310px] text-[17px] leading-[1.6] text-neutral-300">
-                Klistra in en adress eller länka till en bostadsannons så analyserar
-                vi marknadspotentialen åt dig — klart på under 3 minuter.
+                Ladda upp en skärmdump av bostadsannonsen så analyserar vi
+                marknadspotentialen åt dig — klart på under 3 minuter.
               </p>
 
               <button
@@ -441,23 +372,34 @@ export default function Home() {
             <div className="flex border-b border-white/10">
               {(
                 [
-                  { key: "paste", label: "Klistra in annons", icon: ClipboardIcon },
+                  { key: "screenshot", label: "Ladda upp skärmdump", icon: UploadCloudIcon },
                   { key: "manual", label: "Manuell inmatning", icon: PencilIcon },
                 ] as const
               ).map(({ key, label, icon: Icon }) => {
                 const active = method === key;
+                const disabled = key === "manual" && !MANUAL_ENTRY_ENABLED;
                 return (
                   <button
                     key={key}
                     type="button"
                     onClick={() => setMethod(key)}
                     className={`relative flex flex-1 items-center justify-center gap-2 pb-3.5 text-[15px] font-semibold transition ${
-                      active ? "text-white" : "text-neutral-400 hover:text-neutral-200"
+                      disabled
+                        ? "text-neutral-600"
+                        : active
+                          ? "text-white"
+                          : "text-neutral-400 hover:text-neutral-200"
                     }`}
                   >
-                    <Icon className={`h-[18px] w-[18px] ${active ? "text-green-400" : ""}`} />
+                    <Icon className={`h-[18px] w-[18px] ${active && !disabled ? "text-green-400" : ""}`} />
                     {label}
-                    {active && (
+                    {disabled && (
+                      <span className="flex items-center gap-1 rounded-full bg-white/5 px-2 py-0.5 text-[11px] font-medium text-neutral-500">
+                        <LockIcon className="h-3 w-3" />
+                        Snart
+                      </span>
+                    )}
+                    {active && !disabled && (
                       <span className="absolute inset-x-0 -bottom-px h-[2px] rounded-full bg-green-500" />
                     )}
                   </button>
@@ -466,7 +408,13 @@ export default function Home() {
             </div>
 
             <div className="mt-6">
-              {method === "paste" ? <PasteListingForm /> : <ManualEntryForm />}
+              {method === "screenshot" ? (
+                <ScreenshotUploadForm />
+              ) : MANUAL_ENTRY_ENABLED ? (
+                <ManualEntryForm />
+              ) : (
+                <ManualEntryNotice />
+              )}
             </div>
           </div>
         </div>
