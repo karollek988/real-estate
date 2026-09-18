@@ -67,8 +67,12 @@ Future_investment_engine/      I praktiken tom — motsvarande logik ligger idag
 
 Flera datakällor är explicit markerade som ej anslutna
 (`src/lib/analysis/providers/placeholders.ts`): Lantmäteriet,
-BRF-register, brottsstatistik, skolbetyg, kollektivtrafik, miljödata. Dessa
-prioriteras **efter** lansering mot mäklare, inte innan — se projektplanen.
+BRF-register, skolbetyg (utöver Skolverkets egen skolenhetsstatistik),
+miljödata (flödesrisk, buller). Dessa prioriteras **efter** lansering mot
+mäklare, inte innan — se projektplanen. Brottsstatistik (Polisen/Kolada,
+kommun-/länsnivå) och kollektivtrafik (Trafiklab) är däremot redan
+anslutna, se `docs/data-sources.md` och
+`docs/46_price_and_civic_data_source_research.md`.
 
 ## Utveckling
 

@@ -5,10 +5,110 @@
 > otherwise leave it alone. Detailed research/product docs live in `docs/`;
 > this file is the "what's actually true right now" summary.
 
-Last updated: 2026-09-17 — `test/ocr-security-verification` merged into
+Last updated: 2026-09-18 — see the Seventh session note below for the most
+recent work (on a feature branch, not yet merged to `main`).
+
+**Seventh session — Price Analysis + civic data enrichment.** Branch
+`feature/price-analysis-and-area-data-enrichment`, **not merged to `main`**
+per explicit instruction (test on the branch first). Full research writeup:
+`docs/46_price_and_civic_data_source_research.md`. Summary:
+
+- **Price Analysis was less broken than it looked.** `providers/booli.ts`
+  already implements comparable sold properties, price/m² benchmark, and
+  quarterly trend against Booli's real API — it's just never been run with
+  a configured `BOOLI_CALLER_ID`/`BOOLI_API_KEY`, and Booli's self-serve
+  signup for new keys appears closed since ~2018 (site's own API docs page
+  404s). This is a **credentials/business decision**, not a code gap — see
+  docs/46 for the Svensk Mäklarstatistik / Booli-enterprise options, both
+  paid and outside what a coding session can action.
+- **`scb_housing_market.py` had a real parsing bug**, fixed: it read SCB's
+  price-index table as Tid-only, when the table now also carries a
+  `Region` dimension (national + 3 metro + 8 riksområden) — it happened to
+  still read the correct *national* row by coincidence (region "00" lands
+  at flat-index 0), silently dropping every other region. Now resolves
+  cells by actual dimension index. `marketIntelligence.ts` bridges the
+  national trend into the Price chapter as a labeled supplementary fact
+  when no real comparables are connected — free, honest, always-available,
+  not a replacement for real comparables.
+- **Crime/safety and election turnout added to Area Analysis** — both were
+  *already being collected* by the Python `location_intelligence` engine
+  (Kolada `safety_security_index`/`voter_turnout_pct`, Polisen recent-
+  events count) but discarded by the TS bridge, which only ever extracted
+  one unrelated signal. Widened the bridge, not a new provider/credential.
+  Rendered as a new "Trygghet & samhälle" sub-section — factual figures
+  with explicit granularity caveats (kommun/county-level, not per-address),
+  election data shown as a bare turnout % with no scoring, per instruction.
+  The stale `crime_statistics`/`public_transport` placeholders (the latter
+  superseded by `commute.ts` months ago and never retired) were removed.
+- **`parseBotBooli.ts` disabled** (removed from the provider registry, not
+  deleted) — confirmed broken (its location search ignores the query
+  entirely, verified in an earlier session) and flagged as a legal risk by
+  `docs/legal-data-migration-plan.md` (scraping-as-a-service, same risk
+  class as scraping Hemnet/Booli directly).
+- **"Dokument hos mäklaren" removed entirely** — UI chapter, report
+  builder, provider, registry wiring, DB-access layer, download route,
+  redaction entries, *and* the backend (`api/server.py`'s
+  `/api/broker-documents` endpoint, `BRF-Scraper`'s `broker_discovery`
+  package). `risk.ts`'s `InspectionFindingsAttribute` type — previously
+  imported from the broker-documents provider — was relocated inline
+  since risk.ts is now its sole consumer; that risk factor stays dormant
+  until a future provider populates the same attribute shape.
+  `api/tests/test_internal_auth.py`'s protected-endpoint list updated
+  (30/30 passing, down from 33 — the 3 broker-documents parametrizations
+  are gone with the endpoint).
+- **Generic "upload document → extract → regenerate" mechanism** — new
+  `SectionDocumentUpload` component (`frontend/src/components/report/`),
+  embedded in the report's Bostadsrättsförening chapter, posting to the
+  *existing* `/api/properties/[id]/brf-report` route (no new backend
+  needed for this first use — that route already extracts via the shared
+  OCR/document pipeline and re-runs the analysis). Deliberately generic:
+  wiring up a new section later means adding a route with the same
+  contract (`{file}` in, `{analysisId}` out) and dropping this component
+  into that chapter.
+- **PDF export**: investigation found it was already substantially fixed
+  by an earlier session's report redesign (real `@media print` CSS exists,
+  hides the "no-print" chrome, forces page breaks) — a production
+  checklist doc (`docs/44`) calling this broken was stale. Added a second,
+  prominent "Ladda ner PDF" button at the bottom of the report (the
+  existing one is at the top only), identical href/route to the
+  already-working top button. **Not re-verified with a live-rendered PDF
+  this session** (would have needed a synthetic auth+analysis fixture —
+  judged not worth the setup cost given the addition reuses an
+  already-proven mechanism); recommend one manual click-through.
+
+**Tests this session**: `tsc --noEmit` clean. All 7 analyzer +2 report
+`*.verify.mjs` scripts pass (via `npx tsx`), plus provider/helper verify
+scripts — only the pre-existing, documented `hemnetPage.verify.mjs`
+failure remains (G5, unrelated). Python: `market_intelligence` 234/234
+(added a regression test for the Region-dimension bug), `location_intelligence`
+164/164, BRF-Scraper 426 passed/5 skipped (unchanged baseline — confirms
+the `broker_discovery` removal broke nothing), `api/tests/` 30/30.
+`server.py` confirmed importable with zero remaining "broker" routes.
+
+**Not implemented, deliberately deferred** (see docs/46 for why): genuine
+property-level comparable sales (needs a paid Mäklarstatistik/Booli
+relationship); BRF economics beyond the existing OCR pipeline (no free
+structured source exists anywhere, confirmed by research); environmental/
+flood/noise risk (real data, but fragmented GIS formats and partial
+coverage — not a clean per-address API); full election party-vote-share
+detail via Valmyndigheten (would need valdistrikt-level geospatial
+matching, bigger than this session's scope — Kolada's turnout figure
+shipped instead as an immediate, honest partial signal); the Lantmäteriet
+detaljplan API (already scaffolded as `lantmateriet_detaljplan` in
+`location_intelligence`, `not_connected` — needs OAuth2 credentials,
+a provisioning step).
+
+---
+
+## History (sessions 1-6, all already merged/pushed/deployed to `main`)
+
+`test/ocr-security-verification` merged into
 `main` (fast-forward, no conflicts, no merge commit) after the third
-session's verification pass confirmed every fix live. `main` HEAD is now
-`82dbec4`. **Not pushed to `origin` and not deployed yet.**
+session's verification pass confirmed every fix live. `main` HEAD was then
+`82dbec4`, not yet pushed at that point in the history below — it has
+since been pushed and deployed (fifth session) and received further fixes
+(sixth session); see PROJECT_STATE.md's git history / commit log for the
+exact current `main` HEAD rather than trusting a specific SHA quoted below.
 
 A pre-deployment audit (fourth session, same day) found
 `PYTHON_ENGINE_API_SECRET` was **not actually set on Railway** despite being
@@ -387,6 +487,19 @@ correctly (`stripe.webhooks.constructEvent`). No `.update`/`.upsert` on
 - **G7** (sixth session, open): `Mäklare` (broker's own name) extraction —
   see §2a. Needs the raw-OCR debug panel's actual output from a real
   listing to diagnose properly; not fixed, out of scope for that session.
+- **G8** (seventh session, open): real Booli API credentials
+  (`BOOLI_CALLER_ID`/`BOOLI_API_KEY`) are not configured anywhere in this
+  environment, and Booli's self-serve signup for new keys appears closed —
+  see `docs/46_price_and_civic_data_source_research.md`. Comparable-sold-
+  property data in Price Analysis stays incomplete until this is resolved
+  (a business/credentials decision) or an alternative (Svensk
+  Mäklarstatistik) is contracted.
+- **G9** (seventh session, open): `Mäklare` extraction (G7) is now joined
+  by a second open PDF item — the bottom "Ladda ner PDF" button added this
+  session was not verified with an actual live-rendered PDF (would have
+  needed a synthetic auth+analysis fixture; the existing top button's
+  identical mechanism was already confirmed working by code review).
+  Recommend one manual click-through before relying on it.
 - **G6 (RESOLVED, third session)**: Docker Desktop would not start in the
   first session (WSL2 VM stayed "Stopped") and crashed with a popup on
   launch in the second and third. This session got an actual screenshot of
@@ -443,13 +556,16 @@ PASS = actually run and green. FAIL = actually run and red. BLOCKED = not run.
 
 | Area | Result | Notes |
 |---|---|---|
-| Python unit tests (`BRF-Scraper`, full suite) | **PASS** | 426 passed, 5 skipped — `pytest tests/` via the existing `.venv` (not re-run this session; no source changed) |
+| Python unit tests (`BRF-Scraper`, full suite) | **PASS** | 426 passed, 5 skipped — re-run seventh session after removing `broker_discovery`, unchanged baseline |
 | New OCR tests (`test_ocr_extraction.py`) natively on Windows | **BLOCKED** | Skips itself (no `tesseract` binary on this host's PATH) — by design |
 | New OCR tests inside the production Docker image | **PASS** (third session) | 5/5, real container from `kopanalys-engine:verify`, incl. the Swedish-text test — see §4/G6 |
-| TypeScript (`tsc --noEmit`) | **PASS** | Exit 0, no errors (last checked second session; no frontend source changed since) |
+| TypeScript (`tsc --noEmit`) | **PASS** | Re-run seventh session after the price/civic-data + broker-docs-removal changes — exit 0, no errors |
 | ESLint | **BLOCKED** | Pre-existing repo config gap (G4), unrelated to this branch |
 | Screenshot field extraction (`screenshotExtract.verify.mjs`) | **PASS** (sixth session) | 56/56 checks, up from 20 — see §2a |
-| Analysis engine analyzers + report builder (7 analyzer + 2 report verify scripts) | **PASS** | All green under `npx tsx` |
+| Analysis engine analyzers + report builder (7 analyzer + 2 report verify scripts) | **PASS** (re-run seventh session) | All green under `npx tsx`, including `build.objectivity.verify.mjs` |
+| `market_intelligence` Python suite | **PASS** (seventh session) | 234/234, incl. a new regression test locking in the SCB Region-dimension fix (see Seventh session note above) |
+| `location_intelligence` Python suite | **PASS** (seventh session) | 164 passed, 1 deselected |
+| `api/tests/test_internal_auth.py` | **PASS** (seventh session) | 30/30 (down from 33 — 3 parametrizations removed with the deleted `/api/broker-documents` endpoint); `server.py` re-confirmed importable with zero "broker" routes left |
 | Hemnet extraction (`listing/hemnetPage.verify.mjs`) | **FAIL (pre-existing)** | 1/10 checks red on unmodified `main` code (G5) |
 | RLS/RPC bypass — profiles quota fields | **PASS** | Verified via migration/grant audit second session; **live-reproduced too, third session** (attacker `PATCH` on own `profiles` row rejected, see §3b) |
 | RLS/RPC bypass — quota RPCs (§3b) | **PASS** (third session) | 11/11, live adversarial test against real local Supabase/PostgREST — all attacker paths rejected (`42501`), state unchanged, legitimate `service_role` path still works |
