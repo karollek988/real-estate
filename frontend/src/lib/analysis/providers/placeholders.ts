@@ -38,16 +38,11 @@ export const placeholderProviders: DataProvider[] = [
     "BRF information (allabrf/registry)",
     "Association size, byggår and management data — same organisationsnummer blocker as brf_financials above."
   ),
-  notConnected(
-    "crime_statistics",
-    "Crime statistics (BRÅ/Polisen)",
-    "Reported-crime levels for the area — BRÅ publishes only static downloadable tables, no query API (verified 2026-07-16, no api.bra.se or similar exists)."
-  ),
-  notConnected(
-    "public_transport",
-    "Public transport (Trafiklab)",
-    "Realtime transit journey planning — planned integration (OpenStreetMap covers stop presence/count, not schedules or journey times)."
-  ),
+  // crime_statistics and public_transport placeholders retired here — both
+  // are now real: crime/safety via locationIntelligence.ts's Polisen/Kolada
+  // bridge, public transport via commute.ts's Trafiklab ResRobot
+  // integration (added after this file was first written; never used to
+  // retire the placeholder at the time).
   notConnected(
     "environmental_data",
     "Environmental risk data",

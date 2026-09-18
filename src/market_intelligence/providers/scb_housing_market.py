@@ -135,14 +135,39 @@ class ScbHousingMarketProvider(Provider):
         return self._client.get_json(url, params=params, timeout_s=15.0)
 
     def _parse_price_index(self, data: object) -> list[Finding]:
-        """Parse TAB1150: Real estate price index (quarterly)."""
+        """Parse TAB1150: Real estate price index (quarterly), one series per region.
+
+        The table carries a `Region` dimension (national total "00" plus 3
+        metro areas and 8 NUTS2-style macro-regions) that earlier code
+        silently ignored, indexing `value` as if `Tid` were the only
+        dimension. That happened to still read the correct national figures
+        (Region "00" is index 0 in JSON-stat2's row-major flattening, and
+        `ContentsCode` here has exactly one category, so `value[tid_idx]`
+        and `value[0*len(Tid) + tid_idx]` are the same cell) - but it was
+        correct by coincidence, not by construction, and it silently
+        discarded the regional breakdown entirely. This resolves each cell
+        by its actual flat index (`region_idx * n_periods + period_idx`,
+        given ContentsCode's single category contributes no offset), so it
+        stays correct even if SCB reorders regions, and yields every
+        region's series instead of only "00" (Sweden) - `marketIntelligence.ts`
+        currently only consumes the "00" rows, but Greater Stockholm/
+        Gothenburg/Malmö (0010/0020/0030) and the 8 riksområden are real,
+        available data for a future, more granular bridge.
+
+        Scoped to this one table deliberately: TAB4572 (construction) has a
+        4th dimension (`Hustyp`) this decoder doesn't account for, and
+        nothing downstream consumes it yet - not worth the added complexity
+        until it is.
+        """
         if not isinstance(data, dict):
             raise ValueError(f"expected dict, got {type(data).__name__}")
 
         dim = data.get("dimension", {})
-        time_dim = dim.get("Tid", {})
-        time_cat = time_dim.get("category", {})
-        time_index = time_cat.get("index", {})
+        region_index: dict[str, int] = dim.get("Region", {}).get("category", {}).get("index", {}) or {"00": 0}
+        region_labels: dict[str, str] = dim.get("Region", {}).get("category", {}).get("label", {})
+        n_contents = max(len(dim.get("ContentsCode", {}).get("category", {}).get("index", {})), 1)
+        time_index: dict[str, int] = dim.get("Tid", {}).get("category", {}).get("index", {})
+        n_periods = len(time_index)
 
         value_list = data.get("value", [])
         if not value_list or not time_index:
@@ -150,41 +175,35 @@ class ScbHousingMarketProvider(Provider):
 
         now = self._clock().isoformat()
         findings: list[Finding] = []
-        time_periods = sorted(time_index.keys(), key=lambda k: time_index[k])
+        stride = n_periods * n_contents
 
-        for period in time_periods:
-            period_idx = time_index[period]
-            if period_idx >= len(value_list):
-                continue
+        for period, period_idx in sorted(time_index.items(), key=lambda kv: kv[1]):
+            for region_code, region_idx in region_index.items():
+                flat_idx = region_idx * stride + period_idx
+                if flat_idx >= len(value_list) or value_list[flat_idx] is None:
+                    continue
+                try:
+                    value = float(value_list[flat_idx])
+                except (TypeError, ValueError):
+                    continue
 
-            raw_value = value_list[period_idx]
-            if raw_value is None:
-                continue
-
-            try:
-                value = float(raw_value)
-            except (TypeError, ValueError):
-                continue
-
-            period_start = _quarter_to_start(period)
-            period_end = _quarter_to_end(period)
-
-            findings.append(
-                Finding(
-                    domain="housing_market",
-                    key="house_price_index",
-                    value=value,
-                    unit="index_1981_100",
-                    source=_SOURCE_PRICE_INDEX,
-                    trust_tier=TrustTier.REGISTRY_AUTHORITY,
-                    fetched_at=now,
-                    country="SE",
-                    coverage="national",
-                    validity=ValidityWindow(start=period_start, end=period_end),
-                    detail=f"TAB1150 quarterly {period}",
+                region_name = region_labels.get(region_code, region_code)
+                findings.append(
+                    Finding(
+                        domain="housing_market",
+                        key="house_price_index",
+                        value=value,
+                        unit="index_1981_100",
+                        source=_SOURCE_PRICE_INDEX,
+                        trust_tier=TrustTier.REGISTRY_AUTHORITY,
+                        fetched_at=now,
+                        country="SE",
+                        coverage="national" if region_code == "00" else "region",
+                        region=region_code,
+                        validity=ValidityWindow(start=_quarter_to_start(period), end=_quarter_to_end(period)),
+                        detail=f"TAB1150 quarterly {period}, region={region_name} ({region_code})",
+                    )
                 )
-            )
-
         return findings
 
     def _parse_transactions(self, data: object) -> list[Finding]:
