@@ -5,12 +5,14 @@
 > otherwise leave it alone. Detailed research/product docs live in `docs/`;
 > this file is the "what's actually true right now" summary.
 
-Last updated: 2026-09-18 — see the Seventh session note below for the most
-recent work (on a feature branch, not yet merged to `main`).
+Last updated: 2026-09-18 — see the Seventh session note below; that branch
+has since been re-verified, merged, pushed, and deployed to `main` (see
+"Merge, push & deploy" at the end of that section for the full record).
 
 **Seventh session — Price Analysis + civic data enrichment.** Branch
-`feature/price-analysis-and-area-data-enrichment`, **not merged to `main`**
-per explicit instruction (test on the branch first). Full research writeup:
+`feature/price-analysis-and-area-data-enrichment`, tested on the branch
+first per explicit instruction, **now merged to `main` and deployed** (see
+below). Full research writeup:
 `docs/46_price_and_civic_data_source_research.md`. Summary:
 
 - **Price Analysis was less broken than it looked.** `providers/booli.ts`
@@ -84,6 +86,46 @@ failure remains (G5, unrelated). Python: `market_intelligence` 234/234
 164/164, BRF-Scraper 426 passed/5 skipped (unchanged baseline — confirms
 the `broker_discovery` removal broke nothing), `api/tests/` 30/30.
 `server.py` confirmed importable with zero remaining "broker" routes.
+
+**Merge, push & deploy.** Final re-verification pass before merging,
+re-running the exact suites above on the clean feature-branch tree:
+`tsc --noEmit` clean; all 16 frontend `*.verify.mjs` scripts run
+individually, 15/16 green, the one failure being the same pre-existing
+unrelated `hemnetPage.verify.mjs` case (G5); Python
+`market_intelligence`+`location_intelligence` 398 passed/1 deselected
+(=234+164, exact match); `api/tests` 30/30 (run via `BRF-Scraper/.venv`,
+which has `fastapi` installed — the root Poetry env doesn't, since `api/`'s
+dependencies come from `api/requirements.txt`, a separate install target
+from `pyproject.toml`, not a gap introduced this session); `BRF-Scraper`
+full suite 426 passed/5 skipped. Every number matches this session's
+documented baseline exactly — no regressions, no new failures. Working
+tree was already clean.
+
+`feature/price-analysis-and-area-data-enrichment` merged into `main`
+(fast-forward, `657c447..a9cd0f8`, no conflicts, no merge commit — same
+convention as every prior merge in this repo). Pushed to `origin/main`;
+`git rev-parse` confirmed local `main` and `origin/main` both at `a9cd0f8`
+post-push.
+
+Both platforms auto-deployed from the push, as expected (§6 — no override
+config exists). **Railway: verified live**, not just claimed — `railway
+status` showed a fresh deployment ID (`c9504a9d...`) roll to ● Online,
+`railway logs` showed a clean `Application startup complete` with no
+errors, and a behavioral check confirmed the shared-secret auth middleware
+(§3c) is still correctly configured on the new deploy: unauthenticated
+`GET /` → 200, unauthenticated `POST /api/ocr/extract-text` → 401
+(fail-closed as designed — same check pattern as the fifth session).
+**Vercel: confirmed live via the site itself**, not via CLI/dashboard —
+the Vercel CLI in this environment is still logged out and non-interactive
+re-auth isn't possible here (same pre-existing gap as sessions 4/5, not
+new). `kopanalys.se` loads (200 across all requests), shows the current
+UI (`Ladda upp skärmdump` / `Manuell inmatning` buttons both present,
+matching the deployed screenshot-OCR flow), and served with `Age: 40`
+at check time — consistent with an edge cache populated by a fresh build
+right after this push. **Not tested**: the authenticated round trip
+(login → screenshot upload → Python engine) — this agent doesn't log in
+as a real user; same standing gap as every prior session, not specific to
+this merge.
 
 **Not implemented, deliberately deferred** (see docs/46 for why): genuine
 property-level comparable sales (needs a paid Mäklarstatistik/Booli
