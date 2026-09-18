@@ -15,7 +15,6 @@ export type LockedSectionId =
   | "priceComparables"
   | "priceAreaTrend"
   | "areaAnalysis"
-  | "brokerDocuments"
   | "riskAssessment"
   | "investmentOutlook"
   | "finalRecommendation";
@@ -25,7 +24,6 @@ const FREE_FACTOR_IDS = new Set(["price", "housingAssociation"]);
 const ALWAYS_LOCKED: LockedSectionId[] = [
   "executiveSummary",
   "areaAnalysis",
-  "brokerDocuments",
   "riskAssessment",
   "investmentOutlook",
   "finalRecommendation",

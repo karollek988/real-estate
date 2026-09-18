@@ -1,6 +1,28 @@
 import type { Analyzer } from "./types";
-import type { InspectionFindingsAttribute } from "../../providers/brokerDocuments";
 import { clamp, insufficientDataFactor, numberOrNull, sourceLabel } from "../helpers";
+
+/**
+ * Shape of attributes.inspection_findings - previously set only by the
+ * (removed) broker-site document discovery provider; kept here since
+ * risk.ts is now its sole consumer, ready to pick this signal back up
+ * from any future provider that writes the same attribute shape (e.g. the
+ * generic document-upload feature, if it's ever extended to inspection
+ * protocols).
+ */
+export interface InspectionFindingDto {
+  category: string;
+  description: string;
+  severity: "minor" | "moderate" | "significant" | "critical";
+  recommendation: string | null;
+  source_excerpt: string | null;
+}
+
+export interface InspectionFindingsAttribute {
+  findings: InspectionFindingDto[];
+  summary: string;
+  overall_condition: "good" | "fair" | "poor" | "unknown";
+  extraction_confidence: number;
+}
 
 /** Worst-case-driven, not averaged: one critical finding shouldn't be diluted by several minor ones. */
 const INSPECTION_SEVERITY_SCORE: Record<string, number> = {
@@ -180,8 +202,11 @@ export const riskAnalyzer: Analyzer = {
       });
     }
 
-    // Inspection-protocol risk (from a besiktningsprotokoll discovered on
-    // the broker's site and AI-interpreted — see providers/brokerDocuments.ts).
+    // Inspection-protocol risk, from an AI-interpreted besiktningsprotokoll
+    // — no current provider sets attributes.inspection_findings (the
+    // broker-site discovery path that used to is gone), so this stays
+    // dormant until a future source (e.g. the section-upload feature)
+    // populates the same shape.
     const inspectionFindings = attributes.inspection_findings as InspectionFindingsAttribute | undefined;
     if (inspectionFindings && inspectionFindings.extraction_confidence > 0 && inspectionFindings.findings.length > 0) {
       const worstScore = Math.min(
