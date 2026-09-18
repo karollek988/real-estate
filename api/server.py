@@ -73,8 +73,9 @@ from market_intelligence.runner import EngineRunner as MIEngineRunner
 # concurrent request shares one process's memory. Each AsyncCamoufox
 # launch spins up a real Firefox instance (150-400MB+ RSS); nothing
 # bounded how many could run at once, so a handful of overlapping
-# requests (this endpoint, /api/resolve, /api/brf-annual-report, and the
-# broker-documents Hemnet-blocked fallback all call this) could add up to
+# requests (this endpoint, /api/resolve, /api/brf-annual-report, and —
+# at the time of this outage — the since-removed broker-documents
+# Hemnet-blocked fallback all call this) could add up to
 # more memory than the container has, triggering the OOM killer — visible
 # in `railway logs` as a bare "Killed" with no Python traceback at all,
 # since the kernel terminates the process before it can log anything.
@@ -299,10 +300,6 @@ class BrfAnnualReportUploadRequest(BaseModel):
 
 class OcrExtractRequest(BaseModel):
     images_base64: list[str]
-
-
-class BrokerDocumentsRequest(BaseModel):
-    hemnet_url: str
 
 
 # ── Routes ──────────────────────────────────────────────────────────
@@ -669,144 +666,6 @@ async def ocr_extract_text(req: OcrExtractRequest):
             texts.append("")
 
     return {"success": True, "texts": texts}
-
-
-_MAX_BROKER_DOCUMENTS = 8
-_MAX_BASE64_BYTES = 15 * 1024 * 1024  # 15MB — larger files link out instead of embedding
-
-
-async def _fetch_hemnet_html_for_broker_link(url: str) -> str:
-    """Same httpx-first/browser-fallback pattern as HemnetProvider._fetch_html,
-    duplicated locally to keep this endpoint self-contained rather than
-    routing a whole ProfileEngine build just to get one page's HTML."""
-    import httpx
-
-    try:
-        async with httpx.AsyncClient(timeout=30.0, follow_redirects=True) as client:
-            response = await client.get(url, headers={"User-Agent": "Mozilla/5.0"})
-            if response.status_code in (403, 429, 503):
-                logger.warning("Hemnet HTTP blocked (status %s), escalating to browser: %s", response.status_code, url)
-                return await _browser_fetch(url)
-            response.raise_for_status()
-            return response.text
-    except httpx.HTTPError:
-        logger.warning("Hemnet HTTP error, escalating to browser: %s", url)
-        return await _browser_fetch(url)
-
-
-@app.post("/api/broker-documents")
-async def broker_documents(req: BrokerDocumentsRequest):
-    """Hemnet URL -> broker's own website -> discover and download documents
-    published there (annual reports, bylaws, energy declarations, inspection
-    protocols), distinct from /api/brf-annual-report's allabrf.se-based
-    discovery. Annual reports are run through the same extract_annual_report()
-    pipeline as every other acquisition path; inspection protocols are run
-    through extract_inspection_findings() (OPENAI_API_KEY required — degrades
-    to inspection_findings.extraction_confidence == 0.0 with an explanatory
-    summary if unset or the OpenAI call fails, never raises).
-    """
-    import base64
-    import hashlib
-    import tempfile
-
-    from brf_scraper.broker_discovery.broker_link import find_broker_link_in_html
-    from brf_scraper.broker_discovery.engine import BrokerDiscoveryEngine
-    from brf_scraper.broker_discovery.models import BrokerDocumentType
-    from brf_scraper.downloader.downloader import Downloader
-    from brf_scraper.extractor.engine import extract_annual_report
-    from brf_scraper.extractor.inspection_extractor import extract_inspection_findings
-
-    try:
-        html = await _fetch_hemnet_html_for_broker_link(req.hemnet_url)
-    except Exception as e:
-        logger.exception("Broker documents: could not fetch Hemnet listing")
-        return JSONResponse(status_code=422, content={
-            "success": False,
-            "error": f"Kunde inte hämta Hemnet-annonsen: {e}",
-        })
-
-    broker_url = find_broker_link_in_html(html, req.hemnet_url)
-    if not broker_url:
-        return JSONResponse(status_code=422, content={
-            "success": False,
-            "error": "Kunde inte hitta mäklarlänk på Hemnet-annonsen.",
-        })
-
-    discovery = await BrokerDiscoveryEngine().discover_documents(req.hemnet_url, broker_url)
-
-    documents: list[dict[str, Any]] = []
-    errors: list[str] = list(discovery.errors)
-
-    downloader = Downloader()
-    await downloader.initialize()
-    try:
-        for doc in discovery.documents[:_MAX_BROKER_DOCUMENTS]:
-            try:
-                content = await downloader.download_bytes(doc.url)
-            except Exception as e:
-                errors.append(f"{doc.url}: download failed: {e}")
-                continue
-
-            content_hash = hashlib.sha256(content).hexdigest()
-            entry: dict[str, Any] = {
-                "doc_type": doc.doc_type.value,
-                "filename": doc.guessed_filename,
-                "source_url": doc.url,
-                "content_hash": content_hash,
-                "size_bytes": len(content),
-                "mime_type": "application/pdf" if doc.guessed_filename.lower().endswith(".pdf") else "application/octet-stream",
-                "annual_report": None,
-                "inspection_findings": None,
-            }
-
-            if len(content) <= _MAX_BASE64_BYTES:
-                entry["content_base64"] = base64.b64encode(content).decode("ascii")
-            else:
-                entry["content_base64"] = None
-                errors.append(f"{doc.url}: {len(content)} bytes exceeds base64 inline limit, source_url only")
-
-            if doc.doc_type == BrokerDocumentType.ANNUAL_REPORT:
-                tmp_path = None
-                try:
-                    with tempfile.NamedTemporaryFile(suffix=".pdf", delete=False) as f:
-                        f.write(content)
-                        tmp_path = f.name
-                    extraction = extract_annual_report(tmp_path)
-                    if extraction.is_text_based:
-                        entry["annual_report"] = extraction.to_profile_financials()
-                except Exception as e:
-                    errors.append(f"{doc.url}: annual report extraction failed: {e}")
-                finally:
-                    if tmp_path:
-                        Path(tmp_path).unlink(missing_ok=True)
-
-            if doc.doc_type == BrokerDocumentType.INSPECTION_REPORT:
-                tmp_path = None
-                try:
-                    with tempfile.NamedTemporaryFile(suffix=".pdf", delete=False) as f:
-                        f.write(content)
-                        tmp_path = f.name
-                    findings = extract_inspection_findings(tmp_path)
-                    entry["inspection_findings"] = findings.model_dump(mode="json")
-                    if findings.extraction_confidence <= 0.0:
-                        errors.append(f"{doc.url}: inspection interpretation returned no result — {findings.summary}")
-                except Exception as e:
-                    errors.append(f"{doc.url}: inspection interpretation failed: {e}")
-                finally:
-                    if tmp_path:
-                        Path(tmp_path).unlink(missing_ok=True)
-
-            documents.append(entry)
-    finally:
-        await downloader.close()
-
-    return {
-        "success": True,
-        "broker_url": broker_url,
-        "provider_used": discovery.provider_used,
-        "documents": documents,
-        "errors": errors,
-    }
 
 
 @app.post("/api/brf-financials")
