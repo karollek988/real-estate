@@ -7,6 +7,7 @@ import { createClient } from "@/lib/supabase/server";
 import { analysisAgeDays, FRESH_ANALYSIS_MAX_AGE_DAYS } from "@/lib/analysis/pipeline";
 import type { AnalysisReport, DataSourceReport, DecisionFactorResult } from "@/lib/analysis/types";
 import { UpdateAnalysisButton } from "@/components/report/UpdateAnalysisButton";
+import { SectionDocumentUpload } from "@/components/report/SectionDocumentUpload";
 import { KeyValueTable } from "@/components/report/KeyValueTable";
 import { ComparableSalesTable } from "@/components/report/ComparableSalesTable";
 import { IconFactGrid, type IconFactRow } from "@/components/report/IconFactGrid";
@@ -23,7 +24,6 @@ import { SourceBadges } from "@/components/report/SourceBadges";
 import { Watermark } from "@/components/report/Watermark";
 import {
   buildAreaAnalysis,
-  buildBrokerDocuments,
   buildExecutiveSummary,
   buildFinalRecommendation,
   buildHousingAssociation,
@@ -34,6 +34,7 @@ import {
   sek,
   sekPerM2,
   sourcesUsed,
+  type CivicStatsInfo,
   type CommuteInfo,
   type OverviewRow,
 } from "@/lib/report/build";
@@ -62,7 +63,6 @@ import {
   CheckIcon,
   DatabaseIcon,
   QuestionIcon,
-  DownloadIcon,
 } from "@/components/icons";
 
 const serif = localFont({
@@ -126,6 +126,20 @@ function negotiationBand(score: number): { label: string; bandIndex: number } {
   if (score >= 60) return { label: "Stort utrymme", bandIndex: 2 };
   if (score >= 50) return { label: "Måttligt utrymme", bandIndex: 1 };
   return { label: "Begränsat utrymme", bandIndex: 0 };
+}
+
+function civicRows(civic: CivicStatsInfo): IconFactRow[] {
+  const rows: IconFactRow[] = [];
+  if (civic.safetyIndex !== null) {
+    rows.push({ icon: <BadgeCheckIcon className="h-4 w-4" />, label: "Trygghetsindex (Kolada, kommunnivå)", value: civic.safetyIndex.toFixed(1) });
+  }
+  if (civic.recentPoliceEvents !== null) {
+    rows.push({ icon: <WarningIcon className="h-4 w-4" />, label: "Polisens händelser, senaste 30 dagarna (länsnivå)", value: String(civic.recentPoliceEvents) });
+  }
+  if (civic.voterTurnoutPct !== null) {
+    rows.push({ icon: <PercentIcon className="h-4 w-4" />, label: "Valdeltagande, senaste kommunvalet", value: `${civic.voterTurnoutPct}%` });
+  }
+  return rows;
 }
 
 function commuteRows(commute: CommuteInfo): IconFactRow[] {
@@ -459,23 +473,23 @@ export default async function ReportPage({
   // report (p) — for a locked chapter it's simply not called at all, so a
   // future rendering bug can't leak content the server never even handed
   // this page. See lib/analysis/redact.ts for what "p" already had stripped.
-  const priceAnalysis = buildPriceAnalysis(p);
+  const priceAnalysis = buildPriceAnalysis(p, attributes);
   const overviewRows = buildPropertyOverview(p, attributes);
   const brf = buildHousingAssociation(p, p.dataSources);
 
   const executiveSummary = lockedSections.includes("executiveSummary") ? null : buildExecutiveSummary(p);
   const areaAnalysis = lockedSections.includes("areaAnalysis") ? null : buildAreaAnalysis(p, attributes, p.dataSources);
-  const brokerDocs = lockedSections.includes("brokerDocuments") ? null : buildBrokerDocuments(p, attributes);
   const riskCategories = lockedSections.includes("riskAssessment") ? null : buildRiskCategories(p, p.dataSources);
   const investmentOutlook = lockedSections.includes("investmentOutlook") ? null : buildInvestmentOutlook(p);
   const recommendation = lockedSections.includes("finalRecommendation") ? null : buildFinalRecommendation(p);
 
-  // build.ts's own "no comparables source connected" fallback sentence
-  // assumes the data genuinely doesn't exist — for a paywalled (not
-  // data-less) viewer that's misleading, so that closing sentence is
-  // dropped here in favor of the paywall widget that follows it.
+  // build.ts's own "no comparables source connected" sentence assumes the
+  // data genuinely doesn't exist — for a paywalled (not data-less) viewer
+  // that's misleading, so it's dropped here in favor of the paywall widget
+  // that follows it. Matched by its distinctive prefix, not by array
+  // position — the SCB national-trend sentence can follow it and must stay.
   const priceParagraphs = lockedSections.includes("priceComparables")
-    ? priceAnalysis.paragraphs.slice(0, -1)
+    ? priceAnalysis.paragraphs.filter((p) => !p.startsWith("Jämförbara sålda bostäder ingår inte i denna analys"))
     : priceAnalysis.paragraphs;
 
   const priceFactor = factorOf(p, "price");
@@ -788,7 +802,7 @@ export default async function ReportPage({
           ) : (
             <p className="relative text-[13.5px] italic text-[#8C8471]">Inga jämförbara sålda bostäder tillgängliga i denna analys.</p>
           )}
-          <ChapterSources dataSources={p.dataSources} ids={["hemnet_page_scrape", "booli_listing", "scb_area_statistics", "interest_rates"]} />
+          <ChapterSources dataSources={p.dataSources} ids={["hemnet_page_scrape", "booli_listing", "scb_area_statistics", "interest_rates", "market_intelligence"]} />
         </Page>
 
         {/* ══════════════════════════════════════════════════════════
@@ -826,6 +840,20 @@ export default async function ReportPage({
                 </>
               )}
 
+              {areaAnalysis.civicStats && (
+                <>
+                  <SubHeading icon={<BadgeCheckIcon className="h-4 w-4" />} accent={AREA_ACCENT}>Trygghet & samhälle</SubHeading>
+                  <div className="relative">
+                    <IconFactGrid rows={civicRows(areaAnalysis.civicStats)} />
+                  </div>
+                  <p className="relative text-[11.5px] text-[#8C8471]">
+                    Trygghetsindex och valdeltagande avser hela kommunen (Kolada), inte adressen specifikt. Polisens
+                    händelser är en händelselogg på länsnivå, inte en brottsstatistik — se BRÅ:s officiella statistik
+                    för en fullständig bild.
+                  </p>
+                </>
+              )}
+
               {areaAnalysis.schools && (
                 <>
                   <SubHeading icon={<GraduationCapIcon className="h-4 w-4" />} accent={AREA_ACCENT}>Skolor i närområdet</SubHeading>
@@ -858,7 +886,7 @@ export default async function ReportPage({
               {areaAnalysis.paragraphs[3] && (
                 <Callout icon={<InfoIcon className="h-4 w-4" />} accent={AREA_ACCENT}>{areaAnalysis.paragraphs[3]}</Callout>
               )}
-              <ChapterSources dataSources={p.dataSources} ids={["booli_listing", "scb_area_statistics", "osm_amenities", "skolverket_schools", "nominatim_geocoding", "commute_times"]} />
+              <ChapterSources dataSources={p.dataSources} ids={["booli_listing", "scb_area_statistics", "osm_amenities", "skolverket_schools", "nominatim_geocoding", "commute_times", "location_intelligence"]} />
             </>
           ) : (
             <PaywallSection
@@ -924,89 +952,19 @@ export default async function ReportPage({
               )}
             </div>
           )}
+          <SectionDocumentUpload
+            endpoint={`/api/properties/${property.id}/brf-report`}
+            label="Ladda upp ny årsredovisning"
+            accept=".pdf,.docx,image/*"
+            description="Har föreningen en nyare årsredovisning? Ladda upp den (PDF, Word eller bild) för att uppdatera det här kapitlet."
+          />
           <ChapterSources dataSources={p.dataSources} ids={["brf_financials", "brf_acquisition"]} />
         </Page>
 
         {/* ══════════════════════════════════════════════════════════
-            7. BROKER-SITE DOCUMENTS
+            7. POSSIBLE RISKS
            ══════════════════════════════════════════════════════════ */}
         <Page n={7}>
-          <ChapterTitle icon={<ClipboardIcon className="h-5 w-5" />} sub="Dokument hittade på mäklarens webbplats, samt AI-tolkade fynd från ett eventuellt besiktningsprotokoll.">
-            Dokument hos mäklaren
-          </ChapterTitle>
-          {brokerDocs ? (
-            <>
-              <Prose paragraphs={brokerDocs.paragraphs} />
-
-              {brokerDocs.documents.length > 0 && (
-                <>
-                  <SubHeading icon={<DownloadIcon className="h-4 w-4" />}>Nedladdningsbara dokument</SubHeading>
-                  <div className="relative grid grid-cols-1 gap-2 sm:grid-cols-2">
-                    {brokerDocs.documents.map((doc) => (
-                      <a
-                        key={doc.id}
-                        href={doc.downloadUrl}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="flex items-center gap-2.5 rounded-md border border-black/[0.08] bg-black/[0.02] px-4 py-3 text-[13px] text-[#12271D] transition hover:bg-black/[0.04]"
-                      >
-                        <DownloadIcon className="h-4 w-4 shrink-0 text-[#8C8471]" />
-                        <span className="min-w-0 flex-1">
-                          <span className="block font-medium">{doc.docTypeLabel}</span>
-                          <span className="block truncate text-[11px] text-[#8C8471]">{doc.filename}</span>
-                        </span>
-                      </a>
-                    ))}
-                  </div>
-                </>
-              )}
-
-              {brokerDocs.findings.length > 0 && (
-                <>
-                  <SubHeading icon={<WarningIcon className="h-4 w-4" />}>Besiktningsfynd</SubHeading>
-                  <ul className="relative space-y-2.5">
-                    {brokerDocs.findings.map((f, i) => (
-                      <li key={i} className="flex items-start gap-2 text-[13px] leading-relaxed text-[#2A2820]">
-                        <WarningIcon
-                          className={`mt-0.5 h-3.5 w-3.5 shrink-0 ${
-                            f.severity === "minor" || f.severity === "moderate" ? "text-[#8C8471]" : "text-[#A2432F]"
-                          }`}
-                        />
-                        <span>
-                          <span className="font-medium capitalize">{f.category}:</span> {f.description}
-                          {f.severity !== "minor" && (
-                            <span
-                              className={`ml-1 font-medium ${
-                                f.severity === "moderate" ? "text-[#8C8471]" : "text-[#A2432F]"
-                              }`}
-                            >
-                              ({f.severityLabel})
-                            </span>
-                          )}
-                          {f.recommendation && <span className="block text-[#8C8471]">{f.recommendation}</span>}
-                        </span>
-                      </li>
-                    ))}
-                  </ul>
-                </>
-              )}
-              <ChapterSources dataSources={p.dataSources} ids={["broker_documents"]} />
-            </>
-          ) : (
-            <PaywallSection
-              title="Premium — Dokument hos mäklaren"
-              description="Få tillgång till dokument hittade hos mäklaren och AI-tolkade fynd från ett eventuellt besiktningsprotokoll."
-              analysisId={id}
-              analysisType={access.analysisType}
-              unlocked={access.unlocked}
-            />
-          )}
-        </Page>
-
-        {/* ══════════════════════════════════════════════════════════
-            8. POSSIBLE RISKS
-           ══════════════════════════════════════════════════════════ */}
-        <Page n={8}>
           <ChapterTitle icon={<WarningIcon className="h-5 w-5" />} sub="Åtta kategorier av faktorer värda att undersöka vidare, baserat på tillgänglig data." accent={RISK_ACCENT}>
             Möjliga risker
           </ChapterTitle>
@@ -1017,7 +975,7 @@ export default async function ReportPage({
                   <RiskCategoryCard key={risk.id} risk={risk} icon={RISK_ICON[risk.id] ?? <WarningIcon className="h-4 w-4" />} />
                 ))}
               </div>
-              <ChapterSources dataSources={p.dataSources} ids={["hemnet_page_scrape", "interest_rates", "scb_area_statistics", "osm_amenities", "brf_financials", "location_intelligence", "infrastructure_projects", "broker_documents"]} />
+              <ChapterSources dataSources={p.dataSources} ids={["hemnet_page_scrape", "interest_rates", "scb_area_statistics", "osm_amenities", "brf_financials", "location_intelligence", "infrastructure_projects"]} />
             </>
           ) : (
             <PaywallSection
@@ -1031,9 +989,9 @@ export default async function ReportPage({
         </Page>
 
         {/* ══════════════════════════════════════════════════════════
-            9. INVESTMENT OUTLOOK
+            8. INVESTMENT OUTLOOK
            ══════════════════════════════════════════════════════════ */}
-        <Page n={9}>
+        <Page n={8}>
           <ChapterTitle icon={<TrendingUpIcon className="h-5 w-5" />} sub="Faktorer som kan påverka bostadens värde framöver, baserat på tillgänglig data.">
             Investeringsutsikt
           </ChapterTitle>
@@ -1077,9 +1035,9 @@ export default async function ReportPage({
         </Page>
 
         {/* ══════════════════════════════════════════════════════════
-            10. FINAL RECOMMENDATION
+            9. FINAL RECOMMENDATION
            ══════════════════════════════════════════════════════════ */}
-        <Page n={10} source="Sammanställt av Köpanalys analysmotor" className="pb-16">
+        <Page n={9} source="Sammanställt av Köpanalys analysmotor" className="pb-16">
           <ChapterTitle icon={<BadgeCheckIcon className="h-5 w-5" />} sub="En sammanställning av förhandlingsläge och de delar av analysen som saknar underlag.">
             Helhetsbild
           </ChapterTitle>
@@ -1179,6 +1137,21 @@ export default async function ReportPage({
           </div>
         </Page>
       </main>
+
+      <div className="no-print mx-auto mt-6 flex w-full max-w-[880px] flex-wrap items-center justify-between gap-4 rounded-sm border border-[#12271D]/15 bg-[#FBF9F4] px-8 py-6 shadow-[0_0_0_1px_rgba(0,0,0,0.06)] sm:px-16">
+        <div>
+          <p className="text-sm font-semibold text-[#12271D]">Klar med analysen?</p>
+          <p className="mt-1 max-w-md text-xs leading-relaxed text-[#5B5648]">
+            Ladda ner hela rapporten som PDF för att spara eller dela den.
+          </p>
+        </div>
+        <a
+          href={`/api/analyses/${id}/pdf`}
+          className="shrink-0 rounded-sm bg-[#12271D] px-5 py-2.5 text-sm font-semibold text-[#F5F1E4] transition hover:bg-[#1B3A2C]"
+        >
+          Ladda ner PDF
+        </a>
+      </div>
 
       {hasInspectionAccess && (
         <div className="no-print mx-auto mt-6 flex w-full max-w-[880px] flex-wrap items-center justify-between gap-4 rounded-sm border border-[#12271D]/15 bg-[#0E2B1F] px-8 py-6 sm:px-16">
