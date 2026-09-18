@@ -2,7 +2,6 @@ import type { DataProvider } from "./types";
 import { nominatimGeocoder } from "./geocoding";
 import { hemnetPageProvider } from "./hemnetPage";
 import { booliListingProvider } from "./booli";
-import { parseBotBooliProvider } from "./parseBotBooli";
 import { scbDemographicsProvider } from "./scb";
 import { osmAmenitiesProvider } from "./osm";
 import { skolverketSchoolsProvider } from "./skolverketSchools";
@@ -13,7 +12,6 @@ import { trafikverketInfrastructureProvider } from "./trafikverket";
 import { locationIntelligenceProvider } from "./locationIntelligence";
 import { marketIntelligenceProvider } from "./marketIntelligence";
 import { brfAcquisitionProvider } from "./brfAcquisition";
-import { brokerDocumentsProvider } from "./brokerDocuments";
 import { brfFinancialsProvider } from "./brfFinancials";
 import { placeholderProviders } from "./placeholders";
 
@@ -48,21 +46,19 @@ const WAVE_0: DataProvider[] = [
 
 /**
  * Wave 1 — depends on a specific Wave 0 output:
- * - parseBotBooliProvider reads property.attributes (asking_price_sek etc.)
- *   set by booliListingProvider/hemnetPageProvider to skip redundant work.
  * - osmAmenitiesProvider, skolverketSchoolsProvider, commuteProvider,
  *   smhiClimateProvider, trafikverketInfrastructureProvider,
  *   locationIntelligenceProvider all gate on property.latitude/longitude
  *   set by nominatimGeocoder.
  * - scbDemographicsProvider, marketIntelligenceProvider prefer the
  *   geocoded property.municipality (fall back to extracted.municipality).
- * - brokerDocumentsProvider reads property.attributes.brf_annual_report /
- *   .brf set by brfAcquisitionProvider.
  * None of these read a field another Wave 1 member produces — verified
  * field-by-field against every other provider's own attribute writes.
+ * (parseBotBooliProvider used to run here too — disabled, see its own file
+ * header for why: confirmed broken location search plus a legal-risk flag
+ * in docs/legal-data-migration-plan.md.)
  */
 const WAVE_1: DataProvider[] = [
-  parseBotBooliProvider,
   scbDemographicsProvider,
   osmAmenitiesProvider,
   skolverketSchoolsProvider,
@@ -71,15 +67,14 @@ const WAVE_1: DataProvider[] = [
   trafikverketInfrastructureProvider,
   locationIntelligenceProvider,
   marketIntelligenceProvider,
-  brokerDocumentsProvider,
 ];
 
 /**
  * Wave 2 — brfFinancialsProvider reads property.attributes.brf_annual_report,
- * which either brfAcquisitionProvider (Wave 0) or brokerDocumentsProvider
- * (Wave 1) may set — it must run after both, per brfAcquisition.ts's own
- * comment: "Runs before brfFinancialsProvider... so attributes.brf_annual_report
- * is set in time for that provider to pick it up."
+ * set by brfAcquisitionProvider (Wave 0) — per that provider's own comment:
+ * "Runs before brfFinancialsProvider... so attributes.brf_annual_report is
+ * set in time for that provider to pick it up." (Previously could also be
+ * set by the now-removed broker-site document discovery provider.)
  */
 const WAVE_2: DataProvider[] = [brfFinancialsProvider];
 

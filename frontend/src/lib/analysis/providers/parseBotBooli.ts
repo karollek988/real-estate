@@ -4,6 +4,19 @@ import { addressesMatch } from "./booli.ts";
 import { summarizeSold, type RawSoldEntry } from "./soldSummary.ts";
 
 /**
+ * DISABLED (removed from registry.ts, no longer runs) — kept for reference
+ * only. Two independent reasons converged: (1) confirmed broken in
+ * practice, see the "SERIOUS LIMITATION" note below — its location search
+ * ignores the query entirely, so it has contributed near-zero real data
+ * since that was discovered; (2) docs/legal-data-migration-plan.md flags
+ * this as scraping-as-a-service, the same legal risk category as scraping
+ * Hemnet/Booli directly, and recommends disabling it before launch. A
+ * project-wide pass toward "legitimate APIs/open data over scraping" is
+ * the reason this was finally acted on rather than left dormant. To
+ * re-enable: fix Parse.bot's location search (or replace with a
+ * differently-sourced fallback), re-verify live, then add back to
+ * registry.ts's WAVE_1.
+ *
  * Real provider: Parse.bot's "Booli.se API" scraper-as-a-service
  * (https://parse.bot/marketplace/e0286288-9caf-40e1-83f2-eb4dbbc95fab/booli-se-api).
  * A FALLBACK behind Hemnet (hemnetPage.ts) and the direct Booli API
