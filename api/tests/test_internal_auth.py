@@ -32,9 +32,11 @@ SECRET = "test-only-secret-not-a-real-credential"
 HEADER = server.INTERNAL_SECRET_HEADER
 
 # One endpoint from each distinct category in the file — compute-only,
-# OCR, and the two acquisition/discovery endpoints that would otherwise
-# need real network/browser access — proving the middleware protects all
-# of them uniformly, not just the OCR endpoint the original report named.
+# OCR, and the acquisition/discovery endpoint that would otherwise need
+# real network/browser access — proving the middleware protects all of
+# them uniformly, not just the OCR endpoint the original report named.
+# (The broker-site document discovery endpoint that used to be here too
+# was removed along with that feature.)
 PROTECTED_ENDPOINTS = [
     "/api/browser-fetch",
     "/api/resolve",
@@ -42,7 +44,6 @@ PROTECTED_ENDPOINTS = [
     "/api/brf-annual-report",
     "/api/brf-annual-report/upload",
     "/api/ocr/extract-text",
-    "/api/broker-documents",
     "/api/brf-financials",
     "/api/location-intelligence",
     "/api/market-intelligence",
