@@ -117,16 +117,14 @@ const SHORT_SOURCE_NAMES: Record<string, string> = {
   interest_rates: "Riksbanken",
   smhi_climate: "SMHI",
   infrastructure_projects: "Trafikverket",
-  location_intelligence: "OpenStreetMap",
+  location_intelligence: "Polisen/Kolada/Skolverket m.fl.",
   market_intelligence: "Köpanalys marknadsanalys",
   brf_acquisition: "Bolagsverket",
   brf_financials: "Bolagsverket",
   lantmateriet_address: "Lantmäteriet",
   municipality_plans: "Kommunen",
   brf_register: "BRF-register",
-  crime_statistics: "BRÅ/Polisen",
   skolverket_schools: "Skolverket",
-  public_transport: "Trafiklab",
   environmental_data: "Miljödata",
 };
 
@@ -143,13 +141,11 @@ export function sourcesUsed(dataSources: DataSourceReport[], ids?: string[]): st
 /** Swedish explanation for a not-yet-connected source, never the raw
  *  (English) `detail` string a placeholder provider carries internally. */
 const NOT_CONNECTED_SV: Record<string, string> = {
-  crime_statistics: "ingen svensk brottsstatistik-API finns att koppla mot idag.",
   school_ratings: "OpenStreetMap visar bara skolors förekomst, inte Skolverkets betygsresultat.",
   municipality_plans: "kommunala detaljplaner saknar en enhetlig nationell källa att hämta ifrån idag.",
   environmental_data: "flödesrisk, buller och luftkvalitet kräver en separat geodatakälla som inte är kopplad ännu.",
   brf_register: "det kräver samma koppling mot organisationsnummer som föreningens ekonomi.",
   lantmateriet_address: "kräver en nyckelbaserad koppling mot Lantmäteriet som inte är på plats ännu.",
-  public_transport: "OpenStreetMap visar bara hållplatsers förekomst, inte tidtabeller.",
 };
 
 function sourceExplainer(dataSources: DataSourceReport[], sourceId: string, prefix: string): string {
@@ -469,7 +465,7 @@ function priceVerdictSv(params: {
   return `Sammantaget ligger utgångspriset ${listSv(clauses)}.`;
 }
 
-export function buildPriceAnalysis(report: AnalysisReport): PriceAnalysisContent {
+export function buildPriceAnalysis(report: AnalysisReport, attributes: Record<string, unknown> = {}): PriceAnalysisContent {
   const price = factor(report, "price");
   const paragraphs: string[] = [];
   const askingPrice = report.property.askingPriceSek;
@@ -544,11 +540,21 @@ export function buildPriceAnalysis(report: AnalysisReport): PriceAnalysisContent
         `för medianpriset ovan. Se tabellen nedan för de senaste försäljningarna.${rankingSentence}`
     );
   } else {
+    const nationalTrendPct = num(attributes.national_house_price_index_trend_pct);
+    const fromPeriod = str(attributes.national_house_price_index_from_period);
+    const toPeriod = str(attributes.national_house_price_index_to_period);
     paragraphs.push(
-      "Jämförbara sålda bostäder ingår inte i denna analys: ingen källa för slutpriser (till exempel Mäklarstatistik, " +
-        "eller sålda/avslutade annonser från Booli eller Hemnet) är ansluten i dagsläget. Historiska pristrender för " +
-        "området kan därför inte redovisas här — det är den enskilt viktigaste datakällan som skulle stärka detta kapitel."
+      "Jämförbara sålda bostäder ingår inte i denna analys: ingen källa för slutpriser på just denna adress eller i " +
+        "detta område (till exempel Mäklarstatistik, eller sålda/avslutade annonser från Booli eller Hemnet) är " +
+        "ansluten i dagsläget. Det är den enskilt viktigaste datakällan som skulle stärka detta kapitel."
     );
+    if (nationalTrendPct !== null && fromPeriod && toPeriod) {
+      paragraphs.push(
+        `Som referens: SCB:s nationella prisindex för bostäder har förändrats med ${pct(nationalTrendPct)} från ` +
+          `${fromPeriod} till ${toPeriod}. Detta är en rikstäckande siffra, inte specifik för området, och bör läsas ` +
+          "som allmän marknadskontext snarare än en direkt jämförelse."
+      );
+    }
   }
 
   return {
@@ -615,6 +621,28 @@ export interface AreaAnalysisContent {
   amenities: AmenityRow[];
   commute: CommuteInfo | null;
   schools: NearbySchools | null;
+  civicStats: CivicStatsInfo | null;
+}
+
+/**
+ * Crime/safety and election data, kommun/county-level (never per-address —
+ * no such Swedish source exists, see docs/36). Election data is deliberately
+ * presented as a bare fact (turnout %) with no framing or derived rating —
+ * this product never turns political data into a subjective score.
+ */
+export interface CivicStatsInfo {
+  safetyIndex: number | null;
+  recentPoliceEvents: number | null;
+  voterTurnoutPct: number | null;
+}
+
+/** Null when none of the three Kolada/Polisen-derived signals are present. */
+function buildCivicStats(attributes: Record<string, unknown>): CivicStatsInfo | null {
+  const safetyIndex = num(attributes.area_safety_index);
+  const recentPoliceEvents = num(attributes.area_recent_police_events);
+  const voterTurnoutPct = num(attributes.area_voter_turnout_pct);
+  if (safetyIndex === null && recentPoliceEvents === null && voterTurnoutPct === null) return null;
+  return { safetyIndex, recentPoliceEvents, voterTurnoutPct };
 }
 
 /** Null when the commute provider found nothing at all — lets the report
@@ -701,9 +729,11 @@ export function buildAreaAnalysis(
     paragraphs.push(sourceExplainer(dataSources, "osm_amenities", "Ingen data om närservice (butiker, skolor, restauranger, kollektivtrafik) kunde hämtas för denna adress i denna körning."));
   }
 
-  // Honest gap: crime/safety is a known-unconnected source.
+  const civicStats = buildCivicStats(attributes);
   paragraphs.push(
-    sourceExplainer(dataSources, "crime_statistics", "Statistik om trygghet och brottslighet ingår inte i denna analys.")
+    civicStats
+      ? "Se avsnittet Trygghet & samhälle nedan för statistik om brottslighet och valdeltagande i kommunen."
+      : "Statistik om trygghet och brottslighet kunde inte hämtas för denna adress i denna körning (Polisen/Kolada kräver att kommunen är verifierad)."
   );
 
   const schools = buildNearbySchools(attributes);
@@ -713,7 +743,7 @@ export function buildAreaAnalysis(
     );
   }
 
-  return { paragraphs, amenities, commute: buildCommuteInfo(attributes), schools };
+  return { paragraphs, amenities, commute: buildCommuteInfo(attributes), schools, civicStats };
 }
 
 function distanceLabel(distanceM: number): string {
@@ -885,109 +915,6 @@ export function buildHousingAssociation(report: AnalysisReport, dataSources: Dat
   }
 
   return { paragraphs, metrics, strengths, weaknesses };
-}
-
-/* ────────────────────────────────────────────────────────────────────── */
-/*  Broker-site documents — discovered via broker_discovery, see           */
-/*  providers/brokerDocuments.ts. Annual reports live in the Housing       */
-/*  Association chapter above (attributes.brf_annual_report); this chapter */
-/*  lists every discovered document as a download plus, for besiktnings-   */
-/*  protokoll, the AI-derived findings (attributes.inspection_findings —   */
-/*  the same signal risk.ts's "inspection_findings" factor already scores). */
-/* ────────────────────────────────────────────────────────────────────── */
-
-export interface BrokerDocumentContent {
-  id: string;
-  docType: string;
-  docTypeLabel: string;
-  filename: string;
-  downloadUrl: string;
-}
-
-export interface InspectionFindingContent {
-  category: string;
-  description: string;
-  severity: string;
-  severityLabel: string;
-  recommendation: string | null;
-}
-
-export interface BrokerDocumentsContent {
-  paragraphs: string[];
-  documents: BrokerDocumentContent[];
-  findings: InspectionFindingContent[];
-  overallCondition: string | null;
-}
-
-const DOC_TYPE_LABEL_SV: Record<string, string> = {
-  annual_report: "Årsredovisning",
-  inspection_report: "Besiktningsprotokoll",
-  energy_declaration: "Energideklaration",
-  bylaws: "Stadgar",
-  floor_plan: "Planritning",
-  other: "Övrigt dokument",
-};
-
-interface BrokerDocumentAttribute {
-  id: string;
-  docType: string;
-  filename: string;
-}
-
-interface InspectionFindingsAttributeShape {
-  findings: Array<{ category: string; description: string; severity: string; recommendation: string | null }>;
-  summary: string;
-  overall_condition: string;
-  extraction_confidence: number;
-}
-
-export function buildBrokerDocuments(
-  report: AnalysisReport,
-  attributes: Record<string, unknown>
-): BrokerDocumentsContent {
-  const documentsRaw = (attributes.broker_documents as BrokerDocumentAttribute[] | undefined) ?? [];
-  const inspection = attributes.inspection_findings as InspectionFindingsAttributeShape | undefined;
-
-  const documents: BrokerDocumentContent[] = documentsRaw.map((d) => ({
-    id: d.id,
-    docType: d.docType,
-    docTypeLabel: DOC_TYPE_LABEL_SV[d.docType] ?? d.docType,
-    filename: d.filename,
-    downloadUrl: `/api/broker-documents/${d.id}/download`,
-  }));
-
-  const paragraphs: string[] = [];
-  if (documents.length === 0) {
-    paragraphs.push(
-      report.property.broker || report.property.agency
-        ? "Inga dokument har hittats på mäklarens webbplats för den här bostaden i denna analys."
-        : "Ingen mäklarlänk kunde hittas på annonsen, så mäklarens webbplats har inte kunnat genomsökas efter dokument."
-    );
-  } else {
-    paragraphs.push(`${documents.length} dokument hittades hos mäklaren: ${listSv(documents.map((d) => d.docTypeLabel))}.`);
-  }
-
-  const hasInspectionText = inspection && inspection.extraction_confidence > 0;
-  if (hasInspectionText) {
-    paragraphs.push(inspection!.summary);
-  } else if (documents.some((d) => d.docType === "inspection_report")) {
-    paragraphs.push("Ett besiktningsprotokoll hittades men kunde inte tolkas automatiskt — se den nedladdningsbara filen ovan.");
-  }
-
-  const findings: InspectionFindingContent[] = (inspection?.findings ?? []).map((f) => ({
-    category: f.category,
-    description: f.description,
-    severity: f.severity,
-    severityLabel: SEVERITY_SV[f.severity] ?? f.severity,
-    recommendation: f.recommendation,
-  }));
-
-  return {
-    paragraphs,
-    documents,
-    findings,
-    overallCondition: hasInspectionText ? inspection!.overall_condition : null,
-  };
 }
 
 /* ────────────────────────────────────────────────────────────────────── */
