@@ -79,7 +79,7 @@ function useDebouncedSave(propertyId: string | null) {
 function InspectionPageContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const propertyId = searchParams.get("propertyId");
+  const propertyId = searchParams?.get("propertyId") ?? null;
 
   const [candidates, setCandidates] = useState<OwnedAnalysis[] | null>(null);
   const [data, setData] = useState<InspectionApiData | null>(null);

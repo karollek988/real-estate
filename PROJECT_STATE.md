@@ -5,7 +5,10 @@
 > otherwise leave it alone. Detailed research/product docs live in `docs/`;
 > this file is the "what's actually true right now" summary.
 
-Last updated: 2026-09-18 — see the Seventh session note below; that branch
+Last updated: 2026-09-28 — **admin portal added** (`admin.kopanalys.se`:
+login + embedded map demo; branch `mapDemoIntegration`, see §3g and the
+admin bullet in §6 — needs a Vercel domain + DNS record before it's reachable).
+Before that, 2026-09-18 — see the Seventh session note below; that branch
 has since been re-verified, merged, pushed, and deployed to `main` (see
 "Merge, push & deploy" at the end of that section for the full record).
 
@@ -501,9 +504,87 @@ attacker-chosen `token_hash`/`redirect_to`.
 
 `isDevAdmin()` (`lib/auth/devAdmin.ts`) is hard-gated on
 `NODE_ENV === "development"`, never true in a Vercel production build. No
-other admin/debug HTTP routes exist. Stripe webhook verifies signatures
-correctly (`stripe.webhooks.constructEvent`). No `.update`/`.upsert` on
-`profiles` anywhere outside the service-role admin client.
+other admin/debug HTTP routes existed at the time of this check (the admin
+portal added on 2026-09-28 is documented separately in §3g). Stripe webhook
+verifies signatures correctly (`stripe.webhooks.constructEvent`). No
+`.update`/`.upsert` on `profiles` anywhere outside the service-role admin
+client.
+
+### 3g. Admin portal (`admin.kopanalys.se`) — login + embedded map demo
+
+Added 2026-09-28. `admin.kopanalys.se` shows a login box; after login it shows
+the KopanalysMapDemo "Atlas" map workspace (github.com/intothenether/KopanalysMapDemo,
+ported into `frontend/src/components/admin/atlas/`, differences listed in that
+file's header comment). Everything lives under `frontend/src/lib/admin/`,
+`src/components/admin/`, `src/pages/` and `src/app/api/admin-portal/`.
+
+- **Routing.** `proxy.ts` runs `lib/admin/adminProxy.ts` first. On the admin
+  host `/` is rewritten to `src/pages/admin-portal`; only
+  `/api/admin-portal/{login,logout}` and Next internals stay reachable — every
+  other site page/API answers 404 there, and the Supabase `updateSession`
+  never runs. On every other host the portal page, its `_next/data` route and
+  its API answer 404. Hosts: `admin.kopanalys.se` and (dev) `admin.localhost`
+  — `lib/admin/host.ts`. **Run locally:** `npm run dev` in `frontend/`, then
+  open `http://admin.localhost:3001` (Chromium/Firefox resolve `*.localhost`
+  to loopback — no hosts-file edit; the portal needs no Supabase env vars).
+  Dev uses an ephemeral session key, so restarting the dev server signs you out.
+- **Why the Pages Router.** `app/layout.tsx` wraps every App Router page in
+  Tailwind + the marketing chrome (footer, cookie banner, chat widget, Supabase
+  provider); a route can only escape it by moving *all* site routes into a
+  route group and enabling the experimental `globalNotFound` flag for a 404
+  page. A `pages/` route sits outside that layout with no change to the site's
+  route tree (verified: `next build` route table for `app` is unchanged, `/`
+  still prerenders, the site's own 404 still renders inside its layout).
+  **Side effect:** with a `pages/` dir Next adds
+  `next/navigation-types/compat/navigation` to `next-env.d.ts`, which makes
+  `useSearchParams()/usePathname()/useParams()` typed as nullable project-wide.
+  Three existing pages (`analyzing`, `buy`, `dashboard/inspection`) got
+  `searchParams?.get(...) ?? null` — type-only, no runtime change. New code that
+  uses those hooks needs the same null handling.
+- **Credentials.** Username `admin`. The password is stored **only as a scrypt
+  hash** (N=2^16, r=8, p=2, random salt; `lib/admin/password.ts`) — built into
+  `lib/admin/credentials.ts`, overridable with `ADMIN_PASSWORD_HASH`; create a
+  hash with `npm run admin:hash`. The plaintext is not in any file. Login
+  always verifies the password even for a wrong username (no timing/enumeration
+  signal), compares in constant time, and caps concurrent scrypt runs per
+  instance (memory).
+- **Session.** Stateless signed cookie (`lib/admin/session.ts`): HMAC-SHA256,
+  8 h, `HttpOnly; Secure; SameSite=Strict; Path=/`, `__Host-` prefixed on https
+  (host-only — never sent to `kopanalys.se`). The signature covers a
+  fingerprint of the password hash, so **changing the password signs every
+  session out**. Key = `ADMIN_SESSION_SECRET`, else derived (HKDF) from
+  `SUPABASE_SERVICE_ROLE_KEY`; with neither, production login is disabled
+  (fails closed, verified). No server-side revocation: logout clears the cookie
+  only, a copied cookie stays valid until expiry.
+- **Abuse limits.** 5 failed logins / 15 min per client → 429 with
+  `Retry-After` (`lib/admin/loginThrottle.ts`), checked *before* hashing.
+  In-memory and per serverless instance — same caveat as `lib/rateLimit.ts`;
+  add a Vercel Firewall rate-limit rule on `POST /api/admin-portal/login` for a
+  shared limit. POSTs must be same-origin (Origin + Sec-Fetch-Site) and JSON.
+- **Headers (admin host only, `next.config.ts`).** Strict CSP in production
+  (`script-src 'self'` — verified it blocks injected inline script and inline
+  handlers; allows https images, Nominatim, inline styles), `geolocation=(self)`
+  for the map's "use my location" (the site-wide policy blocks it), noindex,
+  COOP; login/page responses `no-store`.
+- **The demo's own "Logga in med BankID" button is a client-side mock** (it flips
+  a localStorage flag) and has nothing to do with the admin login. Its data
+  lives in `localStorage` of the `admin.kopanalys.se` origin, nothing is
+  sent to a server. The port HTML-escapes user/geocoder text and restricts
+  link/image URLs (the original interpolated them raw into `innerHTML`).
+- **Known weakness — by request, not by design.** The account uses the
+  password `[redacted]`, which is in every common-password list: anyone who
+  finds `admin.kopanalys.se` can log in on the first try, and the hash (built
+  into the code, so visible to anyone with repo access) offers no protection
+  because it can be dictionary-attacked offline in seconds. Hashing/lockouts
+  only help against leaks and guessing, not against a known-weak password.
+  Rotate it: `npm run admin:hash` → set `ADMIN_PASSWORD_HASH` in Vercel.
+- **Tests.** `npx tsx src/lib/admin/admin.verify.mjs` (70 checks: hashing,
+  sessions, throttle, host routing, login/logout handlers; generated
+  passwords only). Manually verified on `next dev` and on a production
+  `next build` + `next start` at `http://admin.localhost:3001`: login, wrong
+  password, lockout, fail-closed, session persistence, sign-out, headers/CSP,
+  main-host 404s, desktop + mobile layout, every demo feature. **Not yet
+  verified on Vercel** (needs the domain below).
 
 ## 4. Known gaps / next steps
 
@@ -710,3 +791,20 @@ PASS = actually run and green. FAIL = actually run and red. BLOCKED = not run.
 - Docker image (`Dockerfile`) now also installs `fonts-dejavu-core` (a few
   hundred KB) so the OCR test suite has a real TrueType font to render
   against inside the container — small, low-risk addition.
+- **Admin portal (`admin.kopanalys.se`, §3g) — manual steps, none of which the
+  code can do for you:**
+  1. Vercel → project `real-estate` → Settings → Domains → add
+     `admin.kopanalys.se`, then create the DNS record Vercel shows (normally a
+     CNAME `admin` → `cname.vercel-dns.com`; nothing to do if the domain's
+     nameservers are already on Vercel). Until then the portal is unreachable.
+  2. `ADMIN_SESSION_SECRET` (server-only, ≥ 32 random characters) on Vercel is
+     recommended. If it's missing the session key is derived from
+     `SUPABASE_SERVICE_ROLE_KEY` (already set), so login still works; only if
+     *neither* exists is login disabled (503 "not configured").
+  3. Optional but advisable: rotate the password (`npm run admin:hash`, set
+     `ADMIN_PASSWORD_HASH`) — see the known weakness in §3g — and add a Vercel
+     Firewall rate-limit rule for `POST /api/admin-portal/login`.
+  4. Deploying changes `frontend/package.json`/lockfile (adds `leaflet`,
+     `@types/leaflet`); the lockfile was patched by hand to avoid npm-on-Windows
+     dropping the `libc` fields of the Linux native-binary entries, so if you
+     re-run `npm install` locally, check `git diff package-lock.json` stays small.

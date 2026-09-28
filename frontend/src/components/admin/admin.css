@@ -1,0 +1,47 @@
+/* Admin portal chrome: login card and the session bar above the embedded map.
+   Shares the palette of the map workspace (atlas/atlas.css), which supplies the
+   base resets (box-sizing, body margin, button/input font inheritance). */
+
+.admin-login { min-height: 100svh; display: grid; place-items: center; padding: 24px 16px; background: radial-gradient(1200px 600px at 50% -10%, #16a34a1f, transparent 60%), #0a0f0d; }
+.admin-login-card { width: min(400px, 100%); padding: 32px 28px 28px; background: #0f1417; border: 1px solid #ffffff12; border-radius: 20px; box-shadow: 0 18px 50px #00000073; }
+.admin-login-brand { display: flex; align-items: center; gap: 10px; color: #fff; font-size: 15px; font-weight: 600; }
+.admin-login-brand img { display: block; width: 32px; height: 32px; border-radius: 50%; object-fit: cover; }
+.admin-login-card h1 { margin: 26px 0 4px; font-size: 24px; line-height: 1.2; }
+.admin-login-lead { margin: 0 0 6px; color: #a0aaa4; font-size: 13px; }
+.admin-login-card label { display: block; margin: 18px 0 0; color: #c9d1cc; font-size: 12px; font-weight: 700; }
+.admin-login-card input { display: block; width: 100%; margin-top: 7px; padding: 12px; color: #edf2ee; background: #ffffff08; border: 1px solid #ffffff1f; border-radius: 10px; font-size: 14px; }
+.admin-login-card input:focus-visible { outline: 2px solid #4ade80; outline-offset: 1px; border-color: transparent; }
+.admin-login-password { position: relative; }
+.admin-login-password input { padding-right: 64px; }
+.admin-login-reveal { position: absolute; top: 7px; bottom: 0; right: 4px; padding: 0 12px; color: #a0aaa4; background: transparent; border: 0; border-radius: 8px; font-size: 12px; font-weight: 700; }
+.admin-login-reveal:hover { color: #4ade80; }
+.admin-login-reveal:focus-visible { outline: 2px solid #4ade80; }
+.admin-login-error { margin: 16px 0 0; padding: 10px 12px; color: #fecaca; background: #f871711a; border: 1px solid #f8717166; border-radius: 10px; font-size: 13px; line-height: 1.45; }
+.admin-login-submit { width: 100%; margin-top: 20px; padding: 13px 17px; color: #07110b; background: #16a34a; border: 0; border-radius: 10px; box-shadow: 0 4px 20px #16a34a35; font-size: 14px; font-weight: 700; transition: background .15s ease; }
+.admin-login-submit:hover:not(:disabled) { background: #4ade80; }
+.admin-login-submit:focus-visible { outline: 2px solid #fff; outline-offset: 2px; }
+.admin-login-submit:disabled { opacity: .55; cursor: not-allowed; }
+
+.admin-shell { display: flex; flex-direction: column; height: 100svh; }
+.admin-strip { flex: 0 0 36px; display: flex; align-items: center; gap: 12px; padding: 0 16px; color: #a0aaa4; background: #060a08; border-bottom: 1px solid #ffffff12; font-size: 12px; }
+.admin-strip-title { display: flex; align-items: center; gap: 8px; color: #edf2ee; font-weight: 700; white-space: nowrap; }
+.admin-strip-title svg { color: #4ade80; }
+.admin-strip-spacer { flex: 1; }
+.admin-strip-user { white-space: nowrap; }
+.admin-strip-error { color: #fca5a5; white-space: nowrap; }
+.admin-strip button { height: 24px; padding: 0 10px; color: #c0c8c3; background: #ffffff0a; border: 1px solid #ffffff18; border-radius: 6px; font-size: 11px; font-weight: 700; white-space: nowrap; }
+.admin-strip button:hover:not(:disabled) { color: #fff; background: #ffffff14; }
+.admin-strip button:disabled { opacity: .55; cursor: default; }
+.admin-strip button:focus-visible { outline: 2px solid #4ade80; outline-offset: 1px; }
+
+/* The map workspace fills whatever is left below the bar (its own CSS sizes it to 100svh). */
+.atlas-root { flex: 1; min-height: 0; display: flex; flex-direction: column; }
+.atlas-root > .app-shell { flex: 1; height: auto; min-height: 0; }
+.admin-load-error { margin: 24px 16px; color: #fecaca; font-size: 14px; }
+
+@media (max-width: 520px) {
+  .admin-strip-user { display: none; }
+  .admin-login-card { padding: 26px 20px 22px; }
+  /* 16px stops iOS Safari from zooming the page when an input is focused. */
+  .admin-login-card input { font-size: 16px; }
+}
