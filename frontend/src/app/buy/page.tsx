@@ -73,7 +73,7 @@ const stagger = (n: number) => ({ "--dash-stagger": n }) as React.CSSProperties;
 function BuyPageContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const checkout = searchParams.get("checkout");
+  const checkout = searchParams?.get("checkout") ?? null;
   const { user } = useAuth();
   const [authOpen, setAuthOpen] = useState(false);
 

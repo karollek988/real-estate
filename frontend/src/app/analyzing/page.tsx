@@ -32,7 +32,7 @@ const LOADING_VIDEO_SEEK_EPSILON = 0.05;
 function AnalyzingContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const analysisId = searchParams.get("id");
+  const analysisId = searchParams?.get("id") ?? null;
   const [currentStage, setCurrentStage] = useState(-1);
   const [completedStages, setCompletedStages] = useState<number[]>([]);
   const [videoReady, setVideoReady] = useState(false);
