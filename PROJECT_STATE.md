@@ -5,12 +5,109 @@
 > otherwise leave it alone. Detailed research/product docs live in `docs/`;
 > this file is the "what's actually true right now" summary.
 
-Last updated: 2026-09-28 — **admin portal added** (`admin.kopanalys.se`:
-login + embedded map demo; branch `mapDemoIntegration`, see §3g and the
-admin bullet in §6 — needs a Vercel domain + DNS record before it's reachable).
-Before that, 2026-09-18 — see the Seventh session note below; that branch
-has since been re-verified, merged, pushed, and deployed to `main` (see
-"Merge, push & deploy" at the end of that section for the full record).
+Last updated: 2026-09-28 — `mapDemoIntegration` now carries both the
+**admin portal** (`admin.kopanalys.se`: login + embedded map demo, see §3g
+and the admin bullet in §6 — needs a Vercel domain + DNS record before it's
+reachable) and the Eighth session's FAQ value-communication work below
+(merged together on this branch for the `admin.kopanalys.se` test
+deployment; neither is on `main` yet). Before that, 2026-09-18 — see the
+Seventh session note below; that branch has since been re-verified, merged,
+pushed, and deployed to `main` (see "Merge, push & deploy" at the end of
+that section for the full record).
+
+**Eighth session — FAQ value-communication audit + rewrite.** Branch
+`feature/faq-value-communication` (branched from `main`), **not merged,
+not deployed**, per explicit instruction. Task: make the homepage FAQ
+(`frontend/src/lib/faq.ts`, rendered by
+`frontend/src/components/sections/FaqSection.tsx`) clearly communicate
+Köpanalys's value versus pasting the same screenshots into a general-purpose
+AI chat, and — per explicit instruction — audit every existing FAQ answer
+against actual current product behavior rather than assume old copy was
+still accurate. No product/feature behavior touched — only content: all of
+`faq.ts`, plus the same 4 stale facts (Hemnet-link-only intake, card-only
+payment, "cancel via inställningar," "delete account via support") fixed a
+second time in `app/api/chat/route.ts`'s `SYSTEM_PROMPT`, once noticed
+there too. That prompt already appends the full live `FAQ_ITEMS` array as
+reference text after its own hardcoded bullets (`route.ts:52-53`), so the
+hardcoded bullets were the only remaining place these facts could still
+contradict the FAQ.
+
+Audit findings, each cross-checked against code/DB migrations/git history,
+not assumed:
+- Intake-method claim was stale: FAQ said "endast länkar från Hemnet
+  stöds," but the homepage has had no URL input since the screenshot-OCR
+  flow shipped (§2 below) — `ScreenshotUploadForm.tsx` + `ManualEntryForm.tsx`
+  are the only two intake paths today, and `screenshotExtract.ts`'s
+  regex-label extraction isn't Hemnet-specific. Fixed to describe
+  screenshot-of-any-site-or-manual-entry instead.
+- "Används AI i analysen?" overclaimed: it said AI reads "mäklarens
+  dokument" and summarizes a besiktningsprotokoll. That path is dormant —
+  the "Dokument hos mäklaren" feature was fully removed (see the Seventh
+  session's note below), and `risk.ts`'s own comment confirms
+  `inspection_findings` "stays dormant until a future provider populates
+  the same attribute shape." Also added that screenshot reading is
+  deterministic OCR (Tesseract + regex), not AI vision — relevant context
+  for the new AI-comparison question below. Fixed.
+- "Vad är skillnaden mellan gratis- och Premium-analys?" still listed
+  "dokument hos mäklaren" as a Premium-only chapter; that chapter no
+  longer exists (same removal). Fixed.
+- Account-deletion FAQ said "kontakta oss" — it's actually self-serve
+  (`app/dashboard/settings/page.tsx`'s "Radera konto permanent," calls
+  `DELETE /api/profile`). Subscription-cancellation FAQ pointed to
+  "dashboardens inställningar" — it's the separate "Prenumerationer" page
+  (`app/dashboard/subscriptions/page.tsx`, opens the Stripe billing
+  portal via `/api/stripe/portal`). Fixed both.
+- Payment methods: FAQ said "kort" only; `PaymentMethodsCard.tsx` also
+  lists Klarna. Fixed.
+- Two questions ("Vilka datakällor används?" / "Var kommer datan ifrån?")
+  were near-duplicates with slightly different source lists. Merged into
+  one.
+- Verified real, then documented in the FAQ for the first time: the
+  automatic quota refund on analysis failure.
+  `pipeline.ts`'s `InsufficientListingDataError` path calls
+  `ownership.ts:refundAnalysisRequestsQuota()` → the `refund_analysis_quota`
+  RPC (`supabase/migrations/20260814020000_refund_analysis_quota.sql`,
+  the same RPC pen-tested in this doc's security-fix history) whenever a
+  listing's essential fields can't be gathered — the credit genuinely goes
+  back on its own; this isn't a manual support process.
+  `report/page.tsx`'s own failure screen already tells the user this; the
+  new FAQ answer says the same thing and deliberately no more — it does
+  **not** promise a monetary refund, since no `stripe.refunds.create` call
+  (or any Stripe refund call) exists anywhere in the codebase, confirmed by
+  a full-repo search.
+- Verified real, then added to the FAQ for the first time: the BRF
+  annual-report self-upload (`SectionDocumentUpload` →
+  `POST /api/properties/[id]/brf-report` → `rerunAnalysisForProperty`, no
+  quota consumed) — already built (§ below, "Generic 'upload document →
+  extract → regenerate' mechanism") but never mentioned in the FAQ.
+
+New question added per explicit instruction: "Varför ska jag använda
+Köpanalys istället för vanlig AI?" — names ChatGPT/Claude explicitly (as
+instructed), does not claim generic AI "can never" do this, and instead
+states the concrete, verified differentiators: purpose-built analysis
+pipeline, named external sources cited per datapoint, explicit
+"Uppgift saknas" instead of guessing, the BRF-document complement feature,
+and PDF export.
+
+`FAQ_ITEMS` grew from 17 to 21 questions: one duplicate pair merged, six
+new (the AI-comparison question, missing/wrong-data handling, the
+BRF-document complement, the failed-analysis/paid-but-no-report question,
+and a dedicated support-contact question), the rest edited only where
+audited and found stale, otherwise left untouched.
+
+**Tests this session**: `npx tsc --noEmit` (frontend) clean. `npm run
+lint` still fails immediately with the pre-existing "no eslint.config"
+error (G4 below — unrelated to, and not introduced by, this change).
+Manually verified in the running dev server (`http://localhost:3001/#faq`):
+all 21 questions render in the intended order, the new/edited ones open
+and show the intended text (checked via the DOM, not just source), no
+console errors, no React key collisions (`FAQ_ITEMS.map(..., key=
+{question})` — all 21 question strings confirmed unique via a page-context
+`querySelectorAll` check).
+
+**Known gap found incidentally, not fixed (out of FAQ scope)**: see G10
+below — Premium/Ultra subscription plans do not appear to actually grant
+their advertised monthly analysis credits anywhere in the codebase.
 
 **Seventh session — Price Analysis + civic data enrichment.** Branch
 `feature/price-analysis-and-area-data-enrichment`, tested on the branch
@@ -672,6 +769,34 @@ file's header comment). Everything lives under `frontend/src/lib/admin/`,
     `fonts-dejavu-core`; `api/requirements.txt` has `pytesseract`, `pillow`,
     `python-docx`; the internal-auth middleware added no new dependency and
     doesn't touch the Docker build steps.
+
+- **G10** (eighth session, open — found incidentally while fact-checking
+  FAQ copy against the account/credit system, not itself a FAQ-scope fix;
+  flagging for engineering attention): the Premium/Ultra **subscription**
+  plans (`app/dashboard/subscriptions/page.tsx`'s "15 Premium Decision
+  Analyses/månad" / "30 ... /månad" copy) do not appear to actually grant
+  `premium_analyses_remaining` anywhere in the codebase. In
+  `lib/stripe/webhooks.ts`, `handleCheckoutSessionCompleted`'s
+  `mode === "subscription"` branch and both
+  `handleSubscriptionCreatedOrUpdated` and `handleInvoicePaid` only write
+  `subscription_status`/`subscription_tier`/period dates to `profiles` —
+  the *only* place `premium_analyses_remaining` is incremented anywhere in
+  `frontend/src` is the one-time `premium_analysis` purchase branch of
+  `handleCheckoutSessionCompleted` (adds exactly 1). No cron/Edge
+  Function/scheduled route exists to top it up either (`supabase/functions`
+  is empty; no `vercel.json` crons in the repo). `consume_analysis_quota`
+  (the RPC gating every analysis request, `supabase/migrations/20260722000100_quotas.sql`)
+  is a plain counter decrement with no subscription-tier awareness at all.
+  **Net effect, strongly indicated by a full-repo search but not verified
+  end-to-end against a real Stripe subscription**: subscribing may
+  currently buy `subscription_status`/billing-portal access without
+  actually increasing the buyer's usable analysis balance. This session's
+  FAQ rewrite deliberately avoids asserting specific subscription-renewal
+  numbers or mechanics (it points to the dashboard instead) so as not to
+  promise something that may not hold — but the underlying gap is a
+  product/billing issue independent of the FAQ, worth an engineering look,
+  since a real customer could be paying monthly for credits they never
+  receive.
 
 ## 5. Tests / verification status
 
