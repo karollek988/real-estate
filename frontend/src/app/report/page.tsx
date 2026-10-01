@@ -8,6 +8,7 @@ import { analysisAgeDays, FRESH_ANALYSIS_MAX_AGE_DAYS } from "@/lib/analysis/pip
 import type { AnalysisReport, DataSourceReport, DecisionFactorResult } from "@/lib/analysis/types";
 import { UpdateAnalysisButton } from "@/components/report/UpdateAnalysisButton";
 import { SectionDocumentUpload } from "@/components/report/SectionDocumentUpload";
+import { MAX_BRF_REPORT_BYTES } from "@/lib/analysis/brfReports";
 import { KeyValueTable } from "@/components/report/KeyValueTable";
 import { ComparableSalesTable } from "@/components/report/ComparableSalesTable";
 import { IconFactGrid, type IconFactRow } from "@/components/report/IconFactGrid";
@@ -957,6 +958,7 @@ export default async function ReportPage({
             label="Ladda upp ny årsredovisning"
             accept=".pdf,.docx,image/*"
             description="Har föreningen en nyare årsredovisning? Ladda upp den (PDF, Word eller bild) för att uppdatera det här kapitlet."
+            maxSizeBytes={MAX_BRF_REPORT_BYTES}
           />
           <ChapterSources dataSources={p.dataSources} ids={["brf_financials", "brf_acquisition"]} />
         </Page>

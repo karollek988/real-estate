@@ -153,7 +153,10 @@ async function startPipelineInBackground(
   const pending = await insertPendingAnalysis(property.id, ENGINE_VERSION);
   after(() =>
     runPipeline(pending.id, property, extracted).catch((err) => {
-      console.error(`Background analysis pipeline failed for analysis ${pending.id}:`, err);
+      console.error(
+        `Background analysis pipeline failed for analysis ${pending.id} (property ${property.id}, engine ${ENGINE_VERSION}):`,
+        err
+      );
     })
   );
   return pending;
