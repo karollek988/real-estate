@@ -5,6 +5,8 @@ import { findPropertyById, updateProperty } from "@/lib/analysis/store";
 import { rerunAnalysisForProperty } from "@/lib/analysis/pipeline";
 import {
   BRF_REPORTS_BUCKET,
+  MAX_BRF_REPORT_BYTES,
+  classifyBrfMimeType,
   findReusableBrfReport,
   getBrfReportById,
   insertBrfReport,
@@ -17,31 +19,30 @@ function errorResponse(status: number, code: string, message: string) {
   return NextResponse.json({ error: { code, message } }, { status });
 }
 
-const MAX_BRF_REPORT_BYTES = 20 * 1024 * 1024; // 20MB — annual reports can run many pages
-
-const DOCX_MIME = "application/vnd.openxmlformats-officedocument.wordprocessingml.document";
-
-/** Maps an uploaded file's MIME type to the Python engine's file_kind + a storage extension. */
-function classifyBrfUpload(file: File): { fileKind: "pdf" | "docx" | "image"; extension: string } | null {
-  if (file.type === "application/pdf") return { fileKind: "pdf", extension: "pdf" };
-  if (file.type === DOCX_MIME) return { fileKind: "docx", extension: "docx" };
-  if (file.type.startsWith("image/")) {
-    const extension = file.type.split("/")[1]?.split("+")[0] || "img";
-    return { fileKind: "image", extension };
-  }
-  return null;
-}
+// Matches the Python engine's own extraction budget (AbortSignal.timeout
+// below) with headroom, and lets a large scanned report's per-page OCR
+// (BRF-Scraper/src/brf_scraper/extractor/pdf_reader.py) actually finish
+// instead of the function being killed mid-request. Sibling routes that
+// also call the Python engine synchronously set the same ceiling (see
+// api/analyses/route.ts).
+export const maxDuration = 300;
 
 /**
- * POST /api/properties/:id/brf-report — upload a BRF annual report PDF for
- * this property ("Upload latest BRF annual report").
+ * POST /api/properties/:id/brf-report — step 2 of the BRF annual-report
+ * upload ("Upload latest BRF annual report"): the browser has already PUT
+ * the file bytes straight into Storage via a signed URL from
+ * ./upload-url/route.ts (step 1) — this route picks that object up by its
+ * staging path, so it never has to accept the raw file itself and is not
+ * subject to Vercel's 4.5MB request-body limit.
  *
  * Reuses an existing, non-expired report byte-for-byte identical to this
  * upload (or, when no organization_number is known, the most recent report
  * already on file for this property) instead of re-storing/re-extracting.
- * Otherwise uploads to Storage, extracts via the Python engine's
- * /api/brf-annual-report/upload (same extraction+validation pipeline the
- * automated crawler uses), and stores a new brf_annual_reports row.
+ * Otherwise copies the staged upload to its permanent content-hash path,
+ * extracts via the Python engine's /api/brf-annual-report/upload (same
+ * extraction+validation pipeline the automated crawler uses), and stores a
+ * new brf_annual_reports row. The staged object is always deleted before
+ * this handler returns, whether or not it succeeded.
  *
  * Either way, patches this property's attributes.brf_annual_report (the
  * exact slot brfFinancialsProvider already reads) and re-runs the existing
@@ -65,22 +66,33 @@ export async function POST(
     return errorResponse(404, "not_found", "No property with that id.");
   }
 
-  let form: FormData;
+  let body: unknown;
   try {
-    form = await request.formData();
+    body = await request.json();
   } catch {
-    return errorResponse(400, "invalid_request", "Request must be multipart/form-data.");
+    return errorResponse(400, "invalid_request", "Request body must be JSON.");
   }
 
-  const file = form.get("file");
-  if (!(file instanceof File)) {
-    return errorResponse(400, "invalid_request", "Provide the file as \"file\".");
+  const { stagingPath, filename, mimeType } =
+    (body as { stagingPath?: unknown; filename?: unknown; mimeType?: unknown }) ?? {};
+  if (
+    typeof stagingPath !== "string" ||
+    typeof filename !== "string" ||
+    typeof mimeType !== "string" ||
+    !stagingPath.startsWith(`staging/${user.id}/`)
+  ) {
+    console.error(
+      `POST /api/properties/${propertyId}/brf-report rejected: invalid body`,
+      { stagingPath, filename, mimeType, userId: user.id }
+    );
+    return errorResponse(400, "invalid_request", "Provide stagingPath, filename, and mimeType.");
   }
-  if (file.size > MAX_BRF_REPORT_BYTES) {
-    return errorResponse(413, "file_too_large", "Filen är för stor (max 20 MB).");
-  }
-  const upload = classifyBrfUpload(file);
+
+  const upload = classifyBrfMimeType(mimeType);
   if (!upload) {
+    console.error(
+      `POST /api/properties/${propertyId}/brf-report rejected: unsupported mimeType="${mimeType}" (filename="${filename}")`
+    );
     return errorResponse(
       422,
       "invalid_file_type",
@@ -88,7 +100,33 @@ export async function POST(
     );
   }
 
-  const bytes = Buffer.from(await file.arrayBuffer());
+  const storage = createAdminClient().storage.from(BRF_REPORTS_BUCKET);
+
+  const { data: downloaded, error: downloadError } = await storage.download(stagingPath);
+  if (downloadError || !downloaded) {
+    console.error(
+      `POST /api/properties/${propertyId}/brf-report failed: could not download staged upload ` +
+        `"${stagingPath}" (filename="${filename}", size unknown):`,
+      downloadError
+    );
+    return errorResponse(
+      422,
+      "upload_not_found",
+      "Kunde inte hitta den uppladdade filen. Försök ladda upp den igen."
+    );
+  }
+
+  const bytes = Buffer.from(await downloaded.arrayBuffer());
+
+  if (bytes.byteLength > MAX_BRF_REPORT_BYTES) {
+    console.error(
+      `POST /api/properties/${propertyId}/brf-report rejected: downloaded size ${bytes.byteLength} bytes ` +
+        `exceeds ${MAX_BRF_REPORT_BYTES} (filename="${filename}", stagingPath="${stagingPath}")`
+    );
+    await storage.remove([stagingPath]);
+    return errorResponse(413, "file_too_large", "Filen är för stor (max 20 MB).");
+  }
+
   const contentHash = createHash("sha256").update(bytes).digest("hex");
 
   const knownOrgNumber =
@@ -97,6 +135,8 @@ export async function POST(
     typeof (property.attributes.brf as Record<string, unknown>).organization_number === "string"
       ? ((property.attributes.brf as Record<string, unknown>).organization_number as string)
       : null;
+
+  const uploadContext = `filename="${filename}", mimeType="${mimeType}", size=${bytes.byteLength}, stagingPath="${stagingPath}"`;
 
   try {
     let report = await findReusableBrfReport({
@@ -109,6 +149,9 @@ export async function POST(
     if (!report) {
       const apiBase = process.env.PYTHON_ENGINE_API_URL;
       if (!apiBase) {
+        console.error(
+          `POST /api/properties/${propertyId}/brf-report failed: PYTHON_ENGINE_API_URL is not configured (${uploadContext})`
+        );
         return errorResponse(
           503,
           "not_connected",
@@ -116,19 +159,45 @@ export async function POST(
         );
       }
 
-      const extractRes = await fetch(`${apiBase.replace(/\/$/, "")}/api/brf-annual-report/upload`, {
-        method: "POST",
-        headers: pythonEngineHeaders(),
-        body: JSON.stringify({
-          pdf_base64: bytes.toString("base64"),
-          filename: file.name,
-          file_kind: upload.fileKind,
-        }),
-        signal: AbortSignal.timeout(60000),
-        cache: "no-store",
-      });
-      const extractBody = await extractRes.json().catch(() => null);
+      let extractRes: Response;
+      try {
+        extractRes = await fetch(`${apiBase.replace(/\/$/, "")}/api/brf-annual-report/upload`, {
+          method: "POST",
+          headers: pythonEngineHeaders(),
+          body: JSON.stringify({
+            pdf_base64: bytes.toString("base64"),
+            filename,
+            file_kind: upload.fileKind,
+          }),
+          signal: AbortSignal.timeout(280000),
+          cache: "no-store",
+        });
+      } catch (fetchErr) {
+        console.error(
+          `POST /api/properties/${propertyId}/brf-report failed: request to Python engine threw (${uploadContext}):`,
+          fetchErr
+        );
+        return errorResponse(
+          502,
+          "engine_unreachable",
+          "Kunde inte nå analysmotorn. Försök igen om en stund."
+        );
+      }
+
+      const rawExtractBody = await extractRes.text();
+      const extractBody = (() => {
+        try {
+          return JSON.parse(rawExtractBody);
+        } catch {
+          return null;
+        }
+      })();
       if (!extractRes.ok || !extractBody?.success) {
+        console.error(
+          `POST /api/properties/${propertyId}/brf-report failed: extraction rejected ` +
+            `(${uploadContext}, engineStatus=${extractRes.status}): ` +
+            rawExtractBody.slice(0, 2000)
+        );
         return errorResponse(
           422,
           "extraction_failed",
@@ -137,17 +206,24 @@ export async function POST(
       }
 
       const storagePath = `${knownOrgNumber ?? `property-${propertyId}`}/${contentHash}.${upload.extension}`;
-      const { error: uploadError } = await createAdminClient()
-        .storage.from(BRF_REPORTS_BUCKET)
-        .upload(storagePath, bytes, { contentType: file.type || "application/octet-stream", upsert: true });
-      if (uploadError) throw new Error(`Storage upload failed: ${uploadError.message}`);
+      const { error: uploadError } = await storage.upload(storagePath, bytes, {
+        contentType: mimeType || "application/octet-stream",
+        upsert: true,
+      });
+      if (uploadError) {
+        console.error(
+          `POST /api/properties/${propertyId}/brf-report failed: storage upload to "${storagePath}" failed (${uploadContext}):`,
+          uploadError
+        );
+        throw new Error(`Storage upload failed: ${uploadError.message}`);
+      }
 
       report = await insertBrfReport({
         organizationNumber: knownOrgNumber,
         fallbackPropertyId: knownOrgNumber ? null : propertyId,
         contentHash,
         storagePath,
-        originalFilename: file.name || null,
+        originalFilename: filename || null,
         fiscalYear: typeof extractBody.fiscal_year === "number" ? extractBody.fiscal_year : null,
         annualReport: extractBody.annual_report,
         uploadedBy: user.id,
@@ -164,6 +240,9 @@ export async function POST(
 
     const rerun = await rerunAnalysisForProperty(propertyId);
     if (!rerun) {
+      console.error(
+        `POST /api/properties/${propertyId}/brf-report failed: rerunAnalysisForProperty returned null after a successful upload/extraction (${uploadContext}) — property may have been deleted mid-request`
+      );
       return errorResponse(404, "not_found", "No property with that id.");
     }
 
@@ -175,8 +254,20 @@ export async function POST(
       status: rerun.analysis.status,
     });
   } catch (err) {
-    console.error(`POST /api/properties/${propertyId}/brf-report failed:`, err);
+    console.error(`POST /api/properties/${propertyId}/brf-report failed (${uploadContext}):`, err);
     return errorResponse(500, "internal_error", "Could not process the BRF annual report.");
+  } finally {
+    // Always clear the staged upload — whether this attempt succeeded,
+    // failed, or was a dedup reuse — so staging/ never accumulates orphaned
+    // objects. Best-effort: a failure here shouldn't change the response
+    // already decided above.
+    const { error: cleanupError } = await storage.remove([stagingPath]);
+    if (cleanupError) {
+      console.error(
+        `POST /api/properties/${propertyId}/brf-report: failed to clean up staged upload "${stagingPath}":`,
+        cleanupError
+      );
+    }
   }
 }
 
