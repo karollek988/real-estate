@@ -23,9 +23,9 @@ const STEPS = [
   },
   {
     emoji: "📊",
-    title: "Få ett komplett beslutsunderlag",
+    title: "Få ett samlat underlag",
     description:
-      "Vi analyserar bostaden med hjälp av flera datakällor och AI och sammanställer ett lättläst beslutsunderlag.",
+      "Området, riskerna och frågorna inför visningen är klara på några minuter. Föreningens ekonomi granskas av våra experter och läggs till i rapporten inom 24 timmar.",
   },
 ];
 

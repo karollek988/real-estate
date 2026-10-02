@@ -5,36 +5,38 @@ import {
   TRYGGHETSPAKET_PRICE_SEK,
 } from "@/lib/pricing";
 
+// Also the chat assistant's reference text (api/chat/route.ts) — keep every
+// answer true to what the product does today.
 export const FAQ_ITEMS = [
   {
-    question: "Vad är egentligen en Köpanalys-rapport till för?",
+    question: "Vad är en Köpanalys-rapport till för?",
     answer:
-      "En Köpanalys-rapport sammanställer offentlig data om en bostad till en överskådlig beslutsgrund – historiska försäljningar, föreningens ekonomi, områdesfakta, ränteläge och mer. Målet är att minska den osäkerhet som ofta följer med ett bostadsköp, så att du kan fatta ett välinformerat beslut baserat på fakta och matematik i stället för magkänsla eller en mäklares säljargument.",
+      "Rapporten samlar det som är relevant för ett bostadsköp på ett ställe: föreningens ekonomi i klartext, området, möjliga risker och frågorna att ställa till mäklaren och föreningen. Vi säljer inte bostaden och inte priset – vi ger dig underlaget så att du vet vad du köper.",
   },
   {
-    question: "Hur beräknas analysen?",
+    question: "Vem granskar BRF-analysen?",
     answer:
-      "Vi kombinerar historiska försäljningar, områdesdata, föreningens ekonomi och det aktuella marknadsläget i en statistisk modell. Varje faktor viktas och redovisas öppet i analysen, så att du ser exakt vad som driver bedömningen.",
+      "En av Köpanalys experter. Vår analysmotor läser av nyckeltalen i föreningens årsredovisning, och en person kontrollerar varje siffra mot årsredovisningen, fyller i det som saknas och skriver en kommentar innan analysen publiceras i din rapport. BRF-analysen är klar inom 24 timmar från köpet, och du får ett mejl när den är klar. Övriga delar av rapporten – till exempel området och riskerna – är automatiska och klara direkt.",
+  },
+  {
+    question: "Måste jag ladda upp föreningens årsredovisning själv?",
+    answer:
+      "Nej. Har du den (du får den oftast av mäklaren eller föreningen) kan du ladda upp den i rapporten, så går granskningen snabbare. Annars tar vi fram den åt dig.",
+  },
+  {
+    question: "Hur vet ni vilka siffror som är bra eller dåliga?",
+    answer:
+      "Vi jämför varje nyckeltal med de nivåer som banker och bostadsorganisationer – bland annat SBAB, HSB och Handelsbanken – brukar ange som låga och höga, och med snittet bland svenska föreningar enligt Nabos analys av 2 250 årsredovisningar. Nyckeltalen är de som alla bostadsrättsföreningar måste redovisa sedan 2023. Det är jämförelser, inget betyg på föreningen.",
   },
   {
     question: "Ger ni köprådgivning? Säger ni om jag ska köpa eller inte?",
     answer:
-      "Nej. Köpanalys är ingen rådgivare och ger inga köprekommendationer. Rapporten visar vad verifierade uppgifter säger – den klassificerar aldrig bostaden som ett \"bra\" eller \"dåligt\" köp. Beslutet är alltid ditt.",
+      "Nej. Köpanalys är ingen rådgivare och ger inga köprekommendationer. Rapporten visar vad uppgifterna säger och vad de betyder för dig – den klassificerar aldrig bostaden som ett \"bra\" eller \"dåligt\" köp. Beslutet är alltid ditt.",
   },
   {
-    question: "Hur träffsäkert är fair value?",
+    question: "Vad är boendekalkylen?",
     answer:
-      "Fair value är en statistisk uppskattning, inte ett facit. För de flesta bostäder ligger bedömningen inom några procent av slutpriset, och vi visar alltid osäkerhetsspannet i stället för att låtsas ha ett exakt svar.",
-  },
-  {
-    question: "Vilka datakällor används?",
-    answer:
-      "Analysen bygger på en samling datakällor som omfattar offentliga register, Booli, SCB, Riksbanken, SMHI, Trafikverket och flera andra – allt från föreningars årsredovisningar och historiska transaktioner till ränte- och inflationsdata samt beslutade infrastrukturprojekt.",
-  },
-  {
-    question: "Kan jag lita på siffrorna om jag inte hittar dem själv?",
-    answer:
-      "Varje datapunkt i rapporten kommer från en verifierbar källa som vi anger. Däremot uppmanar vi alltid dig som köpare att göra din egen oberoende kontroll – särskilt av föreningens ekonomi och skicket på bostaden – eftersom en analys aldrig kan ersätta en egen besiktning eller en genomgång av föreningens handlingar.",
+      "Boendekalkylen visar vad bostaden kostar dig på riktigt: avgift, ränta och amortering varje månad, och engångskostnader som lagfart och pantbrev. Den håller på att färdigställas och lanseras inom kort. Redan nu visar BRF-analysen kostnader som är lätta att missa, till exempel din del av föreningens lån och hur avgiften påverkas om räntan stiger.",
   },
   {
     question: "Vad kostar en analys? Hur betalar jag?",
@@ -44,37 +46,42 @@ export const FAQ_ITEMS = [
   {
     question: "Vad ingår i en Områdesanalys?",
     answer:
-      "Områdesanalysen är en egen analys av området runt en adress: service, skolor och pendling nära bostaden, trygghet och samhällsdata samt hur befolkning och priser utvecklas. Du får en rapport om området och inget annat – bostadens pris, föreningens ekonomi och riskerna ingår i Trygghetspaketet.",
+      "Områdesanalysen är en egen analys av området runt en adress: service, skolor och pendling nära bostaden, trygghet och samhällsdata samt hur befolkning och priser utvecklas. Den är automatisk och klar på några minuter. Du får en rapport om området och inget annat – föreningens ekonomi och riskerna ingår i Trygghetspaketet.",
   },
   {
     question: "Vad ingår i Trygghetspaketet?",
     answer:
-      "Trygghetspaketet är den fullständiga analysen av en bostad. Den som skapar en hel analys får alltid tillgång till hela rapporten: fastighetsinformation, boendekalkyl med jämförbara sålda bostäder och prisutveckling, områdesanalys, föreningens ekonomi, möjliga risker att undersöka vidare, investeringsutsikt och en samlad helhetsbild.",
+      "Trygghetspaketet är den fullständiga analysen av en bostad: BRF-analysen (granskad av våra experter inom 24 timmar), områdesanalysen, fastighetsinformationen, möjliga risker, framtidsutsikter för området, frågor inför visningen och visningsguiden. Boendekalkylen lanseras inom kort. Den som köper en hel analys får alltid tillgång till hela rapporten.",
   },
   {
     question: "Vad händer om jag inte har någon analys kvar?",
     answer:
-      "Då körs ingen analys och inget dras från dig. Köp en Områdesanalys eller ett Trygghetspaket i butiken så kan du fortsätta. Går en analys inte att slutföra, till exempel för att vi inte kan hämta tillräckligt med uppgifter om en adress, får du tillbaka din analys automatiskt.",
+      "Då körs ingen analys och inget dras från dig. Köp en Områdesanalys eller ett Trygghetspaket så kan du fortsätta. Går en analys inte att slutföra, till exempel för att vi inte kan hämta tillräckligt med uppgifter om en adress, får du tillbaka din analys automatiskt.",
   },
   {
     question: "Hur snabb är en analys?",
     answer:
-      "En analys tar vanligen mellan 30 sekunder och 2 minuter, beroende på hur mycket offentlig data som behöver hämtas in.",
+      "Områdesanalysen och de automatiska delarna av Trygghetspaketet är oftast klara inom ett par minuter. BRF-analysen granskas av en person och är klar inom 24 timmar – du får ett mejl när den är publicerad i din rapport.",
   },
   {
     question: "Vilka bostadstyper stöds?",
     answer:
-      "Lägenheter (bostadsrätter), villor, radhus, parhus, kedjehus, fritidshus, tomter och gårdar. Just nu stöds endast länkar från Hemnet av typen /bostad/... – inte andra bostadssajter eller nybyggnationsprojekt.",
+      "Lägenheter (bostadsrätter), villor, radhus, parhus, kedjehus och fritidshus. Du lägger in bostaden genom att ladda upp skärmdumpar av annonsen eller genom att fylla i uppgifterna själv. BRF-analysen gäller bostäder som ingår i en bostadsrättsförening.",
   },
   {
     question: "Var kommer datan ifrån?",
     answer:
-      "Datan hämtas från ett antal offentliga och kommersiella källor – bland annat Booli, SCB, Riksbanken, SMHI, Trafikverket, Lantmäteriet via geokodning, samt OpenStreetMap för områdesdata. Varje källa redovisas i rapporten med källhänvisning.",
+      "Föreningens ekonomi kommer från föreningens egen årsredovisning. Områdesdata och marknadsdata hämtas från bland annat Booli, SCB, Riksbanken, SMHI, Trafikverket, Skolverket, Polisen och Kolada, Lantmäteriet via geokodning samt OpenStreetMap. Varje källa redovisas i rapporten.",
+  },
+  {
+    question: "Kan jag lita på siffrorna?",
+    answer:
+      "Varje uppgift i rapporten kommer från en källa som vi anger, och föreningens nyckeltal kontrolleras av en person mot årsredovisningen innan de visas. Rapporten ersätter ändå inte en besiktning eller en egen genomgång av föreningens handlingar – se den som underlaget inför dina egna frågor.",
   },
   {
     question: "Används AI i analysen?",
     answer:
-      "I begränsad omfattning. En AI-språkmodell (OpenAI) driver vår chattassistent och används även för att tolka innehållet i mäklarens dokument och BRF-årsredovisningar, till exempel för att sammanfatta ett besiktningsprotokoll. AI:n används aldrig för att sätta ett betyg eller en poäng på bostaden – Köpanalys bedömer inte om en bostad är ett \"bra\" eller \"dåligt\" köp. Den sammanställer och sammanfattar bara sakuppgifter som redan finns i de faktiska dokumenten.",
+      "I begränsad omfattning. Chattassistenten drivs av en AI-språkmodell (OpenAI). Nyckeltalen i årsredovisningen läses av automatiskt av vår analysmotor och kontrolleras sedan av en person på Köpanalys. Ingen AI sätter betyg eller poäng på bostaden – Köpanalys bedömer inte om en bostad är ett \"bra\" eller \"dåligt\" köp.",
   },
   {
     question: "Sparar ni min sökhistorik och mina analyser?",
@@ -84,7 +91,7 @@ export const FAQ_ITEMS = [
   {
     question: "Kan jag ladda ner rapporten som PDF?",
     answer:
-      "Ja – varje färdig rapport har en \"Ladda ner PDF\"-knapp så att du enkelt kan spara eller dela den. Rapporten är förstås också fullt läsbar direkt i webbläsaren på dator och mobil.",
+      "Ja – varje färdig rapport har en \"Ladda ner PDF\"-knapp så att du enkelt kan spara eller dela den. Rapporten är också fullt läsbar direkt i webbläsaren på dator och mobil.",
   },
   {
     question: "Hur avbokar eller avslutar jag mitt konto?",

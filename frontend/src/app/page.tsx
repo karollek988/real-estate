@@ -8,6 +8,9 @@ import { ScreenshotUploadForm } from "@/components/ScreenshotUploadForm";
 import { ManualEntryForm } from "@/components/ManualEntryForm";
 import { AreaAnalysisForm } from "@/components/AreaAnalysisForm";
 import { NewsSection } from "@/components/sections/NewsSection";
+import { ProblemSection } from "@/components/sections/ProblemSection";
+import { HowItWorksSection } from "@/components/sections/HowItWorksSection";
+import { PricingSection } from "@/components/sections/PricingSection";
 import { ExampleReportSection } from "@/components/sections/ExampleReportSection";
 import { InsightsSection } from "@/components/sections/InsightsSection";
 import { InfoSection } from "@/components/sections/InfoSection";
@@ -16,23 +19,23 @@ import { ContactSection } from "@/components/sections/ContactSection";
 import { SectionDivider } from "@/components/SectionDivider";
 import type { MarketStats } from "@/lib/marketStats";
 import {
-  BrainIcon,
   BuildingIcon,
   ChartIcon,
-  DatabaseIcon,
+  ClipboardIcon,
   HouseIcon,
   InfoIcon,
   LockIcon,
   MapPinIcon,
   PencilIcon,
+  PercentIcon,
   PlayCircleIcon,
   ShieldIcon,
   StarFilledIcon,
-  StarIcon,
   TrendingUpIcon,
   UploadCloudIcon,
-  ZapIcon,
+  WalletIcon,
 } from "@/components/icons";
+import { HOUSING_COST_LIVE } from "@/lib/packages";
 
 type Method = "screenshot" | "manual" | "area";
 
@@ -60,34 +63,35 @@ function ManualEntryNotice() {
   );
 }
 
+// What the Trygghetspaket covers, in the pitch deck's words. The Boendekalkyl
+// is marked until it ships (lib/packages.ts HOUSING_COST_LIVE).
 const FEATURE_PILLS = [
-  { icon: ChartIcon, label: "Boendekalkyl" },
-  { icon: MapPinIcon, label: "Områdesanalys" },
-  { icon: BuildingIcon, label: "BRF-analys" },
-  { icon: ShieldIcon, label: "Möjliga risker" },
-  { icon: TrendingUpIcon, label: "Investeringsprognos" },
+  { icon: WalletIcon, label: "Boendekalkyl", soon: !HOUSING_COST_LIVE },
+  { icon: MapPinIcon, label: "Områdesanalys", soon: false },
+  { icon: BuildingIcon, label: "BRF-analys", soon: false },
+  { icon: ShieldIcon, label: "Möjliga risker", soon: false },
 ];
 
 const VALUE_PROPS = [
   {
-    icon: DatabaseIcon,
-    title: "20+ Datakällor",
-    description: "Offentliga register, transaktioner och mycket mer",
-  },
-  {
-    icon: BrainIcon,
-    title: "AI-driven Analys",
-    description: "Avancerade algoritmer för marknadsanalys",
-  },
-  {
     icon: ShieldIcon,
-    title: "Objektiv & Oberoende",
-    description: "Ingen favoritism. Ren data och fakta i fokus.",
+    title: "Oberoende granskning",
+    description: "Vi står på köparens sida – inte säljarens eller mäklarens.",
   },
   {
-    icon: ZapIcon,
-    title: "Snabbt & Enkelt",
-    description: "Få komplett analys på bara några sekunder",
+    icon: BuildingIcon,
+    title: "Föreningen i klartext",
+    description: "Granskad av våra experter, klar inom 24 timmar.",
+  },
+  {
+    icon: MapPinIcon,
+    title: "Området direkt",
+    description: "Service, skolor och resor – automatiskt och på några minuter.",
+  },
+  {
+    icon: ClipboardIcon,
+    title: "Frågor inför visningen",
+    description: "Det som inte står i annonsen, samlat på ett ställe.",
   },
 ];
 
@@ -188,8 +192,8 @@ export default function Home() {
     hox?.yoyChangePct != null
       ? `${hox.yoyChangePct > 0 ? "+" : ""}${hox.yoyChangePct.toFixed(1).replace(".", ",")}%`
       : "—";
-  const demandLabel =
-    hox?.yoyChangePct == null ? "—" : hox.yoyChangePct > 0.5 ? "Hög" : hox.yoyChangePct < -0.5 ? "Låg" : "Stabil";
+  const policyRate = marketStats?.policyRate ?? null;
+  const policyRateLabel = policyRate ? `${policyRate.latest.toFixed(2).replace(".", ",")} %` : "—";
 
   const marketStatsDisplay = [
     {
@@ -199,7 +203,7 @@ export default function Home() {
       unit: sqmNational ? "kr/kvm" : undefined,
     },
     { icon: ChartIcon, label: "Prisutveckling", value: priceChangeLabel },
-    { icon: StarIcon, label: "Efterfrågan", value: demandLabel },
+    { icon: PercentIcon, label: "Styrränta", value: policyRateLabel },
   ];
 
   return (
@@ -225,13 +229,12 @@ export default function Home() {
         <div className="relative flex min-h-[calc(100svh-68px)] flex-col px-5 pb-14 pt-16 lg:hidden">
           <div className="animate-fade-in-up text-center">
             <h1 className="text-[36px] font-bold leading-[1.18] tracking-tight">
-              Analysera vilken
+              Köpa bostad?
               <br />
-              <span className="text-green-400">bostad</span> som helst.
+              Vi visar vad du <span className="text-green-400">faktiskt köper</span>.
             </h1>
-            <p className="mx-auto mt-5 max-w-[320px] text-[17px] leading-[1.6] text-neutral-300">
-              Ladda upp en skärmdump av bostadsannonsen så analyserar vi
-              marknadspotentialen åt dig — klart på under 3 minuter.
+            <p className="mx-auto mt-5 max-w-[340px] text-[17px] leading-[1.6] text-neutral-300">
+              En oberoende granskning av bostaden du vill köpa; föreningens ekonomi, området och alla kostnader.
             </p>
           </div>
 
@@ -296,13 +299,14 @@ export default function Home() {
         <div className="relative mx-auto hidden w-full max-w-[1400px] px-6 pt-[46px] lg:block">
           {/* Feature pills */}
           <div className="flex flex-wrap justify-end gap-4">
-            {FEATURE_PILLS.map(({ icon: Icon, label }) => (
+            {FEATURE_PILLS.map(({ icon: Icon, label, soon }) => (
               <div
                 key={label}
                 className="flex items-center gap-2.5 rounded-full border border-white/10 bg-black/50 px-5 py-3 text-sm font-medium text-white backdrop-blur-md"
               >
                 <Icon className="h-4 w-4 text-green-400" />
                 {label}
+                {soon && <span className="rounded-full bg-white/10 px-2 py-0.5 text-[11px] font-medium text-neutral-300">snart</span>}
               </div>
             ))}
           </div>
@@ -311,14 +315,13 @@ export default function Home() {
             {/* Headline block */}
             <div className="max-w-[600px] lg:-mt-[52px]">
               <h1 className="text-[40px] font-bold leading-[1.15] tracking-tight sm:text-[48px]">
-                Analysera vilken
+                Köpa bostad?
                 <br />
-                <span className="text-green-400">bostad</span> som helst.
+                Vi visar vad du <span className="text-green-400">faktiskt köper</span>.
               </h1>
 
-              <p className="mt-4 max-w-[310px] text-[17px] leading-[1.6] text-neutral-300">
-                Ladda upp en skärmdump av bostadsannonsen så analyserar vi
-                marknadspotentialen åt dig — klart på under 3 minuter.
+              <p className="mt-4 max-w-[400px] text-[17px] leading-[1.6] text-neutral-300">
+                En oberoende granskning av bostaden du vill köpa; föreningens ekonomi, området och alla kostnader.
               </p>
 
               <button
@@ -497,15 +500,21 @@ export default function Home() {
         </div>
       </section>
 
-      {/* Content sections */}
+      {/* Content sections — the pitch deck's story first: the problem, the solution, an example, the prices */}
       <SectionDivider />
-      <NewsSection />
+      <ProblemSection />
+      <SectionDivider />
+      <HowItWorksSection />
       <SectionDivider />
       <ExampleReportSection />
       <SectionDivider />
-      <InsightsSection />
+      <PricingSection />
       <SectionDivider />
       <InfoSection />
+      <SectionDivider />
+      <InsightsSection />
+      <SectionDivider />
+      <NewsSection />
       <SectionDivider />
       <FaqSection />
       <SectionDivider />
