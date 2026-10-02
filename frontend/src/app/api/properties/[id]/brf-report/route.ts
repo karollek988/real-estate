@@ -7,9 +7,8 @@ import {
   BRF_REPORTS_BUCKET,
   MAX_BRF_REPORT_BYTES,
   classifyBrfMimeType,
-  findReusableBrfReport,
   getBrfReportById,
-  insertBrfReport,
+  saveBrfReport,
 } from "@/lib/analysis/brfReports";
 import { hasAnyAnalysisRequestForProperty } from "@/lib/analysis/ownership";
 import { requireUser } from "@/lib/auth/requireUser";
@@ -35,19 +34,18 @@ export const maxDuration = 300;
  * staging path, so it never has to accept the raw file itself and is not
  * subject to Vercel's 4.5MB request-body limit.
  *
- * Reuses an existing, non-expired report byte-for-byte identical to this
- * upload (or, when no organization_number is known, the most recent report
- * already on file for this property) instead of re-storing/re-extracting.
- * Otherwise copies the staged upload to its permanent content-hash path,
- * extracts via the Python engine's /api/brf-annual-report/upload (same
- * extraction+validation pipeline the automated crawler uses), and stores a
- * new brf_annual_reports row. The staged object is always deleted before
- * this handler returns, whether or not it succeeded.
+ * Copies the staged upload to its permanent content-hash path, extracts it
+ * via the Python engine's /api/brf-annual-report/upload (same
+ * extraction+validation pipeline the automated crawler uses), and saves the
+ * result as a brf_annual_reports row (refreshing the row if this exact file
+ * was uploaded before — an upload is always read by the current engine, never
+ * answered from an older stored extraction). The staged object is always
+ * deleted before this handler returns, whether or not it succeeded.
  *
- * Either way, patches this property's attributes.brf_annual_report (the
- * exact slot brfFinancialsProvider already reads) and re-runs the existing
- * analysis pipeline — no analyzer/engine changes, no quota consumed (same
- * as the existing "Update analysis" button).
+ * Then patches this property's attributes.brf_annual_report (the exact slot
+ * brfFinancialsProvider already reads) and re-runs the existing analysis
+ * pipeline — no analyzer/engine changes, no quota consumed (same as the
+ * existing "Update analysis" button).
  */
 export async function POST(
   request: Request,
@@ -139,96 +137,87 @@ export async function POST(
   const uploadContext = `filename="${filename}", mimeType="${mimeType}", size=${bytes.byteLength}, stagingPath="${stagingPath}"`;
 
   try {
-    let report = await findReusableBrfReport({
-      contentHash,
-      organizationNumber: knownOrgNumber,
-      propertyId,
-    });
-    const reused = report !== null;
-
-    if (!report) {
-      const apiBase = process.env.PYTHON_ENGINE_API_URL;
-      if (!apiBase) {
-        console.error(
-          `POST /api/properties/${propertyId}/brf-report failed: PYTHON_ENGINE_API_URL is not configured (${uploadContext})`
-        );
-        return errorResponse(
-          503,
-          "not_connected",
-          "The analysis engine is not configured (set PYTHON_ENGINE_API_URL)."
-        );
-      }
-
-      let extractRes: Response;
-      try {
-        extractRes = await fetch(`${apiBase.replace(/\/$/, "")}/api/brf-annual-report/upload`, {
-          method: "POST",
-          headers: pythonEngineHeaders(),
-          body: JSON.stringify({
-            pdf_base64: bytes.toString("base64"),
-            filename,
-            file_kind: upload.fileKind,
-          }),
-          signal: AbortSignal.timeout(280000),
-          cache: "no-store",
-        });
-      } catch (fetchErr) {
-        console.error(
-          `POST /api/properties/${propertyId}/brf-report failed: request to Python engine threw (${uploadContext}):`,
-          fetchErr
-        );
-        return errorResponse(
-          502,
-          "engine_unreachable",
-          "Kunde inte nå analysmotorn. Försök igen om en stund."
-        );
-      }
-
-      const rawExtractBody = await extractRes.text();
-      const extractBody = (() => {
-        try {
-          return JSON.parse(rawExtractBody);
-        } catch {
-          return null;
-        }
-      })();
-      if (!extractRes.ok || !extractBody?.success) {
-        console.error(
-          `POST /api/properties/${propertyId}/brf-report failed: extraction rejected ` +
-            `(${uploadContext}, engineStatus=${extractRes.status}): ` +
-            rawExtractBody.slice(0, 2000)
-        );
-        return errorResponse(
-          422,
-          "extraction_failed",
-          extractBody?.error ?? "Could not read that PDF as a BRF annual report."
-        );
-      }
-
-      const storagePath = `${knownOrgNumber ?? `property-${propertyId}`}/${contentHash}.${upload.extension}`;
-      const { error: uploadError } = await storage.upload(storagePath, bytes, {
-        contentType: mimeType || "application/octet-stream",
-        upsert: true,
-      });
-      if (uploadError) {
-        console.error(
-          `POST /api/properties/${propertyId}/brf-report failed: storage upload to "${storagePath}" failed (${uploadContext}):`,
-          uploadError
-        );
-        throw new Error(`Storage upload failed: ${uploadError.message}`);
-      }
-
-      report = await insertBrfReport({
-        organizationNumber: knownOrgNumber,
-        fallbackPropertyId: knownOrgNumber ? null : propertyId,
-        contentHash,
-        storagePath,
-        originalFilename: filename || null,
-        fiscalYear: typeof extractBody.fiscal_year === "number" ? extractBody.fiscal_year : null,
-        annualReport: extractBody.annual_report,
-        uploadedBy: user.id,
-      });
+    const apiBase = process.env.PYTHON_ENGINE_API_URL;
+    if (!apiBase) {
+      console.error(
+        `POST /api/properties/${propertyId}/brf-report failed: PYTHON_ENGINE_API_URL is not configured (${uploadContext})`
+      );
+      return errorResponse(
+        503,
+        "not_connected",
+        "The analysis engine is not configured (set PYTHON_ENGINE_API_URL)."
+      );
     }
+
+    let extractRes: Response;
+    try {
+      extractRes = await fetch(`${apiBase.replace(/\/$/, "")}/api/brf-annual-report/upload`, {
+        method: "POST",
+        headers: pythonEngineHeaders(),
+        body: JSON.stringify({
+          pdf_base64: bytes.toString("base64"),
+          filename,
+          file_kind: upload.fileKind,
+        }),
+        signal: AbortSignal.timeout(280000),
+        cache: "no-store",
+      });
+    } catch (fetchErr) {
+      console.error(
+        `POST /api/properties/${propertyId}/brf-report failed: request to Python engine threw (${uploadContext}):`,
+        fetchErr
+      );
+      return errorResponse(
+        502,
+        "engine_unreachable",
+        "Kunde inte nå analysmotorn. Försök igen om en stund."
+      );
+    }
+
+    const rawExtractBody = await extractRes.text();
+    const extractBody = (() => {
+      try {
+        return JSON.parse(rawExtractBody);
+      } catch {
+        return null;
+      }
+    })();
+    if (!extractRes.ok || !extractBody?.success) {
+      console.error(
+        `POST /api/properties/${propertyId}/brf-report failed: extraction rejected ` +
+          `(${uploadContext}, engineStatus=${extractRes.status}): ` +
+          rawExtractBody.slice(0, 2000)
+      );
+      return errorResponse(
+        422,
+        "extraction_failed",
+        extractBody?.error ?? "Could not read that PDF as a BRF annual report."
+      );
+    }
+
+    const storagePath = `${knownOrgNumber ?? `property-${propertyId}`}/${contentHash}.${upload.extension}`;
+    const { error: uploadError } = await storage.upload(storagePath, bytes, {
+      contentType: mimeType || "application/octet-stream",
+      upsert: true,
+    });
+    if (uploadError) {
+      console.error(
+        `POST /api/properties/${propertyId}/brf-report failed: storage upload to "${storagePath}" failed (${uploadContext}):`,
+        uploadError
+      );
+      throw new Error(`Storage upload failed: ${uploadError.message}`);
+    }
+
+    const report = await saveBrfReport({
+      organizationNumber: knownOrgNumber,
+      fallbackPropertyId: knownOrgNumber ? null : propertyId,
+      contentHash,
+      storagePath,
+      originalFilename: filename || null,
+      fiscalYear: typeof extractBody.fiscal_year === "number" ? extractBody.fiscal_year : null,
+      annualReport: extractBody.annual_report,
+      uploadedBy: user.id,
+    });
 
     await updateProperty(propertyId, {
       attributes: {
@@ -248,7 +237,6 @@ export async function POST(
 
     return NextResponse.json({
       brfReportId: report.id,
-      reused,
       analysisId: rerun.analysis.id,
       propertyId: rerun.property.id,
       status: rerun.analysis.status,

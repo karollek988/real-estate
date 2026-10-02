@@ -13,6 +13,7 @@ from brf_scraper.utils.logging import get_logger
 
 from .models import Evidence, ExtractedValue
 from .pdf_reader import PDFDocument
+from .text_normalize import fold_diacritics
 
 logger = get_logger(__name__)
 
@@ -105,8 +106,16 @@ def _as_keyword_spec(keyword: "str | KeywordSpec") -> KeywordSpec:
 
 def _phrase_pattern(phrase: str) -> re.Pattern[str]:
     """Whole word/phrase match - never matches inside a longer compound
-    word (e.g. "skulder" will not match inside "Leverantörsskulder")."""
-    return re.compile(r"(?<!\w)" + re.escape(phrase.lower()) + r"(?!\w)")
+    word (e.g. "skulder" will not match inside "Leverantörsskulder").
+
+    Matches with diacritics folded (see text_normalize.fold_diacritics) —
+    OCR frequently drops å/ä/ö on a scanned page (confirmed against a real
+    annual report: "rörelsekostnader" came back "rorelsekostnader") — so
+    every keyword phrase is folded the same way before matching, rather
+    than requiring a separate no-diacritic variant be hand-added per
+    keyword (as long_term_debt's "lanfristiga skulder" previously was).
+    """
+    return re.compile(r"(?<!\w)" + re.escape(fold_diacritics(phrase)) + r"(?!\w)")
 
 
 # ── Field definitions ──────────────────────────────────────────────────
@@ -119,14 +128,25 @@ INCOME_STATEMENT_FIELDS = {
             "nettointäkter", "omsättning", "omsättningen",
             "total intäkt", "summa intäkter",
             "nettoomsättning", "nettoomsättningen",
-            "rörelseintäkter", "summa rörelseintäkter",
+            # Bare, not "summa rörelseintäkter": a real income statement
+            # states "Rörelseintäkter, lagerförändringar m.m." as its
+            # SECTION HEADER before ever reaching the grand total of the
+            # same name — boosting the "summa"-qualified occurrence stops
+            # the header (or a line item just below it) from being
+            # returned first.
+            KeywordSpec("rörelseintäkter", boost_qualifiers=("summa",)),
+            "summa rörelseintäkter",
             "rörelseintäkter m.m.",
         ],
         "unit": "SEK",
     },
     "operating_costs": {
         "keywords": [
-            "rörelsekostnader", "rörelsekostnaden",
+            # Same section-header-vs-total ambiguity as above: "Rörelsekostnader"
+            # is the header; the real total is "Summa rörelsekostnader",
+            # several lines below the first cost line item.
+            KeywordSpec("rörelsekostnader", boost_qualifiers=("summa",)),
+            "rörelsekostnaden",
             "kostnader för rörelsen", "kostnader",
             "driftskostnader", "rörelseens kostnader",
         ],
@@ -181,19 +201,38 @@ BALANCE_SHEET_FIELDS = {
     },
     "current_assets": {
         "keywords": [
-            "omsättningstillgångar", "omsättningstillgång",
+            # "Omsättningstillgångar" is itself a section header with its own
+            # subsections (kortfristiga fordringar, kassa och bank) above the
+            # real "Summa omsättningstillgångar" total — same ambiguity as
+            # total_equity's "eget kapital" below.
+            KeywordSpec("omsättningstillgångar", boost_qualifiers=("summa",)),
+            KeywordSpec("omsättningstillgång", boost_qualifiers=("summa",)),
         ],
         "unit": "SEK",
     },
     "fixed_assets": {
         "keywords": [
-            "anläggningstillgångar", "anläggningstillgång",
+            KeywordSpec("anläggningstillgångar", boost_qualifiers=("summa",)),
+            KeywordSpec("anläggningstillgång", boost_qualifiers=("summa",)),
         ],
         "unit": "SEK",
     },
     "total_equity": {
         "keywords": [
-            "eget kapital", "aktiekapital och overskottsfond",
+            # "Eget kapital" is a section header, and "Bundet eget kapital" /
+            # "Fritt eget kapital" are its two subsections, each with their
+            # own "Summa bundet/fritt eget kapital" subtotal BEFORE the real
+            # grand total "Summa eget kapital" — four prior candidates that
+            # would otherwise be returned first (confirmed against a real
+            # annual report: unboosted, this matched "Summa bundet eget
+            # kapital", silently substituting restricted capital alone for
+            # the actual total). boost_qualifiers makes the "summa"-prefixed
+            # match win regardless of where it falls in reading order, and
+            # explicitly excludes "bundet"/"fritt eget kapital" (preceded by
+            # a different qualifying word, so KeywordSpec rejects them
+            # outright) from ever being mistaken for the grand total.
+            KeywordSpec("eget kapital", boost_qualifiers=("summa",)),
+            "aktiekapital och overskottsfond",
             "eget kapital totalt", "eget kapital incl",
         ],
         "unit": "SEK",
@@ -209,8 +248,16 @@ BALANCE_SHEET_FIELDS = {
     "long_term_debt": {
         "keywords": [
             "skulder > 1 år", "skulder > 1 ar",
-            "skulder mer än 1 år", "långfristiga skulder",
-            "lanfristiga skulder", "långfristiga skulder totalt",
+            "skulder mer än 1 år",
+            # "Långfristiga skulder" is a section header that can list
+            # several loans before its own "Summa långfristiga skulder" —
+            # boosting means a report with more than one long-term loan
+            # still resolves to the total, not just the first loan listed.
+            # "lanfristiga skulder" is the same phrase with the å dropped,
+            # which is how OCR commonly renders å/ä on a scanned report.
+            KeywordSpec("långfristiga skulder", boost_qualifiers=("summa",)),
+            KeywordSpec("lanfristiga skulder", boost_qualifiers=("summa",)),
+            "långfristiga skulder totalt",
             "skulder till kreditinstitut",
             "långfristiga skulder exklusive",
         ],
@@ -219,7 +266,8 @@ BALANCE_SHEET_FIELDS = {
     "short_term_debt": {
         "keywords": [
             "skulder < 1 år", "skulder < 1 ar",
-            "skulder kortare än 1 år", "kortfristiga skulder",
+            "skulder kortare än 1 år",
+            KeywordSpec("kortfristiga skulder", boost_qualifiers=("summa",)),
         ],
         "unit": "SEK",
     },
@@ -381,12 +429,12 @@ def _find_value_near_keyword(
             # qualifiers - only then is such disambiguation meaningful.
             candidates: list[tuple[int, int]] = []  # (line_index, match_start)
             for i, line in enumerate(lines):
-                m = pattern.search(line.lower())
+                m = pattern.search(fold_diacritics(line))
                 if not m:
                     continue
                 is_boosted = False
                 if spec.boost_qualifiers:
-                    preceding = line[: m.start()].lower().rstrip().split()
+                    preceding = fold_diacritics(line[: m.start()]).rstrip().split()
                     preceding_word = preceding[-1] if preceding else ""
                     is_boosted = preceding_word in spec.boost_qualifiers
                     if preceding_word and not is_boosted:
@@ -689,8 +737,12 @@ def extract_financial_data(
     all_fields = {**INCOME_STATEMENT_FIELDS, **BALANCE_SHEET_FIELDS}
 
     for field_name, config in all_fields.items():
-        # Strategy 1: Try table extraction first (column 1 = current year)
-        table_results = doc.find_in_tables(config["keywords"][0], value_column=1)
+        # Strategy 1: Try table extraction first (column 1 = current year).
+        # keywords[0] may be a KeywordSpec (fields disambiguated against a
+        # section header above their real total) rather than a plain
+        # string — find_in_tables only ever takes a literal phrase.
+        first_keyword = _as_keyword_spec(config["keywords"][0]).phrase
+        table_results = doc.find_in_tables(first_keyword, value_column=1)
         if table_results:
             page_num, val_str = table_results[0]
             num = parse_swedish_number(val_str)
@@ -701,7 +753,7 @@ def extract_financial_data(
                     evidence=Evidence(
                         page=page_num,
                         field=field_name,
-                        label=config["keywords"][0],
+                        label=first_keyword,
                         confidence=0.90,
                         snippet=f"table: {val_str}",
                     ),
@@ -718,6 +770,19 @@ def extract_financial_data(
             ev.evidence.field = field_name
             ev.unit = config["unit"]
             results[field_name] = ev
+
+    # Swedish income statements commonly present cost lines as negative
+    # numbers (a profit-buildup format: revenue + operating_costs =
+    # operating_profit) rather than as a positive magnitude subtracted from
+    # revenue. Every bound, identity check, and downstream ratio (see
+    # analysis_engine/calculator.py's operating_costs / apartment and
+    # / building_area_sqm divisions) treats "costs" as a positive
+    # magnitude, so normalize the sign here — once, at the source — instead
+    # of teaching every consumer to handle either convention.
+    for cost_field in ("operating_costs", "financial_costs"):
+        ev = results.get(cost_field)
+        if ev is not None and isinstance(ev.value, (int, float)):
+            ev.value = abs(ev.value)
 
     return results
 

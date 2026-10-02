@@ -17,7 +17,7 @@ from typing import Any
 # discovery/allabrf_provider.py change in a way that could change a
 # previously-computed result, so cached analyses correctly invalidate
 # (End-to-End Truth Audit fix #3).
-ANALYSIS_ENGINE_VERSION = "1.0.0"
+ANALYSIS_ENGINE_VERSION = "1.1.0"
 
 
 @dataclass(frozen=True)

@@ -77,55 +77,18 @@ function mapRow(row: BrfAnnualReportRow): BrfAnnualReportRecord {
 }
 
 /**
- * Looks for a non-expired report we can reuse instead of re-uploading and
- * re-extracting: an exact byte match (content_hash), or — when no
- * organization_number is known for this upload — the most recent report
- * already on file for this property.
+ * Stores an extracted report, one row per distinct file (content_hash is
+ * unique). Uploading a file that is already on file refreshes that row with
+ * the new extraction instead of returning the old one.
+ *
+ * An upload used to be answered from whatever was already stored — for a
+ * byte-identical file, and (when no organization number was known) for ANY
+ * earlier report on the same property — so a poor extraction from an older
+ * engine version was returned again for every later upload, however good the
+ * current extractor is, and a newer report could never replace it. A person
+ * who uploads a document wants it read now, so it is always re-extracted.
  */
-export async function findReusableBrfReport(input: {
-  contentHash: string;
-  organizationNumber: string | null;
-  propertyId: string;
-}): Promise<BrfAnnualReportRecord | null> {
-  const client = createAdminClient();
-  const nowIso = new Date().toISOString();
-
-  const { data: exact, error: exactError } = await client
-    .from("brf_annual_reports")
-    .select("*")
-    .eq("content_hash", input.contentHash)
-    .gt("retain_until", nowIso)
-    .maybeSingle();
-  if (exactError) throw new Error(`findReusableBrfReport failed: ${exactError.message}`);
-  if (exact) return mapRow(exact as BrfAnnualReportRow);
-
-  if (input.organizationNumber) {
-    const { data: byOrg, error: orgError } = await client
-      .from("brf_annual_reports")
-      .select("*")
-      .eq("organization_number", input.organizationNumber)
-      .gt("retain_until", nowIso)
-      .order("created_at", { ascending: false })
-      .limit(1)
-      .maybeSingle();
-    if (orgError) throw new Error(`findReusableBrfReport failed: ${orgError.message}`);
-    if (byOrg) return mapRow(byOrg as BrfAnnualReportRow);
-    return null;
-  }
-
-  const { data: byProperty, error: propertyError } = await client
-    .from("brf_annual_reports")
-    .select("*")
-    .eq("fallback_property_id", input.propertyId)
-    .gt("retain_until", nowIso)
-    .order("created_at", { ascending: false })
-    .limit(1)
-    .maybeSingle();
-  if (propertyError) throw new Error(`findReusableBrfReport failed: ${propertyError.message}`);
-  return byProperty ? mapRow(byProperty as BrfAnnualReportRow) : null;
-}
-
-export async function insertBrfReport(input: {
+export async function saveBrfReport(input: {
   organizationNumber: string | null;
   fallbackPropertyId: string | null;
   contentHash: string;
@@ -138,19 +101,23 @@ export async function insertBrfReport(input: {
 }): Promise<BrfAnnualReportRecord> {
   const { data, error } = await createAdminClient()
     .from("brf_annual_reports")
-    .insert({
-      organization_number: input.organizationNumber,
-      fallback_property_id: input.fallbackPropertyId,
-      content_hash: input.contentHash,
-      storage_path: input.storagePath,
-      original_filename: input.originalFilename,
-      fiscal_year: input.fiscalYear,
-      annual_report: input.annualReport,
-      uploaded_by: input.uploadedBy,
-    })
+    .upsert(
+      {
+        organization_number: input.organizationNumber,
+        fallback_property_id: input.fallbackPropertyId,
+        content_hash: input.contentHash,
+        storage_path: input.storagePath,
+        original_filename: input.originalFilename,
+        fiscal_year: input.fiscalYear,
+        annual_report: input.annualReport,
+        uploaded_by: input.uploadedBy,
+        retain_until: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString(),
+      },
+      { onConflict: "content_hash" }
+    )
     .select("*")
     .single();
-  if (error) throw new Error(`insertBrfReport failed: ${error.message}`);
+  if (error) throw new Error(`saveBrfReport failed: ${error.message}`);
   return mapRow(data as BrfAnnualReportRow);
 }
 
