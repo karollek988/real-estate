@@ -361,6 +361,10 @@ async def brf_annual_report_upload(req: BrfAnnualReportUploadRequest):
         "annual_report": financials,
         "fiscal_year": result.fiscal_year,
         "verification_status": financials["verification_status"],
+        # The mandatory key figures as printed in the report — a prefill for
+        # the person who reviews the BRF analysis before a customer sees it
+        # (extractor/key_figures.py; frontend/src/lib/brf/reviews.ts).
+        "key_figures": result.key_figures,
     }
 
 

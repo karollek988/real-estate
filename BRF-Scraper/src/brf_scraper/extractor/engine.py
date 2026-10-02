@@ -21,6 +21,7 @@ from .property_extractor import (
     extract_board_members,
     extract_property_details,
 )
+from .key_figures import key_figures_payload
 from .validation import (
     verify_income_statement,
     verify_balance_sheet,
@@ -74,6 +75,15 @@ def extract_annual_report(
 
     # Step 2: Detect fiscal year
     result.fiscal_year = _detect_fiscal_year(doc)
+
+    # Step 2b: The mandatory key figures (flerårsöversikten), as a prefill
+    # for the person who reviews the BRF analysis. Never fails the extraction.
+    try:
+        result.key_figures = key_figures_payload(
+            [(p.page_number, p.text) for p in doc.pages], result.fiscal_year
+        )
+    except Exception as e:  # pragma: no cover - defensive, the parser is pure
+        logger.warning("key_figures_failed", path=pdf_path, error=str(e))
 
     # Step 3: Extract financial data
     financial = extract_financial_data(doc)

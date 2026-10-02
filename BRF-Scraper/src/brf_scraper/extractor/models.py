@@ -96,6 +96,12 @@ class ExtractionResult(BaseModel):
     verification: dict[str, FieldVerification] = Field(default_factory=dict)
     loan_verification: list[dict[str, FieldVerification]] = Field(default_factory=list)
 
+    # The mandatory key figures read straight from the förvaltningsberättelse
+    # (extractor/key_figures.py): {"values": {...}, "evidence": {...}}, keyed
+    # like the review form. A prefill for the Köpanalys reviewer only — it
+    # never reaches a customer without a person checking it.
+    key_figures: dict = Field(default_factory=dict)
+
     @property
     def has_financial_data(self) -> bool:
         return bool(self.income_statement or self.balance_sheet)
