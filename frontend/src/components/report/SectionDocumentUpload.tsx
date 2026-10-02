@@ -146,7 +146,13 @@ export function SectionDocumentUpload({
 
       const data = await res.json().catch(() => null);
       if (typeof data?.analysisId === "string") {
-        window.location.href = `/report?id=${data.analysisId}`;
+        // The endpoint only starts the re-run and returns a *pending*
+        // analysis (pipeline.ts's startPipelineInBackground finishes the
+        // actual work after the response via after()) — going straight to
+        // /report would hit it before it's complete and show a false
+        // failure. /analyzing polls until the analysis is actually done,
+        // exactly like UpdateAnalysisButton's own redirect.
+        window.location.href = `/analyzing?id=${data.analysisId}`;
       } else {
         window.location.reload();
       }
