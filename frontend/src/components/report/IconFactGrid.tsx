@@ -5,8 +5,7 @@ export interface IconFactRow {
 }
 
 /** Two-column icon + label + value list — the property-facts treatment from
- *  the blueprint, built from the exact same rows KeyValueTable would render
- *  (this only changes presentation, not which facts appear). */
+ *  the blueprint (presentation only, it never changes which facts appear). */
 export function IconFactGrid({ rows }: { rows: IconFactRow[] }) {
   return (
     <div className="grid grid-cols-1 gap-x-8 sm:grid-cols-2">

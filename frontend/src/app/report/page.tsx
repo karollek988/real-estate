@@ -1,26 +1,26 @@
 import Link from "next/link";
 import Image from "next/image";
 import { redirect } from "next/navigation";
+import { after } from "next/server";
 import localFont from "next/font/local";
 import { getReportForViewer } from "@/lib/analysis/access";
 import { createClient } from "@/lib/supabase/server";
+import { isAdminUser } from "@/lib/auth/admin";
 import { analysisAgeDays, FRESH_ANALYSIS_MAX_AGE_DAYS } from "@/lib/analysis/pipeline";
 import type {
   AnalysisRecord,
   AnalysisReport,
   DataSourceReport,
-  DecisionFactorResult,
   PropertyRecord,
+  ReportFactor,
 } from "@/lib/analysis/types";
+import { ensureBrfReview, getBrfReview, type BrfReviewRecord } from "@/lib/brf/reviews";
+import { notifyTeamOfBrfReview } from "@/lib/brf/notify";
 import { UpdateAnalysisButton } from "@/components/report/UpdateAnalysisButton";
-import { SectionDocumentUpload } from "@/components/report/SectionDocumentUpload";
-import { MAX_BRF_REPORT_BYTES } from "@/lib/analysis/brfReports";
-import { KeyValueTable } from "@/components/report/KeyValueTable";
-import { ComparableSalesTable } from "@/components/report/ComparableSalesTable";
+import { BrfReportUpload } from "@/components/report/BrfReportUpload";
+import { BrfAnalysis } from "@/components/report/BrfAnalysis";
 import { IconFactGrid, type IconFactRow } from "@/components/report/IconFactGrid";
 import { RiskCategoryCard } from "@/components/report/RiskCategoryCard";
-import { PriceComparisonBar } from "@/components/report/PriceComparisonBar";
-import { SegmentedMeter } from "@/components/report/SegmentedMeter";
 import { MetricCard } from "@/components/report/MetricCard";
 import { Callout } from "@/components/report/Callout";
 import { AmenityGrid } from "@/components/report/AmenityGrid";
@@ -31,10 +31,7 @@ import { Watermark } from "@/components/report/Watermark";
 import {
   buildAreaAnalysis,
   buildExecutiveSummary,
-  buildFinalRecommendation,
-  buildHousingAssociation,
   buildInvestmentOutlook,
-  buildPriceAnalysis,
   buildPropertyOverview,
   buildRiskCategories,
   sek,
@@ -45,6 +42,10 @@ import {
   type CommuteInfo,
   type OverviewRow,
 } from "@/lib/report/build";
+import { brfChapterState, brfIntroParagraphs, type BrfChapterState, type BrfReviewView } from "@/lib/report/brfChapter";
+import { buildQuestions } from "@/lib/report/questions";
+import { tenureOf } from "@/lib/report/tenure";
+import { decSv, ratePctSv } from "@/lib/report/format";
 import {
   HouseIcon,
   BuildingIcon,
@@ -92,14 +93,10 @@ const serif = localFont({
 const serifStyle: React.CSSProperties = { fontFamily: "var(--font-report-serif)" };
 
 /* ─── Presentation-only helpers ─────────────────────────────────────────
-   Everything below reads numbers the Decision Engine already computed
-   (report.decisionFactors / build.ts's own return values) and buckets them
-   into a UI band. No score, verdict, or sentence is derived or altered — the
-   thresholds mirror ones build.ts already uses for the same factor
-   (e.g. negotiation's 50/60 cutoffs) so the visual never disagrees with the
-   prose sitting next to it. */
+   These only read facts build.ts already composed or the analysis collected;
+   nothing here derives a rating. */
 
-function factorOf(report: AnalysisReport, id: string): DecisionFactorResult | undefined {
+function factorOf(report: AnalysisReport, id: string): ReportFactor | undefined {
   return report.decisionFactors?.find((f) => f.id === id);
 }
 
@@ -107,44 +104,16 @@ function numOf(value: unknown): number | null {
   return typeof value === "number" && Number.isFinite(value) ? value : null;
 }
 
-function priceBandFromDelta(deltaPct: number): { label: string; bandIndex: number } {
-  if (deltaPct <= -5) return { label: "Under snittet", bandIndex: 0 };
-  if (deltaPct >= 5) return { label: "Över snittet", bandIndex: 2 };
-  return { label: "I linje med snittet", bandIndex: 1 };
-}
-
-function burdenBand(burdenPct: number): { label: string; bandIndex: number } {
-  if (burdenPct < 30) return { label: "Överkomlig", bandIndex: 0 };
-  if (burdenPct < 45) return { label: "Måttlig", bandIndex: 1 };
-  return { label: "Tung", bandIndex: 2 };
-}
-
-const PRICE_RANGE_SV: Record<string, string> = {
-  "entry-level": "Instegsbostad",
-  "mid-range": "Mellansegment",
-  "upper mid-range": "Övre mellansegment",
-  premium: "Premium",
-};
-
-/** Mirrors the 50/60 cutoffs build.ts already uses for this exact factor
- *  (see negotiationArgumentsSv). Labels describe the size of the observed
- *  negotiating room, not a suggestion to act on it. */
-function negotiationBand(score: number): { label: string; bandIndex: number } {
-  if (score >= 60) return { label: "Stort utrymme", bandIndex: 2 };
-  if (score >= 50) return { label: "Måttligt utrymme", bandIndex: 1 };
-  return { label: "Begränsat utrymme", bandIndex: 0 };
-}
-
 function civicRows(civic: CivicStatsInfo): IconFactRow[] {
   const rows: IconFactRow[] = [];
   if (civic.safetyIndex !== null) {
-    rows.push({ icon: <BadgeCheckIcon className="h-4 w-4" />, label: "Trygghetsindex (Kolada, kommunnivå)", value: civic.safetyIndex.toFixed(1) });
+    rows.push({ icon: <BadgeCheckIcon className="h-4 w-4" />, label: "Trygghetsindex (Kolada, kommunnivå)", value: decSv(civic.safetyIndex) });
   }
   if (civic.recentPoliceEvents !== null) {
     rows.push({ icon: <WarningIcon className="h-4 w-4" />, label: "Polisens händelser, senaste 30 dagarna (länsnivå)", value: String(civic.recentPoliceEvents) });
   }
   if (civic.voterTurnoutPct !== null) {
-    rows.push({ icon: <PercentIcon className="h-4 w-4" />, label: "Valdeltagande, senaste kommunvalet", value: `${civic.voterTurnoutPct}%` });
+    rows.push({ icon: <PercentIcon className="h-4 w-4" />, label: "Valdeltagande, senaste kommunvalet", value: ratePctSv(civic.voterTurnoutPct) });
   }
   return rows;
 }
@@ -197,28 +166,10 @@ const RISK_ICON: Record<string, React.ReactNode> = {
   interest_rate: <PercentIcon className="h-4 w-4" />,
   housing_association: <BuildingIcon className="h-4 w-4" />,
   area: <MapPinIcon className="h-4 w-4" />,
-  liquidity: <WalletIcon className="h-4 w-4" />,
+  fee: <WalletIcon className="h-4 w-4" />,
   environmental: <WarningIcon className="h-4 w-4" />,
   construction: <BuildingIcon className="h-4 w-4" />,
   future: <CraneIcon className="h-4 w-4" />,
-};
-
-const BRF_METRIC_ICON: Record<string, React.ReactNode> = {
-  Soliditet: <PercentIcon className="h-3.5 w-3.5" />,
-  Rörelsemarginal: <PercentIcon className="h-3.5 w-3.5" />,
-  "Skuld per lägenhet": <WalletIcon className="h-3.5 w-3.5" />,
-  "Avgiftsnivå (index)": <ChartIcon className="h-3.5 w-3.5" />,
-  Likviditet: <WalletIcon className="h-3.5 w-3.5" />,
-  Skuldandel: <PercentIcon className="h-3.5 w-3.5" />,
-  "Skuld/eget kapital": <ChartIcon className="h-3.5 w-3.5" />,
-  "Total låneskuld": <WalletIcon className="h-3.5 w-3.5" />,
-  "Vägt genomsnittlig ränta": <PercentIcon className="h-3.5 w-3.5" />,
-  "Andel kortfristig skuld": <PercentIcon className="h-3.5 w-3.5" />,
-  "Driftskostnad per m²": <WalletIcon className="h-3.5 w-3.5" />,
-  "Hyresrätter i föreningen": <BuildingIcon className="h-3.5 w-3.5" />,
-  "Kommersiella lokaler": <BuildingIcon className="h-3.5 w-3.5" />,
-  Parkeringsplatser: <BuildingIcon className="h-3.5 w-3.5" />,
-  Garageplatser: <BuildingIcon className="h-3.5 w-3.5" />,
 };
 
 const FACT_GROUPS: { title: string; icon: React.ReactNode; labels: string[] }[] = [
@@ -324,8 +275,9 @@ function ChapterTitle({
   );
 }
 
-function ChapterSources({ dataSources, ids }: { dataSources: DataSourceReport[]; ids?: string[] }) {
-  const names = sourcesUsed(dataSources, ids);
+function ChapterSources({ dataSources, ids, extra = [] }: { dataSources: DataSourceReport[]; ids?: string[]; extra?: string[] }) {
+  const names = Array.from(new Set([...sourcesUsed(dataSources, ids), ...extra]));
+  if (names.length === 0) return null;
   return (
     <div className="relative mt-10 border-t border-black/10 pt-4">
       <p className="text-[11px] font-semibold uppercase tracking-wide text-[#8C8471]">Källor</p>
@@ -371,7 +323,7 @@ function FactGroup({ title, icon, rows }: { title: string; icon: React.ReactNode
   );
 }
 
-/** The report's cover. `lead` is the optional first paragraph under the facts (the full report puts its price verdict there). */
+/** The report's cover. `lead` is the optional first paragraph under the facts. */
 function ReportCover({
   p,
   generatedDate,
@@ -542,112 +494,113 @@ function AreaChapter({
   );
 }
 
+const CHECKLIST_ITEM = "flex items-start gap-2 text-[14px] leading-relaxed text-[#2A2820]";
+
+function QuestionList({ items, color = "#12271D" }: { items: string[]; color?: string }) {
+  return (
+    <ul className="relative space-y-2">
+      {items.map((q) => (
+        <li key={q} className={CHECKLIST_ITEM}>
+          <span className="mt-[9px] h-1.5 w-1.5 shrink-0 rounded-full" style={{ backgroundColor: color }} />
+          <span>{q}</span>
+        </li>
+      ))}
+    </ul>
+  );
+}
+
+const HOUSING_COST_PREVIEW = [
+  "Vad bostaden kostar dig varje månad: avgift eller driftskostnad, ränta och amortering vid olika räntenivåer.",
+  "Engångskostnaderna vid köpet — till exempel lagfart och pantbrev när du köper ett hus.",
+  "Avgifter som är lätta att missa, som överlåtelse- och pantsättningsavgift och kommande avgiftshöjningar i föreningen.",
+];
+
 function FullReportBody({
   p,
   attributes,
   property,
   analysis,
   generatedDate,
+  brf,
 }: {
   p: AnalysisReport;
   attributes: Record<string, unknown>;
   property: PropertyRecord;
   analysis: AnalysisRecord;
   generatedDate: string;
+  brf: BrfChapterState;
 }) {
   // Every chapter below is built from the viewer's own report (p). There are
   // no locked chapters: whoever holds the full analysis sees all of it. (An
   // area-only viewer never reaches this component — see ReportPage.)
-  const priceAnalysis = buildPriceAnalysis(p, attributes);
   const overviewRows = buildPropertyOverview(p, attributes);
-  const brf = buildHousingAssociation(p, p.dataSources);
-
-  const executiveSummary = buildExecutiveSummary(p);
+  const executiveSummary = buildExecutiveSummary(p, brf);
   const areaAnalysis = buildAreaAnalysis(p, attributes, p.dataSources);
-  const riskCategories = buildRiskCategories(p, p.dataSources);
+  const riskCategories = buildRiskCategories(p, p.dataSources, brf);
   const investmentOutlook = buildInvestmentOutlook(p);
-  const recommendation = buildFinalRecommendation(p);
+  const questions = buildQuestions(p, brf);
 
-  const priceParagraphs = priceAnalysis.paragraphs;
-
-  const priceFactor = factorOf(p, "price");
   const marketFactor = factorOf(p, "market");
   const futureFactor = factorOf(p, "futureDevelopment");
-  const negotiationFactor = factorOf(p, "negotiation");
-
-  const costBurdenPct = numOf(priceFactor?.supportingData.costBurdenPct);
-  const priceRangeRaw = priceFactor?.supportingData.priceRange;
-  const priceRange = typeof priceRangeRaw === "string" ? priceRangeRaw : null;
   const rateChangePctPoints = numOf(marketFactor?.supportingData.policyRateChangePctPoints);
   const currentPolicyRatePct = numOf(marketFactor?.supportingData.currentPolicyRatePct);
   const employmentRatePct = numOf(marketFactor?.supportingData.municipalityEmploymentRatePct);
   const plannedProjectsCount = numOf(futureFactor?.supportingData.nearbyPlannedProjectsCount);
-  const negotiationScore = negotiationFactor?.score ?? null;
-
-  const priceCards: { icon: React.ReactNode; label: string; value: string; sub?: string }[] = [];
-  if (p.property.askingPriceSek !== null) priceCards.push({ icon: <WalletIcon className="h-3.5 w-3.5" />, label: "Utgångspris", value: sek(p.property.askingPriceSek) });
-  if (p.property.pricePerM2Sek !== null) priceCards.push({ icon: <ChartIcon className="h-3.5 w-3.5" />, label: "Pris per m²", value: sekPerM2(p.property.pricePerM2Sek) });
-  if (priceAnalysis.comparison) {
-    const band = priceBandFromDelta(priceAnalysis.comparison.deltaPct);
-    priceCards.push({ icon: <TrendingUpIcon className="h-3.5 w-3.5" />, label: "Område", value: band.label, sub: `${priceAnalysis.comparison.deltaPct > 0 ? "+" : ""}${priceAnalysis.comparison.deltaPct}%` });
-  } else if (priceRange) {
-    priceCards.push({ icon: <TrendingUpIcon className="h-3.5 w-3.5" />, label: "Prisnivå", value: PRICE_RANGE_SV[priceRange] ?? priceRange });
-  }
-  if (priceAnalysis.comparableSales.length > 0) {
-    priceCards.push({ icon: <ClipboardIcon className="h-3.5 w-3.5" />, label: "Jämförbara försäljningar", value: String(priceAnalysis.comparableSales.length) });
-  }
-
-  const priceMeter = priceAnalysis.comparison
-    ? { bands: ["Under snittet", "I linje", "Över snittet"], activeIndex: priceBandFromDelta(priceAnalysis.comparison.deltaPct).bandIndex, caption: "Positionering mot områdets medianpris per m²" }
-    : costBurdenPct !== null
-      ? { bands: ["Överkomlig", "Måttlig", "Tung"], activeIndex: burdenBand(costBurdenPct).bandIndex, caption: "Uppskattad månadskostnad i förhållande till medianinkomst" }
-      : null;
 
   const macroCards: { icon: React.ReactNode; label: string; value: string; sub?: string }[] = [];
   if (rateChangePctPoints !== null) {
     macroCards.push({
       icon: <PercentIcon className="h-3.5 w-3.5" />,
       label: "Styrränta, 12 mån",
-      value: `${rateChangePctPoints > 0 ? "+" : ""}${rateChangePctPoints.toFixed(2)} pp`,
-      sub: currentPolicyRatePct !== null ? `Nu ${currentPolicyRatePct.toFixed(1)}%` : undefined,
+      value: `${rateChangePctPoints > 0 ? "+" : ""}${decSv(rateChangePctPoints, 2)} p.e.`,
+      sub: currentPolicyRatePct !== null ? `Nu ${ratePctSv(currentPolicyRatePct)}` : undefined,
     });
   }
   if (employmentRatePct !== null) {
-    macroCards.push({ icon: <BadgeCheckIcon className="h-3.5 w-3.5" />, label: "Sysselsättningsgrad", value: `${employmentRatePct.toFixed(1)}%` });
+    macroCards.push({ icon: <BadgeCheckIcon className="h-3.5 w-3.5" />, label: "Sysselsättningsgrad", value: `${decSv(employmentRatePct)} %` });
   }
   if (plannedProjectsCount !== null) {
     macroCards.push({ icon: <CraneIcon className="h-3.5 w-3.5" />, label: "Planerade projekt", value: String(plannedProjectsCount) });
   }
 
+  // Page numbers follow the chapters actually shown (a house has no BRF chapter).
+  let pageNumber = 1;
+  const nextPage = () => ++pageNumber;
+
   return (
     <>
       {/* ══════════════════════════════════════════════════════════
-          1. COVER
+          COVER
          ══════════════════════════════════════════════════════════ */}
-      <ReportCover p={p} generatedDate={generatedDate} lead={priceParagraphs[0]} />
+      <ReportCover
+        p={p}
+        generatedDate={generatedDate}
+        kind="Trygghetspaket"
+        lead={
+          brf.kind === "freehold"
+            ? "En samlad genomgång av det som påverkar köpet: bostaden, området, riskerna och frågorna att ställa innan du bjuder."
+            : "En samlad genomgång av det som påverkar köpet: föreningens ekonomi, området, riskerna och frågorna att ställa innan du bjuder."
+        }
+      />
 
       {/* ══════════════════════════════════════════════════════════
-          2. EXECUTIVE SUMMARY
+          EXECUTIVE SUMMARY
          ══════════════════════════════════════════════════════════ */}
-      <Page n={2}>
-        <ChapterTitle icon={<ClipboardIcon className="h-5 w-5" />} sub="En samlad läsning av hela analysen — pris, styrkor och svagheter utifrån tillgänglig data.">
+      <Page n={nextPage()}>
+        <ChapterTitle icon={<ClipboardIcon className="h-5 w-5" />} sub="Vad rapporten innehåller, vad som granskas och vad som saknas.">
           Sammanfattning
         </ChapterTitle>
-        {executiveSummary && (
-          <>
-            <div className="relative mb-8 max-w-[220px]">
-              <MetricCard icon={<DatabaseIcon className="h-3.5 w-3.5" />} label="Anslutna källor" value={`${p.dataCompleteness.connectedSources}/${p.dataCompleteness.totalSources}`} />
-            </div>
-            <Prose paragraphs={executiveSummary} />
-            <ChapterSources dataSources={p.dataSources} />
-          </>
-        )}
+        <div className="relative mb-8 max-w-[220px]">
+          <MetricCard icon={<DatabaseIcon className="h-3.5 w-3.5" />} label="Anslutna källor" value={`${p.dataCompleteness.connectedSources}/${p.dataCompleteness.totalSources}`} />
+        </div>
+        <Prose paragraphs={executiveSummary} />
+        <ChapterSources dataSources={p.dataSources} />
       </Page>
 
       {/* ══════════════════════════════════════════════════════════
-          3. PROPERTY OVERVIEW
+          PROPERTY OVERVIEW
          ══════════════════════════════════════════════════════════ */}
-      <Page n={3}>
+      <Page n={nextPage()}>
         <ChapterTitle icon={<BuildingIcon className="h-5 w-5" />} sub="Samtliga tillgängliga uppgifter om bostaden. Fält som inte kunnat verifieras anges som Uppgift saknas.">
           Fastighetsinformation
         </ChapterTitle>
@@ -705,288 +658,150 @@ function FullReportBody({
       </Page>
 
       {/* ══════════════════════════════════════════════════════════
-          4. PRICE ANALYSIS
+          BOENDEKALKYL — placeholder until it is built (the verified cost
+          rules it will use are in lib/report/housingCost.ts)
          ══════════════════════════════════════════════════════════ */}
-      <Page n={4}>
-        <ChapterTitle icon={<WalletIcon className="h-5 w-5" />} sub="Prisnivå jämfört med området, baserat på tillgänglig data.">
+      <Page n={nextPage()}>
+        <ChapterTitle icon={<WalletIcon className="h-5 w-5" />} sub="Vad bostaden kostar dig — varje månad och vid köpet.">
           Boendekalkyl
         </ChapterTitle>
+        <div className="relative rounded-lg border border-dashed border-[#B98A2E]/45 bg-[#B98A2E]/[0.05] p-6 sm:p-7">
+          <span className="inline-flex rounded-full bg-[#B98A2E]/15 px-3 py-1 text-[12px] font-semibold text-[#7A5A16]">Lanseras inom kort</span>
+          <p style={serifStyle} className="mt-4 text-[20px] font-semibold leading-snug text-[#12271D]">
+            Boendekalkylen håller på att färdigställas
+          </p>
+          <p className="mt-2 text-[14.5px] leading-relaxed text-[#2A2820]">
+            Här kommer du att se vad bostaden kostar dig på riktigt, och inte bara priset i annonsen:
+          </p>
+          <ul className="mt-3 space-y-2">
+            {HOUSING_COST_PREVIEW.map((item) => (
+              <li key={item} className={CHECKLIST_ITEM}>
+                <CheckIcon className="mt-1 h-3.5 w-3.5 shrink-0 text-[#B98A2E]" />
+                <span>{item}</span>
+              </li>
+            ))}
+          </ul>
+        </div>
+      </Page>
 
-        {priceAnalysis.verdict && (
-          <Callout icon={<TrendingUpIcon className="h-4 w-4" />}>
-            <span className="font-semibold">Sammanfattande bedömning: </span>
-            {priceAnalysis.verdict}
-          </Callout>
-        )}
+      {/* ══════════════════════════════════════════════════════════
+          HOUSING ASSOCIATION — reviewed by a person before it is shown
+         ══════════════════════════════════════════════════════════ */}
+      {brf.kind !== "freehold" && (
+        <Page n={nextPage()}>
+          <ChapterTitle icon={<BuildingIcon className="h-5 w-5" />} sub="Föreningens ekonomi i klartext — granskad av Köpanalys." accent={BRF_ACCENT}>
+            Bostadsrättsförening
+          </ChapterTitle>
+          <div className="mb-6">
+            <Prose paragraphs={brfIntroParagraphs(p)} />
+          </div>
+          <BrfAnalysis
+            state={brf}
+            associationName={p.property.housingAssociation}
+            upload={
+              brf.kind === "not_applicable" ? undefined : (
+                <BrfReportUpload
+                  propertyId={property.id}
+                  label={brf.kind === "published" ? "Har föreningen en nyare årsredovisning?" : "Ladda upp föreningens årsredovisning"}
+                  description={
+                    brf.kind === "published"
+                      ? "Ladda upp den (PDF, Word eller foto) så granskar vi den och uppdaterar analysen inom 24 timmar."
+                      : "PDF, Word eller foto av årsredovisningen, högst 20 MB. Du får den av mäklaren eller föreningen."
+                  }
+                />
+              )
+            }
+          />
+          {brf.kind === "published" && <ChapterSources dataSources={[]} extra={["Föreningens årsredovisning, granskad av Köpanalys"]} />}
+        </Page>
+      )}
 
-        {priceCards.length > 0 && (
-          <div className="relative mb-8 grid grid-cols-2 gap-2.5 sm:grid-cols-4">
-            {priceCards.map((c) => (
+      {/* ══════════════════════════════════════════════════════════
+          AREA ANALYSIS
+         ══════════════════════════════════════════════════════════ */}
+      <AreaChapter n={nextPage()} areaAnalysis={areaAnalysis} dataSources={p.dataSources} />
+
+      {/* ══════════════════════════════════════════════════════════
+          POSSIBLE RISKS
+         ══════════════════════════════════════════════════════════ */}
+      <Page n={nextPage()}>
+        <ChapterTitle icon={<WarningIcon className="h-5 w-5" />} sub="Faktorer värda att undersöka vidare, baserat på tillgänglig data." accent={RISK_ACCENT}>
+          Möjliga risker
+        </ChapterTitle>
+        <div className="relative">
+          {riskCategories.map((risk) => (
+            <RiskCategoryCard key={risk.id} risk={risk} icon={RISK_ICON[risk.id] ?? <WarningIcon className="h-4 w-4" />} />
+          ))}
+        </div>
+        <ChapterSources
+          dataSources={p.dataSources}
+          ids={["hemnet_page_scrape", "interest_rates", "scb_area_statistics", "osm_amenities", "location_intelligence", "infrastructure_projects"]}
+          extra={brf.kind === "published" ? ["Föreningens årsredovisning, granskad av Köpanalys"] : []}
+        />
+      </Page>
+
+      {/* ══════════════════════════════════════════════════════════
+          FUTURE OUTLOOK
+         ══════════════════════════════════════════════════════════ */}
+      <Page n={nextPage()}>
+        <ChapterTitle icon={<TrendingUpIcon className="h-5 w-5" />} sub="Ränteläge, sysselsättning och planerade projekt som kan påverka området framöver.">
+          Framtidsutsikter
+        </ChapterTitle>
+        {macroCards.length > 0 && (
+          <div className="relative mb-8 grid grid-cols-2 gap-2.5 sm:grid-cols-3">
+            {macroCards.map((c) => (
               <MetricCard key={c.label} icon={c.icon} label={c.label} value={c.value} sub={c.sub} />
             ))}
           </div>
         )}
 
-        <Prose paragraphs={priceParagraphs} />
+        <Prose paragraphs={investmentOutlook.paragraphs.slice(0, 3)} />
 
-        {priceMeter && (
+        {investmentOutlook.futureProjects.length > 0 && (
           <>
-            <SubHeading icon={<ChartIcon className="h-4 w-4" />}>Bedömning</SubHeading>
-            <p className="relative -mt-2 mb-3 text-[12px] text-[#8C8471]">{priceMeter.caption}</p>
-            <div className="relative">
-              <SegmentedMeter bands={priceMeter.bands} activeIndex={priceMeter.activeIndex} />
+            <SubHeading icon={<CraneIcon className="h-4 w-4" />}>Planerad utveckling i närområdet</SubHeading>
+            <div className="relative grid grid-cols-1 gap-2.5 sm:grid-cols-2">
+              {investmentOutlook.futureProjects.map((proj, i) => (
+                <ProjectCard key={i} name={proj} />
+              ))}
             </div>
           </>
         )}
 
-        {priceAnalysis.comparison && (
-          <>
-            <SubHeading icon={<TrendingUpIcon className="h-4 w-4" />}>Jämförelse med området</SubHeading>
-            <div className="relative">
-              <PriceComparisonBar
-                thisPricePerM2={priceAnalysis.comparison.thisPricePerM2}
-                areaMedianPerM2={priceAnalysis.comparison.areaMedianPerM2}
-              />
-            </div>
-          </>
+        {investmentOutlook.paragraphs[3] && (
+          <Callout icon={<LightbulbIcon className="h-4 w-4" />}>{investmentOutlook.paragraphs[3]}</Callout>
         )}
-
-        <SubHeading icon={<ChartIcon className="h-4 w-4" />}>Prisutveckling i området</SubHeading>
-        {priceAnalysis.areaSoldPriceTrend.length > 0 ? (
-          <div className="relative">
-            <KeyValueTable
-              rows={priceAnalysis.areaSoldPriceTrend.map((t) => ({
-                label: t.period,
-                value: `${sekPerM2(t.medianPricePerM2Sek)} (${t.count} försäljning${t.count === 1 ? "" : "ar"})`,
-              }))}
-            />
-          </div>
-        ) : (
-          <p className="relative text-[13.5px] italic text-[#8C8471]">Ingen prisutvecklingsdata tillgänglig för området i denna analys.</p>
-        )}
-
-        <SubHeading icon={<ClipboardIcon className="h-4 w-4" />}>Jämförbara sålda bostäder</SubHeading>
-        {priceAnalysis.comparableSales.length > 0 ? (
-          <ComparableSalesTable rows={priceAnalysis.comparableSales.slice(0, 10)} />
-        ) : (
-          <p className="relative text-[13.5px] italic text-[#8C8471]">Inga jämförbara sålda bostäder tillgängliga i denna analys.</p>
-        )}
-        <ChapterSources dataSources={p.dataSources} ids={["hemnet_page_scrape", "booli_listing", "scb_area_statistics", "interest_rates", "market_intelligence"]} />
+        <ChapterSources dataSources={p.dataSources} ids={["interest_rates", "scb_area_statistics", "market_intelligence", "location_intelligence", "infrastructure_projects"]} />
       </Page>
 
       {/* ══════════════════════════════════════════════════════════
-          5. AREA ANALYSIS
+          QUESTIONS BEFORE THE VIEWING
          ══════════════════════════════════════════════════════════ */}
-      <AreaChapter n={5} areaAnalysis={areaAnalysis} dataSources={p.dataSources} />
-
-      {/* ══════════════════════════════════════════════════════════
-          6. HOUSING ASSOCIATION
-         ══════════════════════════════════════════════════════════ */}
-      <Page n={6}>
-        <ChapterTitle icon={<BuildingIcon className="h-5 w-5" />} sub="Föreningens redovisade nyckeltal och ekonomiska ställning." accent={BRF_ACCENT}>
-          Bostadsrättsförening
+      <Page n={nextPage()} source="Sammanställt av Köpanalys" className="pb-16">
+        <ChapterTitle
+          icon={<QuestionIcon className="h-5 w-5" />}
+          sub={
+            questions.association.length > 0
+              ? "Det som är bra att fråga mäklaren och föreningen inför visningen och ett eventuellt bud."
+              : "Det som är bra att fråga mäklaren inför visningen och ett eventuellt bud."
+          }
+        >
+          Frågor inför visningen
         </ChapterTitle>
-        <Prose paragraphs={brf.paragraphs} />
 
-        <SubHeading icon={<ChartIcon className="h-4 w-4" />} accent={BRF_ACCENT}>Nyckeltal</SubHeading>
-        {brf.metrics.length === 1 && brf.metrics[0].label === "Finansiella nyckeltal" ? (
-          <p className="relative text-[13.5px] italic text-[#8C8471]">{brf.metrics[0].value}</p>
-        ) : (
-          <div className="relative grid grid-cols-2 gap-2.5 sm:grid-cols-3">
-            {brf.metrics.map((m) => (
-              <MetricCard key={m.label} icon={BRF_METRIC_ICON[m.label]} label={m.label} value={m.value} />
-            ))}
-          </div>
-        )}
+        <SubHeading icon={<QuestionIcon className="h-4 w-4" />}>Till mäklaren</SubHeading>
+        <QuestionList items={questions.broker} />
 
-        {(brf.strengths.length > 0 || brf.weaknesses.length > 0) && (
-          <div className="relative mt-8 grid grid-cols-1 gap-8 sm:grid-cols-2">
-            {brf.strengths.length > 0 && (
-              <div>
-                <p className="text-[11px] font-semibold uppercase tracking-wide text-[#4B7A57]">Styrkor</p>
-                <ul className="mt-2 space-y-1.5">
-                  {brf.strengths.map((s, i) => (
-                    <li key={i} className="flex items-start gap-2 text-[13px] leading-relaxed text-[#2A2820]">
-                      <CheckIcon className="mt-0.5 h-3.5 w-3.5 shrink-0 text-[#4B7A57]" />
-                      <span>{s}</span>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            )}
-            {brf.weaknesses.length > 0 && (
-              <div>
-                <p className="text-[11px] font-semibold uppercase tracking-wide text-[#A2432F]">Svagheter</p>
-                <ul className="mt-2 space-y-1.5">
-                  {brf.weaknesses.map((w, i) => (
-                    <li key={i} className="flex items-start gap-2 text-[13px] leading-relaxed text-[#2A2820]">
-                      <WarningIcon className="mt-0.5 h-3.5 w-3.5 shrink-0 text-[#A2432F]" />
-                      <span>
-                        {w.text}
-                        {w.severity && w.severity !== "minor" && <span className="ml-1 font-medium text-[#A2432F]">({w.severity})</span>}
-                      </span>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            )}
-          </div>
-        )}
-        <SectionDocumentUpload
-          endpoint={`/api/properties/${property.id}/brf-report`}
-          label="Ladda upp ny årsredovisning"
-          accept=".pdf,.docx,image/*"
-          description="Har föreningen en nyare årsredovisning? Ladda upp den (PDF, Word eller bild) för att uppdatera det här kapitlet."
-          maxSizeBytes={MAX_BRF_REPORT_BYTES}
-        />
-        <ChapterSources dataSources={p.dataSources} ids={["brf_financials", "brf_acquisition"]} />
-      </Page>
-
-      {/* ══════════════════════════════════════════════════════════
-          7. POSSIBLE RISKS
-         ══════════════════════════════════════════════════════════ */}
-      <Page n={7}>
-        <ChapterTitle icon={<WarningIcon className="h-5 w-5" />} sub="Åtta kategorier av faktorer värda att undersöka vidare, baserat på tillgänglig data." accent={RISK_ACCENT}>
-          Möjliga risker
-        </ChapterTitle>
-        {riskCategories && (
+        {questions.association.length > 0 && (
           <>
-            <div className="relative">
-              {riskCategories.map((risk) => (
-                <RiskCategoryCard key={risk.id} risk={risk} icon={RISK_ICON[risk.id] ?? <WarningIcon className="h-4 w-4" />} />
-              ))}
-            </div>
-            <ChapterSources dataSources={p.dataSources} ids={["hemnet_page_scrape", "interest_rates", "scb_area_statistics", "osm_amenities", "brf_financials", "location_intelligence", "infrastructure_projects"]} />
+            <SubHeading icon={<BuildingIcon className="h-4 w-4" />} accent={BRF_ACCENT}>Till föreningen</SubHeading>
+            <QuestionList items={questions.association} color={BRF_ACCENT} />
+            {questions.associationNote && <p className="relative mt-3 text-[12.5px] italic text-[#8C8471]">{questions.associationNote}</p>}
           </>
         )}
-      </Page>
 
-      {/* ══════════════════════════════════════════════════════════
-          8. INVESTMENT OUTLOOK
-         ══════════════════════════════════════════════════════════ */}
-      <Page n={8}>
-        <ChapterTitle icon={<TrendingUpIcon className="h-5 w-5" />} sub="Faktorer som kan påverka bostadens värde framöver, baserat på tillgänglig data.">
-          Investeringsutsikt
-        </ChapterTitle>
-        {investmentOutlook && (
-          <>
-            {macroCards.length > 0 && (
-              <div className="relative mb-8 grid grid-cols-2 gap-2.5 sm:grid-cols-3">
-                {macroCards.map((c) => (
-                  <MetricCard key={c.label} icon={c.icon} label={c.label} value={c.value} sub={c.sub} />
-                ))}
-              </div>
-            )}
-
-            <Prose paragraphs={investmentOutlook.paragraphs.slice(0, 3)} />
-
-            {investmentOutlook.futureProjects.length > 0 && (
-              <>
-                <SubHeading icon={<CraneIcon className="h-4 w-4" />}>Planerad utveckling i närområdet</SubHeading>
-                <div className="relative grid grid-cols-1 gap-2.5 sm:grid-cols-2">
-                  {investmentOutlook.futureProjects.map((proj, i) => (
-                    <ProjectCard key={i} name={proj} />
-                  ))}
-                </div>
-              </>
-            )}
-
-            {investmentOutlook.paragraphs[3] && (
-              <Callout icon={<LightbulbIcon className="h-4 w-4" />}>{investmentOutlook.paragraphs[3]}</Callout>
-            )}
-            <ChapterSources dataSources={p.dataSources} ids={["interest_rates", "scb_area_statistics", "market_intelligence", "location_intelligence", "infrastructure_projects"]} />
-          </>
-        )}
-      </Page>
-
-      {/* ══════════════════════════════════════════════════════════
-          9. FINAL RECOMMENDATION
-         ══════════════════════════════════════════════════════════ */}
-      <Page n={9} source="Sammanställt av Köpanalys analysmotor" className="pb-16">
-        <ChapterTitle icon={<BadgeCheckIcon className="h-5 w-5" />} sub="En sammanställning av förhandlingsläge och de delar av analysen som saknar underlag.">
-          Helhetsbild
-        </ChapterTitle>
-
-        {recommendation && (
-          <>
-            {recommendation.paragraphs[0] && (
-              <p style={serifStyle} className="relative mb-5 text-[18px] font-medium leading-snug text-[#12271D]">
-                {recommendation.paragraphs[0]}
-              </p>
-            )}
-            <Prose paragraphs={recommendation.paragraphs.slice(1)} />
-
-            {negotiationScore !== null && (
-              <>
-                <SubHeading icon={<ChartIcon className="h-4 w-4" />}>Förhandlingsläge</SubHeading>
-                <div className="relative">
-                  <SegmentedMeter bands={["Begränsat utrymme", "Måttligt utrymme", "Stort utrymme"]} activeIndex={negotiationBand(negotiationScore).bandIndex} />
-                </div>
-              </>
-            )}
-
-            <div className="relative mt-8 grid grid-cols-1 gap-8 sm:grid-cols-2">
-              {recommendation.strengths.length > 0 && (
-                <div>
-                  <p className="text-[11px] font-semibold uppercase tracking-wide text-[#4B7A57]">Huvudsakliga styrkor</p>
-                  <ul className="mt-2 space-y-2">
-                    {recommendation.strengths.map((s, i) => (
-                      <li key={i} className="flex items-start gap-2 text-[13px] leading-relaxed text-[#2A2820]">
-                        <CheckIcon className="mt-0.5 h-3.5 w-3.5 shrink-0 text-[#4B7A57]" />
-                        <span>{s}</span>
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              )}
-              {recommendation.weaknesses.length > 0 && (
-                <div>
-                  <p className="text-[11px] font-semibold uppercase tracking-wide text-[#A2432F]">Huvudsakliga svagheter</p>
-                  <ul className="mt-2 space-y-2">
-                    {recommendation.weaknesses.map((w, i) => (
-                      <li key={i} className="flex items-start gap-2 text-[13px] leading-relaxed text-[#2A2820]">
-                        <WarningIcon className="mt-0.5 h-3.5 w-3.5 shrink-0 text-[#A2432F]" />
-                        <span>{w}</span>
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              )}
-            </div>
-
-            <SubHeading icon={<ClipboardIcon className="h-4 w-4" />}>Avgränsningar i analysen</SubHeading>
-            <ul className="relative space-y-1.5">
-              {recommendation.actions.map((a, i) => (
-                <li key={i} className="flex items-start gap-2 text-[13.5px] text-[#2A2820]">
-                  <span className="mt-2 h-1 w-1 shrink-0 rounded-full bg-[#12271D]" />
-                  <span>{a}</span>
-                </li>
-              ))}
-            </ul>
-
-            <SubHeading icon={<QuestionIcon className="h-4 w-4" />}>Uppgifter som saknas för denna bostad</SubHeading>
-            <ul className="relative space-y-1.5">
-              {recommendation.questionsToAsk.map((q, i) => (
-                <li key={i} className="flex items-start gap-2 text-[13.5px] text-[#2A2820]">
-                  <span className="mt-2 h-1 w-1 shrink-0 rounded-full bg-[#12271D]" />
-                  <span>{q}</span>
-                </li>
-              ))}
-            </ul>
-
-            <SubHeading icon={<ChartIcon className="h-4 w-4" />}>Faktorer kopplade till förhandlingsläget</SubHeading>
-            <ul className="relative space-y-1.5">
-              {recommendation.negotiationArguments.map((n, i) => (
-                <li key={i} className="flex items-start gap-2 text-[13.5px] text-[#2A2820]">
-                  <span className="mt-2 h-1 w-1 shrink-0 rounded-full bg-[#B98A2E]" />
-                  <span>{n}</span>
-                </li>
-              ))}
-            </ul>
-
-            <ChapterSources dataSources={p.dataSources} ids={["hemnet_page_scrape", "booli_listing", "scb_area_statistics", "interest_rates"]} />
-          </>
-        )}
+        <SubHeading icon={<InfoIcon className="h-4 w-4" />}>Det här ingår inte i rapporten</SubHeading>
+        <QuestionList items={questions.notCovered} color="#8C8471" />
 
         <div className="relative mt-10 border-t border-black/10 pt-5 text-[11px] text-[#8C8471]">
           Analys v{analysis.version} · genererad {generatedDate} · motor {p.engineVersion} · {p.dataCompleteness.connectedSources} av{" "}
@@ -995,6 +810,45 @@ function FullReportBody({
       </Page>
     </>
   );
+}
+
+/** The plain review data the report needs (lib/report/brfChapter.ts). */
+function reviewView(review: BrfReviewRecord): BrfReviewView {
+  return {
+    status: review.status,
+    figures: review.published,
+    publishedAt: review.publishedAt,
+    dueAt: review.status === "pending" ? review.dueAt : null,
+    documentReceived: review.brfReportId !== null,
+  };
+}
+
+/**
+ * The BRF chapter's state for a full report. A full report of a home with an
+ * association always has a review: one that is missing (a report from before
+ * reviews existed, or a purchase whose review couldn't be opened) is opened
+ * here, and the team is told. A database hiccup shows "under review" rather
+ * than breaking the report.
+ */
+async function loadBrfState(report: AnalysisReport, propertyId: string): Promise<BrfChapterState> {
+  try {
+    let review = await getBrfReview(propertyId);
+    if (!review && tenureOf(report.property) !== "freehold") {
+      const ensured = await ensureBrfReview(propertyId, "report_view");
+      review = ensured.review;
+      if (ensured.opened) {
+        after(() =>
+          notifyTeamOfBrfReview(ensured.review, "report_view").catch((err) =>
+            console.error(`BRF review notification failed for property ${propertyId}:`, err)
+          )
+        );
+      }
+    }
+    return brfChapterState(report, review ? reviewView(review) : null);
+  } catch (err) {
+    console.error(`report: could not load the BRF review for property ${propertyId}:`, err);
+    return brfChapterState(report, null);
+  }
 }
 
 /* ══════════════════════════════════════════════════════════════════════ */
@@ -1014,7 +868,7 @@ export default async function ReportPage({
     data: { user },
   } = await supabase.auth.getUser();
 
-  const found = await getReportForViewer(id, user?.id ?? null);
+  const found = await getReportForViewer(id, user?.id ?? null, { isReviewer: isAdminUser(user) });
   if (!found) redirect("/");
 
   const { analysis, property, access } = found;
@@ -1095,6 +949,7 @@ export default async function ReportPage({
 
   const p: AnalysisReport = analysis.report;
   const attributes = property.attributes;
+  const brf = isAreaOnly ? null : await loadBrfState(p, property.id);
   const ageDays = analysisAgeDays(analysis);
   const isStale = ageDays >= FRESH_ANALYSIS_MAX_AGE_DAYS;
   const generatedDate = new Date(analysis.createdAt).toLocaleDateString("sv-SE", {
@@ -1145,7 +1000,7 @@ export default async function ReportPage({
             />
           </>
         ) : (
-          <FullReportBody p={p} attributes={attributes} property={property} analysis={analysis} generatedDate={generatedDate} />
+          <FullReportBody p={p} attributes={attributes} property={property} analysis={analysis} generatedDate={generatedDate} brf={brf!} />
         )}
       </main>
 

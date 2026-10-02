@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { getReportForViewer } from "@/lib/analysis/access";
 import { requireUser } from "@/lib/auth/requireUser";
+import { isAdminUser } from "@/lib/auth/admin";
 
 /**
  * GET /api/analyses/:id — one analysis (any version) with its property,
@@ -17,7 +18,7 @@ export async function GET(
   if (authError) return authError;
 
   try {
-    const found = await getReportForViewer(id, user.id);
+    const found = await getReportForViewer(id, user.id, { isReviewer: isAdminUser(user) });
     if (!found) {
       return NextResponse.json(
         { error: { code: "not_found", message: "No analysis with that id." } },

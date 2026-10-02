@@ -1,4 +1,8 @@
-import { NextResponse } from "next/server";
+import { after, NextResponse } from "next/server";
+import type { PropertyRecord } from "@/lib/analysis/types";
+import { ensureBrfReview } from "@/lib/brf/reviews";
+import { notifyTeamOfBrfReview } from "@/lib/brf/notify";
+import { tenureOfProperty } from "@/lib/report/tenure";
 import { classifyListingUrl } from "@/lib/analysis/listing/classify";
 import { HemnetUrlError } from "@/lib/analysis/listing/hemnet";
 import { extractFromManualFields, type ManualListingFields } from "@/lib/analysis/listing/manual";
@@ -186,6 +190,7 @@ export async function POST(request: Request) {
       analysisType,
       quotaConsumed: creditTaken,
     });
+    if (analysisType === "full") await openBrfReview(result.property);
     return resultResponse(result);
   } catch (err) {
     if (creditTaken) {
@@ -206,6 +211,29 @@ export async function POST(request: Request) {
       "analysis_failed",
       "Something went wrong while analyzing the property. Please try again."
     );
+  }
+}
+
+/**
+ * A Trygghetspaket for a home with a housing association includes the BRF
+ * analysis, which a Köpanalys reviewer publishes within 24 hours
+ * (lib/brf/reviews.ts) — the clock starts here, and the team is emailed.
+ * Never fails the purchase: the report page opens the review too if this
+ * didn't get to.
+ */
+async function openBrfReview(property: PropertyRecord): Promise<void> {
+  if (tenureOfProperty(property) === "freehold") return;
+  try {
+    const { review, opened } = await ensureBrfReview(property.id, "purchase");
+    if (opened) {
+      after(() =>
+        notifyTeamOfBrfReview(review, "purchase").catch((err) =>
+          console.error(`BRF review notification failed for property ${property.id}:`, err)
+        )
+      );
+    }
+  } catch (err) {
+    console.error(`POST /api/analyses: could not open the BRF review for property ${property.id}:`, err);
   }
 }
 

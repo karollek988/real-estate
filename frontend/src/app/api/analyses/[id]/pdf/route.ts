@@ -3,6 +3,7 @@ import puppeteer from "puppeteer-core";
 import chromium from "@sparticuz/chromium";
 import { getReportForViewer } from "@/lib/analysis/access";
 import { requireUser } from "@/lib/auth/requireUser";
+import { isAdminUser } from "@/lib/auth/admin";
 import { checkRateLimit, clientIp } from "@/lib/rateLimit";
 
 export const runtime = "nodejs";
@@ -40,7 +41,7 @@ export async function GET(
 
   let found: Awaited<ReturnType<typeof getReportForViewer>>;
   try {
-    found = await getReportForViewer(id, user.id);
+    found = await getReportForViewer(id, user.id, { isReviewer: isAdminUser(user) });
   } catch (err) {
     console.error(`GET /api/analyses/${id}/pdf failed:`, err);
     return NextResponse.json(

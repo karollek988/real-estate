@@ -12,6 +12,9 @@ import {
 } from "@/lib/inspection/store";
 import { buildDataGaps, buildBrfQuestions, buildBrokerQuestions } from "@/lib/inspection/gaps";
 import { buildInspectionSummary } from "@/lib/inspection/summary";
+import { getBrfReview } from "@/lib/brf/reviews";
+import { brfChapterState, dueSv } from "@/lib/report/brfChapter";
+import type { AnalysisReport } from "@/lib/analysis/types";
 
 function errorResponse(status: number, code: string, message: string) {
   return NextResponse.json({ error: { code, message } }, { status });
@@ -20,8 +23,9 @@ function errorResponse(status: number, code: string, message: string) {
 /**
  * Confirms the caller owns the full analysis (Trygghetspaketet) of this
  * property and returns its latest complete full analysis, which the viewing
- * guide reads from (PART 5). The guide builds on the whole report — price,
- * housing association, risks — so an area-only analysis does not qualify.
+ * guide reads from (PART 5). The guide builds on the whole report — the
+ * listing facts, the housing association, the risks — so an area-only
+ * analysis does not qualify.
  */
 async function requireOwnedProperty(userId: string, propertyId: string) {
   const property = await findPropertyById(propertyId);
@@ -67,6 +71,7 @@ export async function GET(_request: Request, { params }: { params: Promise<{ pro
   ]);
 
   const gaps = buildDataGaps(report, property.attributes, documents);
+  const brf = await brfForGuide(report, propertyId);
 
   return NextResponse.json({
     inspection,
@@ -74,14 +79,40 @@ export async function GET(_request: Request, { params }: { params: Promise<{ pro
     photos,
     gaps,
     brokerQuestions: buildBrokerQuestions(report, gaps),
-    brfQuestions: buildBrfQuestions(report, gaps),
+    // The reviewed BRF analysis's own questions come first once it is published.
+    brfQuestions: Array.from(new Set([...brf.questions, ...buildBrfQuestions(report, gaps)])),
     property: { id: property.id, address: property.address, attributes: property.attributes },
-    report: {
-      summary: report.summary,
-      property: report.property,
-      decisionFactors: report.decisionFactors,
-    },
+    report: { property: report.property },
+    brf: { status: brf.status, concerns: brf.concerns, dueLabel: brf.dueLabel },
   });
+}
+
+/**
+ * What the viewing guide shows about the association: the points the
+ * reviewed BRF analysis flags, or when it will be ready. Never the automatic
+ * extraction — the BRF analysis reaches a customer only through the review.
+ */
+async function brfForGuide(report: AnalysisReport, propertyId: string) {
+  const review = await getBrfReview(propertyId).catch(() => null);
+  const state = brfChapterState(
+    report,
+    review
+      ? {
+          status: review.status,
+          figures: review.published,
+          publishedAt: review.publishedAt,
+          dueAt: review.status === "pending" ? review.dueAt : null,
+          documentReceived: review.brfReportId !== null,
+        }
+      : null
+  );
+  if (state.kind === "published") {
+    return { status: "published" as const, concerns: state.reading.concerns, questions: state.reading.questions, dueLabel: null };
+  }
+  if (state.kind === "awaiting") {
+    return { status: "awaiting" as const, concerns: [], questions: [], dueLabel: state.overdue ? null : dueSv(state.dueAt) };
+  }
+  return { status: "none" as const, concerns: [], questions: [], dueLabel: null };
 }
 
 /** PATCH /api/inspections/:propertyId — autosave partial inspection state (step, checklist, notes, ...). */

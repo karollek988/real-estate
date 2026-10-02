@@ -6,7 +6,7 @@ import { ProfileCard } from "@/components/dashboard/ProfileCard";
 import { AnalysisBalanceCard } from "@/components/dashboard/buy/AnalysisBalanceCard";
 import { DashboardSection } from "@/components/dashboard/DashboardSection";
 import { StatCard } from "@/components/dashboard/StatCard";
-import { DecisionAnalysisCard } from "@/components/dashboard/DecisionAnalysisCard";
+import { AnalysisCard } from "@/components/dashboard/AnalysisCard";
 import { EmptyState } from "@/components/dashboard/EmptyState";
 import { QuickActionsCard } from "@/components/dashboard/QuickActionsCard";
 import { StorePromoCard } from "@/components/dashboard/StorePromoCard";
@@ -14,6 +14,8 @@ import { InspectionHelpBanner } from "@/components/dashboard/InspectionHelpBanne
 import { ClipboardIcon, BuildingIcon, MapPinIcon, WalletIcon, ShieldIcon, ArrowRightIcon } from "@/components/icons";
 import { useAuth } from "@/lib/auth/AuthProvider";
 import type { ProfileSummary } from "@/lib/analysis/ownership";
+import { uploadBrfAnnualReport } from "@/lib/brf/uploadClient";
+import { BRF_REPORT_ACCEPT } from "@/lib/brf/uploadLimits";
 
 interface OwnedAnalysis {
   requestId: string;
@@ -23,9 +25,12 @@ interface OwnedAnalysis {
   status: "pending" | "complete" | "failed";
   analysisType: "full" | "area";
   requestedAt: string;
+  /** The person-reviewed BRF analysis (full analyses only; see /api/profile/analyses). */
+  brfReview: { status: "pending" | "published" | "not_applicable"; dueAt: string | null } | null;
 }
 
 const DATE_FORMAT = new Intl.DateTimeFormat("sv-SE", { day: "numeric", month: "long", year: "numeric" });
+const DUE_FORMAT = new Intl.DateTimeFormat("sv-SE", { weekday: "long", day: "numeric", month: "long", hour: "2-digit", minute: "2-digit" });
 const MONTH_YEAR_FORMAT = new Intl.DateTimeFormat("sv-SE", { month: "long", year: "numeric" });
 
 function initialsFor(name: string) {
@@ -88,15 +93,10 @@ export default function DashboardPage() {
 
   /** Returns null on success, or an error message to show the user. */
   async function handleUploadBrfReport(propertyId: string, file: File): Promise<string | null> {
-    const form = new FormData();
-    form.append("file", file);
-    const res = await fetch(`/api/properties/${propertyId}/brf-report`, { method: "POST", body: form });
-    if (res.ok) {
-      await load();
-      return null;
-    }
-    const data = await res.json().catch(() => null);
-    return data?.error?.message ?? "Något gick fel vid uppladdningen. Försök igen.";
+    const result = await uploadBrfAnnualReport(propertyId, file);
+    if (!result.ok) return result.message;
+    await load();
+    return null;
   }
 
   const hasAnalyses = (analyses?.length ?? 0) > 0;
@@ -139,7 +139,7 @@ export default function DashboardPage() {
                 {hasAnalyses ? (
                   <div className="flex flex-col gap-3">
                     {analyses!.map((analysis) => (
-                      <AnalysisCard
+                      <OwnedAnalysisItem
                         key={analysis.requestId}
                         analysis={analysis}
                         onOpen={() => handleOpen(analysis)}
@@ -176,7 +176,7 @@ export default function DashboardPage() {
   );
 }
 
-function AnalysisCard({
+function OwnedAnalysisItem({
   analysis,
   onOpen,
   onDelete,
@@ -192,6 +192,7 @@ function AnalysisCard({
   const router = useRouter();
   const [uploading, setUploading] = useState(false);
   const [uploadError, setUploadError] = useState<string | null>(null);
+  const [uploaded, setUploaded] = useState(false);
 
   async function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
@@ -199,13 +200,25 @@ function AnalysisCard({
     if (!file) return;
     setUploading(true);
     setUploadError(null);
+    setUploaded(false);
     try {
       const error = await onUploadBrfReport(file);
       setUploadError(error);
+      setUploaded(error === null);
     } finally {
       setUploading(false);
     }
   }
+
+  const review = analysis.brfReview;
+  const brfLine =
+    analysis.status !== "complete" || !review || review.status === "not_applicable"
+      ? null
+      : review.status === "published"
+        ? { text: "BRF-analysen är granskad och klar", tone: "text-green-300" }
+        : review.dueAt && new Date(review.dueAt).getTime() > Date.now()
+          ? { text: `BRF-analysen granskas av våra experter — klar senast ${DUE_FORMAT.format(new Date(review.dueAt))}`, tone: "text-amber-200" }
+          : { text: "BRF-analysen granskas av våra experter och publiceras så snart den är klar", tone: "text-amber-200" };
 
   const status: "ready" | "processing" | "expired" =
     analysis.status === "complete" ? "ready" : analysis.status === "pending" ? "processing" : "expired";
@@ -221,7 +234,7 @@ function AnalysisCard({
           : "Områdesanalys";
 
   return (
-    <DecisionAnalysisCard
+    <AnalysisCard
       address={analysis.address}
       analysisDate={DATE_FORMAT.format(new Date(analysis.requestedAt))}
       planLabel={planLabel}
@@ -229,6 +242,7 @@ function AnalysisCard({
       onOpen={onOpen}
       footer={
         <>
+          {brfLine && <p className={`mb-2 text-xs font-medium ${brfLine.tone}`}>{brfLine.text}</p>}
           {analysis.status === "complete" && isFull && (
             <button
               type="button"
@@ -241,10 +255,10 @@ function AnalysisCard({
             </button>
           )}
           <div className="flex items-center gap-4 text-xs">
-            {isFull && (
+            {isFull && review?.status !== "not_applicable" && (
               <label className="cursor-pointer font-medium text-green-400 transition hover:text-green-300">
-                {uploading ? "Laddar upp..." : "Ladda upp senaste årsredovisning"}
-                <input type="file" accept="application/pdf" className="hidden" onChange={handleFileChange} disabled={uploading} />
+                {uploading ? "Laddar upp..." : "Ladda upp föreningens årsredovisning"}
+                <input type="file" accept={BRF_REPORT_ACCEPT} className="hidden" onChange={handleFileChange} disabled={uploading} />
               </label>
             )}
             <button
@@ -256,6 +270,7 @@ function AnalysisCard({
               {deleting ? "Tar bort..." : "Ta bort"}
             </button>
           </div>
+          {uploaded && <p className="text-xs text-green-300">Tack! Årsredovisningen är mottagen och granskas av Köpanalys.</p>}
           {uploadError && <p className="text-xs text-red-400">{uploadError}</p>}
         </>
       }

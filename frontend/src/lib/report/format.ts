@@ -19,7 +19,17 @@ export function sekPerM2(value: number | null | undefined): string {
 export function pct(value: number | null | undefined, decimals = 1): string {
   if (value === null || value === undefined) return NA;
   const sign = value > 0 ? "+" : "";
-  return `${sign}${value.toFixed(decimals)}%`;
+  return `${sign}${decSv(value, decimals)} %`;
+}
+
+/** A number with a Swedish decimal comma: decSv(2.25, 2) -> "2,25", decSv(80.1, 1) -> "80,1". */
+export function decSv(value: number, decimals = 1): string {
+  return value.toFixed(decimals).replace(".", ",");
+}
+
+/** A rate as Swedish text without trailing zeros: 2.25 -> "2,25 %", 2 -> "2 %". */
+export function ratePctSv(value: number): string {
+  return `${new Intl.NumberFormat("sv-SE", { maximumFractionDigits: 2 }).format(value)} %`;
 }
 
 /** Shared date formatting so the same fact (e.g. a previous sale date) never
