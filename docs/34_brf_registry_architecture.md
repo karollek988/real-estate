@@ -1,5 +1,7 @@
 # 34 — Self-Growing BRF Registry (Architecture)
 
+> **SUPERSEDED (2026-10-02):** the automated BRF acquisition/registry was removed (commit `1478207`; tag `archive/brf-automation-2026-10-02`). See `docs/48_brf_review_and_deck_alignment_2026-10-02.md`.
+
 Status: **Design only — not implemented.**
 
 ## 1. Problem statement

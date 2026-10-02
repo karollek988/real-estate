@@ -1,5 +1,7 @@
 # Acquisition Engine OSS Research — Finding BRF Websites & Annual Reports
 
+> **SUPERSEDED (2026-10-02):** the automated BRF acquisition was removed (commit `1478207`; code kept under tag `archive/brf-automation-2026-10-02`). BRF reports are uploaded and reviewed by a person — see `docs/48_brf_review_and_deck_alignment_2026-10-02.md`.
+
 **Date:** 2026-07-18
 **Scope:** ONLY the two acquisition problems: (1) finding the correct official BRF website from a BRF name, (2) finding and downloading annual reports / financial documents from that website. OCR, PDF extraction, and AI are explicitly out of scope.
 **Baseline (measured, not estimated):**

@@ -1,5 +1,7 @@
 # Scoring Framework
 
+> **SUPERSEDED (2026-10-02):** Köpanalys no longer scores, rates or ranks a property — the Decision Score, verdict and per-factor scores were removed from the product (see `docs/48_brf_review_and_deck_alignment_2026-10-02.md`). Kept for history only.
+
 **Date:** 2026-07-13 · **Sprint:** 5
 
 ## Purpose

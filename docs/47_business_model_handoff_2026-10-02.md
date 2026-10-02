@@ -1,5 +1,8 @@
 # 47. Business-model alignment with the pitch deck — HANDOFF (2026-10-02, unfinished)
 
+> **SUPERSEDED (later the same day) by `docs/48_brf_review_and_deck_alignment_2026-10-02.md`.** Items 1–7 of "Remaining work" below are done there (scores removed, report rewritten, dashboard upload fixed, verify scripts rewritten, landing page/copy, local end-to-end test); the BRF chapter became person-reviewed and the Boendekalkyl a placeholder by the user's decision. The flags are carried over in docs/48. Kept for history.
+
+
 Template: `Kopanalys_Fororten_2026_Pitch_Deck_v7_MALL.pdf` (Downloads). The session
 ran out of usage before finishing. **Nothing from this session is pushed or merged;
 `main` and production are untouched.** Branch: `feature/trygghetspaket-business-model`.
