@@ -9,7 +9,7 @@ import { OPEN_ONBOARDING_MODAL_EVENT } from "@/lib/onboardingModalEvents";
 const PRODUKT_LINKS = [
   { label: "Startsida", href: "/" },
   { label: "Exempelrapport", href: "/#example-report" },
-  { label: "Priser", href: "/#analyze" },
+  { label: "Priser", href: "/#priser" },
   { label: "FAQ", href: "/#faq" },
 ];
 
@@ -39,7 +39,7 @@ export function SiteFooter() {
               <span className="text-lg font-semibold tracking-tight text-white">Köpanalys</span>
             </Link>
             <p className="mt-4 max-w-[260px] text-[14px] leading-relaxed text-neutral-400">
-              Datadriven bostadsanalys — få en komplett bild av vilken bostad som helst innan du köper.
+              Köpa bostad? Vi visar vad du faktiskt köper — föreningens ekonomi, området och alla kostnader.
             </p>
           </div>
 

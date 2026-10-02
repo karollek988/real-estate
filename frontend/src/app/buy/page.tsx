@@ -11,17 +11,7 @@ import { PackageContents } from "@/components/buy/PackageContents";
 import { AnalysisBalanceCard } from "@/components/dashboard/buy/AnalysisBalanceCard";
 import { BuyPaymentMethodsCard } from "@/components/buy/BuyPaymentMethodsCard";
 import { ArrowRightIcon, CheckIcon, WarningIcon } from "@/components/icons";
-import {
-  HUSBESIKTNING_REFERENCE_PRICE_SEK,
-  OMRADESANALYS_PRICE_SEK,
-  TRYGGHETSPAKET_PRICE_SEK,
-  TRE_BOSTADER_COUNT,
-  TRE_BOSTADER_PRICE_SEK,
-  formatSek,
-} from "@/lib/pricing";
-
-const PRICE_PER_PROPERTY_IN_BUNDLE = Math.round(TRE_BOSTADER_PRICE_SEK / TRE_BOSTADER_COUNT);
-const BUNDLE_SAVING = TRYGGHETSPAKET_PRICE_SEK * TRE_BOSTADER_COUNT - TRE_BOSTADER_PRICE_SEK;
+import { AREA_ANALYSIS_PROMISE, BRF_REVIEW_PROMISE, PACKAGES, PRICE_FOOTNOTE } from "@/lib/packages";
 
 const STEPS = [
   { title: "Betala en gång", text: "Du betalar med kort. Ingen bindningstid och inget abonnemang." },
@@ -29,7 +19,10 @@ const STEPS = [
     title: "Ange bostaden",
     text: "Ladda upp en skärmdump av annonsen för ett Trygghetspaket, eller skriv in en adress för en Områdesanalys.",
   },
-  { title: "Få din analys", text: "Analysen är oftast klar inom ett par minuter. Du kan ladda ner den som PDF." },
+  {
+    title: "Få din analys",
+    text: `${AREA_ANALYSIS_PROMISE} ${BRF_REVIEW_PROMISE} Rapporten kan laddas ner som PDF.`,
+  },
 ];
 
 const stagger = (n: number) => ({ "--dash-stagger": n }) as React.CSSProperties;
@@ -83,8 +76,8 @@ function BuyPageContent() {
                 style={stagger(1)}
               >
                 <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-5">
-                  <p className="text-xs font-semibold uppercase tracking-wide text-neutral-400">Gratis</p>
-                  <p className="mt-1 text-[15px] text-neutral-200">Karta, annonser och kommunikation</p>
+                  <p className="text-xs font-semibold uppercase tracking-wide text-neutral-400">Gratis · kommer snart</p>
+                  <p className="mt-1 text-[15px] text-neutral-200">Karta med annonser och kommunikation</p>
                 </div>
                 <ArrowRightIcon className="mx-auto h-5 w-5 rotate-90 text-neutral-500 sm:rotate-0" />
                 <div className="rounded-2xl border border-green-500/30 bg-green-500/[0.08] p-5">
@@ -99,42 +92,23 @@ function BuyPageContent() {
                   Alla priser är engångsbetalningar inklusive moms.
                 </p>
                 <div className="mt-8 grid grid-cols-1 gap-5 md:grid-cols-2 lg:grid-cols-3">
-                  <PackageCard
-                    name="Områdesanalys"
-                    price={OMRADESANALYS_PRICE_SEK}
-                    priceNote="området runt en bostad"
-                    summary="Automatisk analys av området runt en bostad."
-                    includes={["Service, skolor och pendling", "Trygghet och samhällsdata", "Hur området utvecklas"]}
-                    ctaLabel="Köp Områdesanalys"
-                    priceKey="omradesanalys"
-                    acceptsDiscountCode
-                    onRequireAuth={requireAuth}
-                  />
-                  <PackageCard
-                    name="Trygghetspaketet"
-                    price={TRYGGHETSPAKET_PRICE_SEK}
-                    priceNote="en bostad"
-                    summary="Tre analyser av en bostad: BRF, området och dolda kostnader."
-                    includes={["BRF-analys", "Områdesanalys", "Dolda kostnader"]}
-                    valueNote={`Till jämförelse: en husbesiktning kostar runt ${formatSek(HUSBESIKTNING_REFERENCE_PRICE_SEK)} kr`}
-                    badge="Huvudpaket"
-                    highlighted
-                    ctaLabel="Köp Trygghetspaketet"
-                    priceKey="trygghetspaket"
-                    acceptsDiscountCode
-                    onRequireAuth={requireAuth}
-                  />
-                  <PackageCard
-                    name="Tre bostäder"
-                    price={TRE_BOSTADER_PRICE_SEK}
-                    priceNote="tre bostäder"
-                    summary="Trygghetspaketet för tre bostäder, för dig som budar på flera."
-                    includes={["Trygghetspaketet för tre bostäder", "BRF, område och dolda kostnader för varje"]}
-                    valueNote={`${PRICE_PER_PROPERTY_IN_BUNDLE} kr per bostad · du sparar ${BUNDLE_SAVING} kr`}
-                    ctaLabel="Köp tre bostäder"
-                    priceKey="tre_bostader"
-                    onRequireAuth={requireAuth}
-                  />
+                  {PACKAGES.map((pkg) => (
+                    <PackageCard
+                      key={pkg.key}
+                      name={pkg.name}
+                      price={pkg.price}
+                      priceNote={pkg.priceNote}
+                      summary={pkg.summary}
+                      includes={pkg.includes}
+                      valueNote={pkg.valueNote}
+                      badge={pkg.badge}
+                      highlighted={pkg.highlighted}
+                      ctaLabel={pkg.ctaLabel}
+                      priceKey={pkg.key}
+                      acceptsDiscountCode={pkg.acceptsDiscountCode}
+                      onRequireAuth={requireAuth}
+                    />
+                  ))}
                 </div>
               </section>
 
@@ -160,7 +134,7 @@ function BuyPageContent() {
               </section>
 
               <p className="max-w-3xl text-xs leading-relaxed text-neutral-500">
-                Priserna gäller engångsköp och anges i svenska kronor inklusive moms. Analysen är ett
+                Priserna gäller engångsköp och anges i svenska kronor inklusive moms. {PRICE_FOOTNOTE} Analysen är ett
                 beslutsunderlag och ersätter inte en besiktning eller en egen genomgång av föreningens
                 handlingar.
               </p>

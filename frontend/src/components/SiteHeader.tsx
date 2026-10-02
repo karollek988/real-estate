@@ -19,6 +19,7 @@ const NAV_ITEMS: { label: string; action: NavAction }[] = [
   { label: "Start", action: { type: "link", href: "/" } },
   { label: "Så fungerar det", action: { type: "modal" } },
   { label: "Exempelrapport", action: { type: "scroll", targetId: "example-report" } },
+  { label: "Priser", action: { type: "link", href: "/#priser" } },
   { label: "FAQ", action: { type: "scroll", targetId: "faq" } },
   { label: "Kontakt", action: { type: "link", href: "/#contact" } },
 ];

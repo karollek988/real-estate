@@ -1,5 +1,6 @@
 import { BuildingIcon, MapPinIcon, WalletIcon, CheckIcon } from "@/components/icons";
 import { HUSBESIKTNING_REFERENCE_PRICE_SEK, TRYGGHETSPAKET_PRICE_SEK, formatSek } from "@/lib/pricing";
+import { HOUSING_COST_LIVE } from "@/lib/packages";
 
 // Each analysis is introduced by the question a buyer is actually asking, so
 // the package reads as "what do I find out" rather than a list of features.
@@ -9,9 +10,10 @@ const ANALYSES = [
     name: "BRF-analys",
     question: "Är föreningen ekonomiskt stabil?",
     points: [
-      "Skuld per lägenhet, soliditet och likviditet",
-      "Föreningens resultat och utrymme i avgiften",
-      "Styrkor och svagheter i klartext",
+      "Skuldsättning, sparande och räntekänslighet i klartext",
+      "Vad föreningens ekonomi betyder för dig i kronor",
+      "Stambyte, tomträtt och planerade avgiftshöjningar",
+      "Granskad av våra experter — klar inom 24 timmar",
     ],
   },
   {
@@ -22,13 +24,19 @@ const ANALYSES = [
       "Service, skolor och pendling nära bostaden",
       "Trygghet och samhällsdata för området",
       "Hur priser och befolkning utvecklas",
+      "Automatisk — klar direkt",
     ],
   },
   {
     icon: WalletIcon,
     name: "Dolda kostnader",
     question: "Vad kostar det att äga bostaden?",
-    points: ["Månadskostnaden: avgift, drift och lån", "Kostnader som inte syns i annonsen"],
+    points: [
+      "Din del av föreningens lån och hur avgiften påverkas av räntan",
+      HOUSING_COST_LIVE
+        ? "Boendekalkyl: månadskostnad och avgifter vid köpet"
+        : "Boendekalkyl med månadskostnad och avgifter vid köpet — lanseras inom kort",
+    ],
   },
 ];
 

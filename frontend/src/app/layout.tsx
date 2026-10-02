@@ -15,8 +15,9 @@ const inter = Inter({
 });
 
 export const metadata: Metadata = {
-  title: "Köpanalys",
-  description: "Få en snabb, datadriven bild av vilken bostadsannons som helst innan du köper.",
+  title: "Köpanalys – vi visar vad du faktiskt köper",
+  description:
+    "En oberoende granskning av bostaden du vill köpa: föreningens ekonomi, området och alla kostnader. Områdesanalys 99 kr, Trygghetspaketet 499 kr.",
 };
 
 export default function RootLayout({

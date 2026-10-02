@@ -14,13 +14,13 @@ import {
 const INFO_CARDS = [
   {
     icon: TargetIcon,
-    title: "Analysera innan du budar",
-    image: "/images/analyze-before-bid.png",
+    title: "Vad kostar köpet utöver priset?",
+    image: "/understand-market.png",
     description:
-      "Budgivningar går snabbt och känslorna tar lätt över. En oberoende värdering visar vad bostaden faktiskt är värd – innan du lägger ditt första bud.",
+      "Lagfart, pantbrev, föreningens avgifter och kommande avgiftshöjningar syns sällan i annonsen – men de avgör vad bostaden faktiskt kostar dig.",
     points: [
-      "Se skillnaden mellan utgångspris och fair value",
-      "Sätt din budgräns på förhand, inte i stridens hetta",
+      "Din del av föreningens lån, räknat i kronor",
+      "Hur avgiften påverkas om räntan stiger",
     ],
   },
   {
@@ -30,19 +30,19 @@ const INFO_CARDS = [
     description:
       "Föreningens ekonomi påverkar din månadskostnad mer än de flesta tror. Hög belåning per kvadratmeter kan betyda kraftiga avgiftshöjningar framöver.",
     points: [
-      "Skuld per kvadratmeter och räntekänslighet",
-      "Planerade renoveringar och avgiftsrisk",
+      "Skuldsättning, sparande och räntekänslighet",
+      "Stambyte, tomträtt och planerade avgiftshöjningar",
     ],
   },
   {
     icon: TrainIcon,
-    title: "Infrastruktur påverkar värdet",
+    title: "Infrastruktur påverkar området",
     image: "/images/infrastructure.png",
     description:
-      "Nya tunnelbanelinjer, pendeltågsstationer och stadsutvecklingsprojekt kan lyfta ett områdes värde långt innan de står klara.",
+      "Nya tunnelbanelinjer, pendeltågsstationer och stadsutvecklingsprojekt kan förändra ett område långt innan de står klara.",
     points: [
-      "Beslutade projekt vägs in i analysen",
-      "Restid till centrum – idag och imorgon",
+      "Planerade projekt nära bostaden",
+      "Restider till centrum med bil och kollektivtrafik",
     ],
   },
 ];
