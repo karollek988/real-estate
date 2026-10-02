@@ -55,7 +55,7 @@ interface OwnedAnalysis {
   propertyId: string;
   address: string;
   status: "pending" | "complete" | "failed";
-  analysisType: "free" | "premium";
+  analysisType: "full" | "area";
 }
 
 function useDebouncedSave(propertyId: string | null) {
@@ -88,14 +88,15 @@ function InspectionPageContent() {
   const [savedAt, setSavedAt] = useState<number | null>(null);
   const debouncedSave = useDebouncedSave(propertyId);
 
-  // No property chosen yet — offer the user's completed properties to pick from.
+  // No property chosen yet — offer the user's completed full analyses to pick
+  // from (an Områdesanalys doesn't lead into the guide).
   useEffect(() => {
     if (propertyId) return;
     fetch("/api/profile/analyses")
       .then((r) => r.json())
       .then((body) => {
         const owned = (body.analyses ?? []) as OwnedAnalysis[];
-        const complete = owned.filter((a) => a.status === "complete");
+        const complete = owned.filter((a) => a.status === "complete" && a.analysisType === "full");
         const seen = new Set<string>();
         const deduped = complete.filter((a) => {
           if (seen.has(a.propertyId)) return false;
@@ -289,7 +290,7 @@ function InspectionPageContent() {
             <ShieldIcon className="h-6 w-6 text-green-400" />
             Visningsguide
           </h1>
-          <p className="mt-1 text-sm text-neutral-400">Din kompletta guide inför, under och efter visningen — helt gratis.</p>
+          <p className="mt-1 text-sm text-neutral-400">Din kompletta guide inför, under och efter visningen — ingår i Trygghetspaketet.</p>
         </div>
         <div className="dash-enter" style={stagger(1)}>
           {candidates && candidates.length > 0 ? (
@@ -297,7 +298,7 @@ function InspectionPageContent() {
           ) : (
             <EmptyState
               title="Ingen analys hittades"
-              description="Visningsguiden kräver en analys av en bostad. Starta en analys för att komma igång."
+              description="Visningsguiden ingår i Trygghetspaketet. Analysera en bostad med ett Trygghetspaket för att komma igång."
               actionLabel="Starta en analys"
               onAction={() => router.push("/")}
             />
@@ -311,8 +312,8 @@ function InspectionPageContent() {
     return (
       <div className="mx-auto flex max-w-3xl flex-col gap-6">
         <EmptyState
-          title="Kräver en analys"
-          description="Den här bostaden har ingen analys kopplad till ditt konto än. Starta en analys för att använda visningsguiden."
+          title="Kräver Trygghetspaketet"
+          description="Den här bostaden har ingen hel analys kopplad till ditt konto. Visningsguiden ingår i Trygghetspaketet."
           actionLabel="Starta en analys"
           onAction={() => router.push("/")}
         />

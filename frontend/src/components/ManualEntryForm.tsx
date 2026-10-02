@@ -4,8 +4,9 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Field, SelectField } from "./Field";
 import { Button } from "./Button";
-import { AnalysisTypeChoice, type AnalysisType } from "./AnalysisTypeChoice";
+import { AnalysisSubmitError } from "./AnalysisSubmitError";
 import { ArrowRightIcon } from "./icons";
+import { reportPathFor, submitAnalysis } from "@/lib/analysis/submit";
 import type { ManualListingFields } from "@/lib/analysis/listing/manual";
 
 const CONDITIONS = ["Utmärkt", "Bra", "Okej", "Behöver renovering"];
@@ -35,8 +36,7 @@ export interface ManualEntryFormProps {
 
 export function ManualEntryForm({ initialValues, sourceNotice }: ManualEntryFormProps = {}) {
   const [submitting, setSubmitting] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [analysisType, setAnalysisType] = useState<AnalysisType>("premium");
+  const [error, setError] = useState<{ code: string; message: string } | null>(null);
   const [propertyType, setPropertyType] = useState(initialValues?.propertyType ?? "");
   const router = useRouter();
   const feeRequired = APARTMENT_TYPES.has(propertyType);
@@ -66,50 +66,35 @@ export function ManualEntryForm({ initialValues, sourceNotice }: ManualEntryForm
       propertyType: stringOrNull(fd.get("propertyType")),
     };
 
+    const invalid = (message: string) => setError({ code: "invalid_request", message });
     if (manual.address === "") {
-      setError("Ange en adress för att analysera bostaden.");
+      invalid("Ange en adress för att analysera bostaden.");
       return;
     }
     if (manual.askingPrice === null) {
-      setError("Ange ett utgångspris för att analysera bostaden.");
+      invalid("Ange ett utgångspris för att analysera bostaden.");
       return;
     }
     if (manual.livingArea === null) {
-      setError("Ange boarean för att analysera bostaden.");
+      invalid("Ange boarean för att analysera bostaden.");
       return;
     }
     if (feeRequired && manual.monthlyFee === null) {
-      setError("Ange månadsavgiften för att analysera bostaden.");
+      invalid("Ange månadsavgiften för att analysera bostaden.");
       return;
     }
 
     setSubmitting(true);
     setError(null);
 
-    try {
-      const res = await fetch("/api/analyses", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ manual, analysisType }),
-      });
-      const data = await res.json().catch(() => null);
-
-      if (!res.ok) {
-        setError(data?.error?.message ?? "Something went wrong. Please try again.");
-        setSubmitting(false);
-        return;
-      }
-
-      // Fresh cached analyses skip the analyzing animation and open directly.
-      if (data.cached) {
-        router.push(`/report?id=${data.analysisId}`);
-      } else {
-        router.push(`/analyzing?id=${data.analysisId}`);
-      }
-    } catch {
-      setError("Something went wrong. Please try again.");
+    // The Trygghetspaket: the complete analysis of this property.
+    const result = await submitAnalysis({ manual, analysisType: "full" });
+    if (!result.ok) {
+      setError({ code: result.code, message: result.message });
       setSubmitting(false);
+      return;
     }
+    router.push(reportPathFor(result));
   }
 
   return (
@@ -271,14 +256,11 @@ export function ManualEntryForm({ initialValues, sourceNotice }: ManualEntryForm
         </div>
       </div>
 
-      <div>
-        <span className="text-sm font-medium text-neutral-200">Analystyp</span>
-        <div className="mt-2.5">
-          <AnalysisTypeChoice value={analysisType} onChange={setAnalysisType} />
-        </div>
-      </div>
+      <p className="text-sm text-neutral-400">
+        Drar ett Trygghetspaket: BRF-analys, områdesanalys och dolda kostnader för den här bostaden.
+      </p>
 
-      {error && <p className="text-sm text-red-400">{error}</p>}
+      <AnalysisSubmitError error={error} />
 
       <Button type="submit" className="w-full sm:w-auto sm:self-start" disabled={submitting}>
         {submitting ? "Analyserar..." : "Analysera bostad"}

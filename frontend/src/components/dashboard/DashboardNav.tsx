@@ -10,7 +10,7 @@ const NAV_ITEMS = [
   { label: "Visningsguide", href: "/dashboard/inspection", icon: ShieldIcon },
   { label: "Inställningar", href: "/dashboard/settings", icon: SettingsIcon },
   { label: "Kuponger", href: "/dashboard/coupons", icon: TicketIcon },
-  { label: "Prenumerationer", href: "/dashboard/subscriptions", icon: CreditCardIcon },
+  { label: "Köp & saldo", href: "/dashboard/subscriptions", icon: CreditCardIcon },
 ] as const;
 
 export function DashboardNav() {

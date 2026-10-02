@@ -10,7 +10,7 @@ import {
   getBrfReportById,
   saveBrfReport,
 } from "@/lib/analysis/brfReports";
-import { hasAnyAnalysisRequestForProperty } from "@/lib/analysis/ownership";
+import { hasFullEntitlementForProperty } from "@/lib/analysis/ownership";
 import { requireUser } from "@/lib/auth/requireUser";
 import { pythonEngineHeaders } from "@/lib/pythonEngine";
 
@@ -60,7 +60,7 @@ export async function POST(
   if (!property) {
     return errorResponse(404, "not_found", "No property with that id.");
   }
-  if (!(await hasAnyAnalysisRequestForProperty(user.id, propertyId))) {
+  if (!(await hasFullEntitlementForProperty(user.id, propertyId))) {
     return errorResponse(404, "not_found", "No property with that id.");
   }
 
@@ -273,7 +273,7 @@ export async function GET(
   if (!property) {
     return errorResponse(404, "not_found", "No property with that id.");
   }
-  if (!(await hasAnyAnalysisRequestForProperty(user.id, propertyId))) {
+  if (!(await hasFullEntitlementForProperty(user.id, propertyId))) {
     return errorResponse(404, "not_found", "No property with that id.");
   }
 

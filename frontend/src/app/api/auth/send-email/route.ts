@@ -1,13 +1,7 @@
 import { NextResponse } from "next/server";
-import { createAdminClient } from "@/lib/supabase/admin";
 import { createResendClient, getEmailFrom } from "@/lib/email/resend";
 import { verifyStandardWebhookSignature } from "@/lib/email/verifyWebhookSignature";
-import {
-  renderSignupConfirmationEmail,
-  renderGenericAuthEmail,
-  type CampaignInfo,
-  type CampaignCode,
-} from "@/lib/email/confirmationEmail";
+import { renderSignupConfirmationEmail, renderGenericAuthEmail } from "@/lib/email/confirmationEmail";
 
 export const runtime = "nodejs";
 
@@ -28,28 +22,6 @@ interface SendEmailHookPayload {
 function hookError(status: number, message: string) {
   console.error("[Auth Email Hook] ✗", status, message);
   return NextResponse.json({ error: { http_code: status, message } }, { status });
-}
-
-async function getCampaignInfo(userId: string): Promise<CampaignInfo | null> {
-  const admin = createAdminClient();
-  const { data: enrollment } = await admin
-    .from("campaign_enrollments")
-    .select("position")
-    .eq("user_id", userId)
-    .maybeSingle();
-
-  if (!enrollment) return null;
-
-  const { data: codes } = await admin
-    .from("discount_codes")
-    .select("code, kind")
-    .eq("user_id", userId)
-    .order("kind", { ascending: true });
-
-  return {
-    position: (enrollment as { position: number }).position,
-    codes: (codes ?? []) as CampaignCode[],
-  };
 }
 
 export async function POST(request: Request) {
@@ -100,8 +72,7 @@ export async function POST(request: Request) {
 
     if (emailData.email_action_type === "signup") {
       const firstName = typeof user.user_metadata?.first_name === "string" ? user.user_metadata.first_name : null;
-      const campaign = await getCampaignInfo(user.id);
-      ({ subject, html } = renderSignupConfirmationEmail({ firstName, confirmUrl, campaign }));
+      ({ subject, html } = renderSignupConfirmationEmail({ firstName, confirmUrl }));
     } else {
       ({ subject, html } = renderGenericAuthEmail(emailData.email_action_type, confirmUrl));
     }

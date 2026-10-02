@@ -1,3 +1,4 @@
+import type { AnalysisScope } from "../types";
 import type { DataProvider } from "./types";
 import { nominatimGeocoder } from "./geocoding";
 import { hemnetPageProvider } from "./hemnetPage";
@@ -80,13 +81,41 @@ const WAVE_2: DataProvider[] = [brfFinancialsProvider];
 
 const PROVIDER_WAVES: DataProvider[][] = [WAVE_0, WAVE_1, WAVE_2];
 
-export function getProviderWaves(): DataProvider[][] {
+/**
+ * The standalone Områdesanalys only needs what the area chapter reads: the
+ * address verified and geocoded (Wave 0), Booli for the area's sold-price
+ * trend (its output is the area chapter's price-development line; without
+ * credentials it just reports not_connected), then the sources that describe
+ * the surroundings (Wave 1: demographics/income, amenities, schools, commute,
+ * safety/civic data). Everything else (the Hemnet listing page, BRF
+ * documents, interest rates, climate, infrastructure projects, placeholders)
+ * is skipped — an area report never shows it, and leaving it out keeps this a
+ * ~99 kr product that's cheap to serve instead of running the full pipeline
+ * for an address-only request.
+ */
+const AREA_ONLY_PROVIDER_IDS = new Set([
+  nominatimGeocoder.id,
+  booliListingProvider.id,
+  scbDemographicsProvider.id,
+  osmAmenitiesProvider.id,
+  skolverketSchoolsProvider.id,
+  commuteProvider.id,
+  locationIntelligenceProvider.id,
+]);
+
+/** The source ids an area-scope run uses — the only ones whose output an area report may show. */
+export const AREA_SCOPE_SOURCE_IDS: ReadonlySet<string> = AREA_ONLY_PROVIDER_IDS;
+
+export function getProviderWaves(scope: AnalysisScope = "full"): DataProvider[][] {
   const disabled = new Set(
     (process.env.DISABLED_PROVIDERS ?? "")
       .split(",")
       .map((id) => id.trim())
       .filter(Boolean)
   );
-  if (disabled.size === 0) return PROVIDER_WAVES;
-  return PROVIDER_WAVES.map((wave) => wave.filter((p) => !disabled.has(p.id)));
+  const waves = scope === "area"
+    ? PROVIDER_WAVES.map((wave) => wave.filter((p) => AREA_ONLY_PROVIDER_IDS.has(p.id)))
+    : PROVIDER_WAVES;
+  if (disabled.size === 0) return waves;
+  return waves.map((wave) => wave.filter((p) => !disabled.has(p.id)));
 }

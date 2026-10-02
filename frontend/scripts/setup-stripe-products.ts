@@ -1,30 +1,37 @@
 import Stripe from "stripe";
 import * as fs from "fs";
 import * as path from "path";
+import { OMRADESANALYS_PRICE_SEK, TRE_BOSTADER_PRICE_SEK, TRYGGHETSPAKET_PRICE_SEK } from "../src/lib/pricing";
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
   apiVersion: "2026-06-24.dahlia",
   typescript: true,
 });
 
+// The three one-time packages that are sold (see lib/stripe/prices.ts for what
+// each purchase credits). Amounts come from lib/pricing.ts so the Stripe Price
+// and the price shown on the site can't drift apart; Stripe amounts are in
+// öre. Run once per Stripe account — an existing product with the same name is
+// reused, not duplicated. Subscriptions are no longer sold, so none are
+// created here.
 const PRODUCTS = [
   {
-    name: "Premium Beslutsanalys",
-    description: "En komplett Premium Decision Analysis för en bostad.",
-    envVar: "STRIPE_PRICE_PREMIUM_ANALYSIS",
-    prices: [{ currency: "sek", amount: 7900, type: "one_time" as const }],
+    name: "Områdesanalys",
+    description: "En analys av området runt en bostad: service, skolor, pendling och trygghet.",
+    envVar: "STRIPE_PRICE_OMRADESANALYS",
+    prices: [{ currency: "sek", amount: OMRADESANALYS_PRICE_SEK * 100, type: "one_time" as const }],
   },
   {
-    name: "Premium (månad)",
-    description: "15 Premium Decision Analyses/månad + premiumfunktioner.",
-    envVar: "STRIPE_PRICE_PREMIUM_MONTHLY",
-    prices: [{ currency: "sek", amount: 15900, type: "recurring" as const, interval: "month" as const }],
+    name: "Trygghetspaketet",
+    description: "Den fullständiga analysen av en bostad: BRF-analys, områdesanalys och dolda kostnader.",
+    envVar: "STRIPE_PRICE_TRYGGHETSPAKET",
+    prices: [{ currency: "sek", amount: TRYGGHETSPAKET_PRICE_SEK * 100, type: "one_time" as const }],
   },
   {
-    name: "Ultra (månad)",
-    description: "30 Premium Decision Analyses/månad + alla premiumfunktioner.",
-    envVar: "STRIPE_PRICE_ULTRA_MONTHLY",
-    prices: [{ currency: "sek", amount: 29900, type: "recurring" as const, interval: "month" as const }],
+    name: "Tre bostäder",
+    description: "Trygghetspaketet för tre bostäder.",
+    envVar: "STRIPE_PRICE_TRE_BOSTADER",
+    prices: [{ currency: "sek", amount: TRE_BOSTADER_PRICE_SEK * 100, type: "one_time" as const }],
   },
 ];
 
@@ -68,13 +75,8 @@ async function main() {
         product: created.id,
         currency: priceDef.currency,
         unit_amount: priceDef.amount,
-        ...(priceDef.type === "recurring"
-          ? { recurring: { interval: priceDef.interval } }
-          : {}),
       });
-      const label = priceDef.type === "recurring"
-        ? `${priceDef.amount / 100} ${priceDef.currency.toUpperCase()}/${priceDef.interval}`
-        : `${priceDef.amount / 100} ${priceDef.currency.toUpperCase()}`;
+      const label = `${priceDef.amount / 100} ${priceDef.currency.toUpperCase()}`;
       console.log(`[Stripe Setup] ✓ Price created: ${price.id} — ${label}`);
       envEntries.push(`${product.envVar}=${price.id}`);
     }

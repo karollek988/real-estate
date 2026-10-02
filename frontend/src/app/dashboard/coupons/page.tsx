@@ -9,19 +9,17 @@ const stagger = (n: number) => ({ "--dash-stagger": n }) as React.CSSProperties;
 
 interface DiscountCode {
   code: string;
-  kind: "premium_analysis" | "premium_subscription";
+  kind: "trygghetspaket" | "omradesanalys";
   status: "active" | "reserved" | "redeemed";
 }
 
 interface CouponsResponse {
-  enrolled: boolean;
-  position?: number;
   codes?: DiscountCode[];
 }
 
 const KIND_LABEL: Record<DiscountCode["kind"], string> = {
-  premium_analysis: "50% rabatt på en Premium-analys",
-  premium_subscription: "50% rabatt på en Premium-prenumeration",
+  trygghetspaket: "50% rabatt på ett Trygghetspaket",
+  omradesanalys: "50% rabatt på en Områdesanalys",
 };
 
 const STATUS_STYLE: Record<DiscountCode["status"], string> = {
@@ -103,31 +101,20 @@ export default function CouponsPage() {
           <TicketIcon className="h-6 w-6 text-neutral-300" />
           Kuponger
         </h1>
-        <p className="mt-1 text-sm text-neutral-400">Dina rabattkoder från First 100 Users-kampanjen.</p>
+        <p className="mt-1 text-sm text-neutral-400">Dina rabattkoder. Skriv in en kod när du köper ett paket.</p>
       </div>
 
-      {loading ? null : data?.enrolled ? (
-        <>
-          <div
-            className="dash-enter rounded-2xl border border-green-400/20 bg-green-400/[0.04] p-5 backdrop-blur-xl"
-            style={stagger(1)}
-          >
-            <p className="text-sm text-neutral-200">
-              Du är användare <span className="font-semibold text-green-400">#{data.position}</span> av våra
-              första 100 användare — därför fick du 3 rabattkoder på 50%.
-            </p>
-          </div>
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-            {(data.codes ?? []).map((code, i) => (
-              <CouponCard key={code.code} code={code} index={i} />
-            ))}
-          </div>
-        </>
+      {loading ? null : (data?.codes?.length ?? 0) > 0 ? (
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+          {(data?.codes ?? []).map((code, i) => (
+            <CouponCard key={code.code} code={code} index={i} />
+          ))}
+        </div>
       ) : (
         <EmptyState
-          title="Inga kuponger just nu"
-          description="Du är inte en av våra första 100 användare, men håll utkik efter framtida kampanjer."
-          actionLabel="Köp en analys"
+          title="Inga rabattkoder just nu"
+          description="Du har inga rabattkoder på kontot. Har du fått en kod av oss kan du skriva in den direkt när du köper ett paket."
+          actionLabel="Se paketen"
           onAction={() => router.push("/buy")}
         />
       )}

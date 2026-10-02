@@ -1,3 +1,10 @@
+import {
+  OMRADESANALYS_PRICE_SEK,
+  TRE_BOSTADER_COUNT,
+  TRE_BOSTADER_PRICE_SEK,
+  TRYGGHETSPAKET_PRICE_SEK,
+} from "@/lib/pricing";
+
 export const FAQ_ITEMS = [
   {
     question: "Vad är egentligen en Köpanalys-rapport till för?",
@@ -30,24 +37,24 @@ export const FAQ_ITEMS = [
       "Varje datapunkt i rapporten kommer från en verifierbar källa som vi anger. Däremot uppmanar vi alltid dig som köpare att göra din egen oberoende kontroll – särskilt av föreningens ekonomi och skicket på bostaden – eftersom en analys aldrig kan ersätta en egen besiktning eller en genomgång av föreningens handlingar.",
   },
   {
-    question: "Hur många gratisanalyser får jag?",
+    question: "Vad kostar en analys? Hur betalar jag?",
     answer:
-      "Nya användare får 3 gratisanalyser direkt vid registrering. När de är förbrukade kan du fortsätta använda tjänsten via Premium – du betalar per analys eller via en månads prenumeration.",
+      `En Områdesanalys kostar ${OMRADESANALYS_PRICE_SEK} kr. Trygghetspaketet – den fullständiga analysen av en bostad med BRF-analys, områdesanalys och dolda kostnader – kostar ${TRYGGHETSPAKET_PRICE_SEK} kr per bostad. Vill du analysera tre bostäder kostar paketet för tre bostäder ${TRE_BOSTADER_PRICE_SEK} kr (${Math.round(TRE_BOSTADER_PRICE_SEK / TRE_BOSTADER_COUNT)} kr per bostad). Alla priser är engångsbetalningar inklusive moms, och du betalar med kort via Stripe. Vi har inga abonnemang.`,
   },
   {
-    question: "Vad är skillnaden mellan gratis- och Premium-analys?",
+    question: "Vad ingår i en Områdesanalys?",
     answer:
-      "Gratisanalysen visar grundläggande bostadsfakta (adress, storlek, pris, avgift, bilder) samt kapitlen Prisanalys och Bostadsrättsförening – prisbedömning mot områdets medianpris och föreningens ekonomiska nyckeltal. Premiumanalysen låser upp resten av rapporten: jämförbara sålda bostäder och historisk prisutveckling, områdesanalys, möjliga risker värda att undersöka vidare, dokument hos mäklaren, investeringsutsikt och en samlad helhetsbild.",
+      "Områdesanalysen är en egen analys av området runt en adress: service, skolor och pendling nära bostaden, trygghet och samhällsdata samt hur befolkning och priser utvecklas. Du får en rapport om området och inget annat – bostadens pris, föreningens ekonomi och riskerna ingår i Trygghetspaketet.",
   },
   {
-    question: "Vad kostar en Premium-analys? Hur betalar jag?",
+    question: "Vad ingår i Trygghetspaketet?",
     answer:
-      "Premium-analys finns både som engångsköp och som en del av en månadsprenumeration via Stripe. Du betalar med kort – inget bindande abonnemang krävs för engångsköpet. Specifika priser visas i samband med betalningen.",
+      "Trygghetspaketet är den fullständiga analysen av en bostad. Den som skapar en hel analys får alltid tillgång till hela rapporten: fastighetsinformation, boendekalkyl med jämförbara sålda bostäder och prisutveckling, områdesanalys, föreningens ekonomi, möjliga risker att undersöka vidare, investeringsutsikt och en samlad helhetsbild.",
   },
   {
-    question: "Vad händer om jag inte har några Premium-analyser kvar men vill se en rapport?",
+    question: "Vad händer om jag inte har någon analys kvar?",
     answer:
-      "Analysen körs ändå och rapporten skapas, men rapporten är låst tills betalning är genomförd. Du kan då köpa en Premium-analys via Stripe för att låsa upp just den rapporten, och ditt saldo påverkas inte.",
+      "Då körs ingen analys och inget dras från dig. Köp en Områdesanalys eller ett Trygghetspaket i butiken så kan du fortsätta. Går en analys inte att slutföra, till exempel för att vi inte kan hämta tillräckligt med uppgifter om en adress, får du tillbaka din analys automatiskt.",
   },
   {
     question: "Hur snabb är en analys?",
@@ -82,6 +89,6 @@ export const FAQ_ITEMS = [
   {
     question: "Hur avbokar eller avslutar jag mitt konto?",
     answer:
-      "En eventuell prenumeration säger du upp via dashboardens inställningar. För att helt ta bort ditt konto och alla dina sparade uppgifter, kontakta oss via länken nedan så hjälper vi dig.",
+      "Har du ett äldre abonnemang säger du upp det under Köp & saldo i dashboarden. För att helt ta bort ditt konto och alla dina sparade uppgifter, kontakta oss via länken nedan så hjälper vi dig.",
   },
 ];

@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { requireUser } from "@/lib/auth/requireUser";
-import { findAnalysisForProperty } from "@/lib/analysis/ownership";
+import { hasFullEntitlementForProperty } from "@/lib/analysis/ownership";
 import { findPropertyById, latestCompleteAnalysis } from "@/lib/analysis/store";
 import {
   createInspection,
@@ -18,21 +18,21 @@ function errorResponse(status: number, code: string, message: string) {
 }
 
 /**
- * Confirms the caller has requested an analysis (free or Premium) for this
- * property and returns its latest complete analysis, which the viewing
- * guide reads from (PART 5). Free feature — any owned analysis qualifies.
+ * Confirms the caller owns the full analysis (Trygghetspaketet) of this
+ * property and returns its latest complete full analysis, which the viewing
+ * guide reads from (PART 5). The guide builds on the whole report — price,
+ * housing association, risks — so an area-only analysis does not qualify.
  */
 async function requireOwnedProperty(userId: string, propertyId: string) {
   const property = await findPropertyById(propertyId);
   if (!property) return { error: errorResponse(404, "not_found", "No property with that id.") };
 
-  const owned = await findAnalysisForProperty(userId, propertyId);
-  if (!owned) {
+  if (!(await hasFullEntitlementForProperty(userId, propertyId))) {
     return {
       error: errorResponse(
         403,
         "analysis_required",
-        "Visningsguiden kräver en analys av den här bostaden."
+        "Visningsguiden ingår i Trygghetspaketet för den här bostaden."
       ),
     };
   }

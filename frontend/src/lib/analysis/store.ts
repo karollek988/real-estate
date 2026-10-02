@@ -3,6 +3,7 @@ import type {
   AnalysisFailureReason,
   AnalysisRecord,
   AnalysisReport,
+  AnalysisScope,
   DataSourceReport,
   ExtractedProperty,
   FieldProvenance,
@@ -42,6 +43,7 @@ interface AnalysisRow {
   property_id: string;
   version: number;
   engine_version: string;
+  scope: AnalysisScope;
   status: "pending" | "complete" | "failed";
   decision_score: number | null;
   result: AnalysisReport | null;
@@ -78,6 +80,7 @@ function mapAnalysis(row: AnalysisRow): AnalysisRecord {
     propertyId: row.property_id,
     version: row.version,
     engineVersion: row.engine_version,
+    scope: row.scope,
     status: row.status,
     decisionScore: row.decision_score,
     report: row.result,
@@ -199,13 +202,23 @@ export async function updateProperty(
   return mapProperty(data as PropertyRow);
 }
 
-/** Newest completed analysis for a property (the cache-check target). */
-export async function latestCompleteAnalysis(propertyId: string): Promise<AnalysisRecord | null> {
+/**
+ * Newest completed analysis for a property (the cache-check target), limited
+ * to the given scopes. Defaults to full-only so a caller that forgets to
+ * think about scope (e.g. the viewing guide, which reads the whole report)
+ * can never be handed an area-only analysis. An area request may pass both
+ * scopes: a full analysis contains everything an area analysis would.
+ */
+export async function latestCompleteAnalysis(
+  propertyId: string,
+  scopes: AnalysisScope[] = ["full"]
+): Promise<AnalysisRecord | null> {
   const { data, error } = await createAdminClient()
     .from("analyses")
     .select("*")
     .eq("property_id", propertyId)
     .eq("status", "complete")
+    .in("scope", scopes)
     .order("created_at", { ascending: false })
     .limit(1)
     .maybeSingle();
@@ -223,12 +236,16 @@ export async function latestCompleteAnalysis(propertyId: string): Promise<Analys
  */
 const PENDING_ANALYSIS_FRESH_MS = 6 * 60_000;
 
-export async function latestPendingAnalysis(propertyId: string): Promise<AnalysisRecord | null> {
+export async function latestPendingAnalysis(
+  propertyId: string,
+  scopes: AnalysisScope[] = ["full"]
+): Promise<AnalysisRecord | null> {
   const { data, error } = await createAdminClient()
     .from("analyses")
     .select("*")
     .eq("property_id", propertyId)
     .eq("status", "pending")
+    .in("scope", scopes)
     .gte("created_at", new Date(Date.now() - PENDING_ANALYSIS_FRESH_MS).toISOString())
     .order("created_at", { ascending: false })
     .limit(1)
@@ -244,7 +261,8 @@ export async function latestPendingAnalysis(propertyId: string): Promise<Analysi
  */
 export async function insertPendingAnalysis(
   propertyId: string,
-  engineVersion: string
+  engineVersion: string,
+  scope: AnalysisScope = "full"
 ): Promise<AnalysisRecord> {
   const client = createAdminClient();
   for (let attempt = 0; attempt < 2; attempt++) {
@@ -260,7 +278,7 @@ export async function insertPendingAnalysis(
 
     const { data, error } = await client
       .from("analyses")
-      .insert({ property_id: propertyId, version, engine_version: engineVersion })
+      .insert({ property_id: propertyId, version, engine_version: engineVersion, scope })
       .select("*")
       .single();
     if (!error) return mapAnalysis(data as AnalysisRow);

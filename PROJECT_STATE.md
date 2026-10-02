@@ -5,9 +5,66 @@
 > otherwise leave it alone. Detailed research/product docs live in `docs/`;
 > this file is the "what's actually true right now" summary.
 
-Last updated: 2026-09-18 — see the Seventh session note below; that branch
-has since been re-verified, merged, pushed, and deployed to `main` (see
-"Merge, push & deploy" at the end of that section for the full record).
+Last updated: 2026-10-02 — see the Eighth session note first (product/pricing
+model change, **uncommitted and undeployed**); the Seventh session note below
+it was re-verified, merged, pushed, and deployed to `main` (see "Merge, push &
+deploy" at the end of that section for the full record).
+
+**Eighth session — packages instead of Premium (2026-10-02, working tree only,
+not committed, migrations not applied to production).** Premium, subscriptions,
+the 3 free analyses, locked/paywalled chapters and the "First 100 Users"
+campaign are gone. What is sold (one-time, Stripe, SEK incl. VAT; amounts in
+`frontend/src/lib/pricing.ts`): **Områdesanalys 99 kr** (area report only),
+**Trygghetspaket 499 kr** (the complete report of one property), **Tre bostäder
+999 kr** (3 × Trygghetspaket). Whoever creates a full analysis always sees all of
+it; an area analysis shows the cover and the area chapter and nothing else.
+
+- **Data model** (`supabase/migrations/20261002000000_*.sql`, `…000100_*.sql`):
+  `profiles.full_analyses_remaining` / `area_analyses_remaining` (old premium/free
+  columns kept, unused; paid Premium credits copied to `full`); `analysis_requests.analysis_type`
+  is now `full`|`area` (old value kept in `legacy_analysis_type`; every legacy
+  free/premium/locked request became `full`); `analyses.scope` (`full`|`area`) keeps
+  area reports out of the full-analysis cache; `analysis_requests.refunded_at` (a
+  refunded request grants no access); `credit_purchases` ledger. RPCs `consume_credit`,
+  `refund_credit`, `grant_purchase_credits` (idempotent per Stripe session) — all
+  service_role only. Campaign trigger dropped; discount codes (table, redeem flow,
+  `generate_discount_code`) kept, `issue_discount_code(user, kind)` added; kinds are
+  `trygghetspaket`/`omradesanalys` (+ inert `premium_subscription`).
+- **Access** (`lib/analysis/access.ts`, `redact.ts`, `ownership.ts`): entitlement is per
+  property (`full` > `area` > none); `redact.ts` is an allowlist (the area attribute list is
+  checked against what `buildAreaAnalysis` really reads by `redact.verify.mjs`). No
+  entitlement = 404 — there is no free preview. The viewing guide, BRF-report upload
+  and everything built on the whole report require `full`.
+- **Area pipeline**: `getProviderWaves("area")` runs geocoding, Booli, SCB, OSM,
+  Skolverket, commute, location intelligence only; delivered only if the address was
+  geocoded and ≥1 area source returned data, otherwise failed + credit refunded.
+  Address must include a city (`Storgatan 12, Stockholm`).
+- **Stripe**: `lib/stripe/prices.ts` (credits per key), webhook credits through
+  `grant_purchase_credits` (replaces a read-modify-write that double-credited on
+  repeated delivery), requires `payment_status` paid, still credits the pre-launch
+  key `premium_analysis` as one Trygghetspaket. `scripts/setup-stripe-products.ts` now
+  creates the three packages (not run). **Required env before launch:**
+  `STRIPE_PRICE_OMRADESANALYS`, `STRIPE_PRICE_TRYGGHETSPAKET`, `STRIPE_PRICE_TRE_BOSTADER`
+  (checkout returns a generic 500 without them); `STRIPE_COUPON_ANALYSIS_50OFF` must not be
+  restricted to old products. Subscription webhook handlers + the billing-portal route are
+  kept only so a pre-existing subscriber can still cancel — delete them once Stripe shows no
+  active subscription.
+- **Account**: one balance card (credits per product + counts BRF-/Områdes-/Dolda-kostnader
+  analyses; a full analysis counts once in each, an area analysis only as area).
+- **Verified**: `tsc` clean; `redact.verify.mjs` (28, mutation-tested) and
+  `credits.verify.mjs` (33) pass; existing verify scripts unchanged (only the known
+  `hemnetPage` G5 case and the network-bound `parseBotCoverage` fail); a 66-assertion SQL
+  suite (legacy data → migrations → RPCs/grants/idempotency) on a throwaway Postgres;
+  and against the local Supabase stack with real GoTrue sessions: signed webhooks,
+  multi-user access matrix (area vs full vs nothing, API + report page), refund path,
+  checkout/discount-code rejections, all pages render. **Not tested**: a real Stripe
+  Checkout (no Prices exist yet), production data, the Python engine path
+  (location-intelligence/BRF providers not running locally).
+- **Known / open**: "Dolda kostnader" is sold as the third analysis but is the existing
+  Boendekalkyl chapter, not a separate engine analysis; the dashboard card's "Ladda upp
+  senaste årsredovisning" still posts multipart to a route that now expects the two-step
+  JSON contract (pre-existing, not touched); terms text (§ Analyser och krediter) was
+  edited and needs a human/legal read.
 
 **Seventh session — Price Analysis + civic data enrichment.** Branch
 `feature/price-analysis-and-area-data-enrichment`, tested on the branch

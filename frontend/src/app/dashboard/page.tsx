@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { ProfileCard } from "@/components/dashboard/ProfileCard";
-import { PremiumPerksCard } from "@/components/dashboard/PremiumPerksCard";
+import { AnalysisBalanceCard } from "@/components/dashboard/buy/AnalysisBalanceCard";
 import { DashboardSection } from "@/components/dashboard/DashboardSection";
 import { StatCard } from "@/components/dashboard/StatCard";
 import { DecisionAnalysisCard } from "@/components/dashboard/DecisionAnalysisCard";
@@ -11,15 +11,9 @@ import { EmptyState } from "@/components/dashboard/EmptyState";
 import { QuickActionsCard } from "@/components/dashboard/QuickActionsCard";
 import { StorePromoCard } from "@/components/dashboard/StorePromoCard";
 import { InspectionHelpBanner } from "@/components/dashboard/InspectionHelpBanner";
-import { ClipboardIcon, CrownIcon, TicketIcon, CalendarIcon, ShieldIcon, ArrowRightIcon } from "@/components/icons";
+import { ClipboardIcon, BuildingIcon, MapPinIcon, WalletIcon, ShieldIcon, ArrowRightIcon } from "@/components/icons";
 import { useAuth } from "@/lib/auth/AuthProvider";
-
-interface ProfileSummary {
-  premiumRemaining: number;
-  freeRemaining: number;
-  totalAnalyses: number;
-  memberSince: string;
-}
+import type { ProfileSummary } from "@/lib/analysis/ownership";
 
 interface OwnedAnalysis {
   requestId: string;
@@ -27,7 +21,7 @@ interface OwnedAnalysis {
   propertyId: string;
   address: string;
   status: "pending" | "complete" | "failed";
-  analysisType: "free" | "premium";
+  analysisType: "full" | "area";
   requestedAt: string;
 }
 
@@ -84,9 +78,8 @@ export default function DashboardPage() {
       const res = await fetch(`/api/profile/analyses/${requestId}`, { method: "DELETE" });
       if (res.ok) {
         setAnalyses((prev) => prev?.filter((a) => a.requestId !== requestId) ?? null);
-        // "Total analyses created" counts analysis_requests rows directly,
-        // so deleting one must be reflected there too.
-        setSummary((prev) => (prev ? { ...prev, totalAnalyses: prev.totalAnalyses - 1 } : prev));
+        // The per-kind counts are derived from the same rows, so refresh them.
+        await load();
       }
     } finally {
       setDeletingId(null);
@@ -118,7 +111,7 @@ export default function DashboardPage() {
           memberSince={summary ? MONTH_YEAR_FORMAT.format(new Date(summary.memberSince)) : "—"}
           initials={initialsFor(fullName)}
         />
-        <PremiumPerksCard />
+        <AnalysisBalanceCard />
       </aside>
 
       {/* Main column */}
@@ -135,18 +128,14 @@ export default function DashboardPage() {
             </div>
 
             <div className="dash-enter grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4" style={stagger(2)}>
-              <StatCard label="Premium-analyser kvar" value={String(summary?.premiumRemaining ?? "—")} icon={<CrownIcon />} />
-              <StatCard label="Gratisanalyser kvar" value={String(summary?.freeRemaining ?? "—")} icon={<TicketIcon />} />
-              <StatCard label="Analyser skapade totalt" value={String(summary?.totalAnalyses ?? "—")} icon={<ClipboardIcon />} />
-              <StatCard
-                label="Medlem sedan"
-                value={summary ? MONTH_YEAR_FORMAT.format(new Date(summary.memberSince)) : "—"}
-                icon={<CalendarIcon />}
-              />
+              <StatCard label="BRF-analyser" value={String(summary?.analyses.brf ?? "—")} icon={<BuildingIcon />} />
+              <StatCard label="Områdesanalyser" value={String(summary?.analyses.area ?? "—")} icon={<MapPinIcon />} />
+              <StatCard label="Dolda kostnader" value={String(summary?.analyses.hiddenCosts ?? "—")} icon={<WalletIcon />} />
+              <StatCard label="Analyser totalt" value={String(summary?.analyses.total ?? "—")} icon={<ClipboardIcon />} />
             </div>
 
             <div className="dash-enter" style={stagger(3)}>
-              <DashboardSection title="Dina beslutsanalyser">
+              <DashboardSection title="Dina analyser">
                 {hasAnalyses ? (
                   <div className="flex flex-col gap-3">
                     {analyses!.map((analysis) => (
@@ -162,9 +151,9 @@ export default function DashboardPage() {
                   </div>
                 ) : analyses !== null ? (
                   <EmptyState
-                    title="Skapa din första beslutsanalys"
-                    description="Du har inte skapat några Decision Analyses än. Börja med att analysera en bostad för att se en marknadsvärdering och full genomgång."
-                    actionLabel="Skapa din första beslutsanalys"
+                    title="Skapa din första analys"
+                    description="Du har inga analyser än. Analysera området runt en adress, eller ta fram hela bilden av en bostad med Trygghetspaketet."
+                    actionLabel="Skapa din första analys"
                     onAction={() => router.push("/")}
                   />
                 ) : null}
@@ -221,14 +210,15 @@ function AnalysisCard({
   const status: "ready" | "processing" | "expired" =
     analysis.status === "complete" ? "ready" : analysis.status === "pending" ? "processing" : "expired";
 
+  const isFull = analysis.analysisType === "full";
   const planLabel =
     analysis.status === "pending"
       ? "Väntar"
       : analysis.status === "failed"
         ? "Misslyckades"
-        : analysis.analysisType === "premium"
-          ? "Premium"
-          : "Gratis";
+        : isFull
+          ? "Trygghetspaket"
+          : "Områdesanalys";
 
   return (
     <DecisionAnalysisCard
@@ -239,7 +229,7 @@ function AnalysisCard({
       onOpen={onOpen}
       footer={
         <>
-          {analysis.status === "complete" && (
+          {analysis.status === "complete" && isFull && (
             <button
               type="button"
               onClick={() => router.push(`/dashboard/inspection?propertyId=${analysis.propertyId}`)}
@@ -251,10 +241,12 @@ function AnalysisCard({
             </button>
           )}
           <div className="flex items-center gap-4 text-xs">
-            <label className="cursor-pointer font-medium text-green-400 transition hover:text-green-300">
-              {uploading ? "Laddar upp..." : "Ladda upp senaste årsredovisning"}
-              <input type="file" accept="application/pdf" className="hidden" onChange={handleFileChange} disabled={uploading} />
-            </label>
+            {isFull && (
+              <label className="cursor-pointer font-medium text-green-400 transition hover:text-green-300">
+                {uploading ? "Laddar upp..." : "Ladda upp senaste årsredovisning"}
+                <input type="file" accept="application/pdf" className="hidden" onChange={handleFileChange} disabled={uploading} />
+              </label>
+            )}
             <button
               type="button"
               onClick={onDelete}

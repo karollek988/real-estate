@@ -1,24 +1,27 @@
-import { ZapIcon, ChartIcon, ClipboardIcon } from "@/components/icons";
+import { LockIcon, ShieldIcon, ClipboardIcon } from "@/components/icons";
+import { OMRADESANALYS_PRICE_SEK, TRYGGHETSPAKET_PRICE_SEK } from "@/lib/pricing";
 
 const PILLS = [
-  { icon: ZapIcon, label: "Snabb leverans" },
-  { icon: ChartIcon, label: "Datadriven analys" },
-  { icon: ClipboardIcon, label: "Fullt beslutsunderlag" },
+  { icon: ClipboardIcon, label: "Engångsköp – inget abonnemang" },
+  { icon: ShieldIcon, label: "Alla priser inkl. moms" },
+  { icon: LockIcon, label: "Säker betalning via Stripe" },
 ];
 
 export function BuyHero() {
   return (
     <div>
       <h1 className="text-[32px] font-bold leading-[1.15] tracking-tight text-white sm:text-[40px]">
-        Köp din{" "}
+        Kartan är gratis.{" "}
         <span className="relative inline-block text-green-400">
-          beslutsanalys
+          Tryggheten
           <span className="absolute inset-x-0 -bottom-1 h-[3px] rounded-full bg-green-500/70" />
-        </span>
+        </span>{" "}
+        kostar {TRYGGHETSPAKET_PRICE_SEK}&nbsp;kr.
       </h1>
       <p className="mt-4 max-w-2xl text-[15px] leading-relaxed text-neutral-300">
-        Fatta ett tryggare bostadsbeslut. Våra analyser ger dig hela beslutsunderlaget — så att
-        du kan köpa med kunskap, inte magkänsla.
+        Ett bostadsköp är ofta det största du gör. Trygghetspaketet visar det som annonsen inte
+        gör: hur föreningens ekonomi ser ut, hur området ser ut och vad bostaden kostar att äga.
+        Vill du bara se området runt en bostad räcker en Områdesanalys för {OMRADESANALYS_PRICE_SEK}&nbsp;kr.
       </p>
 
       <div className="mt-6 flex flex-wrap gap-3">

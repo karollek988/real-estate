@@ -1,59 +1,25 @@
 import { createStripeClient } from "./admin";
-import { getPriceId } from "./prices";
+import { getPriceId, type OneTimePriceKey } from "./prices";
 
 export interface CreateCheckoutResult {
   url: string | null;
   sessionId: string;
 }
 
-export async function createSubscriptionCheckout(
-  customerId: string | undefined,
-  priceKey: "premium_monthly",
-  userId: string,
-  successUrl: string,
-  cancelUrl: string,
-  couponId?: string
-): Promise<CreateCheckoutResult> {
-  const stripe = createStripeClient();
-  console.log("[Stripe] Getting price ID for:", priceKey);
-  const priceId = getPriceId(priceKey);
-  console.log("[Stripe] Price ID resolved:", priceId);
-
-  console.log("[Stripe] Creating Checkout Session...");
-  const session = await stripe.checkout.sessions.create({
-    mode: "subscription",
-    line_items: [{ price: priceId, quantity: 1 }],
-    managed_payments: { enabled: false },
-    ...(customerId ? { customer: customerId } : {}),
-    ...(couponId ? { discounts: [{ coupon: couponId }] } : {}),
-    client_reference_id: userId,
-    metadata: { userId, priceKey },
-    success_url: successUrl,
-    cancel_url: cancelUrl,
-  });
-  console.log("[Stripe] ✓ Session Created:", session.id);
-
-  return { url: session.url, sessionId: session.id };
-}
+export type { OneTimePriceKey };
 
 export async function createOneTimeCheckout(
   customerId: string | undefined,
-  priceKey: "premium_analysis",
+  priceKey: OneTimePriceKey,
   userId: string,
   successUrl: string,
   cancelUrl: string,
-  unlockAnalysisId?: string,
   couponId?: string
 ): Promise<CreateCheckoutResult> {
   const stripe = createStripeClient();
   console.log("[Stripe] Getting price ID for:", priceKey);
   const priceId = getPriceId(priceKey);
   console.log("[Stripe] Price ID resolved:", priceId);
-
-  const metadata: Record<string, string> = { userId, priceKey };
-  if (unlockAnalysisId) {
-    metadata.unlockAnalysisId = unlockAnalysisId;
-  }
 
   console.log("[Stripe] Creating Checkout Session...");
   const session = await stripe.checkout.sessions.create({
@@ -63,7 +29,9 @@ export async function createOneTimeCheckout(
     ...(customerId ? { customer: customerId } : {}),
     ...(couponId ? { discounts: [{ coupon: couponId }] } : {}),
     client_reference_id: userId,
-    metadata,
+    // What the webhook credits is decided from these two values, both set
+    // here on the server — never from anything the browser sent afterwards.
+    metadata: { userId, priceKey },
     success_url: successUrl,
     cancel_url: cancelUrl,
   });

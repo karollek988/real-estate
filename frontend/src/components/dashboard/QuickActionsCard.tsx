@@ -19,7 +19,7 @@ export function QuickActionsCard() {
         >
           <span className="flex items-center gap-2.5">
             <TrendingUpIcon className="h-4 w-4 text-neutral-500" />
-            Skapa ny prisanalys
+            Skapa ny analys
           </span>
           <ChevronRightIcon className="h-4 w-4 text-neutral-600" />
         </button>

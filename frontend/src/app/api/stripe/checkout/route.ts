@@ -1,36 +1,42 @@
 import { NextResponse } from "next/server";
 import { requireUser } from "@/lib/auth/requireUser";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { createOneTimeCheckout } from "@/lib/stripe/checkout";
 import {
-  createSubscriptionCheckout,
-  createOneTimeCheckout,
-} from "@/lib/stripe/checkout";
-import { getCouponId, type DiscountCodeKind } from "@/lib/stripe/prices";
+  getCouponId,
+  isOneTimePriceKey,
+  type DiscountCodeKind,
+  type OneTimePriceKey,
+} from "@/lib/stripe/prices";
+import { checkRateLimit, clientIp } from "@/lib/rateLimit";
 
 function errorResponse(status: number, code: string, message: string) {
   return NextResponse.json({ error: { code, message } }, { status });
 }
 
-const ALLOWED_SUBSCRIPTIONS = ["premium_monthly"] as const;
-const ALLOWED_ONE_TIME = ["premium_analysis"] as const;
+// Each call creates a Stripe Checkout Session (and may reserve a discount
+// code), so cap how fast one connection can do that. Far above what a person
+// buying a package ever needs.
+const RATE_LIMIT_PER_10_MINUTES = 20;
 
 // Maps a checkout priceKey to the discount_codes.kind it accepts a code for.
-const PRICE_KEY_TO_DISCOUNT_KIND: Record<string, DiscountCodeKind> = {
-  premium_analysis: "premium_analysis",
-  premium_monthly: "premium_subscription",
+// The "Tre bostäder" package takes no code (a code on top of its per-property
+// discount isn't part of the offer).
+const PRICE_KEY_TO_DISCOUNT_KIND: Partial<Record<OneTimePriceKey, DiscountCodeKind>> = {
+  omradesanalys: "omradesanalys",
+  trygghetspaket: "trygghetspaket",
 };
 
 /**
  * Atomically reserves a discount code (active -> reserved) for this purchase
- * and resolves the matching Stripe Coupon id. Returns null if no code was
- * supplied. Throws (as a thin error the caller turns into a 400) if the code
- * is invalid, already used, or doesn't match this priceKey — the RPC gives
- * no row back in every one of those cases, so callers can't distinguish why
- * a code failed and probe for valid ones.
+ * and resolves the matching Stripe Coupon id. Throws if the code is invalid,
+ * already used, or doesn't match this priceKey — the RPC gives no row back in
+ * every one of those cases, so callers can't distinguish why a code failed
+ * and probe for valid ones.
  */
 async function reserveDiscountCode(
   userId: string,
-  priceKey: string,
+  priceKey: OneTimePriceKey,
   discountCode: string
 ): Promise<{ codeId: string; couponId: string }> {
   const kind = PRICE_KEY_TO_DISCOUNT_KIND[priceKey];
@@ -62,6 +68,10 @@ export async function POST(request: Request) {
     return authError;
   }
 
+  if (!checkRateLimit(`checkout:${clientIp(request)}`, RATE_LIMIT_PER_10_MINUTES, 10 * 60_000)) {
+    return errorResponse(429, "rate_limited", "För många försök – vänta en liten stund och försök igen.");
+  }
+
   console.log("[Stripe Checkout] Starting checkout for user:", user.id);
 
   const body = await request.json().catch(() => null);
@@ -70,15 +80,17 @@ export async function POST(request: Request) {
     return errorResponse(400, "invalid_request", "Invalid request body.");
   }
 
-  const { priceKey, unlockAnalysisId, discountCode } = body as {
-    priceKey?: unknown;
-    unlockAnalysisId?: unknown;
-    discountCode?: unknown;
-  };
+  const { priceKey, discountCode } = body as { priceKey?: unknown; discountCode?: unknown };
 
   if (typeof priceKey !== "string") {
     console.log("[Stripe Checkout] ✗ Missing or invalid priceKey");
     return errorResponse(400, "invalid_request", "priceKey is required.");
+  }
+  // Checked before a discount code is touched, so an unknown key can never
+  // leave a code reserved.
+  if (!isOneTimePriceKey(priceKey)) {
+    console.log("[Stripe Checkout] ✗ Unknown price key:", priceKey);
+    return errorResponse(400, "invalid_price_key", "Unknown price key.");
   }
 
   console.log("[Stripe Checkout] Price key requested:", priceKey);
@@ -110,34 +122,15 @@ export async function POST(request: Request) {
   }
 
   try {
-    let result: { url: string | null; sessionId: string };
-
-    if ((ALLOWED_SUBSCRIPTIONS as readonly string[]).includes(priceKey)) {
-      console.log("[Stripe Checkout] Creating subscription checkout for:", priceKey);
-      result = await createSubscriptionCheckout(
-        customerId,
-        priceKey as "premium_monthly",
-        user.id,
-        successUrl,
-        cancelUrl,
-        reservedCode?.couponId
-      );
-    } else if ((ALLOWED_ONE_TIME as readonly string[]).includes(priceKey)) {
-      console.log("[Stripe Checkout] Creating one-time checkout for:", priceKey, "unlockAnalysisId:", unlockAnalysisId ?? "none");
-      result = await createOneTimeCheckout(
-        customerId,
-        priceKey as "premium_analysis",
-        user.id,
-        successUrl,
-        cancelUrl,
-        typeof unlockAnalysisId === "string" ? unlockAnalysisId : undefined,
-        reservedCode?.couponId
-      );
-    } else {
-      console.log("[Stripe Checkout] ✗ Unknown price key:", priceKey);
-      if (reservedCode) await releaseReservedCode(admin, reservedCode.codeId);
-      return errorResponse(400, "invalid_price_key", `Unknown price key: ${priceKey}`);
-    }
+    console.log("[Stripe Checkout] Creating one-time checkout for:", priceKey);
+    const result = await createOneTimeCheckout(
+      customerId,
+      priceKey,
+      user.id,
+      successUrl,
+      cancelUrl,
+      reservedCode?.couponId
+    );
 
     if (reservedCode) {
       const { error: attachError } = await admin.rpc("attach_discount_code_session", {
@@ -155,8 +148,9 @@ export async function POST(request: Request) {
   } catch (err) {
     console.error("[Stripe Checkout] ✗ Failed to create checkout session:", err);
     if (reservedCode) await releaseReservedCode(admin, reservedCode.codeId);
-    const message = err instanceof Error ? err.message : "Unknown error";
-    return errorResponse(500, "checkout_failed", `Could not create checkout session: ${message}`);
+    // The detail stays in the server log: it can name a missing environment
+    // variable or a Stripe error, neither of which belongs in a response.
+    return errorResponse(500, "checkout_failed", "Kunde inte starta betalningen. Försök igen om en stund.");
   }
 }
 

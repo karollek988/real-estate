@@ -6,6 +6,7 @@ import { SiteHeader } from "@/components/SiteHeader";
 import { FOCUS_URL_INPUT_EVENT, OPEN_ONBOARDING_MODAL_EVENT } from "@/lib/onboardingModalEvents";
 import { ScreenshotUploadForm } from "@/components/ScreenshotUploadForm";
 import { ManualEntryForm } from "@/components/ManualEntryForm";
+import { AreaAnalysisForm } from "@/components/AreaAnalysisForm";
 import { NewsSection } from "@/components/sections/NewsSection";
 import { ExampleReportSection } from "@/components/sections/ExampleReportSection";
 import { InsightsSection } from "@/components/sections/InsightsSection";
@@ -33,7 +34,7 @@ import {
   ZapIcon,
 } from "@/components/icons";
 
-type Method = "screenshot" | "manual";
+type Method = "screenshot" | "manual" | "area";
 
 /**
  * Manual entry now has real required-field validation (address, price,
@@ -60,7 +61,7 @@ function ManualEntryNotice() {
 }
 
 const FEATURE_PILLS = [
-  { icon: ChartIcon, label: "Prisanalys" },
+  { icon: ChartIcon, label: "Boendekalkyl" },
   { icon: MapPinIcon, label: "Områdesanalys" },
   { icon: BuildingIcon, label: "BRF-analys" },
   { icon: ShieldIcon, label: "Möjliga risker" },
@@ -244,6 +245,7 @@ export default function Home() {
                 [
                   { key: "screenshot", label: "Skärmdump", icon: UploadCloudIcon },
                   { key: "manual", label: "Manuellt", icon: PencilIcon },
+                  { key: "area", label: "Område", icon: MapPinIcon },
                 ] as const
               ).map(({ key, label, icon: Icon }) => {
                 const active = method === key;
@@ -280,6 +282,8 @@ export default function Home() {
             <div className="mt-5">
               {method === "screenshot" ? (
                 <ScreenshotUploadForm />
+              ) : method === "area" ? (
+                <AreaAnalysisForm />
               ) : MANUAL_ENTRY_ENABLED ? (
                 <ManualEntryForm />
               ) : (
@@ -374,6 +378,7 @@ export default function Home() {
                 [
                   { key: "screenshot", label: "Ladda upp skärmdump", icon: UploadCloudIcon },
                   { key: "manual", label: "Manuell inmatning", icon: PencilIcon },
+                  { key: "area", label: "Områdesanalys", icon: MapPinIcon },
                 ] as const
               ).map(({ key, label, icon: Icon }) => {
                 const active = method === key;
@@ -410,6 +415,8 @@ export default function Home() {
             <div className="mt-6">
               {method === "screenshot" ? (
                 <ScreenshotUploadForm />
+              ) : method === "area" ? (
+                <AreaAnalysisForm />
               ) : MANUAL_ENTRY_ENABLED ? (
                 <ManualEntryForm />
               ) : (

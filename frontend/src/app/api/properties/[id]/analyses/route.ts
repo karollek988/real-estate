@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { rerunAnalysisForProperty } from "@/lib/analysis/pipeline";
 import { listAnalysesForProperty } from "@/lib/analysis/store";
-import { hasAnyAnalysisRequestForProperty } from "@/lib/analysis/ownership";
+import { getBestEntitlementForProperty } from "@/lib/analysis/ownership";
 import { requireUser } from "@/lib/auth/requireUser";
 
 /**
@@ -9,7 +9,10 @@ import { requireUser } from "@/lib/auth/requireUser";
  *      property the caller has requested at least once (analyses are
  *      append-only, so this is also the property's version timeline).
  * POST /api/properties/:id/analyses — "Update analysis": run the pipeline
- *      again and store the result as a new version.
+ *      again and store the result as a new version. What runs follows what
+ *      the caller bought: a full owner refreshes the whole analysis, an
+ *      area-only owner refreshes the area analysis (never the full pipeline).
+ *      Costs no credit — the analysis is already theirs.
  */
 
 function notFound() {
@@ -29,7 +32,7 @@ export async function GET(
   if (authError) return authError;
 
   try {
-    if (!(await hasAnyAnalysisRequestForProperty(user.id, id))) return notFound();
+    if ((await getBestEntitlementForProperty(user.id, id)) === null) return notFound();
 
     const analyses = await listAnalysesForProperty(id);
     return NextResponse.json({
@@ -61,9 +64,10 @@ export async function POST(
   if (authError) return authError;
 
   try {
-    if (!(await hasAnyAnalysisRequestForProperty(user.id, id))) return notFound();
+    const entitlement = await getBestEntitlementForProperty(user.id, id);
+    if (entitlement === null) return notFound();
 
-    const result = await rerunAnalysisForProperty(id);
+    const result = await rerunAnalysisForProperty(id, entitlement);
     if (!result) return notFound();
     return NextResponse.json({
       analysisId: result.analysis.id,
