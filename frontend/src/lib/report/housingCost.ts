@@ -3,6 +3,14 @@ import { listSv, num, sek, sekPerM2 } from "./format";
 import { tenureOf, type Tenure } from "./tenure";
 
 /**
+ * NOT RENDERED YET. The report's Boendekalkyl chapter is a "lanseras inom
+ * kort" placeholder until the Boendekalkyl is finished (decision 2026-10-02,
+ * see docs/48). This module is the groundwork for it: the cost rules below
+ * were verified, and housingCost.verify.mjs keeps them honest. When the
+ * chapter is built, it should also take in the BRF analysis's costs that are
+ * easy to miss (lib/brf/interpret.ts → forYou: the buyer's share of the
+ * association's debt, the fee after a rate rise, decided fee changes).
+ *
  * The "Boendekalkyl" chapter: what the home costs to live in each month, and
  * the costs that come with the purchase and are easy to miss in the listing.
  * It is a calculation from the listing's own facts (price, monthly fee,

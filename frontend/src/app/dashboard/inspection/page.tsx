@@ -1,6 +1,6 @@
 "use client";
 
-import { Suspense, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { Suspense, useCallback, useEffect, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import {
   ShieldIcon,
@@ -33,7 +33,7 @@ import type {
 } from "@/lib/inspection/types";
 import { DOCUMENT_TYPE_LABELS, PREP_STEPS } from "@/lib/inspection/types";
 import { buildDataGaps, buildBrfQuestions, buildBrokerQuestions, type DataGap } from "@/lib/inspection/gaps";
-import type { AnalysisReport, DecisionFactorResult } from "@/lib/analysis/types";
+import type { AnalysisReport } from "@/lib/analysis/types";
 
 const stagger = (n: number) => ({ "--dash-stagger": n }) as React.CSSProperties;
 
@@ -45,10 +45,10 @@ interface InspectionApiData {
   brfQuestions: string[];
   property: { id: string; address: string; attributes: Record<string, unknown> };
   report: {
-    summary: string;
     property: AnalysisReport["property"];
-    decisionFactors: DecisionFactorResult[];
   };
+  /** The person-reviewed BRF analysis: the points it flags, or when it will be ready. */
+  brf: { status: "published" | "awaiting" | "none"; concerns: string[]; dueLabel: string | null };
 }
 
 interface OwnedAnalysis {
@@ -266,13 +266,6 @@ function InspectionPageContent() {
     URL.revokeObjectURL(url);
   }
 
-  const knownRisks = useMemo(() => {
-    if (!data) return [];
-    return data.report.decisionFactors
-      .filter((f) => f.score !== null && f.score < 60)
-      .sort((a, b) => (a.score ?? 0) - (b.score ?? 0))
-      .slice(0, 4);
-  }, [data]);
 
   if (loading) {
     return (
@@ -416,17 +409,27 @@ function InspectionPageContent() {
           </div>
 
           <div className="flex flex-col gap-6">
-            <Card title="Kända risker" icon={<WarningIcon className="h-4 w-4 text-amber-400" />}>
-              {knownRisks.length > 0 ? (
-                <ul className="flex flex-col gap-2.5">
-                  {knownRisks.map((f) => (
-                    <li key={f.id} className="text-sm text-neutral-300">
-                      <span className="font-medium text-white">{f.label}:</span> {f.status}
-                    </li>
-                  ))}
-                </ul>
+            <Card title="Föreningens ekonomi" icon={<WarningIcon className="h-4 w-4 text-amber-400" />}>
+              {data.brf.status === "published" ? (
+                data.brf.concerns.length > 0 ? (
+                  <ul className="flex flex-col gap-2.5">
+                    {data.brf.concerns.map((c) => (
+                      <li key={c} className="text-sm text-neutral-300">
+                        {c}
+                      </li>
+                    ))}
+                  </ul>
+                ) : (
+                  <p className="text-sm text-neutral-400">BRF-analysen pekar inte ut något nyckeltal utanför de vanliga nivåerna.</p>
+                )
+              ) : data.brf.status === "awaiting" ? (
+                <p className="text-sm text-neutral-400">
+                  BRF-analysen granskas av Köpanalys experter
+                  {data.brf.dueLabel ? ` och är klar senast ${data.brf.dueLabel}` : ""}. Punkterna att hålla koll på visas här
+                  när den är publicerad.
+                </p>
               ) : (
-                <p className="text-sm text-neutral-400">Inga särskilda risker identifierade i analysen.</p>
+                <p className="text-sm text-neutral-400">Bostaden ingår inte i någon bostadsrättsförening.</p>
               )}
             </Card>
 

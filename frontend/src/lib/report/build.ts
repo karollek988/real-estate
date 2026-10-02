@@ -1,5 +1,4 @@
 import type { AnalysisReport, DataSourceReport, ReportFactor } from "@/lib/analysis/types";
-import type { BrfReportState } from "@/lib/analysis/engine/analyzers/housingAssociation";
 // Runtime imports in this file are relative, not "@/..." — build.verify.mjs
 // executes it directly with tsx, which does not resolve the "@/" tsconfig
 // path alias (type-only "@/..." imports are erased, so those are fine).
@@ -10,7 +9,14 @@ import type { BrfReportState } from "@/lib/analysis/engine/analyzers/housingAsso
  * the prose and tables the document report renders. This module never invents
  * a fact: every sentence either restates a collected value or explains why a
  * value isn't available yet. It rates nothing — there is no score, verdict or
- * ranking in the report; the "Boendekalkyl" chapter lives in housingCost.ts.
+ * ranking of the home in the report.
+ *
+ * The BRF chapter is the exception to "automatic": it is written from the
+ * figures a Köpanalys reviewer published (brfChapter.ts, lib/brf/), and every
+ * chapter that mentions the association takes that chapter's state instead of
+ * reading the automatic extraction. The questions chapter lives in
+ * questions.ts; the Boendekalkyl chapter is a placeholder until it is built
+ * (housingCost.ts holds the verified cost rules it will use).
  *
  * Every reader-facing sentence is composed in Swedish from the collected facts,
  * so the report never leaks raw technical text. Each fact is assigned to
@@ -18,9 +24,9 @@ import type { BrfReportState } from "@/lib/analysis/engine/analyzers/housingAsso
  * same fact it points back to the home chapter instead of restating it.
  */
 
-import { NA, capitalize, dateSv, listSv, num, pct, sek, sekPerM2, str } from "./format";
+import { NA, capitalize, dateSv, decSv, listSv, num, pct, ratePctSv, sek, sekPerM2, str } from "./format";
 import { tenureOf } from "./tenure";
-import { INTEREST_SCENARIOS_PCT, buildHousingCost } from "./housingCost";
+import { brfStatusSentence, dueSv, type BrfChapterState } from "./brfChapter";
 
 export { dateSv, pct, sek, sekPerM2 } from "./format";
 
@@ -84,59 +90,38 @@ function sourceExplainer(dataSources: DataSourceReport[], sourceId: string, pref
 /*  Executive summary — what the report contains and what is missing      */
 /* ────────────────────────────────────────────────────────────────────── */
 
-/** What the report knows about the BRF annual report the buyer uploaded (see analyzers/housingAssociation.ts). */
-export function brfReportStateOf(report: AnalysisReport): BrfReportState {
-  const state = factor(report, "housingAssociation")?.supportingData.reportState;
-  return state === "verified" || state === "unusable" ? state : "none";
-}
-
 const UNRESOLVED_TOPIC_SV: Record<string, string> = {
   market: "marknadsläget",
   risk: "riskbilden",
   futureDevelopment: "planerad utveckling i närområdet",
 };
 
-export function buildExecutiveSummary(report: AnalysisReport, attributes: Record<string, unknown> = {}): string[] {
+export function buildExecutiveSummary(report: AnalysisReport, brf: BrfChapterState): string[] {
   const p = report.property;
   const paragraphs: string[] = [];
+  const hasAssociation = brf.kind !== "freehold" && brf.kind !== "not_applicable";
 
   const priceLine = p.askingPriceSek
     ? `${p.address} är utannonserad för ${sek(p.askingPriceSek)}` +
       (p.livingAreaM2 ? ` (${p.livingAreaM2} m², ${sekPerM2(p.pricePerM2Sek)}).` : ".")
     : `${p.address} analyseras utan ett registrerat utgångspris.`;
   paragraphs.push(
-    `${priceLine} Rapporten samlar föreningens ekonomi, boendekostnaderna och området på ett ställe. ` +
-      `Analysen baseras på ${report.dataCompleteness.connectedSources} av ${report.dataCompleteness.totalSources} anslutna datakällor.`
+    `${priceLine} Rapporten samlar det som påverkar köpet på ett ställe: ` +
+      (hasAssociation ? "föreningens ekonomi, området och riskerna" : "bostaden, området och riskerna") +
+      `. Analysen baseras på ${report.dataCompleteness.connectedSources} av ${report.dataCompleteness.totalSources} anslutna datakällor.`
   );
 
-  // The association: only for homes that have one.
-  if (tenureOf(p) !== "freehold") {
-    const brfState = brfReportStateOf(report);
-    const fiscalYear = num(factor(report, "housingAssociation")?.supportingData.fiscalYear);
-    paragraphs.push(
-      brfState === "verified"
-        ? `Föreningens ekonomi bygger på årsredovisningen${fiscalYear ? ` för ${fiscalYear}` : ""} som har laddats upp — nyckeltalen finns i kapitlet Bostadsrättsförening.`
-        : brfState === "unusable"
-          ? "En årsredovisning har laddats upp men gick inte att läsa ut tillräckligt säkert, så föreningens ekonomi kan inte visas — se kapitlet Bostadsrättsförening."
-          : "Ingen årsredovisning har laddats upp för föreningen än, så föreningens ekonomi visas inte. Årsredovisningen laddas upp i kapitlet Bostadsrättsförening, och rapporten uppdateras då."
-    );
-  }
+  const brfSentence = brfStatusSentence(brf);
+  if (brfSentence) paragraphs.push(brfSentence);
 
-  const cost = buildHousingCost(report, attributes);
-  if (cost.summaryRange) {
-    paragraphs.push(
-      `Boendekalkylen uppskattar den totala månadskostnaden — ${cost.fixedMonthlySek !== null ? "avgift eller driftskostnader samt " : ""}ränta och amortering på ett lån på ${cost.loan?.loanToValuePct} % av priset — ` +
-        `till ${sek(cost.summaryRange.minPerMonthSek)}–${sek(cost.summaryRange.maxPerMonthSek)} per månad vid en ränta på ${INTEREST_SCENARIOS_PCT[0]}–${INTEREST_SCENARIOS_PCT[INTEREST_SCENARIOS_PCT.length - 1]} %. ` +
-        "Kapitlet beskriver också vad som tillkommer vid köpet."
-    );
-  } else {
-    paragraphs.push("Boendekalkylen beskriver bostadens löpande kostnader och vad som tillkommer vid köpet, i den mån annonsen anger dem.");
-  }
+  paragraphs.push(
+    "Boendekalkylen — vad bostaden kostar dig varje månad och vid köpet, inklusive avgifter som är lätta att missa — håller på att färdigställas och lanseras inom kort."
+  );
 
   paragraphs.push("Området — service, skolor, pendling och trygghet — beskrivs i kapitlet Områdesanalys.");
   paragraphs.push(
-    "Vad som kan påverka bostadens värde framöver — ränteläge, sysselsättning och planerad utveckling i " +
-      "närområdet — beskrivs i kapitlet Investeringsutsikt."
+    "Vad som kan påverka området och bostadens värde framöver — ränteläge, sysselsättning och planerad utveckling i " +
+      "närområdet — beskrivs i kapitlet Framtidsutsikter."
   );
 
   const unresolved = Object.keys(UNRESOLVED_TOPIC_SV).filter((id) => !factor(report, id)?.available);
@@ -147,7 +132,11 @@ export function buildExecutiveSummary(report: AnalysisReport, attributes: Record
         )} — se respektive kapitel för vilka källor som saknas.`
       : "Samtliga delar kunde beskrivas utifrån de datakällor som är anslutna idag."
   );
-  paragraphs.push("Frågor att ställa till mäklaren och föreningen finns i kapitlet Frågor inför visningen.");
+  paragraphs.push(
+    hasAssociation
+      ? "Frågor att ställa till mäklaren och föreningen finns i kapitlet Frågor inför visningen."
+      : "Frågor att ställa till mäklaren finns i kapitlet Frågor inför visningen."
+  );
 
   return paragraphs.filter((x) => x && x.trim().length > 0);
 }
@@ -308,7 +297,7 @@ const AMENITY_FIELDS: Array<{ key: string; label: string; note: string }> = [
 
 /** One composed sentence for price trend + population + income — written
  *  once here so it can never also appear, restated, elsewhere in the report
- *  (Investeringsutsikt explicitly points back here instead of repeating). */
+ *  (Framtidsutsikter explicitly points back here instead of repeating). */
 function areaContextSv(area: ReportFactor | undefined, attributes: Record<string, unknown>): string {
   const trendPct = num(area?.supportingData.areaPriceTrendPct);
   const trendPeriod = str(area?.supportingData.areaPriceTrendPeriod);
@@ -426,133 +415,6 @@ function buildNearbySchools(attributes: Record<string, unknown>): NearbySchools 
 }
 
 /* ────────────────────────────────────────────────────────────────────── */
-/*  Housing association chapter — the association's finances in plain     */
-/*  language, from the annual report the buyer uploaded                   */
-/* ────────────────────────────────────────────────────────────────────── */
-
-export interface BrfContent {
-  paragraphs: string[];
-  metrics: OverviewRow[];
-  strengths: string[];
-  weaknesses: { text: string; severity?: string }[];
-  /** What the chapter knows about the buyer-uploaded annual report: drives the upload prompt. */
-  reportState: BrfReportState;
-}
-
-const SEVERITY_SV: Record<string, string> = {
-  minor: "mindre",
-  moderate: "måttlig",
-  significant: "betydande",
-  critical: "kritisk",
-};
-
-/** Swedish summary of the BRF's financial picture — composed from the collected facts only. */
-function brfSummarySv(state: BrfReportState, brf: ReportFactor | undefined, brfName: string | null): string {
-  if (state === "unusable") {
-    return (
-      (brfName ? `${brfName}: en` : "En") +
-      " årsredovisning har laddats upp, men siffrorna i den gick inte att läsa ut tillräckligt säkert (till exempel för att dokumentet är en inskannad bild med låg kvalitet eller har en ovanlig layout) " +
-      "och har därför inte använts — vi visar hellre inga siffror än fel siffror. En ny fil, till exempel en textbaserad PDF, kan laddas upp nedan."
-    );
-  }
-
-  if (state === "none") {
-    return (
-      (brfName ? `Ekonomin i ${brfName}` : "Föreningens ekonomi") +
-      " bygger på föreningens årsredovisning, och ingen årsredovisning har laddats upp än. " +
-      "Ladda upp den nedan (PDF, Word eller foto) så läser vi av nyckeltalen och uppdaterar rapporten. Årsredovisningen får du av mäklaren eller föreningen."
-    );
-  }
-
-  const d = brf?.supportingData ?? {};
-  const findings = (d.findings as Array<{ classification: string }> | undefined) ?? [];
-  const strengthsCount = findings.filter((f) => f.classification === "strength").length;
-  const weaknessesCount = findings.filter((f) => f.classification === "weakness").length;
-  const fiscalYear = d.fiscalYear ? String(d.fiscalYear) : null;
-  const source = `föreningens${fiscalYear ? ` årsredovisning för ${fiscalYear}` : " senaste årsredovisning"}`;
-
-  if (strengthsCount + weaknessesCount === 0) {
-    return `Ur ${source} har de nyckeltal nedan kunnat läsas ut och kontrolleras. Underlaget räckte inte för att dra slutsatser om föreningens styrkor och svagheter.`;
-  }
-  return (
-    `Den ekonomiska analysen av ${source} ` +
-    `visar ${strengthsCount} styrk${strengthsCount === 1 ? "a" : "or"} och ${weaknessesCount} svaghet${weaknessesCount === 1 ? "" : "er"}, ` +
-    "inom bland annat soliditet, skuldsättning, avgiftsnivå och likviditet — se nyckeltalen nedan."
-  );
-}
-
-export function buildHousingAssociation(report: AnalysisReport, _dataSources?: DataSourceReport[]): BrfContent {
-  const brf = factor(report, "housingAssociation");
-  const state = brfReportStateOf(report);
-  const paragraphs: string[] = [];
-  const metrics: OverviewRow[] = [];
-  let strengths: string[] = [];
-  let weaknesses: { text: string; severity?: string }[] = [];
-
-  const brfName = report.property.housingAssociation;
-  paragraphs.push(
-    brfName
-      ? `Bostaden tillhör ${brfName}.`
-      : "Ingen bostadsrättsförening har kunnat identifieras för denna adress i denna analys."
-  );
-
-  const conflict = report.property.housingAssociationConflict;
-  if (conflict) {
-    paragraphs.push(
-      `Observera: datakällorna är oense om föreningens namn. Vi har använt "${conflict.keptValue}", ` +
-        `medan en annan källa (${conflict.rejectedSource}) angav "${conflict.rejectedValue}" — kontrollera namnet mot föreningens stadgar.`
-    );
-  }
-
-  paragraphs.push(brfSummarySv(state, brf, brfName));
-
-  if (state === "verified" && brf) {
-    const d = brf.supportingData;
-    if (typeof d.equityRatio === "number") metrics.push({ label: "Soliditet", value: pct(d.equityRatio * 100, 0) });
-    if (typeof d.operatingMargin === "number") metrics.push({ label: "Rörelsemarginal", value: pct(d.operatingMargin * 100, 0) });
-    if (typeof d.debtPerApartment === "number") metrics.push({ label: "Skuld per lägenhet", value: sek(d.debtPerApartment) });
-    if (typeof d.feeSustainability === "number") metrics.push({ label: "Avgiftsnivå (index)", value: String(d.feeSustainability) });
-    if (typeof d.liquidityMonths === "number") metrics.push({ label: "Likviditet", value: `${d.liquidityMonths} månader` });
-    if (typeof d.debtRatio === "number") metrics.push({ label: "Skuldandel", value: pct(d.debtRatio * 100, 0) });
-    if (typeof d.debtToEquity === "number") metrics.push({ label: "Skuld/eget kapital", value: `${d.debtToEquity.toFixed(2)}x` });
-    if (typeof d.totalDebt === "number") metrics.push({ label: "Total låneskuld", value: sek(d.totalDebt) });
-    if (typeof d.weightedAverageInterest === "number") metrics.push({ label: "Vägt genomsnittlig ränta", value: pct(d.weightedAverageInterest, 2) });
-    if (typeof d.shortTermDebtRatio === "number") metrics.push({ label: "Andel kortfristig skuld", value: pct(d.shortTermDebtRatio * 100, 0) });
-    if (typeof d.costPerSqm === "number") metrics.push({ label: "Driftskostnad per m²", value: sekPerM2(d.costPerSqm) });
-    if (typeof d.numberOfRentalApartments === "number") metrics.push({ label: "Hyresrätter i föreningen", value: String(d.numberOfRentalApartments) });
-    if (typeof d.numberOfCommercialUnits === "number") metrics.push({ label: "Kommersiella lokaler", value: String(d.numberOfCommercialUnits) });
-    if (typeof d.parkingSpaces === "number") metrics.push({ label: "Parkeringsplatser", value: String(d.parkingSpaces) });
-    if (typeof d.garageSpaces === "number") metrics.push({ label: "Garageplatser", value: String(d.garageSpaces) });
-
-    if (typeof d.debtPerApartment === "number" || typeof d.debtRatio === "number" || typeof d.totalDebt === "number") {
-      paragraphs.push(
-        "Högre skuldsättning innebär generellt en högre känslighet för framtida ränteförändringar, eftersom en större andel av föreningens kostnader då är rörliga snarare än bundna."
-      );
-    }
-
-    const findings = d.findings as Array<{ dimension: string; classification: string; severity?: string; summary: string }> | undefined;
-    if (findings) {
-      strengths = findings.filter((f) => f.classification === "strength").map((f) => f.summary);
-      weaknesses = findings
-        .filter((f) => f.classification === "weakness")
-        .map((f) => ({ text: f.summary, severity: f.severity && f.severity !== "minor" ? SEVERITY_SV[f.severity] : undefined }));
-    }
-  }
-
-  if (metrics.length === 0) {
-    metrics.push({
-      label: "Finansiella nyckeltal",
-      value:
-        state === "unusable"
-          ? "Inga verifierade nyckeltal kunde läsas ut ur den uppladdade årsredovisningen."
-          : "Inga nyckeltal än — ladda upp föreningens årsredovisning för att få dem.",
-    });
-  }
-
-  return { paragraphs, metrics, strengths, weaknesses, reportState: state };
-}
-
-/* ────────────────────────────────────────────────────────────────────── */
 /*  Risk assessment — "What are the biggest risks?" — 8 named categories */
 /* ────────────────────────────────────────────────────────────────────── */
 
@@ -564,13 +426,6 @@ export interface RiskCategory {
   evidence: string[];
   conclusion: string;
 }
-
-const DIMENSION_SV: Record<string, string> = {
-  financial_health: "ekonomisk hälsa",
-  debt_sustainability: "skuldsättning",
-  fee_analysis: "avgiftsnivå",
-  liquidity: "likviditet",
-};
 
 /** Each of these composes a fresh Swedish sentence straight from risk.ts's
  *  supportingData (buildingYear, policyRatePct, ...). A category is only ever
@@ -594,14 +449,14 @@ function riskInterestRateSv(risk: ReportFactor | undefined): string {
       : rate < 1.5
         ? "Ett lågt ränteläge håller generellt refinansieringskostnaderna på en mer hanterbar nivå."
         : "Styrräntan ligger för närvarande på en måttlig nivå.";
-  return `Aktuell styrränta är ${rate.toFixed(1)}%. ${note}`;
+  return `Aktuell styrränta är ${ratePctSv(rate)}. ${note}`;
 }
 
 function riskPopulationSv(risk: ReportFactor | undefined): string {
   const pop = num(risk?.supportingData.areaPopulationGrowthPct);
   if (pop === null) return "Ingen befolkningsstatistik är kopplad till denna analys.";
   return (
-    `Befolkningen i kommunen har ${pop >= 0 ? "ökat" : "minskat"} med ${Math.abs(pop).toFixed(1)}% de senaste fem åren. ` +
+    `Befolkningen i kommunen har ${pop >= 0 ? "ökat" : "minskat"} med ${decSv(Math.abs(pop))} % de senaste fem åren. ` +
     "Befolkningstillväxt förknippas generellt med starkare efterfrågan på bostäder, medan en minskande befolkning generellt förknippas med svagare efterfrågan."
   );
 }
@@ -628,17 +483,26 @@ function riskNoiseSv(risk: ReportFactor | undefined): string {
   );
 }
 
-export function buildRiskCategories(report: AnalysisReport, dataSources: DataSourceReport[]): RiskCategory[] {
+export function buildRiskCategories(
+  report: AnalysisReport,
+  dataSources: DataSourceReport[],
+  brf: BrfChapterState
+): RiskCategory[] {
   const risk = factor(report, "risk");
-  const brf = factor(report, "housingAssociation");
   const future = factor(report, "futureDevelopment");
-  const brfState = brfReportStateOf(report);
-  const hasAssociation = tenureOf(report.property) !== "freehold";
+  const hasAssociation = brf.kind === "awaiting" || brf.kind === "published";
+  const reading = brf.kind === "published" ? brf.reading : null;
+  const signal = (id: string) =>
+    reading ? [...reading.keyFigures, ...reading.loans, ...reading.association].find((s) => s.id === id) ?? null : null;
+  const awaitingLine =
+    brf.kind === "awaiting"
+      ? `Bedöms i BRF-analysen, som granskas av Köpanalys experter och publiceras ${dueSv(brf.dueAt) && !brf.overdue ? `senast ${dueSv(brf.dueAt)}` : "så snart den är klar"}.`
+      : null;
   const riskData = risk?.supportingData ?? {};
 
   const categories: RiskCategory[] = [];
 
-  // 1. Market risk (population trend only — rate/employment live in Investeringsutsikt)
+  // 1. Market risk (population trend only — rate/employment live in Framtidsutsikter)
   {
     const hasPopulation = num(riskData.areaPopulationGrowthPct) !== null;
     categories.push({
@@ -646,7 +510,7 @@ export function buildRiskCategories(report: AnalysisReport, dataSources: DataSou
       label: "Marknadsrisk",
       headline: "Efterfrågan på orten",
       explanation: hasPopulation
-        ? `${riskPopulationSv(risk)} En bredare marknadsbild (ränteläge, sysselsättning) finns i kapitlet Investeringsutsikt.`
+        ? `${riskPopulationSv(risk)} En bredare marknadsbild (ränteläge, sysselsättning) finns i kapitlet Framtidsutsikter.`
         : "Inga marknadsindikatorer är kopplade till denna analys ännu.",
       evidence: [],
       conclusion: hasPopulation
@@ -655,40 +519,40 @@ export function buildRiskCategories(report: AnalysisReport, dataSources: DataSou
     });
   }
 
-  // 2. Interest rate risk
+  // 2. Interest rate risk — the policy rate, and the association's sensitivity once the BRF analysis is published
   {
     const hasRate = num(riskData.policyRatePct) !== null;
+    const sensitivity = signal("interestSensitivity");
     categories.push({
       id: "interest_rate",
       label: "Ränterisk",
       headline: "Känslighet för förändrat ränteläge",
-      explanation: hasRate ? riskInterestRateSv(risk) : "Ingen aktuell styrränta är kopplad till denna analys.",
+      explanation:
+        (hasRate ? riskInterestRateSv(risk) : "Ingen aktuell styrränta är kopplad till denna analys.") +
+        (sensitivity ? ` ${sensitivity.meaning}` : ""),
       evidence: [],
-      conclusion: hasRate
-        ? "Ränteläget påverkar den löpande boendekostnaden och kan vara värt att stämma av med en långivare eller rådgivare."
+      conclusion: hasRate || sensitivity
+        ? "Ränteläget påverkar både ditt eget bolån och föreningens kostnader, och därmed den löpande boendekostnaden."
         : "Kan inte bedömas utan ränteuppgifter.",
     });
   }
 
   // 3. Housing association risk (only for homes that have an association)
   if (hasAssociation) {
-    const findings = (brf?.supportingData.findings as Array<{ dimension: string; classification: string; severity?: string; summary: string }> | undefined) ?? [];
-    const weaknesses = findings.filter((f) => f.classification === "weakness");
+    const concerns = reading?.concerns ?? [];
     categories.push({
       id: "housing_association",
       label: "Föreningsrisk",
       headline: "Föreningens ekonomiska stabilitet",
-      explanation:
-        brfState === "verified"
-          ? `${weaknesses.length} svaghet${weaknesses.length === 1 ? "" : "er"} identifierad${weaknesses.length === 1 ? "" : "e"} i föreningens årsredovisning. Se kapitlet Bostadsrättsförening för en fullständig genomgång.`
-          : brfState === "unusable"
-            ? "Föreningens ekonomi kunde inte bedömas — den uppladdade årsredovisningen gick inte att läsa ut tillräckligt säkert."
-            : "Föreningens ekonomi kunde inte bedömas eftersom ingen årsredovisning har laddats upp.",
-      evidence: [],
-      conclusion:
-        brfState === "verified"
-          ? "Föreningens ekonomi är värd att undersöka vidare, till exempel genom att läsa hela årsredovisningen."
-          : "Kräver föreningens årsredovisning för en säker bedömning.",
+      explanation: reading
+        ? concerns.length > 0
+          ? `BRF-analysen pekar ut ${concerns.length} ${concerns.length === 1 ? "punkt" : "punkter"} i föreningens ekonomi som är ${concerns.length === 1 ? "värd" : "värda"} en närmare titt.`
+          : "Inget av föreningens nyckeltal ligger utanför de nivåer som brukar räknas som normala."
+        : awaitingLine!,
+      evidence: concerns,
+      conclusion: reading
+        ? "Kapitlet Bostadsrättsförening förklarar varje nyckeltal och vad det betyder för dig."
+        : "Föreningens ekonomi beskrivs i kapitlet Bostadsrättsförening när granskningen är klar.",
     });
   }
 
@@ -707,22 +571,33 @@ export function buildRiskCategories(report: AnalysisReport, dataSources: DataSou
     });
   }
 
-  // 5. Liquidity risk (BRF)
+  // 5. Fee risk — what could raise the monthly fee (BRF)
   if (hasAssociation) {
-    const liquidityMonths = num(brf?.supportingData.liquidityMonths);
+    const drivers = reading
+      ? [
+          signal("feeChange")?.tone === "watch" ? signal("feeChange") : null,
+          signal("pipes")?.tone === "watch" ? signal("pipes") : null,
+          signal("plannedRenovations"),
+          signal("land")?.value === "Tomträtt" ? signal("land") : null,
+          signal("savings")?.tone === "watch" || signal("savings")?.tone === "alert" ? signal("savings") : null,
+          signal("interestSensitivity")?.tone === "watch" || signal("interestSensitivity")?.tone === "alert"
+            ? signal("interestSensitivity")
+            : null,
+        ].filter((s): s is NonNullable<typeof s> => s !== null)
+      : [];
     categories.push({
-      id: "liquidity",
-      label: "Likviditetsrisk",
-      headline: "Föreningens kassalikviditet",
-      explanation:
-        liquidityMonths !== null
-          ? `Föreningen har en uppskattad likviditetsbuffert motsvarande ${liquidityMonths} månaders löpande kostnader.`
-          : "Föreningens likviditet (kassabuffert) kunde inte beräknas — det kräver en läsbar årsredovisning, som inte har laddats upp för denna förening.",
-      evidence: [],
-      conclusion:
-        liquidityMonths !== null
-          ? "Föreningens likviditet kan vara värd att fråga föreningen eller mäklaren om vid behov."
-          : "Kräver en läsbar årsredovisning.",
+      id: "fee",
+      label: "Avgiftsrisk",
+      headline: "Risk för höjd månadsavgift",
+      explanation: reading
+        ? drivers.length > 0
+          ? "Det här i föreningens årsredovisning kan påverka avgiften framöver:"
+          : "Inga beslutade avgiftshöjningar, planerade större åtgärder eller svaga nyckeltal framgår av årsredovisningen."
+        : awaitingLine!,
+      evidence: drivers.map((d) => d.summary),
+      conclusion: reading
+        ? "Vad en ränte- eller avgiftshöjning skulle betyda i kronor för den här lägenheten står under Vad det betyder för dig i kapitlet Bostadsrättsförening."
+        : "Avgiftsrisken beskrivs när BRF-analysen är publicerad.",
     });
   }
 
@@ -744,14 +619,17 @@ export function buildRiskCategories(report: AnalysisReport, dataSources: DataSou
     });
   }
 
-  // 7. Construction / building risk
+  // 7. Construction / building risk — building age, and the pipes once the BRF analysis is published
   {
     const hasAge = num(riskData.buildingYear) !== null;
+    const pipes = signal("pipes");
     categories.push({
       id: "construction",
       label: "Byggnadsrisk",
       headline: "Byggnadens ålder och underhållsbehov",
-      explanation: hasAge ? riskBuildingAgeSv(risk) : "Byggår saknas för denna bostad, så underhållsrisk kan inte bedömas.",
+      explanation:
+        (hasAge ? riskBuildingAgeSv(risk) : "Byggår saknas för denna bostad, så underhållsrisk kan inte bedömas.") +
+        (pipes ? ` ${pipes.summary}.` : ""),
       evidence: [],
       conclusion: hasAge
         ? "Byggnadens ålder och skick kan vara värt att undersöka närmare, till exempel via en besiktning."
@@ -768,7 +646,7 @@ export function buildRiskCategories(report: AnalysisReport, dataSources: DataSou
       headline: "Osäkerhet i prognoser och planer",
       explanation:
         count !== null
-          ? `${count} planerat eller pågående utvecklingsprojekt är känt i närområdet — dessa beskrivs i kapitlet Investeringsutsikt. Denna kategori beskriver istället den generella osäkerheten i framtidsprognoser.`
+          ? `${count === 1 ? "1 planerat eller pågående utvecklingsprojekt är känt" : `${count} planerade eller pågående utvecklingsprojekt är kända`} i närområdet — de beskrivs i kapitlet Framtidsutsikter. Denna kategori beskriver istället den generella osäkerheten i framtidsprognoser.`
           : "Ingen data om planerad utveckling i området är kopplad till denna analys.",
       evidence: [],
       conclusion:
@@ -799,14 +677,14 @@ function marketOutlookSv(market: ReportFactor | undefined): string {
   if (rateChange !== null) {
     parts.push(
       rateChange < -0.25
-        ? `Styrräntan har sänkts med ${Math.abs(rateChange).toFixed(2)} procentenheter det senaste året, vilket normalt stärker efterfrågan på bostäder.`
+        ? `Styrräntan har sänkts med ${decSv(Math.abs(rateChange), 2)} procentenheter det senaste året, vilket normalt stärker efterfrågan på bostäder.`
         : rateChange > 0.25
-          ? `Styrräntan har höjts med ${rateChange.toFixed(2)} procentenheter det senaste året, vilket normalt dämpar efterfrågan.`
-          : `Styrräntan har varit relativt stabil${currentRate !== null ? ` (${currentRate.toFixed(1)}%)` : ""}.`
+          ? `Styrräntan har höjts med ${decSv(rateChange, 2)} procentenheter det senaste året, vilket normalt dämpar efterfrågan.`
+          : `Styrräntan har varit relativt stabil${currentRate !== null ? ` (${ratePctSv(currentRate)})` : ""}.`
     );
   }
   if (employment !== null) {
-    parts.push(`Kommunens sysselsättningsgrad är ${employment.toFixed(1)}%.`);
+    parts.push(`Kommunens sysselsättningsgrad är ${decSv(employment)} %.`);
   }
 
   if (parts.length === 0) {
@@ -820,7 +698,7 @@ function futureProjectsOutlookSv(future: ReportFactor | undefined): string {
   if (count === null) return "Ingen information om planerade infrastruktur- eller utvecklingsprojekt är kopplad till denna analys.";
   if (count === 0) return "Inga planerade eller pågående utvecklingsprojekt hittades i närområdet i de källor som är anslutna idag.";
   return (
-    `${count} planerat eller pågående utvecklingsprojekt har identifierats i närområdet. ` +
+    `${count === 1 ? "1 planerat eller pågående utvecklingsprojekt har" : `${count} planerade eller pågående utvecklingsprojekt har`} identifierats i närområdet. ` +
     "Nya infrastruktur- och utvecklingsprojekt i ett område förknippas generellt med en förändrad efterfrågan och prisnivå över tid."
   );
 }
@@ -831,7 +709,7 @@ export function buildInvestmentOutlook(report: AnalysisReport): InvestmentOutloo
   const paragraphs: string[] = [];
 
   paragraphs.push(
-    "Den här sidan fokuserar på vad som specifikt kan påverka bostadens värde framöver. För nuvarande prisläge, " +
+    "Den här sidan fokuserar på vad som kan påverka området och bostadens värde framöver. För nuvarande prisläge, " +
       "befolkningsutveckling och inkomstnivå i området, se kapitlet Områdesanalys."
   );
   paragraphs.push(marketOutlookSv(market));
@@ -841,157 +719,13 @@ export function buildInvestmentOutlook(report: AnalysisReport): InvestmentOutloo
       "kan förändras på sätt som inte syns i dagens data. Bedömningen ovan ska läsas som en nulägesbild, inte en garanti."
   );
 
+  // OpenStreetMap construction sites without a name come through as
+  // "unnamed construction site" — a placeholder, not something to list.
   const projects = Array.isArray(future?.supportingData.nearbyPlannedProjects)
-    ? (future?.supportingData.nearbyPlannedProjects as unknown[]).filter((p): p is string => typeof p === "string")
+    ? (future?.supportingData.nearbyPlannedProjects as unknown[]).filter(
+        (p): p is string => typeof p === "string" && p.trim() !== "" && !/^unnamed\b/i.test(p.trim())
+      )
     : [];
 
   return { paragraphs: paragraphs.filter((p) => p && p.trim().length > 0), futureProjects: projects };
-}
-
-/* ────────────────────────────────────────────────────────────────────── */
-/*  Final recommendation — "What should the buyer do next?"              */
-/* ────────────────────────────────────────────────────────────────────── */
-
-export interface FinalRecommendation {
-  paragraphs: string[];
-  strengths: string[];
-  weaknesses: string[];
-  actions: string[];
-  questionsToAsk: string[];
-  negotiationArguments: string[];
-}
-
-/** Composed straight from negotiation.ts's supportingData (days on market,
- *  price/income ratio, policy rate, population trend) — never the
- *  analyzer's English `explanation`. This is negotiation's one canonical
- *  home; no other chapter restates it. */
-function negotiationSv(negotiation: ReportFactor | undefined): string {
-  if (!negotiation) return "Förhandlingsläget kunde inte bedömas med tillräcklig säkerhet i denna analys.";
-  const parts: string[] = [];
-
-  const dom = num(negotiation.supportingData.daysOnMarket);
-  if (dom !== null) {
-    parts.push(
-      dom < 7
-        ? `bostaden lades ut för ${dom} dag${dom === 1 ? "" : "ar"} sedan, vilket generellt ger begränsat förhandlingsutrymme`
-        : dom < 30
-          ? `bostaden har varit till försäljning i ${dom} dagar, en tid som generellt förknippas med visst förhandlingsutrymme`
-          : dom < 60
-            ? `bostaden har varit till försäljning i ${dom} dagar, en längre tid som generellt förknippas med större förhandlingsutrymme`
-            : `bostaden har varit till försäljning i ${dom} dagar — ovanligt länge, vilket historiskt sett ofta förknippas med större förhandlingsutrymme`
-    );
-  }
-
-  const ratio = num(negotiation.supportingData.priceToIncomeRatio);
-  if (ratio !== null) {
-    parts.push(
-      ratio > 6
-        ? `priset motsvarar cirka ${ratio.toFixed(1)}x medianinkomsten i området, en nivå som generellt begränsar antalet köpare som har råd`
-        : ratio < 4
-          ? `priset motsvarar cirka ${ratio.toFixed(1)}x medianinkomsten i området, en nivå som generellt gör bostaden överkomlig för fler och kan öka konkurrensen om budgivningen`
-          : `priset motsvarar cirka ${ratio.toFixed(1)}x medianinkomsten i området, en måttlig nivå i sammanhanget`
-    );
-  }
-
-  const rate = num(negotiation.supportingData.currentPolicyRatePct);
-  if (rate !== null) {
-    parts.push(
-      rate > 3.5
-        ? `det höga ränteläget (${rate.toFixed(1)}%) förknippas generellt med färre konkurrerande budgivare`
-        : rate < 1.5
-          ? `det låga ränteläget (${rate.toFixed(1)}%) förknippas generellt med fler budgivare, vilket kan minska förhandlingsutrymmet`
-          : `ränteläget (${rate.toFixed(1)}%) är för närvarande måttligt`
-    );
-  }
-
-  const popGrowth = num(negotiation.supportingData.areaPopulationGrowthPct);
-  if (popGrowth !== null) {
-    parts.push(
-      popGrowth > 1
-        ? `befolkningsökningen i området (${pct(popGrowth)}) förknippas generellt med starkare efterfrågan och mindre förhandlingsutrymme`
-        : popGrowth > 0
-          ? `en stabil befolkningsutveckling (${popGrowth.toFixed(1)}%) förknippas generellt med måttlig efterfrågan`
-          : `en minskande befolkning (${popGrowth.toFixed(1)}%) förknippas generellt med svagare efterfrågan och mer förhandlingsutrymme`
-    );
-  }
-
-  if (parts.length === 0) return "Förhandlingsläget kunde inte bedömas med tillräcklig säkerhet i denna analys.";
-  return `Vad gäller förhandlingsläget: ${listSv(parts)}.`;
-}
-
-/** Deliberately distinct phrasing from negotiationSv() above so the same
- *  fact isn't restated twice on one page — each bullet states a factor and
- *  what it's generally associated with, never an instruction to act on it. */
-function negotiationArgumentsSv(negotiation: ReportFactor | undefined): string[] {
-  if (!negotiation) return [];
-  const args: string[] = [];
-  const dom = num(negotiation.supportingData.daysOnMarket);
-  if (dom !== null && dom >= 30) {
-    args.push(`Bostaden har varit till försäljning i ${dom} dagar. En längre tid till försäljning förknippas generellt med större förhandlingsutrymme.`);
-  }
-  const ratio = num(negotiation.supportingData.priceToIncomeRatio);
-  if (ratio !== null && ratio > 6) {
-    args.push(`Priset motsvarar cirka ${ratio.toFixed(1)}x medianinkomsten i området, en nivå som generellt begränsar antalet köpare som har råd med bostaden.`);
-  }
-  const rate = num(negotiation.supportingData.currentPolicyRatePct);
-  if (rate !== null && rate > 3.5) {
-    args.push(`Det höga ränteläget (${rate.toFixed(1)}%) förknippas generellt med färre konkurrerande budgivare.`);
-  }
-  return args;
-}
-
-export function buildFinalRecommendation(report: AnalysisReport): FinalRecommendation {
-  const scored = (report.decisionFactors ?? []).filter(
-    (f): f is ReportFactor & { score: number } =>
-      f.id !== "confidence" && f.id !== "negotiation" && f.score !== null
-  );
-  const strengths = scored
-    .filter((f) => f.score >= 65)
-    .map((f) => `${capitalize(svLabel(f.id))} — se kapitlet ${CHAPTER_FOR_FACTOR[f.id] ?? capitalize(svLabel(f.id))}.`);
-  const weaknesses = scored
-    .filter((f) => f.score < 45)
-    .map((f) => `${capitalize(svLabel(f.id))} — se kapitlet ${CHAPTER_FOR_FACTOR[f.id] ?? capitalize(svLabel(f.id))}.`);
-
-  const risk = factor(report, "risk");
-  const negotiation = factor(report, "negotiation");
-  const brf = factor(report, "housingAssociation");
-
-  const paragraphs: string[] = [
-    `Analysen baseras på ${report.dataCompleteness.connectedSources} av ${report.dataCompleteness.totalSources} anslutna datakällor.`,
-    negotiationSv(negotiation),
-    risk && risk.score !== null
-      ? "En genomgång av åtta möjliga riskkategorier finns i kapitlet Möjliga risker."
-      : "Riskbilden kunde inte sammanfattas fullt ut — se kapitlet Möjliga risker för detaljer om vad som saknas.",
-  ];
-
-  const actions: string[] = [
-    "Bostadens skick, planlösning och eventuella brister utöver vad som anges i annonsen är inte verifierade i denna analys.",
-    "Köparens egen lånekapacitet och lånelöfte ingår inte i denna analys.",
-  ];
-  if (!brf || brf.score === null) {
-    actions.push("Föreningens årsredovisning och stadgar ingår inte i det underlag som kunnat verifieras i denna analys — se kapitlet Bostadsrättsförening för detaljer.");
-  }
-
-  const questionsToAsk = [
-    "Uppgifter om planerat underhåll eller kommande avgiftshöjningar i föreningen ingår inte i denna analys.",
-    "Uppgifter om fukt-, rör- eller elproblem i fastigheten eller lägenheten ingår inte i denna analys.",
-    "Uppgifter om säljarens anledning till försäljning och boendetid ingår inte i denna analys.",
-    "Uppgifter om antal budgivare vid tidigare visningar ingår inte i denna analys.",
-  ];
-
-  let negotiationArguments: string[] =
-    negotiation && negotiation.score !== null && negotiation.score >= 50 ? negotiationArgumentsSv(negotiation) : [];
-  if (risk && risk.score !== null && risk.score < 50) {
-    negotiationArguments = [
-      ...negotiationArguments,
-      "Flera av observationerna i kapitlet Möjliga risker kan vara värda att lyfta i en förhandling.",
-    ];
-  }
-  if (negotiationArguments.length === 0) {
-    negotiationArguments = [
-      "Ingen av de faktorer som ingår i denna analys (tid till försäljning, pris i förhållande till medianinkomst, ränteläge, befolkningsutveckling) avvek i denna körning på ett sätt som generellt förknippas med förhandlingsutrymme.",
-    ];
-  }
-
-  return { paragraphs, strengths, weaknesses, actions, questionsToAsk, negotiationArguments };
 }

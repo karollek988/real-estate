@@ -33,7 +33,11 @@ export function resolveViewScope(entitlement: AnalysisType, analysisScope: Analy
 
 export async function getReportForViewer(
   analysisId: string,
-  userId: string | null
+  userId: string | null,
+  options: {
+    /** A Köpanalys reviewer (lib/auth/admin.ts) sees every report in full — the review console links to them. */
+    isReviewer?: boolean;
+  } = {}
 ): Promise<{
   analysis: AnalysisRecord;
   property: PropertyRecord;
@@ -44,7 +48,7 @@ export async function getReportForViewer(
   const found = await getAnalysisWithProperty(analysisId);
   if (!found) return null;
 
-  let entitlement = await getBestEntitlementForProperty(userId, found.property.id);
+  let entitlement = options.isReviewer ? "full" : await getBestEntitlementForProperty(userId, found.property.id);
   if (!entitlement) {
     // A refunded request carries no entitlement, but its owner must still be
     // able to open the failed analysis to read why it failed. A failed

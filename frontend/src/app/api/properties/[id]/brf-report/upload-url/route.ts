@@ -5,6 +5,7 @@ import { findPropertyById } from "@/lib/analysis/store";
 import { BRF_REPORTS_BUCKET, MAX_BRF_REPORT_BYTES, classifyBrfMimeType } from "@/lib/analysis/brfReports";
 import { hasFullEntitlementForProperty } from "@/lib/analysis/ownership";
 import { requireUser } from "@/lib/auth/requireUser";
+import { isAdminUser } from "@/lib/auth/admin";
 
 function errorResponse(status: number, code: string, message: string) {
   return NextResponse.json({ error: { code, message } }, { status });
@@ -23,9 +24,9 @@ function errorResponse(status: number, code: string, message: string) {
  * multipart POST meant any report over ~4.5MB was rejected by the platform
  * with a 413 before our own code (or its 20MB check) ever ran, surfacing to
  * the user as a generic "something went wrong" with no useful detail
- * anywhere in our logs. See SectionDocumentUpload.tsx for the client side
- * of this two-step contract, and ../route.ts (step 2) for where the
- * uploaded object is picked up, extracted, and the analysis re-run.
+ * anywhere in our logs. See lib/brf/uploadClient.ts for the client side
+ * of this contract, and ../route.ts for where the uploaded object is picked
+ * up, read, and handed to the BRF review.
  */
 export async function POST(
   request: Request,
@@ -40,7 +41,8 @@ export async function POST(
   if (!property) {
     return errorResponse(404, "not_found", "No property with that id.");
   }
-  if (!(await hasFullEntitlementForProperty(user.id, propertyId))) {
+  // The owner of the full analysis, or a Köpanalys reviewer uploading it for them (lib/auth/admin.ts).
+  if (!isAdminUser(user) && !(await hasFullEntitlementForProperty(user.id, propertyId))) {
     return errorResponse(404, "not_found", "No property with that id.");
   }
 

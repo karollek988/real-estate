@@ -283,8 +283,8 @@ export function requiresMonthlyFee(attributes: Record<string, unknown>, extracte
 
 /**
  * Mirrors buildAnalysis.ts's own field resolution for the fields it checks.
- * Room count is deliberately NOT gated here — build.ts's Prisanalys math
- * (price/m², cost-burden) never reads it, it's purely descriptive, and it
+ * Room count is deliberately NOT gated here — no report chapter needs it for a
+ * calculation (it is purely descriptive), and it
  * can be genuinely absent from Hemnet's own data for a given listing (not
  * just an unreliable scrape) — gating on it would fail-and-refund analyses
  * that would otherwise render a perfectly usable report.

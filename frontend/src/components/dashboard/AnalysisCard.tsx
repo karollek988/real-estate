@@ -1,29 +1,19 @@
-import { CalendarIcon, TrendingUpIcon, HouseIcon, ArrowRightIcon } from "@/components/icons";
+import { CalendarIcon, HouseIcon, ArrowRightIcon } from "@/components/icons";
 import { StatusBadge } from "@/components/dashboard/StatusBadge";
 
-interface DecisionAnalysisCardProps {
+interface AnalysisCardProps {
   address: string;
   analysisDate: string;
   planLabel: string;
   status: "ready" | "processing" | "expired";
-  growthPct?: number;
   onOpen?: () => void;
   /** Secondary actions (e.g. upload/delete) that belong to this analysis —
    *  rendered inside the same card, below a divider. */
   footer?: React.ReactNode;
 }
 
-export function DecisionAnalysisCard({
-  address,
-  analysisDate,
-  planLabel,
-  status,
-  growthPct,
-  onOpen,
-  footer,
-}: DecisionAnalysisCardProps) {
-  const growthPositive = (growthPct ?? 0) >= 0;
-
+/** One of the customer's analyses on the dashboard: address, date, package and status. */
+export function AnalysisCard({ address, analysisDate, planLabel, status, onOpen, footer }: AnalysisCardProps) {
   return (
     <div className="card-interactive flex flex-col gap-4 rounded-2xl border border-white/10 bg-[#0F1417]/85 p-4 backdrop-blur-xl">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
@@ -45,21 +35,6 @@ export function DecisionAnalysisCard({
           <p className="text-xs text-neutral-400">Analystyp</p>
           <p className="text-sm font-semibold text-white">{planLabel}</p>
         </div>
-
-        {growthPct !== undefined && (
-          <div className="text-right">
-            <p
-              className={`flex items-center justify-end gap-1 text-sm font-semibold ${
-                growthPositive ? "text-green-400" : "text-amber-400"
-              }`}
-            >
-              {growthPositive ? "+" : ""}
-              {growthPct}%
-              <TrendingUpIcon className={`h-3.5 w-3.5 ${growthPositive ? "" : "rotate-90"}`} />
-            </p>
-            <p className="text-xs text-neutral-500">vs marknad</p>
-          </div>
-        )}
 
         <StatusBadge status={status} />
 

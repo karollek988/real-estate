@@ -146,6 +146,28 @@ const DEFAULT_COPY = {
   cta: "Fortsätt",
 };
 
+/** A short branded notification with one call to action — the BRF review emails (lib/brf/notify.ts). */
+export function renderNotificationEmail(params: {
+  preheader: string;
+  heading: string;
+  paragraphs: string[];
+  ctaUrl: string;
+  ctaLabel: string;
+}): string {
+  const body = `
+    <h1 style="margin:0 0 12px; font-size:20px; font-weight:700; color:#111927;">${escapeHtml(params.heading)}</h1>
+    ${params.paragraphs
+      .map((p) => `<p style="margin:0 0 10px; font-size:15px; line-height:1.6; color:#374151;">${escapeHtml(p)}</p>`)
+      .join("\n")}
+    ${ctaButton(params.ctaUrl, params.ctaLabel)}
+    <p style="margin:0; font-size:12px; line-height:1.5; color:${BRAND.textMuted};">
+      Om knappen inte fungerar, kopiera in den här länken i din webbläsare:<br />
+      <a href="${params.ctaUrl}" style="color:${BRAND.green}; word-break:break-all;">${params.ctaUrl}</a>
+    </p>
+  `;
+  return renderShell(params.preheader, body);
+}
+
 export function renderGenericAuthEmail(type: string, confirmUrl: string): { subject: string; html: string } {
   const copy = GENERIC_COPY[type] ?? DEFAULT_COPY;
   const body = `

@@ -30,7 +30,6 @@ function fullReport() {
   return {
     engineVersion: "test",
     generatedAt: "2026-10-02T00:00:00.000Z",
-    factorsAnalyzed: 12,
     property: {
       address: "Storgatan 12, Stockholm",
       postalCode: "11122",
@@ -75,17 +74,12 @@ function fullReport() {
       ownershipType: `${LEAK}ownership`,
       objectId: `${LEAK}object`,
     },
-    decisionScore: 88,
-    overallConfidence: 0.9,
-    verdict: `${LEAK}verdict`,
-    summary: `${LEAK}summary`,
-    insights: [{ label: `${LEAK}insight`, value: "x", tone: "positive", pending: false }],
     decisionFactors: [
-      { id: "price", label: "Price", score: 70, confidence: 1, status: `${LEAK}price`, explanation: `${LEAK}price`, supportingData: { comparableSales: [`${LEAK}comp`] }, missingData: [], weight: 0.3 },
-      { id: "housingAssociation", label: "BRF", score: 60, confidence: 1, status: `${LEAK}brf`, explanation: `${LEAK}brf`, supportingData: { debt: `${LEAK}debt` }, missingData: [], weight: 0.2 },
-      { id: "area", label: "Area", score: 65, confidence: 0.7, status: "Positive", explanation: "area ok", supportingData: { municipality: "Stockholm", areaPriceTrendPct: 3 }, missingData: [], weight: 0.1 },
-      { id: "risk", label: "Risk", score: 50, confidence: 1, status: `${LEAK}risk`, explanation: `${LEAK}risk`, supportingData: {}, missingData: [], weight: 0.1 },
-      { id: "negotiation", label: "Neg", score: 55, confidence: 1, status: `${LEAK}neg`, explanation: `${LEAK}neg`, supportingData: {}, missingData: [], weight: 0.1 },
+      { id: "market", available: true, supportingData: { policyRateChangePctPoints: -0.5, note: `${LEAK}market` } },
+      { id: "housingAssociation", available: true, supportingData: { debt: `${LEAK}debt`, reportState: "verified" } },
+      { id: "area", available: true, supportingData: { municipality: "Stockholm", areaPriceTrendPct: 3 } },
+      { id: "risk", available: true, supportingData: { buildingYear: 1950, note: `${LEAK}risk` } },
+      { id: "futureDevelopment", available: true, supportingData: { nearbyPlannedProjects: [`${LEAK}project`] } },
     ],
     dataSources: [
       { id: "hemnet_page_scrape", name: "Hemnet", kind: "real", status: "ok", fields: [`${LEAK}field`], detail: `${LEAK}detail` },
@@ -141,8 +135,11 @@ check("area report has no asking price, fee or size", area.property.askingPriceS
 check("area report keeps the location (address, municipality, postal code)", area.property.address === "Storgatan 12, Stockholm" && area.property.municipality === "Stockholm" && area.property.postalCode === "11122");
 check("area report has no images/floorplans", area.property.imageUrls.length === 0 && area.property.floorplanUrls.length === 0);
 check("area report keeps only the area decision factor", area.decisionFactors.length === 1 && area.decisionFactors[0].id === "area");
-check("area report drops summary and insights", area.summary === "" && area.insights.length === 0);
-check("area report zeroes score/verdict/confidence", area.decisionScore === 0 && area.verdict === "" && area.overallConfidence === 0);
+check(
+  "area report has exactly the report's own keys (nothing extra carried over)",
+  Object.keys(area).sort().join(",") === "dataCompleteness,dataSources,decisionFactors,engineVersion,generatedAt,property",
+  Object.keys(area)
+);
 check(
   "area report keeps only area data sources",
   area.dataSources.map((s) => s.id).sort().join(",") === "nominatim_geocoding,osm_amenities,scb_area_statistics",
@@ -150,11 +147,11 @@ check(
 );
 check("area report's source counts follow the filtered sources", area.dataCompleteness.totalSources === 3 && area.dataCompleteness.connectedSources === 3, area.dataCompleteness);
 
-// ── full scope: report is complete (only the score fields are blanked) ───────
+// ── full scope: the report is returned complete and unchanged ────────────────
 const full = redactAnalysisReport(fullReport(), "full");
 check("full report keeps every decision factor", full.decisionFactors.length === 5);
-check("full report keeps listing facts and sources", full.property.askingPriceSek === 4_999_999 && full.dataSources.length === 7 && full.summary.startsWith(LEAK));
-check("full report still blanks score/verdict/confidence", full.decisionScore === 0 && full.verdict === "" && full.overallConfidence === 0);
+check("full report keeps listing facts and sources", full.property.askingPriceSek === 4_999_999 && full.dataSources.length === 7);
+check("full report is returned unchanged", JSON.stringify(full) === JSON.stringify(fullReport()));
 
 // ── area scope: property record ──────────────────────────────────────────────
 const areaProperty = redactPropertyForScope(propertyRecord(), "area");
@@ -166,7 +163,7 @@ check("area property drops price, fee, BRF and listing text", !("asking_price_se
 check("area property drops hemnet url, apartment number, floor, key, provenance", areaProperty.hemnetUrl === null && areaProperty.apartmentNumber === null && areaProperty.floor === null && areaProperty.normalizedKey === "" && Object.keys(areaProperty.fieldProvenance).length === 0);
 check("full property is returned untouched", redactPropertyForScope(propertyRecord(), "full").attributes.asking_price_sek === 4_999_999);
 
-// ── analysis record (the API response also carries the run log + score) ──────
+// ── analysis record (the API response also carries the run log) ──────────────
 const record = {
   id: "22222222-2222-2222-2222-222222222222",
   propertyId: "11111111-1111-1111-1111-111111111111",
@@ -174,7 +171,6 @@ const record = {
   engineVersion: "test",
   scope: "full",
   status: "complete",
-  decisionScore: 77,
   report: fullReport(),
   dataSources: fullReport().dataSources,
   error: null,
@@ -184,7 +180,7 @@ const record = {
 };
 const areaRecord = redactAnalysisRecord(record, "area");
 const areaRecordJson = JSON.stringify(areaRecord);
-check("area analysis record has no leaked value (report, run log, score)", !areaRecordJson.includes(LEAK) && areaRecord.decisionScore === null, areaRecordJson.match(/LEAK_\w+/g));
+check("area analysis record has no leaked value (report, run log)", !areaRecordJson.includes(LEAK), areaRecordJson.match(/LEAK_\w+/g));
 check("full analysis record keeps its run log", redactAnalysisRecord(record, "full").dataSources.length === 7);
 check("a record without a report redacts without throwing", redactAnalysisRecord({ ...record, report: null, status: "pending" }, "area").report === null);
 
