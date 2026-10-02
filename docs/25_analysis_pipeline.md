@@ -1,5 +1,7 @@
 # Persistent Analysis Pipeline (replaces the mock)
 
+> **PARTLY SUPERSEDED (2026-10-02):** the pipeline no longer scores (see docs/48) and no longer fetches BRF annual reports automatically (they are uploaded and reviewed by a person — `frontend/src/lib/brf/reviews.ts`). Kept for history.
+
 **Date:** 2026-07-16 · **Milestone:** launch prep · **Status:** implemented and verified end-to-end
 
 ## What changed

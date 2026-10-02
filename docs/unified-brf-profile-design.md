@@ -1,5 +1,7 @@
 # Unified BRF Profile — Design Document
 
+> **SUPERSEDED (2026-10-02):** the automated BRF profile pipeline was removed (commit `1478207`; tag `archive/brf-automation-2026-10-02`). The BRF analysis is now built from figures a person reviews — see `docs/48_brf_review_and_deck_alignment_2026-10-02.md`.
+
 ## 1. Goal
 
 Build a single `BRFProfile` that merges information from four sources into one

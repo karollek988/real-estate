@@ -1,5 +1,7 @@
 # Decision Engine
 
+> **SUPERSEDED (2026-10-02):** the Decision Engine's scoring/weighting was removed; analyzers now only collect facts (`frontend/src/lib/analysis/engine/collectFactors.ts`). See `docs/48_brf_review_and_deck_alignment_2026-10-02.md`. Kept for history only.
+
 **Date:** 2026-07-16 · **Milestone:** core intelligence, priority #1 · **Status:** implemented, UI untouched
 
 ## What this milestone is (and isn't)

@@ -5,20 +5,32 @@
 > otherwise leave it alone. Detailed research/product docs live in `docs/`;
 > this file is the "what's actually true right now" summary.
 
-Last updated: 2026-10-02 — see the Eighth session note first (product/pricing
-model change, **uncommitted and undeployed**); the Seventh session note below
-it was re-verified, merged, pushed, and deployed to `main` (see "Merge, push &
+Last updated: 2026-10-02 — see the Ninth session note first (pitch-deck alignment,
+person-reviewed BRF analysis; **on a pushed branch, not merged, not deployed**). The Seventh
+session note below was re-verified, merged, pushed, and deployed to `main` (see "Merge, push &
 deploy" at the end of that section for the full record).
 
-**Ninth session — IN PROGRESS, UNFINISHED (2026-10-02, branch
-`feature/trygghetspaket-business-model`, NOT pushed, `main`/production untouched).**
-Aligning the product and site with the pitch-deck template: automated BRF fetching
-removed (done, verified), scoring removal + a real Boendekalkyl (WIP commit that does
-not compile), landing page / pricing section / copy (not started). Read
-**`docs/47_business_model_handoff_2026-10-02.md` first** — it has the exact git state,
-the ordered to-do list and the flags (BRF extraction yields almost nothing on real
-2024 reports; the landing example image shows a "72 av 100" score; fake "4.8/5, 256
-omdömen" social proof; production migrations + Stripe Prices still missing).
+**Ninth session — DONE on branch `feature/trygghetspaket-business-model` (2026-10-02), pushed to
+`origin`, NOT merged; `main`/production untouched.** Read
+**`docs/48_brf_review_and_deck_alignment_2026-10-02.md` first** (it supersedes docs/47): what was
+built, the reviewer runbook, the BRF benchmarks with sources, the production rollout (needs the
+user's OK) and the flags. In short:
+- **BRF analysis is reviewed by a person** before the customer sees it, ready within 24 h of the
+  purchase (user decision). New table `brf_reviews` (migration `20261002000200`), review console
+  `/admin/brf` (reviewers = `KOPANALYS_ADMIN_EMAILS`), team/customer emails via Resend (production
+  only). The report's BRF chapter shows "granskas … klar senast <tid>" until published.
+- **Readable BRF analysis** (`lib/brf/interpret.ts`): the 7 mandatory key figures (BFNAR 2023:1)
+  explained in plain Swedish, read against SBAB/HSB/Handelsbanken levels and Nabo's 2023 averages,
+  plus "Vad det betyder för dig" in kronor (share of the association's debt, fee after a rate rise,
+  decided fee change). It also feeds the summary, risks (new Avgiftsrisk), questions and viewing guide.
+- **Key figures read automatically** from uploaded annual reports as the reviewer's prefill
+  (`BRF-Scraper/.../extractor/key_figures.py`) — correct on all 9 real 2024 reports tested.
+- **Report without scores**: chapters Sammanfattning, Fastighetsinformation, Boendekalkyl
+  (placeholder "lanseras inom kort", user decision), Bostadsrättsförening, Områdesanalys, Möjliga
+  risker, Framtidsutsikter, Frågor inför visningen. Automated BRF fetching removed (commit `1478207`).
+- **Site follows the pitch deck**: hero, problem section (60 825 kr lagfart), Så fungerar det,
+  example report (real component, made-up figures), Priser (99/499/999), FAQ, chat, /buy. The fake
+  "4.8/5, 256 omdömen" card is kept on purpose until the user replaces it (next week).
 
 **Eighth session — packages instead of Premium (2026-10-02, now committed as
 `743986a` on that branch; migrations not applied to production).** Premium, subscriptions,
@@ -70,11 +82,11 @@ it; an area analysis shows the cover and the area chapter and nothing else.
   checkout/discount-code rejections, all pages render. **Not tested**: a real Stripe
   Checkout (no Prices exist yet), production data, the Python engine path
   (location-intelligence/BRF providers not running locally).
-- **Known / open**: "Dolda kostnader" is sold as the third analysis but is the existing
-  Boendekalkyl chapter, not a separate engine analysis; the dashboard card's "Ladda upp
-  senaste årsredovisning" still posts multipart to a route that now expects the two-step
-  JSON contract (pre-existing, not touched); terms text (§ Analyser och krediter) was
-  edited and needs a human/legal read.
+- **Known / open**: "Dolda kostnader" is sold as the third analysis — since the ninth session
+  the Boendekalkyl chapter is a "lanseras inom kort" placeholder (user decision) and the BRF
+  analysis shows the association's hidden costs in kronor; the dashboard upload bug noted here was
+  fixed in the ninth session; terms text (§ Analyser och krediter) was edited and needs a
+  human/legal read.
 
 **Seventh session — Price Analysis + civic data enrichment.** Branch
 `feature/price-analysis-and-area-data-enrichment`, tested on the branch
@@ -659,6 +671,24 @@ correctly (`stripe.webhooks.constructEvent`). No `.update`/`.upsert` on
     `python-docx`; the internal-auth middleware added no new dependency and
     doesn't touch the Docker build steps.
 
+- **G10** (ninth session, open — needs the user): production rollout of the branch — 3 Supabase
+  migrations (`20261002000000`, `…000100`, `…000200`), the three Stripe Prices, Vercel env
+  `KOPANALYS_ADMIN_EMAILS` / `KOPANALYS_TEAM_EMAILS`, then merge to `main`. Order and checks in docs/48.
+- **G11** (ninth session, open): the BRF 24-hour promise depends on people watching `/admin/brf`; no
+  escalation for late reviews; after deploy every legacy customer who opens an old report opens a
+  review (expect a burst of team emails). The chapter promises the team obtains the annual report.
+- **G12** (ninth session, open): fake social proof ("4.8/5 baserat på 256 omdömen") still on the
+  landing page — user will replace it next week.
+- **G13** (ninth session, open): new accounts get 0 credits — decide how the jury tries the product.
+- **G14** (ninth session, open): privacy policy text about OpenAI/uploaded documents is inaccurate and
+  doesn't mention human review — legal read.
+- **G15** (ninth session, open): Boendekalkyl is a placeholder; groundwork in `lib/report/housingCost.ts`
+  (verified 2026 cost rules); flip `HOUSING_COST_LIVE` in `lib/packages.ts` when it ships.
+- **G16** (ninth session, open): `parseBotCoverage.verify.ts` can't run since `pipeline.ts` uses
+  `after()` (needs a request scope); the automatic `brfFinancials` provider still runs but nothing
+  customer-facing reads it; hero image shows baked-in price tags; local bucket config allows PDF only.
+  Full list: docs/48 "Flags".
+
 ## 5. Tests / verification status
 
 PASS = actually run and green. FAIL = actually run and red. BLOCKED = not run.
@@ -675,6 +705,9 @@ PASS = actually run and green. FAIL = actually run and red. BLOCKED = not run.
 | `market_intelligence` Python suite | **PASS** (seventh session) | 234/234, incl. a new regression test locking in the SCB Region-dimension fix (see Seventh session note above) |
 | `location_intelligence` Python suite | **PASS** (seventh session) | 164 passed, 1 deselected |
 | `api/tests/test_internal_auth.py` | **PASS** (seventh session) | 30/30 (down from 33 — 3 parametrizations removed with the deleted `/api/broker-documents` endpoint); `server.py` re-confirmed importable with zero "broker" routes left |
+| Ninth session: TS + verify scripts + build | **PASS** | `tsc` clean, `npm run build` green, 18/20 verify scripts green (new: `lib/brf/interpret.verify.mjs`, `lib/report/housingCost.verify.mjs`; rewritten analyzer/report/redact scripts); the 2 red are pre-existing (G5, G16) |
+| Ninth session: Python | **PASS** | BRF-Scraper 31 passed + 5 OCR skips (15 new key-figure tests incl. real 2024 PDFs), `api/tests` 25, `analysis_engine` 79 |
+| Ninth session: local end to end | **PASS** | purchase → review opened → upload real PDF → console prefill → publish → reviewed chapter; Områdesanalys; villa without BRF chapter; desktop + mobile. PDF download not verified (see docs/48) |
 | Hemnet extraction (`listing/hemnetPage.verify.mjs`) | **FAIL (pre-existing)** | 1/10 checks red on unmodified `main` code (G5) |
 | RLS/RPC bypass — profiles quota fields | **PASS** | Verified via migration/grant audit second session; **live-reproduced too, third session** (attacker `PATCH` on own `profiles` row rejected, see §3b) |
 | RLS/RPC bypass — quota RPCs (§3b) | **PASS** (third session) | 11/11, live adversarial test against real local Supabase/PostgREST — all attacker paths rejected (`42501`), state unchanged, legitimate `service_role` path still works |
@@ -769,6 +802,11 @@ PASS = actually run and green. FAIL = actually run and red. BLOCKED = not run.
     `api/tests/test_internal_auth.py`. Re-confirmed (§3e's original check,
     still true) no `.env`/`.env.local` was ever committed in the entire git
     history, not just the current tree.
+- **Ninth session (branch `feature/trygghetspaket-business-model`)**: migrations
+  `20261002000000`, `20261002000100`, `20261002000200` must be applied before that frontend deploys;
+  new Vercel env `KOPANALYS_ADMIN_EMAILS`, `KOPANALYS_TEAM_EMAILS` (both optional with defaults, see
+  `frontend/.env.example`); Stripe `STRIPE_PRICE_OMRADESANALYS/_TRYGGHETSPAKET/_TRE_BOSTADER`. The
+  Python change (key figures in the upload response) is backwards compatible.
 - Supabase migrations must be applied in order up through
   `20260917010000_revoke_public_execute_on_security_definer_rpcs.sql` before
   deploying this branch's frontend changes — the two are independent
