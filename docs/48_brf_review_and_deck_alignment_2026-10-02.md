@@ -3,9 +3,11 @@
 Continues and **supersedes** `docs/47_business_model_handoff_2026-10-02.md` (its to-do items 1–7 are done; its
 flags are carried over below). Template: `Kopanalys_Fororten_2026_Pitch_Deck_v7_MALL.pdf`.
 
-**State:** branch `feature/trygghetspaket-business-model`, pushed to `origin` (see "Git state"). **Not merged;
-`main` and production are untouched.** Everything compiles, every check is green except two pre-existing,
-unrelated scripts (see "Verification").
+**State: DEPLOYED to production on 2026-10-02 (~21:02 Stockholm time).** `main` was fast-forwarded to `32d9433`
+(the branch `feature/trygghetspaket-business-model`) and pushed; Vercel and Railway deployed it; the three
+migrations had been applied by the user first. See "Production rollout — done" below for what was verified and
+what still needs a logged-in check. Everything compiles, every check is green except two pre-existing, unrelated
+scripts (see "Verification").
 
 ## Decisions from the user (2026-10-02, second message)
 
@@ -164,22 +166,40 @@ metadata, header ("Priser") and footer updated. `/buy`: the free map is "Gratis 
 | `0c187e6` | WIP from the 1st half of this session (did not compile on its own) |
 | next commits | key-figure extraction (Python) · reviewed BRF analysis + report without scores · deck-aligned site · docs |
 | tag `archive/brf-automation-2026-10-02` | the removed scraper code (pushed with the branch) |
+| `main` → `32d9433` | fast-forward merge of the branch, pushed 2026-10-02 19:01 UTC = the production deploy |
 
-## Production rollout — needs the user's OK (touches their Supabase, Stripe, Vercel, Railway)
+## Production rollout — done (2026-10-02, ~21:00 Stockholm time)
 
-In this order; pushing `main` deploys Vercel **and** Railway:
-1. Apply the three migrations to the production Supabase: `20261002000000_credits_and_analysis_scopes.sql`,
-   `20261002000100_remove_first100_campaign.sql`, `20261002000200_brf_reviews.sql` (back up first).
-2. Stripe: create the three Prices and set `STRIPE_PRICE_OMRADESANALYS / _TRYGGHETSPAKET / _TRE_BOSTADER` on
-   Vercel (`frontend/scripts/setup-stripe-products.ts`), check `STRIPE_COUPON_ANALYSIS_50OFF`.
-3. Vercel env: `KOPANALYS_ADMIN_EMAILS` (reviewers), `KOPANALYS_TEAM_EMAILS` (who gets "review due"), confirm
-   `RESEND_FROM_EMAIL`'s domain is verified, `PYTHON_ENGINE_API_SECRET` identical on Vercel and Railway.
-4. Merge to `main` → both deploy. Then: sign in as a reviewer and open `/admin/brf`; buy one Trygghetspaket
-   (or use a discount code), check the BRF chapter, upload a report, publish, check the email; download a PDF.
+What was done, in this order:
+1. **Stripe** (by the user, live account): Prices for Områdesanalys 99, Trygghetspaketet 499, Tre bostäder 999
+   (SEK, one-time) created; their ids set on Vercel as `STRIPE_PRICE_OMRADESANALYS / _TRYGGHETSPAKET /
+   _TRE_BOSTADER` (Production). Values are hidden in Vercel, so the names were checked, not the ids.
+2. **Vercel env** (by the user): the three price ids; `KOPANALYS_ADMIN_EMAILS` / `KOPANALYS_TEAM_EMAILS` as the
+   user chose (if unset, the defaults in `.env.example` apply).
+3. **Supabase migrations** (by the user, SQL Editor of project `mifrdfjucyniddhlkudo` — confirmed to be the one
+   the live site uses by reading the URL out of kopanalys.se's public bundle): `20261002000000`, `…000100`,
+   `…000200`. Verified read-only through PostgREST with the site's public key: `profiles.full_analyses_remaining`,
+   `analyses.scope`, `credit_purchases`, `brf_reviews`, `brf_annual_reports.key_figures` exist;
+   `issue_discount_code()` exists and is denied to `anon`. (A first attempt had not reached the database — the
+   check caught it before anything was deployed.) **Applied through the SQL Editor, so they are NOT recorded
+   in `supabase_migrations.schema_migrations` — before ever running `supabase db push` against production, run
+   `supabase migration list --linked` and mark them applied with `supabase migration repair --status applied`.**
+4. **Merge + deploy** (by Claude, on the user's "Merge och deploya nu!"): `main` fast-forwarded
+   `f6d7591..32d9433`, pushed. Vercel served the new site ~60 s later; Railway deployment `37c31e32` → SUCCESS.
+
+Verified after the deploy (logged out): the new landing page (hero, 60 825 kr, Så fungerar det, example report,
+Priser, the kept 4.8/5 card) and `/buy` (99/499/999, "Gratis · kommer snart") render, no console errors;
+`/admin/brf` and `/report` redirect to `/?auth=required`; `/api/profile/analyses`, `/api/admin/brf-reviews/*`,
+`/api/stripe/checkout` answer 401 without a session; the Python engine answers `GET /` 200, protected endpoints
+401 without the secret, "Application startup complete" in the logs.
+
+**Not verified yet (needs a logged-in person):** a real checkout with the new Price ids, signing in to
+`/admin/brf` as a reviewer, a full Trygghetspaket analysis + BRF upload + publish + emails in production, the PDF
+download. Do these first (a 99 kr Områdesanalys purchase can be refunded in Stripe → Payments → Refund).
 
 ## Remaining work
 
-1. Production rollout above (user decision).
+1. The logged-in checks listed under "Not verified yet" above.
 2. **Jury access:** new accounts have 0 credits. Decide: a demo account with credits, a discount code, or
    Stripe test mode.
 3. **Boendekalkyl** (the user builds it "inom kort"): start from `lib/report/housingCost.ts`; add the BRF
