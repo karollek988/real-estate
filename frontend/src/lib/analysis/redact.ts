@@ -108,28 +108,13 @@ function areaOnlyPropertyBlock(p: AnalysisReport["property"]): AnalysisReport["p
 }
 
 export function redactAnalysisReport(full: AnalysisReport, scope: AnalysisScope): AnalysisReport {
-  // decisionScore/verdict/overallConfidence are dropped for everyone (Köpanalys
-  // no longer scores/rates properties), not just area-only viewers. Nothing in
-  // the UI reads these anymore; kept as empty/zero rather than removed from the
-  // type since the DB column/engine output is unchanged and other internal
-  // code may still reference the shape.
-  const base: AnalysisReport = { ...full, decisionScore: 0, verdict: "", overallConfidence: 0 };
-  if (scope === "full") return base;
+  if (scope === "full") return full;
 
   const dataSources = (full.dataSources ?? []).filter((s) => AREA_SCOPE_SOURCE_IDS.has(s.id));
   return {
     engineVersion: full.engineVersion,
     generatedAt: full.generatedAt,
-    factorsAnalyzed: 0,
     property: areaOnlyPropertyBlock(full.property),
-    decisionScore: 0,
-    overallConfidence: 0,
-    verdict: "",
-    // The composed summary sentence and the insight cards mix in price,
-    // confidence and market facts and carry no source-factor id to filter on,
-    // so they are dropped whole.
-    summary: "",
-    insights: [],
     decisionFactors: (full.decisionFactors ?? []).filter((f) => AREA_FACTOR_IDS.has(f.id)),
     dataSources,
     dataCompleteness: {
@@ -142,8 +127,7 @@ export function redactAnalysisReport(full: AnalysisReport, scope: AnalysisScope)
 /**
  * An analysis record as the given scope may see it. The record carries more
  * than `report`: the per-provider run log (`dataSources`, with free-text
- * detail) and the score column — an area-only viewer gets neither beyond the
- * area sources.
+ * detail) — an area-only viewer gets nothing beyond the area sources.
  */
 export function redactAnalysisRecord(analysis: AnalysisRecord, scope: AnalysisScope): AnalysisRecord {
   const report = analysis.report ? redactAnalysisReport(analysis.report, scope) : null;
@@ -151,7 +135,6 @@ export function redactAnalysisRecord(analysis: AnalysisRecord, scope: AnalysisSc
   return {
     ...analysis,
     report,
-    decisionScore: null,
     dataSources: (analysis.dataSources ?? []).filter((s) => AREA_SCOPE_SOURCE_IDS.has(s.id)),
   };
 }

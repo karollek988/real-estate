@@ -1,57 +1,33 @@
-import type {
-  AnalysisReport,
-  DataSourceReport,
-  DecisionFactorResult,
-  ExtractedProperty,
-  Insight,
-  PropertyRecord,
-} from "../types";
+import type { AnalysisReport, DataSourceReport, ExtractedProperty, PropertyRecord } from "../types";
 import type { ProviderResult } from "../providers/types";
-import { runDecisionEngine } from "./decisionEngine";
+import { collectFactors } from "./collectFactors";
 import { housingAssociationConflictOrNull, numberOrNull, stringOrNull } from "./helpers";
 
 /**
- * Adapter between the Decision Engine (engine/decisionEngine.ts +
- * engine/analyzers/) and the persisted AnalysisReport shape the report page
- * consumes. The engine is the actual intelligence; this module just runs
- * it, assembles the property fact block, and maps the 6 decision-relevant
- * factors onto `insights` in the exact shape/order the (unchanged) report
- * UI already expects.
+ * Builds the persisted AnalysisReport the report page renders: the property
+ * fact block (every listing fact we hold, each resolved once) plus the facts
+ * the area / BRF / market / risk / future-development chapters are written
+ * from (engine/collectFactors.ts). It rates nothing — there is no score or
+ * verdict in the report.
  */
 /**
  * Two independently-versioned halves of the analysis pipeline (End-to-End
  * Truth Audit fix #3 — cached analyses must invalidate whenever EITHER
- * changes, not just this one). TS_ENGINE_VERSION covers this Decision
- * Engine (buildAnalysis.ts + analyzers/ + pipeline.ts). PYTHON_ENGINE_VERSION
- * mirrors analysis_engine/calculator.py's ANALYSIS_ENGINE_VERSION (which
- * covers calculate_metrics()/run_reasoning() and BRF-Scraper's
- * extractor/validation.py + discovery/allabrf_provider.py, the Python side
- * of this same pipeline) — bump both together when either side changes.
- * ENGINE_VERSION is the combined string actually persisted per analysis and
- * compared for cache freshness (see pipeline.ts::requestAnalysis).
+ * changes, not just this one). TS_ENGINE_VERSION covers this module +
+ * analyzers/ + pipeline.ts. PYTHON_ENGINE_VERSION mirrors
+ * analysis_engine/calculator.py's ANALYSIS_ENGINE_VERSION (which covers
+ * calculate_metrics()/run_reasoning() and BRF-Scraper's
+ * extractor/validation.py, the Python side of this same pipeline) — bump both
+ * together when either side changes. ENGINE_VERSION is the combined string
+ * actually persisted per analysis and compared for cache freshness (see
+ * pipeline.ts::requestAnalysis).
+ *
+ * 0.6.0 (2026-10-02): score/verdict/confidence removed from the report, the
+ * price chapter replaced by the cost calculation, BRF reports are uploads only.
  */
-export const TS_ENGINE_VERSION = "0.5.1";
+export const TS_ENGINE_VERSION = "0.6.0";
 export const PYTHON_ENGINE_VERSION = "1.1.0";
 export const ENGINE_VERSION = `${TS_ENGINE_VERSION}+py${PYTHON_ENGINE_VERSION}`;
-
-/** Report UI card order — unchanged from the pre-Decision-Engine report. */
-const UI_INSIGHT_FACTOR_IDS = [
-  "price",
-  "futureDevelopment",
-  "risk",
-  "negotiation",
-  "housingAssociation",
-  "area",
-];
-
-function toInsight(factor: DecisionFactorResult): Insight {
-  return {
-    label: factor.label,
-    value: factor.status,
-    tone: factor.score !== null && factor.score >= 60 ? "positive" : "neutral",
-    pending: factor.score === null,
-  };
-}
 
 export function buildAnalysis(
   property: PropertyRecord,
@@ -62,11 +38,7 @@ export function buildAnalysis(
   const connectedSources = dataSources.filter((s) => s.kind === "real").length;
   const attributes = { ...extracted.attributes, ...property.attributes };
 
-  const engineResult = runDecisionEngine({ property, extracted, attributes, dataSources });
-  const factorById = new Map(engineResult.factors.map((f) => [f.id, f]));
-  const insights = UI_INSIGHT_FACTOR_IDS.map((id) => factorById.get(id))
-    .filter((f): f is DecisionFactorResult => f !== undefined)
-    .map(toInsight);
+  const factors = collectFactors({ property, extracted, attributes, dataSources });
 
   const buildingYear = numberOrNull(attributes.building_year);
   const renovationYear = numberOrNull(attributes.renovation_year);
@@ -129,76 +101,9 @@ export function buildAnalysis(
     ? (attributes.features as unknown[]).filter((f): f is string => typeof f === "string")
     : [];
 
-  // Additional context for summary
-  const populationGrowth = numberOrNull(attributes.area_population_growth_pct);
-  const policyRate = numberOrNull(attributes.policy_rate_pct);
-  const medianIncome = numberOrNull(attributes.median_income_sek_thousands);
-
-  // Facts we actually hold, whatever their origin (URL slug, manual entry, or
-  // a provider) — each fact is counted exactly once, since provider-sourced
-  // values already flow into `attributes`/the property columns above.
-  const factorsAnalyzed = [
-    property.address,
-    property.municipality,
-    property.postalCode,
-    property.propertyType,
-    property.apartmentNumber,
-    property.floor,
-    property.latitude,
-    property.longitude,
-    rooms,
-    buildingYear,
-    livingAreaM2,
-    monthlyFeeSek,
-    askingPriceSek,
-    operatingCostsSek,
-    energyClass,
-    description,
-    condition,
-    balcony,
-    elevator,
-    parking,
-    garage,
-    storage,
-    patio,
-    broker,
-    agency,
-  ].filter((v) => v !== null && v !== undefined).length;
-
-  const summaryParts: string[] = [];
-
-  // Generate a meaningful Swedish summary
-  if (askingPriceSek !== null) {
-    const priceStr = new Intl.NumberFormat("sv-SE").format(Math.round(askingPriceSek));
-    summaryParts.push(`${displayAddress(property, streetAddress)} ges ut för ${priceStr} kr`);
-    if (livingAreaM2 !== null && pricePerM2Sek !== null) {
-      summaryParts[summaryParts.length - 1] += ` (${Math.round(livingAreaM2)} m², ${new Intl.NumberFormat("sv-SE").format(pricePerM2Sek)} kr/m²)`;
-    }
-    summaryParts[summaryParts.length - 1] += ".";
-  } else {
-    summaryParts.push(`Analys av ${displayAddress(property, streetAddress)}.`);
-  }
-
-  // Verdict context
-  const scorePct = Math.round(engineResult.overallConfidence * 100);
-  summaryParts.push(`Analysen har ${scorePct}% tillförlitlighet baserat på ${connectedSources} anslutna datakällor.`);
-
-  // Market context
-  if (policyRate !== null) {
-    summaryParts.push(`Styrräntan är ${policyRate.toFixed(1)}%.`);
-  }
-  if (populationGrowth !== null) {
-    const growthWord = populationGrowth > 1 ? "växer" : populationGrowth > 0 ? "är stabilt" : "minskar";
-    summaryParts.push(`Befolkningen i kommunen ${growthWord} (${populationGrowth > 0 ? "+" : ""}${populationGrowth.toFixed(1)}% över 5 år).`);
-  }
-  if (medianIncome !== null) {
-    summaryParts.push(`Medianinkomsten i området är ${Math.round(medianIncome)} tkr.`);
-  }
-
   return {
     engineVersion: ENGINE_VERSION,
     generatedAt: new Date().toISOString(),
-    factorsAnalyzed,
     property: {
       address: displayAddress(property, streetAddress),
       postalCode: property.postalCode,
@@ -243,12 +148,7 @@ export function buildAnalysis(
       ownershipType,
       objectId,
     },
-    decisionScore: engineResult.overallScore,
-    overallConfidence: engineResult.overallConfidence,
-    verdict: engineResult.verdict,
-    summary: summaryParts.join(" "),
-    insights,
-    decisionFactors: engineResult.factors,
+    decisionFactors: factors,
     dataSources,
     dataCompleteness: {
       connectedSources,
