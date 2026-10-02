@@ -1,5 +1,5 @@
 import { getAnalysisWithProperty } from "./store";
-import { getAnalysisRequestRow, type AnalysisType } from "./ownership";
+import { getBestAnalysisEntitlementForProperty, type AnalysisType } from "./ownership";
 import { redactAnalysisReport, type LockedSectionId } from "./redact";
 import type { AnalysisRecord, PropertyRecord } from "./types";
 
@@ -19,11 +19,11 @@ export interface ReportAccess {
   fullAccess: boolean;
 }
 
-export async function resolveReportAccess(userId: string | null, analysisId: string): Promise<ReportAccess> {
-  const row = userId ? await getAnalysisRequestRow(userId, analysisId) : null;
-  if (!row) return { analysisType: null, unlocked: false, fullAccess: false };
-  const fullAccess = row.analysisType === "premium" && row.unlocked;
-  return { analysisType: row.analysisType, unlocked: row.unlocked, fullAccess };
+export async function resolveReportAccess(userId: string | null, propertyId: string): Promise<ReportAccess> {
+  const entitlement = userId ? await getBestAnalysisEntitlementForProperty(userId, propertyId) : null;
+  if (!entitlement) return { analysisType: null, unlocked: false, fullAccess: false };
+  const fullAccess = entitlement.analysisType === "premium" && entitlement.unlocked;
+  return { analysisType: entitlement.analysisType, unlocked: entitlement.unlocked, fullAccess };
 }
 
 export async function getReportForViewer(
@@ -38,7 +38,7 @@ export async function getReportForViewer(
   const found = await getAnalysisWithProperty(analysisId);
   if (!found) return null;
 
-  const access = await resolveReportAccess(userId, analysisId);
+  const access = await resolveReportAccess(userId, found.property.id);
 
   if (!found.analysis.report) {
     return { analysis: found.analysis, property: found.property, access, lockedSections: [] };

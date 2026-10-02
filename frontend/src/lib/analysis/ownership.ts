@@ -192,25 +192,38 @@ export async function unlockAnalysisRequest(userId: string, analysisId: string):
 }
 
 /**
- * Returns the full analysis request row (analysisType + unlocked) for a user's
- * most recent request for this specific analysis, or null if no matching request exists.
+ * The user's best entitlement for ANY analysis of this property, not just
+ * the exact version currently being viewed. Analyses are shared/cached per
+ * property (upsertProperty in pipeline.ts) and rerunAnalysisForProperty (the
+ * "Update analysis" button and the BRF-report upload) creates a new analyses
+ * row for that same property without ever writing a matching
+ * analysis_requests row — resolving by exact analysis_id would make a
+ * Premium user's own freshly regenerated report look unpaid/locked the
+ * moment it's rerun. "Entitled for this property" is the correct scope.
+ *
+ * A user can accumulate more than one request per property (e.g. an older
+ * free request, then a later Premium one); the most favorable entitlement
+ * wins so a Premium purchase is never shadowed by an earlier free request.
  */
-export async function getAnalysisRequestRow(
+export async function getBestAnalysisEntitlementForProperty(
   userId: string,
-  analysisId: string
+  propertyId: string
 ): Promise<{ analysisType: AnalysisType; unlocked: boolean } | null> {
   const { data, error } = await createAdminClient()
     .from("analysis_requests")
     .select("analysis_type, unlocked")
     .eq("user_id", userId)
-    .eq("analysis_id", analysisId)
-    .order("created_at", { ascending: false })
-    .limit(1)
-    .maybeSingle();
-  if (error) throw new Error(`getAnalysisRequestRow failed: ${error.message}`);
-  const row = data as { analysis_type: AnalysisType; unlocked: boolean } | null;
-  if (!row) return null;
-  return { analysisType: row.analysis_type, unlocked: row.unlocked };
+    .eq("property_id", propertyId);
+  if (error) throw new Error(`getBestAnalysisEntitlementForProperty failed: ${error.message}`);
+  const rows = (data ?? []) as Array<{ analysis_type: AnalysisType; unlocked: boolean }>;
+  if (rows.length === 0) return null;
+  if (rows.some((r) => r.analysis_type === "premium" && r.unlocked)) {
+    return { analysisType: "premium", unlocked: true };
+  }
+  if (rows.some((r) => r.analysis_type === "premium")) {
+    return { analysisType: "premium", unlocked: false };
+  }
+  return { analysisType: "free", unlocked: rows[0].unlocked };
 }
 
 /**
