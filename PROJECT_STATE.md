@@ -6,12 +6,13 @@
 > this file is the "what's actually true right now" summary.
 
 Last updated: 2026-10-02 — see the Ninth session note first (pitch-deck alignment,
-person-reviewed BRF analysis; **on a pushed branch, not merged, not deployed**). The Seventh
-session note below was re-verified, merged, pushed, and deployed to `main` (see "Merge, push &
-deploy" at the end of that section for the full record).
+person-reviewed BRF analysis; **merged to `main` and deployed to production 2026-10-02 ~21:02**).
+The Seventh session note below was re-verified, merged, pushed, and deployed to `main` (see
+"Merge, push & deploy" at the end of that section for the full record).
 
-**Ninth session — DONE on branch `feature/trygghetspaket-business-model` (2026-10-02), pushed to
-`origin`, NOT merged; `main`/production untouched.** Read
+**Ninth session — DEPLOYED (2026-10-02): `main` = `32d9433` (fast-forward of branch
+`feature/trygghetspaket-business-model`), live on Vercel + Railway; the 3 migrations were applied
+to production by the user first (SQL Editor — not recorded in the CLI migration history).** Read
 **`docs/48_brf_review_and_deck_alignment_2026-10-02.md` first** (it supersedes docs/47): what was
 built, the reviewer runbook, the BRF benchmarks with sources, the production rollout (needs the
 user's OK) and the flags. In short:
@@ -671,9 +672,11 @@ correctly (`stripe.webhooks.constructEvent`). No `.update`/`.upsert` on
     `python-docx`; the internal-auth middleware added no new dependency and
     doesn't touch the Docker build steps.
 
-- **G10** (ninth session, open — needs the user): production rollout of the branch — 3 Supabase
-  migrations (`20261002000000`, `…000100`, `…000200`), the three Stripe Prices, Vercel env
-  `KOPANALYS_ADMIN_EMAILS` / `KOPANALYS_TEAM_EMAILS`, then merge to `main`. Order and checks in docs/48.
+- **G10** (ninth session, DONE 2026-10-02): production rollout — migrations applied by the user via
+  the SQL Editor (verified read-only), Stripe Prices + Vercel env set by the user, `main` pushed and
+  deployed (Vercel live, Railway SUCCESS). Still open: the logged-in checks (real checkout, `/admin/brf`
+  as reviewer, upload + publish + emails, PDF) and recording the 3 migrations in the CLI history
+  (`supabase migration repair`) before any `supabase db push`. Details in docs/48.
 - **G11** (ninth session, open): the BRF 24-hour promise depends on people watching `/admin/brf`; no
   escalation for late reviews; after deploy every legacy customer who opens an old report opens a
   review (expect a burst of team emails). The chapter promises the team obtains the annual report.
