@@ -85,7 +85,7 @@ function svLabel(id: string): string {
 /** Which chapter "owns" each analyzer's full explanation — used to build
  *  "see chapter X" pointers instead of repeating the same fact twice. */
 const CHAPTER_FOR_FACTOR: Record<string, string> = {
-  price: "Prisanalys",
+  price: "Boendekalkyl",
   area: "Områdesanalys",
   housingAssociation: "Bostadsrättsförening",
   risk: "Möjliga risker",
@@ -487,7 +487,7 @@ export function buildPriceAnalysis(report: AnalysisReport, attributes: Record<st
     askingPrice !== null
       ? `Utgångspriset för ${report.property.address} är ${sek(askingPrice)}` +
         (pricePerM2 ? `, motsvarande ${sekPerM2(pricePerM2)}.` : ".")
-      : "Inget utgångspris är registrerat för denna bostad, vilket gör att en fullständig prisanalys inte kan genomföras — bedömningen nedan begränsas till den kontext som finns tillgänglig."
+      : "Inget utgångspris är registrerat för denna bostad, vilket gör att en fullständig boendekalkyl inte kan genomföras — bedömningen nedan begränsas till den kontext som finns tillgänglig."
   );
 
   if (previousSale) {

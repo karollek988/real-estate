@@ -9,32 +9,42 @@ import {
   type AnalysisRequestInput,
   type AnalysisRequestResult,
 } from "@/lib/analysis/pipeline";
-import { consumeAnalysisQuota, recordAnalysisRequest, type AnalysisType } from "@/lib/analysis/ownership";
+import { consumeCredit, recordAnalysisRequest, refundCredit, type AnalysisType } from "@/lib/analysis/ownership";
 import { requireUser } from "@/lib/auth/requireUser";
 import { isDevAdmin } from "@/lib/auth/devAdmin";
 import { checkRateLimit, clientIp } from "@/lib/rateLimit";
+import { OMRADESANALYS_PRICE_SEK } from "@/lib/pricing";
 
 export const maxDuration = 300;
 
-// Per-user quota (ownership.ts) already caps free analyses, but a single
-// script cycling through disposable accounts from one IP could still trigger
-// many full external-API pipeline runs — each one real cost (Booli, BRF PDF
-// extraction, external geodata APIs). This is defense-in-depth alongside
-// quota, generous enough not to bother a real person testing a few listings.
+// The per-user credit balance already caps how many analyses an account can
+// start, but a single script cycling through disposable accounts from one IP
+// could still trigger many full external-API pipeline runs — each one real
+// cost (Booli, BRF PDF extraction, external geodata APIs). This is
+// defense-in-depth alongside credits, generous enough not to bother a real
+// person testing a few listings.
 const RATE_LIMIT_PER_HOUR = 20;
+
+const MAX_ADDRESS_LENGTH = 200;
 
 /**
  * POST /api/analyses — run (or return a cached) analysis for a property.
  *
- * Body: { url?: string; manual?: ManualListingFields; analysisType: "free" |
- * "premium"; force?: boolean }
- * - url:          a listing URL (Hemnet is URL-parseable today; other
- *                 providers get an honest "not supported yet" error).
- * - manual:       manually entered property details (address required).
- * - analysisType: which quota bucket this request draws from. Both types
- *                 run the identical pipeline/report — this only decides
- *                 which counter on the caller's profile is decremented.
+ * Body: { analysisType: "full" | "area"; url?: string; manual?: ManualListingFields;
+ *         address?: string; force?: boolean }
+ * - analysisType "full": the Trygghetspaket — the complete report. Takes one
+ *                 full credit. Needs `url` (a listing URL; Hemnet is
+ *                 URL-parseable today, other providers get an honest "not
+ *                 supported yet" error) or `manual` (property details,
+ *                 address required).
+ * - analysisType "area": the standalone Områdesanalys — the area chapter only.
+ *                 Takes one area credit. Needs `address` ("street, city").
  * - force:        create a new analysis version even if a fresh one exists.
+ *
+ * Without a credit of the requested kind nothing runs and nothing is
+ * created: 402 no_credit. A credit is taken before the analysis starts and
+ * given back if starting it fails or the analysis later can't be completed
+ * (pipeline.ts's refund path).
  */
 
 function errorResponse(status: number, code: string, message: string) {
@@ -53,6 +63,11 @@ function resultResponse(result: AnalysisRequestResult) {
   });
 }
 
+const NO_CREDIT_MESSAGE: Record<AnalysisType, string> = {
+  full: "Du har inget Trygghetspaket kvar. Köp ett för att analysera en bostad.",
+  area: `Du har ingen Områdesanalys kvar. Köp en för ${OMRADESANALYS_PRICE_SEK} kr för att analysera ett område.`,
+};
+
 export async function POST(request: Request) {
   const { user, response: authError } = await requireUser();
   if (authError) return authError;
@@ -61,25 +76,38 @@ export async function POST(request: Request) {
     return errorResponse(429, "rate_limited", "För många analysförfrågningar från din uppkoppling – försök igen om en stund.");
   }
 
-  let body: { url?: unknown; manual?: unknown; force?: unknown; analysisType?: unknown };
+  let body: { url?: unknown; manual?: unknown; address?: unknown; force?: unknown; analysisType?: unknown };
   try {
     body = await request.json();
   } catch {
     return errorResponse(400, "invalid_request", "Request body must be JSON.");
   }
 
-  if (body.analysisType !== "free" && body.analysisType !== "premium") {
-    return errorResponse(
-      400,
-      "invalid_request",
-      "analysisType must be \"free\" or \"premium\"."
-    );
+  if (body.analysisType !== "full" && body.analysisType !== "area") {
+    return errorResponse(400, "invalid_request", "analysisType must be \"full\" or \"area\".");
   }
   const analysisType: AnalysisType = body.analysisType;
 
   let input: AnalysisRequestInput;
 
-  if (typeof body.url === "string" && body.url.trim() !== "") {
+  if (analysisType === "area") {
+    const address = typeof body.address === "string" ? body.address.trim() : "";
+    if (address === "" || address.length > MAX_ADDRESS_LENGTH) {
+      return errorResponse(400, "invalid_request", "Ange adressen du vill analysera området runt.");
+    }
+    // The city has to be part of the address: an area analysis is a report
+    // about *where* a place is, and "Storgatan 12" alone matches a street in
+    // dozens of municipalities — the customer would pay for the wrong area.
+    const { municipality } = extractFromManualFields({ address });
+    if (!municipality) {
+      return errorResponse(
+        422,
+        "address_needs_city",
+        "Ange både gatuadress och ort, till exempel Storgatan 12, Stockholm."
+      );
+    }
+    input = { kind: "manual", fields: { address } };
+  } else if (typeof body.url === "string" && body.url.trim() !== "") {
     const classification = classifyListingUrl(body.url);
     switch (classification.kind) {
       case "hemnet":
@@ -130,43 +158,41 @@ export async function POST(request: Request) {
     );
   }
 
+  // Set once a credit has actually been taken, so the catch below can tell
+  // "failed before charging" from "failed after charging" and only refunds
+  // the latter.
+  let creditTaken = false;
   try {
     // The local dev-admin account (see lib/auth/devAdmin.ts) already
     // advertises "unlimited access, nothing required for testing" in the
-    // dashboard UI — bypass quota consumption for it rather than silently
-    // contradicting that promise once quotas exist.
-    const devAdmin = isDevAdmin(user.email);
-    let quotaConsumed = false;
-    let unlocked = true;
-    if (!devAdmin) {
-      const remaining = await consumeAnalysisQuota(user.id, analysisType);
+    // dashboard UI — bypass credits for it rather than silently
+    // contradicting that promise. Never active outside `next dev`.
+    //
+    // The credit is checked before anything is created, so an account
+    // without one can't fill the properties table with addresses.
+    if (!isDevAdmin(user.email)) {
+      const remaining = await consumeCredit(user.id, analysisType);
       if (remaining === null) {
-        // Premium: run anyway and create a locked (paywalled) request.
-        // Free: reject as before.
-        if (analysisType === "free") {
-          return errorResponse(
-            402,
-            "quota_exhausted",
-            "You have no free analyses left this period."
-          );
-        }
-        unlocked = false;
-      } else {
-        quotaConsumed = true;
+        return errorResponse(402, "no_credit", NO_CREDIT_MESSAGE[analysisType]);
       }
+      creditTaken = true;
     }
 
-    const result = await requestAnalysis(input, { force: body.force === true });
+    const result = await requestAnalysis(input, { force: body.force === true, scope: analysisType });
     await recordAnalysisRequest({
       userId: user.id,
       analysisId: result.analysis.id,
       propertyId: result.property.id,
       analysisType,
-      quotaConsumed,
-      unlocked,
+      quotaConsumed: creditTaken,
     });
     return resultResponse(result);
   } catch (err) {
+    if (creditTaken) {
+      await refundCredit(user.id, analysisType).catch((refundErr) => {
+        console.error(`POST /api/analyses: refund of a ${analysisType} credit failed for user ${user.id}:`, refundErr);
+      });
+    }
     if (err instanceof HemnetUrlError) {
       return errorResponse(
         422,

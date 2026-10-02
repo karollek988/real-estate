@@ -1,6 +1,7 @@
 /**
- * DEV ONLY: promotes one local account to unlimited Premium/Admin so the full
- * product (including the Premium report) can be tested without paying.
+ * DEV ONLY: promotes one local account to unlimited analyses so the full
+ * product (the Trygghetspaket report and the Områdesanalys) can be tested
+ * without paying.
  *
  * Never active outside `next dev` (NODE_ENV !== "development" always
  * returns false), and only for the configured email — everyone else sees

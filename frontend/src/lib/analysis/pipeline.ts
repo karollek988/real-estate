@@ -1,9 +1,10 @@
 import { after } from "next/server";
-import type { AnalysisRecord, ExtractedProperty, FieldProvenance, PropertyRecord } from "./types";
+import type { AnalysisRecord, AnalysisScope, ExtractedProperty, FieldProvenance, PropertyRecord } from "./types";
 import { extractFromHemnetUrl } from "./listing/hemnet";
 import { extractFromManualFields, type ManualListingFields } from "./listing/manual";
 import { normalizedPropertyKey } from "./normalize";
 import { getProviderWaves } from "./providers/registry";
+import { redactAnalysisReport } from "./redact";
 import type { DataProvider, PropertyEnrichment, ProviderResult } from "./providers/types";
 import { buildAnalysis, ENGINE_VERSION } from "./engine/buildAnalysis";
 import { numberOrNull } from "./engine/helpers";
@@ -56,9 +57,24 @@ export function analysisAgeDays(analysis: Pick<AnalysisRecord, "createdAt">): nu
   return Math.floor((Date.now() - new Date(analysis.createdAt).getTime()) / 86_400_000);
 }
 
+export interface AnalysisRequestOptions {
+  force?: boolean;
+  /** "full" (default) is the complete report; "area" is the standalone Områdesanalys. */
+  scope?: AnalysisScope;
+}
+
+/**
+ * Serves a cached analysis, joins one already running, or starts a new
+ * pipeline run, for the requested scope.
+ *
+ * A full request is only ever answered by a full analysis. An area request
+ * can be answered by an area analysis or by a full one (a full analysis
+ * contains everything the area chapter needs; the area viewer is then shown
+ * the area-only redaction of it — see redact.ts).
+ */
 export async function requestAnalysis(
   input: AnalysisRequestInput,
-  options: { force?: boolean } = {}
+  options: AnalysisRequestOptions = {}
 ): Promise<AnalysisRequestResult> {
   const extracted =
     input.kind === "hemnet"
@@ -66,9 +82,11 @@ export async function requestAnalysis(
       : extractFromManualFields(input.fields);
 
   const property = await upsertProperty(extracted);
+  const scope = options.scope ?? "full";
+  const reusableScopes: AnalysisScope[] = scope === "area" ? ["area", "full"] : ["full"];
 
   if (!options.force) {
-    const latest = await latestCompleteAnalysis(property.id);
+    const latest = await latestCompleteAnalysis(property.id, reusableScopes);
     // A cached analysis from a different engine version was produced by
     // code that may since have changed how BRFs are matched, how identity
     // fields are trusted, or how financial data is validated — it must
@@ -93,19 +111,25 @@ export async function requestAnalysis(
   // already-running pipeline instead of starting a second one; the caller
   // polls GET /api/analyses/:id either way, so this is invisible to it.
   if (!options.force) {
-    const inFlight = await latestPendingAnalysis(property.id);
+    const inFlight = await latestPendingAnalysis(property.id, reusableScopes);
     if (inFlight) {
       return { property, analysis: inFlight, cached: false, stale: false, ageDays: 0 };
     }
   }
 
-  const pending = await startPipelineInBackground(property, extracted);
+  const pending = await startPipelineInBackground(property, extracted, scope);
   return { property, analysis: pending, cached: false, stale: false, ageDays: 0 };
 }
 
-/** Re-runs the pipeline for an existing property, creating a new analysis version. */
+/**
+ * Re-runs the pipeline for an existing property, creating a new analysis
+ * version. The scope decides which pipeline runs: an area-only owner's
+ * "Update analysis" must refresh the area report, not trigger (and pay for)
+ * the full pipeline.
+ */
 export async function rerunAnalysisForProperty(
-  propertyId: string
+  propertyId: string,
+  scope: AnalysisScope = "full"
 ): Promise<AnalysisRequestResult | null> {
   const property = await findPropertyById(propertyId);
   if (!property) return null;
@@ -122,7 +146,7 @@ export async function rerunAnalysisForProperty(
     attributes: property.attributes,
   };
 
-  const pending = await startPipelineInBackground(property, extracted);
+  const pending = await startPipelineInBackground(property, extracted, scope);
   return { property, analysis: pending, cached: false, stale: false, ageDays: 0 };
 }
 
@@ -148,13 +172,14 @@ export async function rerunAnalysisForProperty(
  */
 async function startPipelineInBackground(
   property: PropertyRecord,
-  extracted: ExtractedProperty
+  extracted: ExtractedProperty,
+  scope: AnalysisScope
 ): Promise<AnalysisRecord> {
-  const pending = await insertPendingAnalysis(property.id, ENGINE_VERSION);
+  const pending = await insertPendingAnalysis(property.id, ENGINE_VERSION, scope);
   after(() =>
-    runPipeline(pending.id, property, extracted).catch((err) => {
+    runPipeline(pending.id, property, extracted, scope).catch((err) => {
       console.error(
-        `Background analysis pipeline failed for analysis ${pending.id} (property ${property.id}, engine ${ENGINE_VERSION}):`,
+        `Background ${scope} analysis pipeline failed for analysis ${pending.id} (property ${property.id}, engine ${ENGINE_VERSION}):`,
         err
       );
     })
@@ -291,6 +316,26 @@ export function missingEssentialFields(attributes: Record<string, unknown>, extr
   return missing;
 }
 
+/** Sources whose output is the area chapter's actual content (geocoding only places the address). */
+const AREA_CONTENT_SOURCE_IDS = new Set([
+  "scb_area_statistics",
+  "osm_amenities",
+  "skolverket_schools",
+  "commute_times",
+  "location_intelligence",
+  "booli_listing",
+]);
+
+/**
+ * An area analysis is worth delivering only if the address was geocoded and
+ * at least one area source returned data for it.
+ */
+export function areaDataGathered(property: PropertyRecord, results: ProviderResult[]): boolean {
+  const located = property.latitude !== null && property.longitude !== null;
+  const hasAreaData = results.some((r) => AREA_CONTENT_SOURCE_IDS.has(r.source.id) && r.source.status === "ok");
+  return located && hasAreaData;
+}
+
 async function withProviderTimeout(
   provider: DataProvider,
   property: PropertyRecord,
@@ -308,7 +353,8 @@ async function withProviderTimeout(
 async function runPipeline(
   pendingId: string,
   property: PropertyRecord,
-  extracted: ExtractedProperty
+  extracted: ExtractedProperty,
+  scope: AnalysisScope
 ): Promise<AnalysisRecord> {
   try {
     const results: ProviderResult[] = [];
@@ -332,7 +378,7 @@ async function runPipeline(
     // per-provider isolation as before (a hung/throwing provider still only
     // ever produces its own error-shaped result, never rejects the batch) —
     // just batched per wave instead of one at a time.
-    for (const wave of getProviderWaves()) {
+    for (const wave of getProviderWaves(scope)) {
       if (wave.length === 0) continue;
 
       const waveResults = await Promise.all(
@@ -396,16 +442,31 @@ async function runPipeline(
       });
     }
 
-    const missing = missingEssentialFields(enriched.attributes, extracted);
-    if (missing.length > 0) {
-      const labels = missing.map((f) => ESSENTIAL_FIELD_LABELS[f] ?? f).join(", ");
-      throw new InsufficientListingDataError(
-        `Could not gather the essential listing data (${labels}) for ${property.address} after all retries/fallbacks.`
-      );
+    if (scope === "area") {
+      // An area report has no listing facts to be missing — what it needs is
+      // a verified location and at least one source that actually described
+      // the surroundings. Without those the report would be an empty shell,
+      // and the customer shouldn't pay for that (refund path below).
+      if (!areaDataGathered(enriched, results)) {
+        throw new InsufficientListingDataError(
+          `Could not gather any area data for ${property.address} (location not verified, or no area source returned data).`
+        );
+      }
+    } else {
+      const missing = missingEssentialFields(enriched.attributes, extracted);
+      if (missing.length > 0) {
+        const labels = missing.map((f) => ESSENTIAL_FIELD_LABELS[f] ?? f).join(", ");
+        throw new InsufficientListingDataError(
+          `Could not gather the essential listing data (${labels}) for ${property.address} after all retries/fallbacks.`
+        );
+      }
     }
 
     const report = buildAnalysis(enriched, extracted, results);
-    return await completeAnalysis(pendingId, report);
+    // An area analysis is stored already reduced to the area chapter's data,
+    // so the stored row never holds anything an area buyer isn't entitled to
+    // (the read path in access.ts redacts again regardless of what is stored).
+    return await completeAnalysis(pendingId, scope === "area" ? redactAnalysisReport(report, "area") : report);
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
     const reason = err instanceof InsufficientListingDataError ? "insufficient_data" : "pipeline_error";

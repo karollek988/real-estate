@@ -43,10 +43,13 @@ export default function TermsPage() {
               Analyser och krediter
             </h2>
             <p>
-              Gratisanvändare får ett begränsat antal kostnadsfria analyser (3) per
-              tidsperiod. Premium-användare köper analyskrediter via Stripe. När en analys
-              har lösts ut och rapporten levererats betraktas köpet som slutfört i enlighet
-              med reglerna för digitala varor.
+              Analyser köps som engångsköp via Stripe: en Områdesanalys, ett Trygghetspaket
+              för en bostad eller ett paket för tre bostäder. Köpet ger analyser på ditt
+              konto som du löser ut när du begär en analys. Den som skapar en hel analys får
+              tillgång till hela rapporten, och den som skapar en Områdesanalys får en rapport
+              om området. Går en analys inte att slutföra återförs den till ditt konto. När
+              en analys har lösts ut och rapporten levererats betraktas köpet som slutfört i
+              enlighet med reglerna för digitala varor.
             </p>
             <p className="mt-3">
               Svenska konsumenter har enligt lag rätt att ångra ett distansköp inom 14

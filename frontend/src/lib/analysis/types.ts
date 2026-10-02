@@ -175,6 +175,14 @@ export interface AnalysisReport {
 export type AnalysisStatus = "pending" | "complete" | "failed";
 
 /**
+ * How much a stored analysis contains. A "full" analysis is the complete
+ * report; an "area" analysis (the standalone Områdesanalys product) only ever
+ * holds the area chapter's data. The scope is what keeps an area-only report
+ * out of the full-analysis cache (store.ts's latestCompleteAnalysis).
+ */
+export type AnalysisScope = "full" | "area";
+
+/**
  * Categorized cause of a "failed" analysis, alongside the free-text `error`.
  * "insufficient_data" is the one customer-facing case (pipeline.ts's
  * InsufficientListingDataError — quota is always refunded for it) and is
@@ -190,6 +198,7 @@ export interface AnalysisRecord {
   propertyId: string;
   version: number;
   engineVersion: string;
+  scope: AnalysisScope;
   status: AnalysisStatus;
   decisionScore: number | null;
   report: AnalysisReport | null;

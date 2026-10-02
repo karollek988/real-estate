@@ -11,7 +11,7 @@ export function StorePromoCard() {
         <div>
           <h3 className="text-sm font-semibold text-white">Behöver du fler analyser?</h3>
           <p className="mt-1.5 text-sm leading-relaxed text-neutral-400">
-            Köp en enskild Decision Analysis eller spara pengar med ett paket.
+            Köp en Områdesanalys, Trygghetspaketet för en bostad eller ett paket för tre.
           </p>
         </div>
       </div>
@@ -19,7 +19,7 @@ export function StorePromoCard() {
         href="/buy"
         className="mt-4 flex w-full items-center justify-center gap-2 rounded-xl bg-green-600 px-6 py-2.5 text-sm font-semibold tracking-tight text-white transition-all duration-200 hover:bg-green-500 hover:shadow-[0_6px_24px_-6px_rgba(74,222,128,0.5)] active:scale-[0.98] active:shadow-none"
       >
-        Öppna Decision Analysis Store
+        Se paketen
         <ArrowRightIcon className="h-4 w-4" />
       </Link>
     </div>

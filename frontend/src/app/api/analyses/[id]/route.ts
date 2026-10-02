@@ -2,7 +2,11 @@ import { NextResponse } from "next/server";
 import { getReportForViewer } from "@/lib/analysis/access";
 import { requireUser } from "@/lib/auth/requireUser";
 
-/** GET /api/analyses/:id — one analysis (any version) with its property, redacted to the caller's entitlement. */
+/**
+ * GET /api/analyses/:id — one analysis (any version) with its property,
+ * scoped to what the caller bought. A caller who bought nothing for the
+ * analysis's property gets the same 404 as for an id that doesn't exist.
+ */
 export async function GET(
   _request: Request,
   { params }: { params: Promise<{ id: string }> }
@@ -29,9 +33,7 @@ export async function GET(
     return NextResponse.json({
       analysis: analysisForClient,
       property: found.property,
-      analysisType: found.access.analysisType,
-      locked: !found.access.fullAccess || undefined,
-      lockedSections: found.lockedSections,
+      analysisType: found.access.viewScope,
     });
   } catch (err) {
     console.error(`GET /api/analyses/${id} failed:`, err);

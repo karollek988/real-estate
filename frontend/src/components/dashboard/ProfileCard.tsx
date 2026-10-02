@@ -1,19 +1,15 @@
 import Link from "next/link";
 import { Button } from "@/components/Button";
-import { MailIcon, CalendarIcon, ChevronRightIcon, BadgeCheckIcon } from "@/components/icons";
+import { MailIcon, CalendarIcon, ChevronRightIcon } from "@/components/icons";
 
 interface ProfileCardProps {
   name: string;
   email: string;
   memberSince: string;
   initials: string;
-  premium?: boolean;
 }
 
-// No real subscription-tier data exists yet (only per-analysis quotas —
-// see the 4 profile stat cards), so this never fabricates a "Premium-medlem"
-// badge unless a caller explicitly knows the user's plan.
-export function ProfileCard({ name, email, memberSince, initials, premium = false }: ProfileCardProps) {
+export function ProfileCard({ name, email, memberSince, initials }: ProfileCardProps) {
   return (
     <div className="card-interactive rounded-2xl border border-white/10 bg-[#0F1417]/85 p-5 backdrop-blur-xl">
       <div className="flex items-center gap-3.5">
@@ -22,11 +18,6 @@ export function ProfileCard({ name, email, memberSince, initials, premium = fals
         </span>
         <div className="min-w-0">
           <p className="truncate text-base font-semibold text-white">{name}</p>
-          {premium && (
-            <p className="mt-0.5 flex items-center gap-1.5 text-sm font-medium text-green-400">
-              Premium-medlem <BadgeCheckIcon className="h-4 w-4" />
-            </p>
-          )}
         </div>
       </div>
 

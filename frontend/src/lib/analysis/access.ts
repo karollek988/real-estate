@@ -1,29 +1,34 @@
 import { getAnalysisWithProperty } from "./store";
-import { getBestAnalysisEntitlementForProperty, type AnalysisType } from "./ownership";
-import { redactAnalysisReport, type LockedSectionId } from "./redact";
-import type { AnalysisRecord, PropertyRecord } from "./types";
+import { getBestEntitlementForProperty, hasRefundedRequestForAnalysis, type AnalysisType } from "./ownership";
+import { redactAnalysisRecord, redactPropertyForScope } from "./redact";
+import type { AnalysisRecord, AnalysisScope, PropertyRecord } from "./types";
 
 /**
  * The single server-only entry point for "what can this viewer see of this
  * analysis" — used by both the JSON API route and the report page, so there
  * is exactly one place that resolves entitlement and exactly one place that
- * redacts the report accordingly (see redact.ts for why redaction happens
- * upstream of lib/report/build.ts).
+ * scopes the report accordingly (see redact.ts for why that happens upstream
+ * of lib/report/build.ts).
+ *
+ * A viewer with no purchase for the analysis's property gets nothing at all:
+ * there is no free or preview tier any more, so an analysis id alone — from a
+ * stale link, another account, or a guess — never returns report content.
  */
 
 export interface ReportAccess {
-  /** null when the viewer has no analysis_requests row for this analysis at all
-   *  (anonymous visitor, a different user, or an old/shared link). */
-  analysisType: AnalysisType | null;
-  unlocked: boolean;
-  fullAccess: boolean;
+  /** What the viewer bought for this property. */
+  entitlement: AnalysisType;
+  /**
+   * What they may see of *this* analysis: the lesser of what they bought and
+   * what the analysis contains. An area-only analysis never renders as a full
+   * report, not even for someone who also owns the full analysis of the same
+   * property.
+   */
+  viewScope: AnalysisScope;
 }
 
-export async function resolveReportAccess(userId: string | null, propertyId: string): Promise<ReportAccess> {
-  const entitlement = userId ? await getBestAnalysisEntitlementForProperty(userId, propertyId) : null;
-  if (!entitlement) return { analysisType: null, unlocked: false, fullAccess: false };
-  const fullAccess = entitlement.analysisType === "premium" && entitlement.unlocked;
-  return { analysisType: entitlement.analysisType, unlocked: entitlement.unlocked, fullAccess };
+export function resolveViewScope(entitlement: AnalysisType, analysisScope: AnalysisScope): AnalysisScope {
+  return entitlement === "full" && analysisScope === "full" ? "full" : "area";
 }
 
 export async function getReportForViewer(
@@ -33,22 +38,27 @@ export async function getReportForViewer(
   analysis: AnalysisRecord;
   property: PropertyRecord;
   access: ReportAccess;
-  lockedSections: LockedSectionId[];
 } | null> {
+  if (!userId) return null;
+
   const found = await getAnalysisWithProperty(analysisId);
   if (!found) return null;
 
-  const access = await resolveReportAccess(userId, found.property.id);
-
-  if (!found.analysis.report) {
-    return { analysis: found.analysis, property: found.property, access, lockedSections: [] };
+  let entitlement = await getBestEntitlementForProperty(userId, found.property.id);
+  if (!entitlement) {
+    // A refunded request carries no entitlement, but its owner must still be
+    // able to open the failed analysis to read why it failed. A failed
+    // analysis has no report, so the least-privileged scope loses nothing.
+    const ownsFailedAnalysis =
+      found.analysis.status === "failed" && (await hasRefundedRequestForAnalysis(userId, found.analysis.id));
+    if (!ownsFailedAnalysis) return null;
+    entitlement = "area";
   }
 
-  const { report, lockedSections } = redactAnalysisReport(found.analysis.report, access.fullAccess);
+  const viewScope = resolveViewScope(entitlement, found.analysis.scope);
   return {
-    analysis: { ...found.analysis, report },
-    property: found.property,
-    access,
-    lockedSections,
+    analysis: redactAnalysisRecord(found.analysis, viewScope),
+    property: redactPropertyForScope(found.property, viewScope),
+    access: { entitlement, viewScope },
   };
 }

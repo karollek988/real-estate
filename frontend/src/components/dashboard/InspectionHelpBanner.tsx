@@ -15,8 +15,8 @@ export function InspectionHelpBanner() {
         <div>
           <h3 className="text-base font-semibold text-white">Behöver du hjälp inför din visning?</h3>
           <p className="mt-1.5 max-w-md text-sm leading-relaxed text-neutral-400">
-            Vår gratis visningsguide hjälper dig att förstå bostadens skick innan du lägger bud. Få en
-            grundlig genomgång av risker och dolda fel.
+            Visningsguiden, som ingår i Trygghetspaketet, hjälper dig att förstå bostadens skick innan du
+            lägger bud. Få en grundlig genomgång av risker och dolda fel.
           </p>
         </div>
       </div>

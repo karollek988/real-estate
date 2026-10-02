@@ -496,7 +496,7 @@ if (process.argv.includes("--dump")) {
   rich.overview.forEach((r) => lines.push(`${r.label}: ${r.value}`));
   src(["hemnet_page_scrape", "booli_listing", "nominatim_geocoding"]);
 
-  h1("4. PRISANALYS");
+  h1("4. BOENDEKALKYL");
   rich.price.paragraphs.forEach((p) => lines.push(p, ""));
   src(["hemnet_page_scrape", "booli_listing", "scb_area_statistics", "interest_rates"]);
 

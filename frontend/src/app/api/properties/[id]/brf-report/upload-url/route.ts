@@ -3,7 +3,7 @@ import { NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { findPropertyById } from "@/lib/analysis/store";
 import { BRF_REPORTS_BUCKET, MAX_BRF_REPORT_BYTES, classifyBrfMimeType } from "@/lib/analysis/brfReports";
-import { hasAnyAnalysisRequestForProperty } from "@/lib/analysis/ownership";
+import { hasFullEntitlementForProperty } from "@/lib/analysis/ownership";
 import { requireUser } from "@/lib/auth/requireUser";
 
 function errorResponse(status: number, code: string, message: string) {
@@ -40,7 +40,7 @@ export async function POST(
   if (!property) {
     return errorResponse(404, "not_found", "No property with that id.");
   }
-  if (!(await hasAnyAnalysisRequestForProperty(user.id, propertyId))) {
+  if (!(await hasFullEntitlementForProperty(user.id, propertyId))) {
     return errorResponse(404, "not_found", "No property with that id.");
   }
 

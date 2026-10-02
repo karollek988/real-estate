@@ -1,5 +1,11 @@
 import { NextResponse } from "next/server";
 import { FAQ_ITEMS } from "@/lib/faq";
+import {
+  OMRADESANALYS_PRICE_SEK,
+  TRE_BOSTADER_COUNT,
+  TRE_BOSTADER_PRICE_SEK,
+  TRYGGHETSPAKET_PRICE_SEK,
+} from "@/lib/pricing";
 import { checkRateLimit, clientIp } from "@/lib/rateLimit";
 
 export const runtime = "nodejs";
@@ -27,21 +33,22 @@ OM PRODUKTEN:
 - Stödda bostadstyper: lägenheter (bostadsrätter), villor, radhus, parhus, kedjehus, fritidshus, tomter och gårdar.
 - Endast länkar från Hemnet av typen /bostad/... stöds.
 
-GRATIS VS PREMIUM:
-- Nya användare får 3 gratisanalyser direkt vid registrering.
-- Gratisanalysen visar: grundläggande bostadsfakta (adress, storlek, pris, avgift) och prisbedömningen (lågt/högt jämfört med liknande försäljningar).
-- Premiumanalysen innehåller allt i gratisanalysen plus analys av närliggande serviceutbud, infrastrukturprojekt, BRF-ekonomi i detalj och fullt beslutsunderlag.
+PRODUKTER:
+- Områdesanalys: en egen analys av området runt en adress (service, skolor, pendling, trygghet och samhällsdata, hur området utvecklas). Man får en rapport om området och inget annat.
+- Trygghetspaketet: den fullständiga analysen av en bostad. Den som skapar en hel analys får alltid tillgång till hela rapporten.
+- Det finns inga gratisanalyser och ingen Premium-nivå. Kartan, annonserna och kommunikationen på sajten är gratis.
 
 PRISER OCH BETALNING:
 - Betalning sker via Stripe med kort.
-- Premium finns som engångsköp (per analys) och som månadsprenumeration.
-- Produkter: Premium månadsvis (prenumeration), Ultra månadsvis (prenumeration), Premium Beslutsanalys (engångsköp).
-- Specifika priser visas i samband med betalning.
+- Områdesanalys kostar ${OMRADESANALYS_PRICE_SEK} kr.
+- Trygghetspaketet kostar ${TRYGGHETSPAKET_PRICE_SEK} kr per bostad och innehåller BRF-analys, områdesanalys och dolda kostnader.
+- Paketet för tre bostäder kostar ${TRE_BOSTADER_PRICE_SEK} kr (${Math.round(TRE_BOSTADER_PRICE_SEK / TRE_BOSTADER_COUNT)} kr per bostad).
+- Alla priser är engångsbetalningar inklusive moms. Köpanalys säljer inga abonnemang.
 
 KONTO:
 - Analysförfrågningar sparas på kontot för historik på dashboarden.
 - Analysdata är cachad per bostad, inte personlig.
-- Prenumeration sägs upp via dashboardens inställningar.
+- Ett äldre abonnemang sägs upp under Köp & saldo i dashboarden.
 - Konto kan helt tas bort via kontakt med support.
 
 VIKTIGA BEGRÄNSNINGAR:

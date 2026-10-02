@@ -1,8 +1,7 @@
 import type Stripe from "stripe";
 import { createStripeClient } from "./admin";
-import { getTierForPriceId } from "./prices";
+import { getOneTimeProduct, getTierForPriceId, isOneTimePriceKey } from "./prices";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { unlockAnalysisRequest } from "@/lib/analysis/ownership";
 import type { SubscriptionTier } from "./prices";
 
 function mapStripeStatus(status: Stripe.Subscription.Status): string {
@@ -95,16 +94,6 @@ function getCustomerId(session: Stripe.Checkout.Session): string | null {
   return null;
 }
 
-function getSubscriptionId(session: Stripe.Checkout.Session): string | null {
-  const raw = session as unknown as Record<string, unknown>;
-  const subscription = raw.subscription;
-  if (typeof subscription === "string") return subscription;
-  if (subscription && typeof subscription === "object") {
-    return (subscription as Record<string, string>).id ?? null;
-  }
-  return null;
-}
-
 export async function handleCheckoutSessionCompleted(session: Stripe.Checkout.Session) {
   const userId = session.metadata?.userId ?? session.client_reference_id;
   if (!userId) {
@@ -114,6 +103,15 @@ export async function handleCheckoutSessionCompleted(session: Stripe.Checkout.Se
 
   const customerId = getCustomerId(session);
   console.log("[Webhook] checkout.session.completed — userId:", userId, "customerId:", customerId, "mode:", session.mode);
+
+  // Only a session that is actually settled delivers anything. For card
+  // payments that is always true by the time this event fires; the check
+  // exists so a delayed payment method, if one is ever enabled, can't credit
+  // an unpaid order. ("no_payment_required" is a fully discounted order.)
+  if (session.payment_status !== "paid" && session.payment_status !== "no_payment_required") {
+    console.log("[Webhook] checkout.session.completed with payment_status", session.payment_status, "— nothing credited");
+    return;
+  }
 
   const admin = createAdminClient();
   const { error: finalizeError } = await admin.rpc("finalize_discount_code", { p_session_id: session.id });
@@ -134,51 +132,51 @@ export async function handleCheckoutSessionCompleted(session: Stripe.Checkout.Se
     }
   }
 
-  if (session.mode === "subscription") {
-    const subscriptionId = getSubscriptionId(session);
-    if (subscriptionId) {
-      console.log("[Webhook] Retrieving subscription:", subscriptionId);
-      const stripe = createStripeClient();
-      const subscription = await stripe.subscriptions.retrieve(subscriptionId);
-      console.log("[Webhook] Subscription status:", subscription.status);
-      await handleSubscriptionCreatedOrUpdated(subscription);
+  // What was bought is decided by the priceKey our own checkout route wrote
+  // into the session's metadata when it created it (never by anything the
+  // browser sent), and what that key is worth by getOneTimeProduct.
+  //
+  // "premium_analysis" is the key a checkout carried before the packages
+  // launched (one analysis for one property = one Trygghetspaket). A customer
+  // who started that checkout before the deploy and pays after it has paid for
+  // exactly that, so it is credited as one — never dropped.
+  const rawPriceKey = session.metadata?.priceKey;
+  const priceKey = rawPriceKey === "premium_analysis" ? "trygghetspaket" : rawPriceKey;
+  if (session.mode !== "payment" || !isOneTimePriceKey(priceKey)) {
+    if (session.mode === "payment") {
+      // A paid session we can't map to a package is money taken for nothing
+      // delivered — this must be noticed and fixed by hand, so it is an error.
+      console.error("[Webhook] ✗ PAID checkout session", session.id, "has no recognised priceKey:", rawPriceKey, "— nothing credited, needs manual handling");
+    } else {
+      console.log("[Webhook] checkout.session.completed is not a package purchase (mode:", session.mode, ") — nothing credited");
     }
+    return;
   }
 
-  if (session.mode === "payment" && session.metadata?.priceKey === "premium_analysis") {
-    console.log("[Webhook] Processing one-time premium analysis purchase");
-    const { data: profile } = await admin
-      .from("profiles")
-      .select("premium_analyses_remaining")
-      .eq("id", userId)
-      .maybeSingle();
+  const { label, credits } = getOneTimeProduct(priceKey);
+  console.log("[Webhook] Processing package purchase:", label, "credits:", credits);
 
-    const currentRemaining = (profile as { premium_analyses_remaining?: number } | null)
-      ?.premium_analyses_remaining ?? 0;
-
-    // Always add 1 credit first (existing "buy a spare credit" behavior).
-    let newRemaining = currentRemaining + 1;
-
-    const unlockAnalysisId = session.metadata?.unlockAnalysisId;
-    if (unlockAnalysisId) {
-      console.log("[Webhook] Unlocking analysis:", unlockAnalysisId);
-      await unlockAnalysisRequest(userId, unlockAnalysisId);
-      // Decrement back down by 1 since this purchase was spent immediately
-      // on unlocking that specific analysis rather than banked as a spare
-      // credit. Net effect: analysis unlocked, credit balance unchanged.
-      newRemaining -= 1;
-      console.log("[Webhook] ✓ Unlocked analysis, decrementing balance to compensate. Net: balance unchanged");
-    }
-
-    await admin
-      .from("profiles")
-      .update({ premium_analyses_remaining: newRemaining })
-      .eq("id", userId);
-
-    console.log("[Webhook] ✓ Premium analyses remaining now:", newRemaining);
+  // One transaction in the database: records the session in the purchase
+  // ledger and adds the credits. Stripe delivers events at least once, so a
+  // repeated delivery of this same session finds the ledger row and credits
+  // nothing the second time. If this throws, the handler fails, the route
+  // answers 500, and Stripe retries the delivery.
+  const { data: granted, error: grantError } = await admin.rpc("grant_purchase_credits", {
+    p_session_id: session.id,
+    p_user_id: userId,
+    p_price_key: priceKey,
+    p_full: credits.full,
+    p_area: credits.area,
+  });
+  if (grantError) {
+    throw new Error(`grant_purchase_credits failed for session ${session.id}: ${grantError.message}`);
   }
 
-  console.log("[Webhook] ✓ Purchase Completed for user:", userId);
+  console.log(
+    granted
+      ? `[Webhook] ✓ Credited ${label} to user ${userId}`
+      : `[Webhook] Session ${session.id} was already credited — repeated delivery, nothing added`
+  );
 }
 
 // Checkout Sessions expire (24h by default) if the user never pays — release
