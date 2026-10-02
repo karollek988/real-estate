@@ -1,104 +1,31 @@
-import type { AnalysisReport, DataSourceReport, DecisionFactorResult } from "@/lib/analysis/types";
-// Relative, not "@/..." — this file is also executed directly by Node's
-// native TS type-stripping in build.verify.mjs, which (unlike Next.js/tsc)
-// doesn't resolve the "@/" tsconfig path alias for real (non type-only)
-// imports.
-import { priceTrendFromSeries } from "../analysis/engine/helpers";
+import type { AnalysisReport, DataSourceReport, ReportFactor } from "@/lib/analysis/types";
+import type { BrfReportState } from "@/lib/analysis/engine/analyzers/housingAssociation";
+// Runtime imports in this file are relative, not "@/..." — build.verify.mjs
+// executes it directly with tsx, which does not resolve the "@/" tsconfig
+// path alias (type-only "@/..." imports are erased, so those are fine).
 
 /**
- * Turns the Decision Engine's structured output (scores, explanations,
- * supportingData, missingData — all already computed by
- * lib/analysis/engine/analyzers/*) into the prose and tables the document
- * report renders. This module never invents a fact: every sentence either
- * restates a real computed value or explains, from the analyzer's own
- * `missingData`/`supportingData`, why a value isn't available yet.
+ * Turns the facts the analysis collected (the property's own listing facts and
+ * the `supportingData` of each factor in lib/analysis/engine/analyzers/*) into
+ * the prose and tables the document report renders. This module never invents
+ * a fact: every sentence either restates a collected value or explains why a
+ * value isn't available yet. It rates nothing — there is no score, verdict or
+ * ranking in the report; the "Boendekalkyl" chapter lives in housingCost.ts.
  *
- * Analyzer `explanation`/`status` strings are English (internal engine
- * output) and are never quoted verbatim here — every reader-facing sentence
- * is composed fresh in Swedish from `supportingData`, so the report never
- * leaks raw technical text. Each fact is also assigned to exactly one
- * "home" chapter; everywhere else a chapter needs to touch that same fact it
- * points back to the home chapter instead of restating it.
+ * Every reader-facing sentence is composed in Swedish from the collected facts,
+ * so the report never leaks raw technical text. Each fact is assigned to
+ * exactly one "home" chapter; everywhere else a chapter needs to touch that
+ * same fact it points back to the home chapter instead of restating it.
  */
 
-const NA = "Uppgift saknas";
+import { NA, capitalize, dateSv, listSv, num, pct, sek, sekPerM2, str } from "./format";
+import { tenureOf } from "./tenure";
+import { INTEREST_SCENARIOS_PCT, buildHousingCost } from "./housingCost";
 
-export function sek(value: number | null | undefined): string {
-  if (value === null || value === undefined) return NA;
-  return new Intl.NumberFormat("sv-SE").format(Math.round(value)) + " kr";
-}
+export { dateSv, pct, sek, sekPerM2 } from "./format";
 
-export function sekPerM2(value: number | null | undefined): string {
-  if (value === null || value === undefined) return NA;
-  return new Intl.NumberFormat("sv-SE").format(Math.round(value)) + " kr/m²";
-}
-
-export function pct(value: number | null | undefined, decimals = 1): string {
-  if (value === null || value === undefined) return NA;
-  const sign = value > 0 ? "+" : "";
-  return `${sign}${value.toFixed(decimals)}%`;
-}
-
-/** Shared date formatting so the same fact (e.g. a previous sale date) never
- *  renders differently in different chapters. */
-export function dateSv(value: string | null | undefined): string {
-  if (!value) return NA;
-  const d = new Date(value);
-  return Number.isNaN(d.getTime()) ? value : d.toLocaleDateString("sv-SE", { year: "numeric", month: "long", day: "numeric" });
-}
-
-function factor(report: AnalysisReport, id: string): DecisionFactorResult | undefined {
+export function factor(report: AnalysisReport, id: string): ReportFactor | undefined {
   return report.decisionFactors?.find((f) => f.id === id);
-}
-
-function num(value: unknown): number | null {
-  return typeof value === "number" && Number.isFinite(value) ? value : null;
-}
-
-function str(value: unknown): string | null {
-  return typeof value === "string" && value.trim() !== "" ? value : null;
-}
-
-function capitalize(s: string): string {
-  return s.charAt(0).toUpperCase() + s.slice(1);
-}
-
-function listSv(items: string[]): string {
-  if (items.length === 0) return "";
-  if (items.length === 1) return items[0];
-  return `${items.slice(0, -1).join(", ")} och ${items[items.length - 1]}`;
-}
-
-function svLabel(id: string): string {
-  const map: Record<string, string> = {
-    price: "prisnivån",
-    area: "områdesutvecklingen",
-    housingAssociation: "föreningens ekonomi",
-    risk: "riskbilden",
-    negotiation: "förhandlingsläget",
-    futureDevelopment: "framtidspotentialen",
-    market: "marknadsläget",
-  };
-  return map[id] ?? id;
-}
-
-/** Which chapter "owns" each analyzer's full explanation — used to build
- *  "see chapter X" pointers instead of repeating the same fact twice. */
-const CHAPTER_FOR_FACTOR: Record<string, string> = {
-  price: "Boendekalkyl",
-  area: "Områdesanalys",
-  housingAssociation: "Bostadsrättsförening",
-  risk: "Möjliga risker",
-  futureDevelopment: "Investeringsutsikt",
-  market: "Investeringsutsikt",
-};
-
-function chaptersPointerSv(ids: string[]): string {
-  const chapters = Array.from(new Set(ids.map((id) => CHAPTER_FOR_FACTOR[id]).filter((c): c is string => !!c)));
-  if (chapters.length === 0) return "";
-  return chapters.length === 1
-    ? `Se kapitlet ${chapters[0]} för en fullständig genomgång.`
-    : `Se kapitlen ${listSv(chapters)} för en fullständig genomgång.`;
 }
 
 /* ────────────────────────────────────────────────────────────────────── */
@@ -119,11 +46,9 @@ const SHORT_SOURCE_NAMES: Record<string, string> = {
   infrastructure_projects: "Trafikverket",
   location_intelligence: "Polisen/Kolada/Skolverket m.fl.",
   market_intelligence: "Köpanalys marknadsanalys",
-  brf_acquisition: "Bolagsverket",
-  brf_financials: "Bolagsverket",
+  brf_financials: "Föreningens årsredovisning",
   lantmateriet_address: "Lantmäteriet",
   municipality_plans: "Kommunen",
-  brf_register: "BRF-register",
   skolverket_schools: "Skolverket",
   environmental_data: "Miljödata",
 };
@@ -144,7 +69,6 @@ const NOT_CONNECTED_SV: Record<string, string> = {
   school_ratings: "OpenStreetMap visar bara skolors förekomst, inte Skolverkets betygsresultat.",
   municipality_plans: "kommunala detaljplaner saknar en enhetlig nationell källa att hämta ifrån idag.",
   environmental_data: "flödesrisk, buller och luftkvalitet kräver en separat geodatakälla som inte är kopplad ännu.",
-  brf_register: "det kräver samma koppling mot organisationsnummer som föreningens ekonomi.",
   lantmateriet_address: "kräver en nyckelbaserad koppling mot Lantmäteriet som inte är på plats ännu.",
 };
 
@@ -157,65 +81,75 @@ function sourceExplainer(dataSources: DataSourceReport[], sourceId: string, pref
 }
 
 /* ────────────────────────────────────────────────────────────────────── */
-/*  Executive summary — 3-6 flowing paragraphs, no repeated chapter prose */
+/*  Executive summary — what the report contains and what is missing      */
 /* ────────────────────────────────────────────────────────────────────── */
 
-export function buildExecutiveSummary(report: AnalysisReport): string[] {
+/** What the report knows about the BRF annual report the buyer uploaded (see analyzers/housingAssociation.ts). */
+export function brfReportStateOf(report: AnalysisReport): BrfReportState {
+  const state = factor(report, "housingAssociation")?.supportingData.reportState;
+  return state === "verified" || state === "unusable" ? state : "none";
+}
+
+const UNRESOLVED_TOPIC_SV: Record<string, string> = {
+  market: "marknadsläget",
+  risk: "riskbilden",
+  futureDevelopment: "planerad utveckling i närområdet",
+};
+
+export function buildExecutiveSummary(report: AnalysisReport, attributes: Record<string, unknown> = {}): string[] {
+  const p = report.property;
   const paragraphs: string[] = [];
-  const negotiation = factor(report, "negotiation");
 
-  const priceLine = report.property.askingPriceSek
-    ? `${report.property.address} är utannonserad för ${sek(report.property.askingPriceSek)}` +
-      (report.property.livingAreaM2
-        ? ` (${report.property.livingAreaM2} m², ${sekPerM2(report.property.pricePerM2Sek)}).`
-        : ".")
-    : `${report.property.address} analyseras utan ett registrerat utgångspris.`;
-
+  const priceLine = p.askingPriceSek
+    ? `${p.address} är utannonserad för ${sek(p.askingPriceSek)}` +
+      (p.livingAreaM2 ? ` (${p.livingAreaM2} m², ${sekPerM2(p.pricePerM2Sek)}).` : ".")
+    : `${p.address} analyseras utan ett registrerat utgångspris.`;
   paragraphs.push(
-    `${priceLine} Analysen baseras på ${report.dataCompleteness.connectedSources} av ` +
-      `${report.dataCompleteness.totalSources} anslutna datakällor.`
+    `${priceLine} Rapporten samlar föreningens ekonomi, boendekostnaderna och området på ett ställe. ` +
+      `Analysen baseras på ${report.dataCompleteness.connectedSources} av ${report.dataCompleteness.totalSources} anslutna datakällor.`
   );
 
-  const scored = (report.decisionFactors ?? []).filter(
-    (f): f is DecisionFactorResult & { score: number } =>
-      f.id !== "confidence" && f.id !== "negotiation" && f.score !== null
-  );
-  const strengths = scored.filter((f) => f.score >= 65);
-  const weaknesses = scored.filter((f) => f.score < 45);
-
-  if (strengths.length > 0) {
+  // The association: only for homes that have one.
+  if (tenureOf(p) !== "freehold") {
+    const brfState = brfReportStateOf(report);
+    const fiscalYear = num(factor(report, "housingAssociation")?.supportingData.fiscalYear);
     paragraphs.push(
-      `Bostadens styrkor rör ${listSv(strengths.map((f) => svLabel(f.id)))}. ` +
-        chaptersPointerSv(strengths.map((f) => f.id))
+      brfState === "verified"
+        ? `Föreningens ekonomi bygger på årsredovisningen${fiscalYear ? ` för ${fiscalYear}` : ""} som har laddats upp — nyckeltalen finns i kapitlet Bostadsrättsförening.`
+        : brfState === "unusable"
+          ? "En årsredovisning har laddats upp men gick inte att läsa ut tillräckligt säkert, så föreningens ekonomi kan inte visas — se kapitlet Bostadsrättsförening."
+          : "Ingen årsredovisning har laddats upp för föreningen än, så föreningens ekonomi visas inte. Årsredovisningen laddas upp i kapitlet Bostadsrättsförening, och rapporten uppdateras då."
     );
   }
 
-  if (weaknesses.length > 0) {
+  const cost = buildHousingCost(report, attributes);
+  if (cost.summaryRange) {
     paragraphs.push(
-      `Bostadens svagheter rör ${listSv(weaknesses.map((f) => svLabel(f.id)))}. ` +
-        chaptersPointerSv(weaknesses.map((f) => f.id))
+      `Boendekalkylen uppskattar den totala månadskostnaden — ${cost.fixedMonthlySek !== null ? "avgift eller driftskostnader samt " : ""}ränta och amortering på ett lån på ${cost.loan?.loanToValuePct} % av priset — ` +
+        `till ${sek(cost.summaryRange.minPerMonthSek)}–${sek(cost.summaryRange.maxPerMonthSek)} per månad vid en ränta på ${INTEREST_SCENARIOS_PCT[0]}–${INTEREST_SCENARIOS_PCT[INTEREST_SCENARIOS_PCT.length - 1]} %. ` +
+        "Kapitlet beskriver också vad som tillkommer vid köpet."
     );
+  } else {
+    paragraphs.push("Boendekalkylen beskriver bostadens löpande kostnader och vad som tillkommer vid köpet, i den mån annonsen anger dem.");
   }
 
+  paragraphs.push("Området — service, skolor, pendling och trygghet — beskrivs i kapitlet Områdesanalys.");
   paragraphs.push(
     "Vad som kan påverka bostadens värde framöver — ränteläge, sysselsättning och planerad utveckling i " +
       "närområdet — beskrivs i kapitlet Investeringsutsikt."
   );
 
-  if (negotiation) {
-    paragraphs.push("Förhandlingsläget analyseras i kapitlet Helhetsbild.");
-  }
-
-  const unresolved = (report.decisionFactors ?? []).filter((f) => f.id !== "confidence" && f.score === null);
+  const unresolved = Object.keys(UNRESOLVED_TOPIC_SV).filter((id) => !factor(report, id)?.available);
   paragraphs.push(
     unresolved.length > 0
-      ? `Följande områden kunde inte bedömas fullt ut i denna omgång: ${listSv(
-          unresolved.map((f) => svLabel(f.id))
-        )} — se respektive kapitel för en förklaring av vilka källor som saknas och varför.`
-      : "Samtliga analysområden kunde bedömas utifrån de datakällor som är anslutna idag."
+      ? `Följande kunde inte beskrivas fullt ut i denna omgång: ${listSv(
+          unresolved.map((id) => UNRESOLVED_TOPIC_SV[id])
+        )} — se respektive kapitel för vilka källor som saknas.`
+      : "Samtliga delar kunde beskrivas utifrån de datakällor som är anslutna idag."
   );
+  paragraphs.push("Frågor att ställa till mäklaren och föreningen finns i kapitlet Frågor inför visningen.");
 
-  return paragraphs.filter((p) => p && p.trim().length > 0);
+  return paragraphs.filter((x) => x && x.trim().length > 0);
 }
 
 /* ────────────────────────────────────────────────────────────────────── */
@@ -272,305 +206,6 @@ export function buildPropertyOverview(
     { label: "Planritning", value: (p.floorplanUrls ?? []).length > 0 ? "Ja" : NA },
     { label: "Bekvämligheter", value: (p.features ?? []).length > 0 ? (p.features ?? []).join(", ") : NA },
   ];
-}
-
-/* ────────────────────────────────────────────────────────────────────── */
-/*  Price analysis chapter — "Is the property reasonably priced?"        */
-/* ────────────────────────────────────────────────────────────────────── */
-
-export interface ComparableSaleRow {
-  address: string | null;
-  soldPriceSek: number | null;
-  soldDate: string | null;
-  livingAreaM2: number | null;
-  rooms: number | null;
-  pricePerM2Sek: number | null;
-}
-
-export interface AreaSoldPriceTrendPoint {
-  period: string;
-  medianPricePerM2Sek: number;
-  count: number;
-}
-
-function parseComparableSales(value: unknown): ComparableSaleRow[] {
-  if (!Array.isArray(value)) return [];
-  return value.map((v) => {
-    const o = (v ?? {}) as Record<string, unknown>;
-    return {
-      address: str(o.address),
-      soldPriceSek: num(o.soldPriceSek),
-      soldDate: str(o.soldDate),
-      livingAreaM2: num(o.livingAreaM2),
-      rooms: num(o.rooms),
-      pricePerM2Sek: num(o.pricePerM2Sek),
-    };
-  });
-}
-
-function parseAreaSoldPriceTrend(value: unknown): AreaSoldPriceTrendPoint[] {
-  if (!Array.isArray(value)) return [];
-  return value
-    .map((v) => {
-      const o = (v ?? {}) as Record<string, unknown>;
-      const period = str(o.period);
-      const medianPricePerM2Sek = num(o.medianPricePerM2Sek);
-      const count = num(o.count);
-      return period !== null && medianPricePerM2Sek !== null && count !== null
-        ? { period, medianPricePerM2Sek, count }
-        : null;
-    })
-    .filter((v): v is AreaSoldPriceTrendPoint => v !== null);
-}
-
-/** Swedish affordability sentence for the no-comparables path — the only
- *  place this real cost-burden data (estimated monthly cost vs. income) is
- *  shown, since the analyzer's own English `explanation` is never quoted. */
-function priceAffordabilitySv(price: DecisionFactorResult | undefined): string[] {
-  if (!price) return [];
-  const d = price.supportingData;
-  const monthlyCost = num(d.estimatedMonthlyCost);
-  const burdenPct = num(d.costBurdenPct);
-  const pricePerM2 = num(d.pricePerM2Sek);
-  const priceRange = str(d.priceRange);
-  const sentences: string[] = [];
-
-  if (monthlyCost !== null && burdenPct !== null) {
-    const burdenNote =
-      burdenPct < 30
-        ? "en nivå som är överkomlig för de flesta köpare."
-        : burdenPct < 40
-          ? "en måttlig kostnadsbelastning, hanterbar för de flesta köpare."
-          : burdenPct < 50
-            ? "en betydande kostnadsbelastning som kan begränsa köparkretsen."
-            : "en tung kostnadsbelastning som kraftigt begränsar antalet potentiella köpare.";
-    sentences.push(
-      `Den uppskattade månadskostnaden (ränta, amortering och avgift) är ${sek(monthlyCost)}, motsvarande ` +
-        `${Math.round(burdenPct)}% av medianinkomsten i området — ${burdenNote}`
-    );
-  }
-  if (pricePerM2 !== null) {
-    sentences.push(
-      `Priset per kvadratmeter är ${sekPerM2(pricePerM2)}. Ingen verifierad jämförelsedata för genomsnittligt pris per kvadratmeter i området eller riket är kopplad till denna analys, så nivån kan inte ställas mot ett bekräftat riktvärde här.`
-    );
-  }
-  const rangeSv: Record<string, string> = {
-    "entry-level": "en instegsbostad",
-    "mid-range": "en bostad i mellansegmentet",
-    "upper mid-range": "en bostad i övre mellansegmentet",
-    premium: "en premiumbostad",
-  };
-  if (priceRange && rangeSv[priceRange]) {
-    sentences.push(`Utgångspriset gör den till ${rangeSv[priceRange]}.`);
-  }
-
-  return sentences;
-}
-
-export interface PriceAppreciation {
-  totalChangePct: number;
-  cagrPct: number | null;
-  years: number | null;
-}
-
-export interface ComparableRanking {
-  percentile: number;
-  minPricePerM2: number;
-  maxPricePerM2: number;
-  count: number;
-}
-
-export interface PriceAnalysisContent {
-  paragraphs: string[];
-  comparison: { thisPricePerM2: number; areaMedianPerM2: number; deltaPct: number } | null;
-  comparableSales: ComparableSaleRow[];
-  areaSoldPriceTrend: AreaSoldPriceTrendPoint[];
-  previousSale: { priceSek: number; date: string | null } | null;
-  appreciation: PriceAppreciation | null;
-  comparableRanking: ComparableRanking | null;
-  areaTrendPct: number | null;
-  verdict: string | null;
-}
-
-/** This property's own price appreciation since it last sold, computed by
- *  analyzers/price.ts (priceChangeSincePreviousSale*) — kept here as a
- *  distinct signal from the area-wide trend below, since a single property
- *  can outpace or lag its own area. */
-function appreciationFromSupportingData(
-  price: DecisionFactorResult | undefined,
-  previousSale: { priceSek: number; date: string | null } | null
-): PriceAppreciation | null {
-  if (!previousSale) return null;
-  const totalChangePct = num(price?.supportingData.priceChangeSincePreviousSalePct);
-  if (totalChangePct === null) return null;
-  return {
-    totalChangePct,
-    cagrPct: num(price?.supportingData.priceChangeSincePreviousSaleCagrPct),
-    years: num(price?.supportingData.yearsSincePreviousSale),
-  };
-}
-
-/** Where this asking price's price/m² falls among the comparable sold homes
- *  — computed by analyzers/price.ts so the ranking always uses the exact
- *  same comparable set the median-based score above was derived from. */
-function comparableRankingFromSupportingData(price: DecisionFactorResult | undefined): ComparableRanking | null {
-  const percentile = num(price?.supportingData.comparableSalesPricePerM2Percentile);
-  const min = num(price?.supportingData.comparableSalesPricePerM2Min);
-  const max = num(price?.supportingData.comparableSalesPricePerM2Max);
-  const count = num(price?.supportingData.comparableSalesPricePerM2Count);
-  if (percentile === null || min === null || max === null || count === null) return null;
-  return { percentile, minPricePerM2: min, maxPricePerM2: max, count };
-}
-
-/** One synthesized sentence combining every price signal that's actually
- *  available for this address — the "what does all this mean for the
- *  asking price" verdict that was previously missing; the chapter used to
- *  just list the underlying data (comparables table, trend table, previous
- *  sale) without ever stating what it implies. Each clause is optional so a
- *  sparse analysis still reads naturally with only one or two signals. */
-function priceVerdictSv(params: {
-  askingPrice: number | null;
-  delta: number | null;
-  appreciation: PriceAppreciation | null;
-  ranking: ComparableRanking | null;
-  areaTrendPct: number | null;
-}): string | null {
-  const { askingPrice, delta, appreciation, ranking, areaTrendPct } = params;
-  if (askingPrice === null) return null;
-
-  const clauses: string[] = [];
-  if (delta !== null) {
-    clauses.push(`${Math.abs(delta)}% ${delta < 0 ? "under" : "över"} områdets medianpris per kvadratmeter`);
-  }
-  if (appreciation?.cagrPct !== null && appreciation !== null) {
-    clauses.push(
-      `en prisförändring på ungefär ${pct(appreciation.cagrPct)} per år sedan bostaden senast såldes` +
-        (appreciation.years !== null ? ` (${Math.round(appreciation.years)} år sedan)` : "")
-    );
-  } else if (appreciation !== null) {
-    clauses.push(`en total prisförändring på ${pct(appreciation.totalChangePct)} sedan bostaden senast såldes`);
-  }
-  if (ranking !== null) {
-    const position = ranking.percentile <= 33 ? "i den lägre delen" : ranking.percentile >= 67 ? "i den högre delen" : "i mitten";
-    clauses.push(
-      `${position} av intervallet för ${ranking.count} jämförbara sålda bostäder ` +
-        `(${sekPerM2(ranking.minPricePerM2)}–${sekPerM2(ranking.maxPricePerM2)})`
-    );
-  }
-  if (areaTrendPct !== null) {
-    clauses.push(`en områdestrend på ${pct(areaTrendPct)} för sålda bostäder i närheten`);
-  }
-
-  if (clauses.length === 0) return null;
-  return `Sammantaget ligger utgångspriset ${listSv(clauses)}.`;
-}
-
-export function buildPriceAnalysis(report: AnalysisReport, attributes: Record<string, unknown> = {}): PriceAnalysisContent {
-  const price = factor(report, "price");
-  const paragraphs: string[] = [];
-  const askingPrice = report.property.askingPriceSek;
-  const pricePerM2 = report.property.pricePerM2Sek;
-  const areaMedian = num(price?.supportingData.areaMedianPricePerM2Sek);
-  const delta = num(price?.supportingData.deltaVsAreaMedianPct);
-  const comparableSales = parseComparableSales(price?.supportingData.comparableSales);
-  const areaSoldPriceTrend = parseAreaSoldPriceTrend(price?.supportingData.areaSoldPriceTrend);
-  const previousSale =
-    report.property.previousSalePriceSek !== null
-      ? { priceSek: report.property.previousSalePriceSek, date: report.property.previousSaleDate }
-      : null;
-  const appreciation = appreciationFromSupportingData(price, previousSale);
-  const comparableRanking = comparableRankingFromSupportingData(price);
-  const areaTrendPct = priceTrendFromSeries(areaSoldPriceTrend)?.pct ?? null;
-  const verdict = priceVerdictSv({ askingPrice, delta, appreciation, ranking: comparableRanking, areaTrendPct });
-
-  paragraphs.push(
-    askingPrice !== null
-      ? `Utgångspriset för ${report.property.address} är ${sek(askingPrice)}` +
-        (pricePerM2 ? `, motsvarande ${sekPerM2(pricePerM2)}.` : ".")
-      : "Inget utgångspris är registrerat för denna bostad, vilket gör att en fullständig boendekalkyl inte kan genomföras — bedömningen nedan begränsas till den kontext som finns tillgänglig."
-  );
-
-  if (previousSale) {
-    const sold = `Bostaden har tidigare sålts${previousSale.date ? ` (${dateSv(previousSale.date)})` : ""} för ${sek(previousSale.priceSek)}.`;
-    if (appreciation !== null) {
-      const changeSentence =
-        appreciation.cagrPct !== null
-          ? ` Det motsvarar en prisförändring på ${pct(appreciation.totalChangePct)} totalt, eller ungefär ` +
-            `${pct(appreciation.cagrPct)} per år över de ${appreciation.years !== null ? Math.round(appreciation.years) : "senaste"} åren.`
-          : ` Det motsvarar en prisförändring på ${pct(appreciation.totalChangePct)} mot dagens utgångspris.`;
-      paragraphs.push(sold + changeSentence);
-    } else {
-      paragraphs.push(sold);
-    }
-  }
-
-  if (areaMedian !== null && delta !== null) {
-    paragraphs.push(
-      `Områdets medianpris ligger på ${sekPerM2(areaMedian)}. Det innebär att bostaden är prissatt ` +
-        `${Math.abs(delta)}% ${delta < 0 ? "under" : "över"} områdets median per kvadratmeter.`
-    );
-  } else {
-    paragraphs.push(
-      "Ingen sammanställd områdesstatistik för medianpris per kvadratmeter är ännu kopplad till den här adressen, " +
-        "så prisnivån kan i dagsläget inte jämföras direkt mot området."
-    );
-    const affordability = priceAffordabilitySv(price);
-    if (affordability.length > 0) {
-      paragraphs.push(...affordability);
-    } else {
-      paragraphs.push(
-        "Den bedömning som ändå görs bygger istället på utgångspris, boarea och — där de finns — lokala inkomst- och räntedata."
-      );
-    }
-  }
-
-  if (comparableSales.length > 0) {
-    const rankingSentence =
-      comparableRanking !== null
-        ? ` Med avseende på pris per kvadratmeter ligger bostaden ${
-            comparableRanking.percentile <= 33
-              ? "i den lägre delen"
-              : comparableRanking.percentile >= 67
-                ? "i den högre delen"
-                : "i mitten"
-          } av det intervallet (${sekPerM2(comparableRanking.minPricePerM2)}–${sekPerM2(comparableRanking.maxPricePerM2)}).`
-        : "";
-    paragraphs.push(
-      `${comparableSales.length} jämförbara sålda bostäder i området har identifierats via Booli och ligger till grund ` +
-        `för medianpriset ovan. Se tabellen nedan för de senaste försäljningarna.${rankingSentence}`
-    );
-  } else {
-    const nationalTrendPct = num(attributes.national_house_price_index_trend_pct);
-    const fromPeriod = str(attributes.national_house_price_index_from_period);
-    const toPeriod = str(attributes.national_house_price_index_to_period);
-    paragraphs.push(
-      "Jämförbara sålda bostäder ingår inte i denna analys: ingen källa för slutpriser på just denna adress eller i " +
-        "detta område (till exempel Mäklarstatistik, eller sålda/avslutade annonser från Booli eller Hemnet) är " +
-        "ansluten i dagsläget. Det är den enskilt viktigaste datakällan som skulle stärka detta kapitel."
-    );
-    if (nationalTrendPct !== null && fromPeriod && toPeriod) {
-      paragraphs.push(
-        `Som referens: SCB:s nationella prisindex för bostäder har förändrats med ${pct(nationalTrendPct)} från ` +
-          `${fromPeriod} till ${toPeriod}. Detta är en rikstäckande siffra, inte specifik för området, och bör läsas ` +
-          "som allmän marknadskontext snarare än en direkt jämförelse."
-      );
-    }
-  }
-
-  return {
-    paragraphs,
-    comparison:
-      pricePerM2 !== null && areaMedian !== null && delta !== null
-        ? { thisPricePerM2: pricePerM2, areaMedianPerM2: areaMedian, deltaPct: delta }
-        : null,
-    comparableSales,
-    areaSoldPriceTrend,
-    previousSale,
-    appreciation,
-    comparableRanking,
-    areaTrendPct,
-    verdict,
-  };
 }
 
 /* ────────────────────────────────────────────────────────────────────── */
@@ -674,7 +309,7 @@ const AMENITY_FIELDS: Array<{ key: string; label: string; note: string }> = [
 /** One composed sentence for price trend + population + income — written
  *  once here so it can never also appear, restated, elsewhere in the report
  *  (Investeringsutsikt explicitly points back here instead of repeating). */
-function areaContextSv(area: DecisionFactorResult | undefined, attributes: Record<string, unknown>): string {
+function areaContextSv(area: ReportFactor | undefined, attributes: Record<string, unknown>): string {
   const trendPct = num(area?.supportingData.areaPriceTrendPct);
   const trendPeriod = str(area?.supportingData.areaPriceTrendPeriod);
   const popPct = num(area?.supportingData.areaPopulationGrowthPct) ?? num(attributes.area_population_growth_pct);
@@ -791,7 +426,8 @@ function buildNearbySchools(attributes: Record<string, unknown>): NearbySchools 
 }
 
 /* ────────────────────────────────────────────────────────────────────── */
-/*  Housing association chapter — "Is the BRF financially healthy?"      */
+/*  Housing association chapter — the association's finances in plain     */
+/*  language, from the annual report the buyer uploaded                   */
 /* ────────────────────────────────────────────────────────────────────── */
 
 export interface BrfContent {
@@ -799,6 +435,8 @@ export interface BrfContent {
   metrics: OverviewRow[];
   strengths: string[];
   weaknesses: { text: string; severity?: string }[];
+  /** What the chapter knows about the buyer-uploaded annual report: drives the upload prompt. */
+  reportState: BrfReportState;
 }
 
 const SEVERITY_SV: Record<string, string> = {
@@ -808,44 +446,44 @@ const SEVERITY_SV: Record<string, string> = {
   critical: "kritisk",
 };
 
-/** Swedish summary of the BRF's financial picture — composed from
- *  supportingData/status only, never the analyzer's English `explanation`. */
-function brfSummarySv(brf: DecisionFactorResult | undefined, brfName: string | null): string | null {
-  if (brf && brf.score === null && brf.status === "Insufficient verified data") {
-    // An annual report WAS found (even without a resolved name) but failed
-    // validation — distinct enough from "nothing identified" to always state.
+/** Swedish summary of the BRF's financial picture — composed from the collected facts only. */
+function brfSummarySv(state: BrfReportState, brf: ReportFactor | undefined, brfName: string | null): string {
+  if (state === "unusable") {
     return (
       (brfName ? `${brfName}: en` : "En") +
-      " årsredovisning hittades för föreningen, men de extraherade siffrorna klarade inte vår kvalitetskontroll " +
-      "(orimliga värden eller osäkra tolkningar) och har därför inte använts — vi visar hellre inga siffror än fel siffror."
+      " årsredovisning har laddats upp, men siffrorna i den gick inte att läsa ut tillräckligt säkert (till exempel för att dokumentet är en inskannad bild med låg kvalitet eller har en ovanlig layout) " +
+      "och har därför inte använts — vi visar hellre inga siffror än fel siffror. En ny fil, till exempel en textbaserad PDF, kan laddas upp nedan."
     );
   }
 
-  if (!brfName) {
-    // The chapter's opening paragraph already states that no association
-    // could be identified — nothing more to add without repeating it.
-    return null;
+  if (state === "none") {
+    return (
+      (brfName ? `Ekonomin i ${brfName}` : "Föreningens ekonomi") +
+      " bygger på föreningens årsredovisning, och ingen årsredovisning har laddats upp än. " +
+      "Ladda upp den nedan (PDF, Word eller foto) så läser vi av nyckeltalen och uppdaterar rapporten. Årsredovisningen får du av mäklaren eller föreningen."
+    );
   }
 
-  if (!brf || brf.score === null) {
-    return `Föreningen ${brfName} är identifierad, men dess ekonomi kunde inte bedömas — det kräver en verifierad årsredovisning från Bolagsverket, som inte är kopplad för denna förening idag.`;
-  }
-
-  const d = brf.supportingData;
+  const d = brf?.supportingData ?? {};
   const findings = (d.findings as Array<{ classification: string }> | undefined) ?? [];
   const strengthsCount = findings.filter((f) => f.classification === "strength").length;
   const weaknessesCount = findings.filter((f) => f.classification === "weakness").length;
   const fiscalYear = d.fiscalYear ? String(d.fiscalYear) : null;
+  const source = `föreningens${fiscalYear ? ` årsredovisning för ${fiscalYear}` : " senaste årsredovisning"}`;
 
+  if (strengthsCount + weaknessesCount === 0) {
+    return `Ur ${source} har de nyckeltal nedan kunnat läsas ut och kontrolleras. Underlaget räckte inte för att dra slutsatser om föreningens styrkor och svagheter.`;
+  }
   return (
-    `Den ekonomiska analysen av föreningens${fiscalYear ? ` årsredovisning för ${fiscalYear}` : " senaste årsredovisning"} ` +
+    `Den ekonomiska analysen av ${source} ` +
     `visar ${strengthsCount} styrk${strengthsCount === 1 ? "a" : "or"} och ${weaknessesCount} svaghet${weaknessesCount === 1 ? "" : "er"}, ` +
     "inom bland annat soliditet, skuldsättning, avgiftsnivå och likviditet — se nyckeltalen nedan."
   );
 }
 
-export function buildHousingAssociation(report: AnalysisReport, dataSources: DataSourceReport[]): BrfContent {
+export function buildHousingAssociation(report: AnalysisReport, _dataSources?: DataSourceReport[]): BrfContent {
   const brf = factor(report, "housingAssociation");
+  const state = brfReportStateOf(report);
   const paragraphs: string[] = [];
   const metrics: OverviewRow[] = [];
   let strengths: string[] = [];
@@ -866,10 +504,9 @@ export function buildHousingAssociation(report: AnalysisReport, dataSources: Dat
     );
   }
 
-  const brfSummary = brfSummarySv(brf, brfName);
-  if (brfSummary) paragraphs.push(brfSummary);
+  paragraphs.push(brfSummarySv(state, brf, brfName));
 
-  if (brf && brf.score !== null) {
+  if (state === "verified" && brf) {
     const d = brf.supportingData;
     if (typeof d.equityRatio === "number") metrics.push({ label: "Soliditet", value: pct(d.equityRatio * 100, 0) });
     if (typeof d.operatingMargin === "number") metrics.push({ label: "Rörelsemarginal", value: pct(d.operatingMargin * 100, 0) });
@@ -900,50 +537,32 @@ export function buildHousingAssociation(report: AnalysisReport, dataSources: Dat
         .filter((f) => f.classification === "weakness")
         .map((f) => ({ text: f.summary, severity: f.severity && f.severity !== "minor" ? SEVERITY_SV[f.severity] : undefined }));
     }
-  } else if (brf) {
-    paragraphs.push(
-      sourceExplainer(
-        dataSources,
-        "brf_register",
-        "Föreningens grunddata (antal lägenheter, byggår, förvaltning) kunde inte hämtas."
-      )
-    );
   }
 
   if (metrics.length === 0) {
-    metrics.push({ label: "Finansiella nyckeltal", value: "Inga verifierade nyckeltal tillgängliga för denna förening ännu." });
+    metrics.push({
+      label: "Finansiella nyckeltal",
+      value:
+        state === "unusable"
+          ? "Inga verifierade nyckeltal kunde läsas ut ur den uppladdade årsredovisningen."
+          : "Inga nyckeltal än — ladda upp föreningens årsredovisning för att få dem.",
+    });
   }
 
-  return { paragraphs, metrics, strengths, weaknesses };
+  return { paragraphs, metrics, strengths, weaknesses, reportState: state };
 }
 
 /* ────────────────────────────────────────────────────────────────────── */
 /*  Risk assessment — "What are the biggest risks?" — 8 named categories */
 /* ────────────────────────────────────────────────────────────────────── */
 
-export type RiskSeverity = "low" | "medium" | "high" | "unknown";
-
 export interface RiskCategory {
   id: string;
   label: string;
-  severity: RiskSeverity;
   headline: string;
   explanation: string;
   evidence: string[];
   conclusion: string;
-}
-
-function severityFromScore(score: number | null): RiskSeverity {
-  if (score === null) return "unknown";
-  if (score >= 65) return "low";
-  if (score >= 40) return "medium";
-  return "high";
-}
-
-interface RawRiskFactor {
-  factor: string;
-  score: number;
-  weight: number;
 }
 
 const DIMENSION_SV: Record<string, string> = {
@@ -954,10 +573,9 @@ const DIMENSION_SV: Record<string, string> = {
 };
 
 /** Each of these composes a fresh Swedish sentence straight from risk.ts's
- *  numeric supportingData (buildingYear, policyRatePct, ...) — never from
- *  risk.explanation, which concatenates all six signals into one English
- *  paragraph and previously got shown, whole, under four different headings. */
-function riskBuildingAgeSv(risk: DecisionFactorResult | undefined): string {
+ *  supportingData (buildingYear, policyRatePct, ...). A category is only ever
+ *  an observation about a collected fact — there is no severity or rating. */
+function riskBuildingAgeSv(risk: ReportFactor | undefined): string {
   const buildingYear = num(risk?.supportingData.buildingYear);
   if (buildingYear === null) return "Byggår saknas för denna bostad, så underhållsrisken kan inte bedömas.";
   const age = num(risk?.supportingData.buildingAgeYears) ?? new Date().getFullYear() - buildingYear;
@@ -967,7 +585,7 @@ function riskBuildingAgeSv(risk: DecisionFactorResult | undefined): string {
     : `Byggnaden uppfördes ${buildingYear} (${age} år gammal); inga större renoveringar är kända.`;
 }
 
-function riskInterestRateSv(risk: DecisionFactorResult | undefined): string {
+function riskInterestRateSv(risk: ReportFactor | undefined): string {
   const rate = num(risk?.supportingData.policyRatePct);
   if (rate === null) return "Ingen aktuell styrränta är kopplad till denna analys.";
   const note =
@@ -979,7 +597,7 @@ function riskInterestRateSv(risk: DecisionFactorResult | undefined): string {
   return `Aktuell styrränta är ${rate.toFixed(1)}%. ${note}`;
 }
 
-function riskPopulationSv(risk: DecisionFactorResult | undefined): string {
+function riskPopulationSv(risk: ReportFactor | undefined): string {
   const pop = num(risk?.supportingData.areaPopulationGrowthPct);
   if (pop === null) return "Ingen befolkningsstatistik är kopplad till denna analys.";
   return (
@@ -988,7 +606,7 @@ function riskPopulationSv(risk: DecisionFactorResult | undefined): string {
   );
 }
 
-function riskAmenitySv(risk: DecisionFactorResult | undefined): string {
+function riskAmenitySv(risk: ReportFactor | undefined): string {
   const counts = risk?.supportingData.amenityCounts as { grocery?: number; transit?: number } | undefined;
   if (!counts) return "Ingen data om närservice är kopplad till denna adress i denna analys.";
   const grocery = counts.grocery ?? 0;
@@ -1001,7 +619,7 @@ function riskAmenitySv(risk: DecisionFactorResult | undefined): string {
     : `${grocery} matbutiker och ${transit} kollektivtrafikhållplatser är registrerade inom 1 km.`;
 }
 
-function riskNoiseSv(risk: DecisionFactorResult | undefined): string {
+function riskNoiseSv(risk: ReportFactor | undefined): string {
   const highway = num(risk?.supportingData.highwayProximity);
   if (highway === null) return "Ingen data om vägbuller är kopplad till denna adress.";
   return (
@@ -1014,25 +632,24 @@ export function buildRiskCategories(report: AnalysisReport, dataSources: DataSou
   const risk = factor(report, "risk");
   const brf = factor(report, "housingAssociation");
   const future = factor(report, "futureDevelopment");
-
-  const riskFactors = (risk?.supportingData.riskFactors as RawRiskFactor[] | undefined) ?? [];
-  const byFactor = new Map(riskFactors.map((r) => [r.factor, r]));
+  const brfState = brfReportStateOf(report);
+  const hasAssociation = tenureOf(report.property) !== "freehold";
+  const riskData = risk?.supportingData ?? {};
 
   const categories: RiskCategory[] = [];
 
   // 1. Market risk (population trend only — rate/employment live in Investeringsutsikt)
   {
-    const pop = byFactor.get("population_trend");
+    const hasPopulation = num(riskData.areaPopulationGrowthPct) !== null;
     categories.push({
       id: "market",
       label: "Marknadsrisk",
-      severity: severityFromScore(pop?.score ?? null),
       headline: "Efterfrågan på orten",
-      explanation: pop
+      explanation: hasPopulation
         ? `${riskPopulationSv(risk)} En bredare marknadsbild (ränteläge, sysselsättning) finns i kapitlet Investeringsutsikt.`
         : "Inga marknadsindikatorer är kopplade till denna analys ännu.",
       evidence: [],
-      conclusion: pop
+      conclusion: hasPopulation
         ? "Efterfrågeläget på orten är en faktor att väga in tillsammans med de övriga observationerna i denna analys."
         : "Kan inte bedömas utan mer marknadsdata.",
     });
@@ -1040,93 +657,88 @@ export function buildRiskCategories(report: AnalysisReport, dataSources: DataSou
 
   // 2. Interest rate risk
   {
-    const ir = byFactor.get("interest_rate");
+    const hasRate = num(riskData.policyRatePct) !== null;
     categories.push({
       id: "interest_rate",
       label: "Ränterisk",
-      severity: severityFromScore(ir?.score ?? null),
       headline: "Känslighet för förändrat ränteläge",
-      explanation: ir ? riskInterestRateSv(risk) : "Ingen aktuell styrränta är kopplad till denna analys.",
+      explanation: hasRate ? riskInterestRateSv(risk) : "Ingen aktuell styrränta är kopplad till denna analys.",
       evidence: [],
-      conclusion: ir
+      conclusion: hasRate
         ? "Ränteläget påverkar den löpande boendekostnaden och kan vara värt att stämma av med en långivare eller rådgivare."
         : "Kan inte bedömas utan ränteuppgifter.",
     });
   }
 
-  // 3. Housing association risk
-  {
+  // 3. Housing association risk (only for homes that have an association)
+  if (hasAssociation) {
     const findings = (brf?.supportingData.findings as Array<{ dimension: string; classification: string; severity?: string; summary: string }> | undefined) ?? [];
     const weaknesses = findings.filter((f) => f.classification === "weakness");
-    const brfScore = brf?.score ?? null;
     categories.push({
       id: "housing_association",
       label: "Föreningsrisk",
-      severity: severityFromScore(brfScore),
       headline: "Föreningens ekonomiska stabilitet",
       explanation:
-        brfScore !== null
-          ? `${weaknesses.length} svaghet${weaknesses.length === 1 ? "" : "er"} identifierad${weaknesses.length === 1 ? "" : "e"} i föreningens senaste årsredovisning. Se kapitlet Bostadsrättsförening för en fullständig genomgång.`
-          : "Föreningens ekonomi kunde inte bedömas i denna analys.",
+        brfState === "verified"
+          ? `${weaknesses.length} svaghet${weaknesses.length === 1 ? "" : "er"} identifierad${weaknesses.length === 1 ? "" : "e"} i föreningens årsredovisning. Se kapitlet Bostadsrättsförening för en fullständig genomgång.`
+          : brfState === "unusable"
+            ? "Föreningens ekonomi kunde inte bedömas — den uppladdade årsredovisningen gick inte att läsa ut tillräckligt säkert."
+            : "Föreningens ekonomi kunde inte bedömas eftersom ingen årsredovisning har laddats upp.",
       evidence: [],
       conclusion:
-        brfScore !== null
+        brfState === "verified"
           ? "Föreningens ekonomi är värd att undersöka vidare, till exempel genom att läsa hela årsredovisningen."
-          : "Kräver en verifierad årsredovisning för en säker bedömning.",
+          : "Kräver föreningens årsredovisning för en säker bedömning.",
     });
   }
 
   // 4. Area risk
   {
-    const amenity = byFactor.get("amenity_access");
+    const hasAmenities = risk?.supportingData.amenityCounts !== undefined;
     categories.push({
       id: "area",
       label: "Områdesrisk",
-      severity: severityFromScore(amenity?.score ?? null),
       headline: "Service, tillgänglighet och läge",
-      explanation: amenity ? riskAmenitySv(risk) : "Ingen data om närservice är kopplad till denna adress i denna analys.",
+      explanation: hasAmenities ? riskAmenitySv(risk) : "Ingen data om närservice är kopplad till denna adress i denna analys.",
       evidence: [],
-      conclusion: amenity
+      conclusion: hasAmenities
         ? "Närservicen påverkar vardagen och kan vara värd att uppleva på plats vid ett besök."
         : "Kan inte bedömas utan data om närservice.",
     });
   }
 
   // 5. Liquidity risk (BRF)
-  {
+  if (hasAssociation) {
     const liquidityMonths = num(brf?.supportingData.liquidityMonths);
-    const score = liquidityMonths !== null ? (liquidityMonths >= 6 ? 75 : liquidityMonths >= 3 ? 55 : liquidityMonths >= 1 ? 35 : 15) : null;
     categories.push({
       id: "liquidity",
       label: "Likviditetsrisk",
-      severity: severityFromScore(score),
       headline: "Föreningens kassalikviditet",
       explanation:
         liquidityMonths !== null
           ? `Föreningen har en uppskattad likviditetsbuffert motsvarande ${liquidityMonths} månaders löpande kostnader.`
-          : "Föreningens likviditet (kassabuffert) kunde inte beräknas — detta kräver en verifierad årsredovisning, som inte är ansluten för denna förening idag.",
+          : "Föreningens likviditet (kassabuffert) kunde inte beräknas — det kräver en läsbar årsredovisning, som inte har laddats upp för denna förening.",
       evidence: [],
       conclusion:
-        score !== null
+        liquidityMonths !== null
           ? "Föreningens likviditet kan vara värd att fråga föreningen eller mäklaren om vid behov."
-          : "Kräver en verifierad årsredovisning.",
+          : "Kräver en läsbar årsredovisning.",
     });
   }
 
   // 6. Environmental risk
   {
-    const noise = byFactor.get("noise_exposure");
+    const hasNoise = num(riskData.highwayProximity) !== null;
     const envSource = (dataSources ?? []).find((s) => s.id === "environmental_data");
     categories.push({
       id: "environmental",
       label: "Miljörisk",
-      severity: severityFromScore(noise?.score ?? null),
       headline: "Buller, luftkvalitet och översvämningsrisk",
       explanation:
-        (noise ? riskNoiseSv(risk) : "Ingen data om vägbuller är kopplad till denna adress.") +
+        (hasNoise ? riskNoiseSv(risk) : "Ingen data om vägbuller är kopplad till denna adress.") +
         (envSource && envSource.status !== "ok" ? ` ${capitalize(NOT_CONNECTED_SV.environmental_data)}` : ""),
       evidence: [],
-      conclusion: noise
+      conclusion: hasNoise
         ? "Buller- och miljöexponering kan vara värt att uppleva på plats, gärna vid olika tider på dygnet."
         : "Endast delvis kartlagt — se ovan.",
     });
@@ -1134,15 +746,14 @@ export function buildRiskCategories(report: AnalysisReport, dataSources: DataSou
 
   // 7. Construction / building risk
   {
-    const age = byFactor.get("building_age");
+    const hasAge = num(riskData.buildingYear) !== null;
     categories.push({
       id: "construction",
       label: "Byggnadsrisk",
-      severity: severityFromScore(age?.score ?? null),
       headline: "Byggnadens ålder och underhållsbehov",
-      explanation: age ? riskBuildingAgeSv(risk) : "Byggår saknas för denna bostad, så underhållsrisk kan inte bedömas.",
+      explanation: hasAge ? riskBuildingAgeSv(risk) : "Byggår saknas för denna bostad, så underhållsrisk kan inte bedömas.",
       evidence: [],
-      conclusion: age
+      conclusion: hasAge
         ? "Byggnadens ålder och skick kan vara värt att undersöka närmare, till exempel via en besiktning."
         : "Kräver uppgift om byggår.",
     });
@@ -1154,15 +765,14 @@ export function buildRiskCategories(report: AnalysisReport, dataSources: DataSou
     categories.push({
       id: "future",
       label: "Framtidsosäkerhet",
-      severity: severityFromScore(future?.score ?? null),
       headline: "Osäkerhet i prognoser och planer",
       explanation:
         count !== null
-          ? `${count} planerat eller pågående utvecklingsprojekt är känt i närområdet — dessa beskrivs i kapitlet Investeringsutsikt. Denna kategori bedömer istället den generella osäkerheten i framtidsprognoser.`
+          ? `${count} planerat eller pågående utvecklingsprojekt är känt i närområdet — dessa beskrivs i kapitlet Investeringsutsikt. Denna kategori beskriver istället den generella osäkerheten i framtidsprognoser.`
           : "Ingen data om planerad utveckling i området är kopplad till denna analys.",
       evidence: [],
       conclusion:
-        "Alla framåtblickande bedömningar i denna rapport bygger på idag kända planer och trender — oförutsedda politiska, ekonomiska eller lokala beslut kan förändra bilden.",
+        "Alla framåtblickande beskrivningar i denna rapport bygger på idag kända planer och trender — oförutsedda politiska, ekonomiska eller lokala beslut kan förändra bilden.",
     });
   }
 
@@ -1180,7 +790,7 @@ export interface InvestmentOutlookContent {
 
 /** Rate + employment only — population/income/price-trend are Area's own
  *  facts (areaContextSv) and are deliberately not restated here. */
-function marketOutlookSv(market: DecisionFactorResult | undefined): string {
+function marketOutlookSv(market: ReportFactor | undefined): string {
   const rateChange = num(market?.supportingData.policyRateChangePctPoints);
   const currentRate = num(market?.supportingData.currentPolicyRatePct);
   const employment = num(market?.supportingData.municipalityEmploymentRatePct);
@@ -1205,7 +815,7 @@ function marketOutlookSv(market: DecisionFactorResult | undefined): string {
   return parts.join(" ");
 }
 
-function futureProjectsOutlookSv(future: DecisionFactorResult | undefined): string {
+function futureProjectsOutlookSv(future: ReportFactor | undefined): string {
   const count = num(future?.supportingData.nearbyPlannedProjectsCount);
   if (count === null) return "Ingen information om planerade infrastruktur- eller utvecklingsprojekt är kopplad till denna analys.";
   if (count === 0) return "Inga planerade eller pågående utvecklingsprojekt hittades i närområdet i de källor som är anslutna idag.";
@@ -1255,7 +865,7 @@ export interface FinalRecommendation {
  *  price/income ratio, policy rate, population trend) — never the
  *  analyzer's English `explanation`. This is negotiation's one canonical
  *  home; no other chapter restates it. */
-function negotiationSv(negotiation: DecisionFactorResult | undefined): string {
+function negotiationSv(negotiation: ReportFactor | undefined): string {
   if (!negotiation) return "Förhandlingsläget kunde inte bedömas med tillräcklig säkerhet i denna analys.";
   const parts: string[] = [];
 
@@ -1312,7 +922,7 @@ function negotiationSv(negotiation: DecisionFactorResult | undefined): string {
 /** Deliberately distinct phrasing from negotiationSv() above so the same
  *  fact isn't restated twice on one page — each bullet states a factor and
  *  what it's generally associated with, never an instruction to act on it. */
-function negotiationArgumentsSv(negotiation: DecisionFactorResult | undefined): string[] {
+function negotiationArgumentsSv(negotiation: ReportFactor | undefined): string[] {
   if (!negotiation) return [];
   const args: string[] = [];
   const dom = num(negotiation.supportingData.daysOnMarket);
@@ -1332,7 +942,7 @@ function negotiationArgumentsSv(negotiation: DecisionFactorResult | undefined): 
 
 export function buildFinalRecommendation(report: AnalysisReport): FinalRecommendation {
   const scored = (report.decisionFactors ?? []).filter(
-    (f): f is DecisionFactorResult & { score: number } =>
+    (f): f is ReportFactor & { score: number } =>
       f.id !== "confidence" && f.id !== "negotiation" && f.score !== null
   );
   const strengths = scored

@@ -74,43 +74,23 @@ export interface DataSourceReport {
 }
 
 /**
- * Structured output of one Decision Engine analyzer (see engine/analyzers/).
- * Persisted in full on every analysis so a future AI report can consume the
- * reasoning, not just the score — the current report UI only reads the 6
- * factors it maps to `insights` (see engine/buildAnalysis.ts).
+ * The facts gathered for one part of the report (area, housing association,
+ * market, risk, future development — see engine/analyzers/). It is a bag of
+ * facts, not a verdict: there is no score, rating or weight anywhere in the
+ * report any more. lib/report/build.ts writes the Swedish text from
+ * `supportingData`, and `available` says whether the data this part needs
+ * could be gathered at all — false means nothing can be said, never a guess.
  */
-export interface DecisionFactorResult {
+export interface ReportFactor {
   id: string;
-  label: string;
-  /** 0-100, or null when there isn't enough real data to compute a score — never a guess. */
-  score: number | null;
-  /** 0-1. Reflects how much real, connected data backs this factor. */
-  confidence: number;
-  /** Short status text, e.g. "Excellent", "Insufficient data". */
-  status: string;
-  explanation: string;
+  available: boolean;
   supportingData: Record<string, unknown>;
-  /** Names of data sources/fields that would be needed to score this with more confidence. */
-  missingData: string[];
-  /** This factor's configured weight in the overall Decision Score (0 for meta-analyzers like Confidence). */
-  weight: number;
-}
-
-export type InsightTone = "positive" | "neutral";
-
-export interface Insight {
-  label: string;
-  value: string;
-  tone: InsightTone;
-  /** True when the backing data sources are not connected yet. */
-  pending: boolean;
 }
 
 /** The full analysis report persisted as `analyses.result` and rendered by the report page. */
 export interface AnalysisReport {
   engineVersion: string;
   generatedAt: string;
-  factorsAnalyzed: number;
   property: {
     address: string;
     postalCode: string | null;
@@ -157,14 +137,13 @@ export interface AnalysisReport {
     ownershipType: string | null;
     objectId: string | null;
   };
-  decisionScore: number;
-  /** 0-1 — see engine/analyzers/confidence.ts. How much of the full data picture this analysis actually has. */
-  overallConfidence: number;
-  verdict: string;
-  summary: string;
-  insights: Insight[];
-  /** Full Decision Engine output (Price/Area/HousingAssociation/Market/FutureDevelopment/Negotiation/Risk/Confidence) — feeds the future AI report. */
-  decisionFactors: DecisionFactorResult[];
+  /**
+   * The facts behind the chapters that need more than the property itself
+   * (see ReportFactor). Stored under this name since the first engine version;
+   * reports persisted before 2026-10-02 carry extra score fields that
+   * legacyReport.ts strips when they are read.
+   */
+  decisionFactors: ReportFactor[];
   dataSources: DataSourceReport[];
   dataCompleteness: {
     connectedSources: number;
@@ -200,7 +179,6 @@ export interface AnalysisRecord {
   engineVersion: string;
   scope: AnalysisScope;
   status: AnalysisStatus;
-  decisionScore: number | null;
   report: AnalysisReport | null;
   dataSources: DataSourceReport[];
   error: string | null;

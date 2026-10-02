@@ -10,8 +10,18 @@ model change, **uncommitted and undeployed**); the Seventh session note below
 it was re-verified, merged, pushed, and deployed to `main` (see "Merge, push &
 deploy" at the end of that section for the full record).
 
-**Eighth session — packages instead of Premium (2026-10-02, working tree only,
-not committed, migrations not applied to production).** Premium, subscriptions,
+**Ninth session — IN PROGRESS, UNFINISHED (2026-10-02, branch
+`feature/trygghetspaket-business-model`, NOT pushed, `main`/production untouched).**
+Aligning the product and site with the pitch-deck template: automated BRF fetching
+removed (done, verified), scoring removal + a real Boendekalkyl (WIP commit that does
+not compile), landing page / pricing section / copy (not started). Read
+**`docs/47_business_model_handoff_2026-10-02.md` first** — it has the exact git state,
+the ordered to-do list and the flags (BRF extraction yields almost nothing on real
+2024 reports; the landing example image shows a "72 av 100" score; fake "4.8/5, 256
+omdömen" social proof; production migrations + Stripe Prices still missing).
+
+**Eighth session — packages instead of Premium (2026-10-02, now committed as
+`743986a` on that branch; migrations not applied to production).** Premium, subscriptions,
 the 3 free analyses, locked/paywalled chapters and the "First 100 Users"
 campaign are gone. What is sold (one-time, Stripe, SEK incl. VAT; amounts in
 `frontend/src/lib/pricing.ts`): **Områdesanalys 99 kr** (area report only),

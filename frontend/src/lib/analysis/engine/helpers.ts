@@ -1,5 +1,3 @@
-import type { DataSourceReport, DecisionFactorResult } from "../types";
-
 export function numberOrNull(value: unknown): number | null {
   return typeof value === "number" && Number.isFinite(value) ? value : null;
 }
@@ -23,10 +21,6 @@ export function housingAssociationConflictOrNull(
     return null;
   }
   return { keptValue: v.keptValue, rejectedValue: v.rejectedValue, rejectedSource: v.rejectedSource };
-}
-
-export function clamp(value: number, min: number, max: number): number {
-  return Math.min(max, Math.max(min, value));
 }
 
 export interface AreaSoldPriceTrendPoint {
@@ -70,44 +64,4 @@ export function priceTrendFromSeries(
   if (first.medianPricePerM2Sek <= 0) return null;
   const pct = ((last.medianPricePerM2Sek - first.medianPricePerM2Sek) / first.medianPricePerM2Sek) * 100;
   return { pct: Math.round(pct * 10) / 10, fromPeriod: first.period, toPeriod: last.period };
-}
-
-export function formatSek(value: number): string {
-  return `${new Intl.NumberFormat("sv-SE").format(Math.round(value))} SEK`;
-}
-
-export function sourceOk(dataSources: DataSourceReport[], id: string): boolean {
-  return dataSources.some((s) => s.id === id && s.status === "ok");
-}
-
-/** Human-readable name for a registered data source id, falling back to the id itself. */
-export function sourceLabel(dataSources: DataSourceReport[], id: string): string {
-  return dataSources.find((s) => s.id === id)?.name ?? id;
-}
-
-/**
- * Standard shape for an analyzer that cannot compute a score yet — never
- * default to a guessed score, always explain what's missing and why.
- */
-export function insufficientDataFactor(params: {
-  id: string;
-  label: string;
-  weight: number;
-  confidence: number;
-  status?: string;
-  explanation: string;
-  supportingData?: Record<string, unknown>;
-  missingData: string[];
-}): DecisionFactorResult {
-  return {
-    id: params.id,
-    label: params.label,
-    weight: params.weight,
-    score: null,
-    confidence: params.confidence,
-    status: params.status ?? "Insufficient data",
-    explanation: params.explanation,
-    supportingData: params.supportingData ?? {},
-    missingData: params.missingData,
-  };
 }

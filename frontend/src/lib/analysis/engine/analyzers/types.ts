@@ -1,9 +1,4 @@
-import type {
-  DataSourceReport,
-  DecisionFactorResult,
-  ExtractedProperty,
-  PropertyRecord,
-} from "../../types";
+import type { DataSourceReport, ExtractedProperty, PropertyRecord, ReportFactor } from "../../types";
 
 export interface AnalyzerContext {
   property: PropertyRecord;
@@ -14,16 +9,14 @@ export interface AnalyzerContext {
 }
 
 /**
- * A single Decision Engine analyzer — one independent axis of judgment
- * (Price, Area, Housing Association, ...). Each is a pure function of the
- * property's collected facts; add a new one by implementing this interface
- * in its own module and registering it in analyzers/registry.ts, without
- * touching any other analyzer.
+ * Collects the facts one part of the report is written from (area, housing
+ * association, market, risk, future development). A pure function of the
+ * property's collected facts: it never judges, scores or rates anything — it
+ * returns what it found (`supportingData`) and whether that was enough to say
+ * anything at all (`available`). Add a new one by implementing this interface
+ * in its own module and registering it in analyzers/registry.ts.
  */
 export interface Analyzer {
   id: string;
-  label: string;
-  /** Relative weight among substantive analyzers in the overall Decision Score — see registry.ts (weights sum to 1.0 there). */
-  weight: number;
-  analyze(ctx: AnalyzerContext): DecisionFactorResult;
+  analyze(ctx: AnalyzerContext): ReportFactor;
 }

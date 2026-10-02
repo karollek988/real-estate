@@ -10,6 +10,7 @@ import type {
   PropertyRecord,
 } from "./types";
 import type { PropertyEnrichment } from "./providers/types";
+import { normalizeStoredReport } from "./legacyReport";
 
 /**
  * Persistence layer for properties and analyses. All access goes through the
@@ -45,8 +46,7 @@ interface AnalysisRow {
   engine_version: string;
   scope: AnalysisScope;
   status: "pending" | "complete" | "failed";
-  decision_score: number | null;
-  result: AnalysisReport | null;
+  result: unknown;
   data_sources: DataSourceReport[];
   error: string | null;
   failure_reason: AnalysisFailureReason | null;
@@ -82,8 +82,7 @@ function mapAnalysis(row: AnalysisRow): AnalysisRecord {
     engineVersion: row.engine_version,
     scope: row.scope,
     status: row.status,
-    decisionScore: row.decision_score,
-    report: row.result,
+    report: normalizeStoredReport(row.result),
     dataSources: row.data_sources ?? [],
     error: row.error,
     failureReason: row.failure_reason,
@@ -297,7 +296,6 @@ export async function completeAnalysis(
     .from("analyses")
     .update({
       status: "complete",
-      decision_score: report.decisionScore,
       result: report,
       data_sources: report.dataSources,
       completed_at: new Date().toISOString(),
