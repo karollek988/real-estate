@@ -28,7 +28,7 @@ export interface ProviderResult {
 }
 
 /**
- * A pluggable data source. Adding a new source (Booli, SCB, Bolagsverket,
+ * A pluggable data source. Adding a new source (Booli, SCB,
  * Trafiklab, ...) means implementing this interface in its own module and
  * registering it in providers/registry.ts — nothing else changes.
  */
@@ -36,7 +36,7 @@ export interface DataProvider {
   id: string;
   name: string;
   kind: "real" | "placeholder";
-  /** Overrides pipeline.ts's default per-provider timeout (PROVIDER_TIMEOUT_MS) for sources that are legitimately slower — e.g. a broker-site crawl or a Python-engine PDF extraction. Omit to use the default. */
+  /** Overrides pipeline.ts's default per-provider timeout (PROVIDER_TIMEOUT_MS) for sources that are legitimately slower — e.g. a slow Python-engine call. Omit to use the default. */
   timeoutMs?: number;
   collect(ctx: ProviderContext): Promise<ProviderResult>;
 }

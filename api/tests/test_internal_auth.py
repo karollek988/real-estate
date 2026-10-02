@@ -32,21 +32,25 @@ SECRET = "test-only-secret-not-a-real-credential"
 HEADER = server.INTERNAL_SECRET_HEADER
 
 # One endpoint from each distinct category in the file — compute-only,
-# OCR, and the acquisition/discovery endpoint that would otherwise need
-# real network/browser access — proving the middleware protects all of
-# them uniformly, not just the OCR endpoint the original report named.
-# (The broker-site document discovery endpoint that used to be here too
-# was removed along with that feature.)
+# OCR, the browser fetch that would otherwise need real network/browser
+# access, and the upload extraction — proving the middleware protects all
+# of them uniformly, not just the OCR endpoint the original report named.
 PROTECTED_ENDPOINTS = [
     "/api/browser-fetch",
-    "/api/resolve",
-    "/api/analyze",
-    "/api/brf-annual-report",
     "/api/brf-annual-report/upload",
     "/api/ocr/extract-text",
     "/api/brf-financials",
     "/api/location-intelligence",
     "/api/market-intelligence",
+]
+
+# Endpoints of the automated BRF acquisition pipeline (Hemnet URL -> BRF
+# profile -> annual report -> analysis text), removed 2026-10-02 because
+# BRF annual reports are now uploaded by the buyer. They must stay gone.
+REMOVED_ENDPOINTS = [
+    "/api/resolve",
+    "/api/analyze",
+    "/api/brf-annual-report",
 ]
 
 
@@ -63,7 +67,7 @@ def unconfigured_client(monkeypatch):
 
 
 def test_root_stays_public_with_no_header(configured_client):
-    """GET / (the static demo page, and Railway's health-check target) must
+    """GET / (the health page, and Railway's health-check target) must
     never require the secret - authenticating it risks a correctly-running
     deployment being flagged unhealthy by the platform."""
     res = configured_client.get("/")
@@ -119,3 +123,22 @@ def test_valid_header_is_timing_safe_compared_not_just_equal_length(configured_c
         headers={HEADER: wrong_same_length},
     )
     assert res.status_code == 401
+
+
+@pytest.mark.parametrize("path", REMOVED_ENDPOINTS)
+def test_removed_acquisition_endpoints_are_gone(configured_client, path):
+    """Even with a valid secret the old BRF acquisition endpoints are not
+    routes any more (404, not a handler error) - nothing on this service can
+    look a BRF up or download a report by itself."""
+    res = configured_client.post(path, json={}, headers={HEADER: SECRET})
+    assert res.status_code == 404
+
+
+def test_the_only_brf_routes_are_upload_and_financials():
+    """Guards against an acquisition route coming back under a new name: every
+    registered route that mentions a BRF report is the upload extraction or
+    the financial calculation."""
+    brf_paths = sorted(
+        r.path for r in server.app.routes if "brf" in getattr(r, "path", "")
+    )
+    assert brf_paths == ["/api/brf-annual-report/upload", "/api/brf-financials"]

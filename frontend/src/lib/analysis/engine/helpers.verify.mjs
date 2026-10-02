@@ -23,9 +23,9 @@ check(
   housingAssociationConflictOrNull({
     keptValue: "Brf Solbacken",
     rejectedValue: "Brf Wrong Match",
-    rejectedSource: "brf_acquisition",
+    rejectedSource: "booli_listing",
   }),
-  { keptValue: "Brf Solbacken", rejectedValue: "Brf Wrong Match", rejectedSource: "brf_acquisition" }
+  { keptValue: "Brf Solbacken", rejectedValue: "Brf Wrong Match", rejectedSource: "booli_listing" }
 );
 
 check("returns null for undefined (no conflict stored)", housingAssociationConflictOrNull(undefined), null);

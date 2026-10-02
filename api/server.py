@@ -1,16 +1,24 @@
-"""Köpanalys API — FastAPI server for BRF analysis.
+"""Köpanalys API — FastAPI server for the Python engine.
 
-Endpoints:
-  POST /api/resolve   — Hemnet URL → unified BRF profile (Hemnet + Booli + Allabrf)
-  POST /api/analyze   — Financial data + BRF metadata → Köpanalys report
-  GET  /              — Frontend UI
+Endpoints (all require the shared X-Internal-Secret header except GET /):
+  POST /api/brf-annual-report/upload — buyer-uploaded BRF annual report (PDF/Word/photo) -> verified figures
+  POST /api/brf-financials           — verified figures -> metrics + rule-based findings
+  POST /api/ocr/extract-text         — listing screenshots -> raw text (Tesseract)
+  POST /api/location-intelligence    — area data for an address
+  POST /api/market-intelligence      — market data for a municipality
+  POST /api/browser-fetch            — fetch one page through a real browser (Hemnet escalation)
+  GET  /                             — health check (Railway)
+
+There is NO endpoint that finds or downloads a BRF annual report: the buyer
+uploads it. The old Hemnet-URL -> BRF-profile -> report pipeline
+(/api/resolve, /api/brf-annual-report, /api/analyze) was removed on 2026-10-02;
+see git tag archive/brf-automation-2026-10-02.
 """
 
 from __future__ import annotations
 
 import asyncio
 import hmac
-import json
 import os
 import sys
 from pathlib import Path
@@ -31,18 +39,12 @@ if str(_engine_dir) not in sys.path:
 
 from calculator import calculate_metrics, ANALYSIS_ENGINE_VERSION
 from reasoning import run_reasoning
-from report import generate_report
 from serialize import metrics_to_dict, reasoning_to_dict
 
-# Add BRF-Scraper src to path for provider imports
+# Add BRF-Scraper src to path (the extractor package: PDF/Word/photo -> verified figures, OCR)
 _scraper_src = Path(__file__).resolve().parent.parent / "BRF-Scraper" / "src"
 if str(_scraper_src) not in sys.path:
     sys.path.insert(0, str(_scraper_src))
-
-from brf_scraper.profile.engine import ProfileEngine
-from brf_scraper.profile.models import BRFProfile
-from brf_scraper.profile.bridge import profile_to_analysis_input
-from brf_scraper.profile.coverage import generate_coverage_report
 
 # Add the real-estate project's src/ for location_intelligence + market_intelligence
 # (standalone, stdlib-only packages, built and tested but never previously called
@@ -73,9 +75,9 @@ from market_intelligence.runner import EngineRunner as MIEngineRunner
 # concurrent request shares one process's memory. Each AsyncCamoufox
 # launch spins up a real Firefox instance (150-400MB+ RSS); nothing
 # bounded how many could run at once, so a handful of overlapping
-# requests (this endpoint, /api/resolve, /api/brf-annual-report, and —
-# at the time of this outage — the since-removed broker-documents
-# Hemnet-blocked fallback all call this) could add up to
+# requests (at the time of this outage /api/browser-fetch, /api/resolve,
+# /api/brf-annual-report and the since-removed broker-documents fallback
+# all launched browsers; only /api/browser-fetch remains) could add up to
 # more memory than the container has, triggering the OOM killer — visible
 # in `railway logs` as a bare "Killed" with no Python traceback at all,
 # since the kernel terminates the process before it can log anything.
@@ -195,9 +197,9 @@ async def global_exception_handler(request: Request, exc: Exception):
 INTERNAL_SECRET_ENV_VAR = "PYTHON_ENGINE_API_SECRET"
 INTERNAL_SECRET_HEADER = "x-internal-secret"
 
-# "/" serves only this service's own static demo page (no data, no cost) and
-# doubles as Railway's health-check target — authenticating it risks a
-# correctly-configured deployment being marked unhealthy by the platform.
+# "/" serves only a static health page (no data, no cost) and is Railway's
+# health-check target — authenticating it risks a correctly-configured
+# deployment being marked unhealthy by the platform.
 _PUBLIC_PATHS = {"/"}
 
 
@@ -223,10 +225,6 @@ async def require_internal_secret(request: Request, call_next):
 
 # ── Models ──────────────────────────────────────────────────────────
 
-class ResolveRequest(BaseModel):
-    hemnet_url: str
-
-
 class BrowserFetchRequest(BaseModel):
     url: str
 
@@ -246,49 +244,11 @@ class MarketIntelligenceRequest(BaseModel):
     as_of: str | None = None
 
 
-class AnalyzeRequest(BaseModel):
-    brf_name: str | None = None
-    organization_number: str | None = None
-    municipality: str | None = None
-    number_of_apartments: int | None = None
-    fiscal_year: int = 2024
-    # Profile from /api/resolve (optional — enriches analysis)
-    brf_profile: dict[str, Any] | None = None
-    # Income statement
-    revenue: float | None = None
-    operating_costs: float | None = None
-    operating_profit: float | None = None
-    financial_income: float | None = None
-    financial_costs: float | None = None
-    profit_before_tax: float | None = None
-    profit_after_tax: float | None = None
-    # Balance sheet
-    total_assets: float | None = None
-    current_assets: float | None = None
-    fixed_assets: float | None = None
-    total_equity: float | None = None
-    total_liabilities: float | None = None
-    long_term_debt: float | None = None
-    short_term_debt: float | None = None
-    cash_and_bank: float | None = None
-    # Apartment metrics
-    avg_monthly_fee: float | None = None
-    # Property info
-    year_built: int | None = None
-    building_area_sqm: float | None = None
-    # Loans
-    loans: list[dict[str, Any]] | None = None
-
-
 class BrfFinancialsRequest(BaseModel):
     # One fiscal year's verified annual-report JSON, in the shape
     # calculate_metrics() consumes directly (see
     # analysis_engine/sample_annual_report.json's annual_reports[0]).
     annual_report: dict[str, Any]
-
-
-class BrfAnnualReportRequest(BaseModel):
-    hemnet_url: str
 
 
 class BrfAnnualReportUploadRequest(BaseModel):
@@ -308,14 +268,11 @@ class OcrExtractRequest(BaseModel):
 async def browser_fetch(req: BrowserFetchRequest):
     """Fetch one URL with Camoufox (real Firefox) to bypass bot detection.
 
-    Thin bridge around the existing `_browser_fetch()` used internally by
-    `/api/resolve` and `/api/brf-annual-report` (via ProfileEngine) —
-    reuses that same Camoufox mechanism rather than adding a second browser
-    stack, so any TypeScript fetch path that gets bot-blocked (e.g.
-    lib/analysis/listing/hemnetPage.ts's direct fetch against Hemnet's
-    Cloudflare protection) can escalate to a real browser without this
-    engine needing its own HTML-extraction logic — the caller parses the
-    returned HTML itself.
+    Lets a TypeScript fetch path that gets bot-blocked (today only
+    lib/analysis/listing/hemnetPage.ts, against Hemnet's Cloudflare
+    protection) escalate to a real browser without this engine needing its
+    own HTML-extraction logic — the caller parses the returned HTML itself.
+    Not used for BRF reports (those are uploaded, not fetched).
     """
     try:
         html = await _browser_fetch(req.url)
@@ -329,216 +286,6 @@ async def browser_fetch(req: BrowserFetchRequest):
     return {"success": True, "html": html}
 
 
-@app.post("/api/resolve")
-async def resolve_hemnet(req: ResolveRequest):
-    """Resolve a Hemnet URL into a unified BRF profile.
-
-    Queries Hemnet, Booli, and Allabrf. Merges all data into a single
-    profile with source attribution on every field.
-    """
-    engine = ProfileEngine(browser_fetch=_browser_fetch)
-
-    try:
-        profile = await engine.build(hemnet_url=req.hemnet_url)
-    except Exception as e:
-        logger.exception("Profile build failed")
-        return JSONResponse(status_code=422, content={
-            "success": False,
-            "error": f"Profilbygge misslyckades: {e}",
-            "details": type(e).__name__,
-        })
-
-    # Convert to JSON-serializable dict
-    coverage = generate_coverage_report(profile, hemnet_url=req.hemnet_url)
-    return {
-        "success": True,
-        "profile": json.loads(profile.model_dump_json()),
-        "meta": profile.meta,
-        "coverage": json.loads(coverage.model_dump_json()),
-    }
-
-
-@app.post("/api/analyze")
-async def analyze(req: AnalyzeRequest):
-    """Run the Köpanalys analysis on provided financial data."""
-    # If a profile is provided, use the bridge to merge profile + manual data
-    if req.brf_profile:
-        try:
-            profile = BRFProfile.model_validate(req.brf_profile)
-        except Exception as e:
-            return JSONResponse(status_code=422, content={
-                "success": False,
-                "error": f"Ogiltig profildata: {e}",
-            })
-
-        # Build manual data dict from request fields
-        manual_data: dict[str, Any] = {}
-        if req.revenue is not None or req.operating_costs is not None:
-            manual_data["income_statement"] = {}
-            for field_name in ["revenue", "operating_costs", "operating_profit",
-                               "financial_income", "financial_costs",
-                               "profit_before_tax", "profit_after_tax"]:
-                val = getattr(req, field_name, None)
-                if val is not None:
-                    manual_data["income_statement"][field_name] = {
-                        "value": val, "unit": "SEK",
-                        "source": {"page": 0, "field": field_name, "method": "user_input", "confidence": 1.0},
-                    }
-        if req.total_assets is not None or req.total_equity is not None:
-            manual_data["balance_sheet"] = {}
-            for field_name in ["total_assets", "current_assets", "fixed_assets",
-                               "total_equity", "total_liabilities",
-                               "long_term_debt", "short_term_debt", "cash_and_bank"]:
-                val = getattr(req, field_name, None)
-                if val is not None:
-                    manual_data["balance_sheet"][field_name] = {
-                        "value": val, "unit": "SEK",
-                        "source": {"page": 0, "field": field_name, "method": "user_input", "confidence": 1.0},
-                    }
-        if req.loans:
-            manual_data["loans"] = req.loans
-        if req.year_built:
-            manual_data.setdefault("property_info", {})["year_built"] = {
-                "value": req.year_built, "unit": "year",
-                "source": {"page": 0, "field": "year_built", "method": "user_input", "confidence": 0.9},
-            }
-        if req.building_area_sqm:
-            manual_data.setdefault("property_info", {})["building_area_sqm"] = {
-                "value": req.building_area_sqm, "unit": "m²",
-                "source": {"page": 0, "field": "building_area_sqm", "method": "user_input", "confidence": 0.9},
-            }
-        manual_data["fiscal_year"] = req.fiscal_year
-        if req.number_of_apartments:
-            manual_data.setdefault("apartment_metrics", {})["number_of_apartments"] = req.number_of_apartments
-        if req.avg_monthly_fee is not None:
-            manual_data.setdefault("apartment_metrics", {})["avg_monthly_fee"] = req.avg_monthly_fee
-
-        extracted = profile_to_analysis_input(profile, manual_data)
-    else:
-        # Legacy mode: build from flat request fields
-        brf_data = {
-            "name": req.brf_name or "Okänd BRF",
-            "organization_number": req.organization_number or "",
-            "municipality": req.municipality or "",
-            "number_of_apartments": req.number_of_apartments or 0,
-        }
-
-        report_data: dict[str, Any] = {
-            "fiscal_year": req.fiscal_year,
-            "income_statement": {},
-            "balance_sheet": {},
-            "apartment_metrics": {},
-            "loans": [],
-            "property_info": {},
-        }
-
-        for field_name in ["revenue", "operating_costs", "operating_profit",
-                           "financial_income", "financial_costs",
-                           "profit_before_tax", "profit_after_tax"]:
-            val = getattr(req, field_name, None)
-            if val is not None:
-                report_data["income_statement"][field_name] = {
-                    "value": val, "unit": "SEK",
-                    "source": {"page": 0, "field": field_name, "method": "user_input", "confidence": 1.0},
-                }
-
-        for field_name in ["total_assets", "current_assets", "fixed_assets",
-                           "total_equity", "total_liabilities",
-                           "long_term_debt", "short_term_debt", "cash_and_bank"]:
-            val = getattr(req, field_name, None)
-            if val is not None:
-                report_data["balance_sheet"][field_name] = {
-                    "value": val, "unit": "SEK",
-                    "source": {"page": 0, "field": field_name, "method": "user_input", "confidence": 1.0},
-                }
-
-        if req.number_of_apartments:
-            report_data["apartment_metrics"]["number_of_apartments"] = {
-                "value": req.number_of_apartments, "unit": "count",
-                "source": {"page": 0, "field": "number_of_apartments", "method": "user_input", "confidence": 1.0},
-            }
-        if req.avg_monthly_fee is not None:
-            report_data["apartment_metrics"]["avg_monthly_fee"] = {
-                "value": req.avg_monthly_fee, "unit": "SEK/month",
-                "source": {"page": 0, "field": "avg_monthly_fee", "method": "user_input", "confidence": 1.0},
-            }
-
-        if req.loans:
-            report_data["loans"] = req.loans
-
-        if req.year_built:
-            report_data["property_info"]["year_built"] = {
-                "value": req.year_built, "unit": "year",
-                "source": {"page": 0, "field": "year_built", "method": "user_input", "confidence": 0.9},
-            }
-        if req.building_area_sqm:
-            report_data["property_info"]["building_area_sqm"] = {
-                "value": req.building_area_sqm, "unit": "m²",
-                "source": {"page": 0, "field": "building_area_sqm", "method": "user_input", "confidence": 0.9},
-            }
-
-        extracted = {"brf": brf_data, "annual_reports": [report_data]}
-
-    # Add required fields for report generator
-    report_data_final = extracted["annual_reports"][0]
-    report_data_final["pdf"] = {"path": "användarinmatning", "hash": "", "size_bytes": 0}
-    report_data_final["extraction_confidence"] = 1.0
-
-    # Run the pipeline
-    try:
-        metrics = calculate_metrics(report_data_final)
-        reasoning = run_reasoning(metrics)
-        report_text = generate_report(extracted, metrics, reasoning)
-        return {"report": report_text}
-    except Exception as e:
-        logger.exception("Analysis failed")
-        return JSONResponse(status_code=422, content={
-            "success": False,
-            "error": f"Analysen misslyckades: {e}",
-            "details": type(e).__name__,
-        })
-
-
-@app.post("/api/brf-annual-report")
-async def brf_annual_report(req: BrfAnnualReportRequest):
-    """Hemnet URL -> BRF discovery -> annual report download -> PDF extraction,
-    returning one fiscal year's verified annual-report JSON in the exact
-    shape calculate_metrics() consumes (see BrfFinancialsRequest.annual_report).
-
-    This is the acquisition half of the bridge the TypeScript
-    brf_acquisition provider calls. It does no discovery, downloading, or
-    PDF parsing of its own — it reuses ProfileEngine (same Hemnet + Booli +
-    Allabrf + official-website resolution, PDF download, and extraction as
-    /api/resolve) and BRFProfile.to_analysis_input(), the existing bridge
-    method that converts a profile's extracted financials into the
-    calculator's input shape.
-    """
-    engine = ProfileEngine(browser_fetch=_browser_fetch)
-
-    try:
-        profile = await engine.build(hemnet_url=req.hemnet_url)
-    except Exception as e:
-        logger.exception("BRF annual report acquisition failed")
-        return JSONResponse(status_code=422, content={
-            "success": False,
-            "error": f"Kunde inte bygga BRF-profil: {e}",
-            "details": type(e).__name__,
-        })
-
-    f = profile.financials
-    if not (f.income_statement or f.balance_sheet):
-        return JSONResponse(status_code=422, content={
-            "success": False,
-            "error": "Ingen årsredovisning kunde hittas eller tolkas för den här föreningen.",
-        })
-
-    return {
-        "success": True,
-        "annual_report": profile.to_analysis_input(),
-        "brf": profile.to_brf_dict(),
-    }
-
-
 _BRF_UPLOAD_SUFFIXES = {"pdf": ".pdf", "docx": ".docx", "image": ".img"}
 
 
@@ -546,21 +293,17 @@ _BRF_UPLOAD_SUFFIXES = {"pdf": ".pdf", "docx": ".docx", "image": ".img"}
 async def brf_annual_report_upload(req: BrfAnnualReportUploadRequest):
     """User-uploaded BRF annual report (PDF, Word doc, or a photo of a page)
     -> extraction, returning one fiscal year's verified annual-report JSON
-    in the exact shape calculate_metrics() consumes (same output contract
-    as /api/brf-annual-report above).
+    in the exact shape calculate_metrics() consumes.
 
-    This is the manual counterpart to /api/brf-annual-report: instead of
-    discovering and downloading a report via ProfileEngine, the caller
-    already has the file bytes (uploaded from the profile page). It reuses
-    extract_annual_report() — the exact same field-extraction and
-    validation pipeline ProfileEngine.build() calls internally — so a
-    manually uploaded report is held to the identical verification bar
-    (only HIGH-confidence, cross-validated fields ever reach the Decision
-    Engine; see BRF-Scraper's extractor/validation.py) regardless of
-    file_kind. No organization-number resolution happens here — the
-    document text alone doesn't carry it — so the caller (the Next.js
-    upload route) falls back to grouping reports by property when none is
-    known.
+    This is the only way BRF figures get into the product: nothing finds or
+    downloads a report automatically any more. The caller (the Next.js
+    upload route) already has the file bytes. extract_annual_report() holds
+    the result to a verification bar — only HIGH-confidence, cross-validated
+    fields ever reach the report (see BRF-Scraper's
+    extractor/validation.py) regardless of file_kind. No
+    organization-number resolution happens here — the document text alone
+    doesn't carry it — so the caller falls back to grouping reports by
+    property when none is known.
     """
     import base64
     import tempfile
@@ -611,10 +354,7 @@ async def brf_annual_report_upload(req: BrfAnnualReportUploadRequest):
         })
 
     # to_profile_financials() already returns the single-fiscal-year shape
-    # calculate_metrics() consumes directly (fiscal_year at the top level —
-    # see BRFProfile.to_analysis_input(), which brf_annual_report() above
-    # returns for the crawl-based path; this is its manual-upload
-    # equivalent, same output contract).
+    # calculate_metrics() consumes directly (fiscal_year at the top level).
     financials = result.to_profile_financials()
     return {
         "success": True,
@@ -673,29 +413,24 @@ def brf_financials(req: BrfFinancialsRequest):
     """Run the calculator/reasoning library on one BRF annual report and
     return the result as structured JSON.
 
-    Structured-JSON counterpart to /api/analyze (which renders the Swedish
-    customer-facing report text via report.py). This endpoint calls the same
-    two library functions — calculate_metrics(), run_reasoning() — and
-    returns their output as data instead of prose, for the TypeScript
-    Decision Engine's Housing Association analyzer to score as one factor
-    among several. Neither endpoint computes anything the other doesn't;
-    report.py is not called here, so there is still exactly one place BRF
-    financial reasoning happens and exactly one place it's rendered as a
-    customer-facing report.
+    Calls calculate_metrics() and run_reasoning() and returns their output
+    as data, for the TypeScript report builder's BRF chapter (the metrics and
+    the rule-based strengths/weaknesses). Those two functions remain the only
+    place BRF financial reasoning happens; the Swedish report text is written
+    by frontend/src/lib/report/build.ts.
     """
     try:
         metrics = calculate_metrics(req.annual_report)
         reasoning = run_reasoning(metrics)
 
-        # Graceful degradation for the TS Decision Engine: it must be able
+        # Graceful degradation for the TS report builder: it must be able
         # to tell "no annual report" (not_connected, decided client-side in
         # brfFinancials.ts before this endpoint is ever called) apart from
         # "we had a report but nothing in it was trustworthy enough to
-        # score" (insufficient_verified_data). Never fabricate a verdict
+        # use" (insufficient_verified_data). Never fabricate a conclusion
         # from zero signals. `verification_status` is set upstream by
-        # BRFProfile.to_analysis_input() / extract_annual_report(); its
-        # absence (raw/manual callers) falls back to checking whether any
-        # signal actually got computed.
+        # extract_annual_report(); its absence (raw/manual callers) falls
+        # back to checking whether any signal actually got computed.
         upstream_status = req.annual_report.get("verification_status")
         if upstream_status == "insufficient_verified_data" or not reasoning.signals:
             status = "insufficient_verified_data"
@@ -791,6 +526,9 @@ def market_intelligence(req: MarketIntelligenceRequest):
 
 @app.get("/", response_class=HTMLResponse)
 async def index():
-    """Serve the frontend."""
-    html_path = Path(__file__).parent / "static" / "index.html"
-    return HTMLResponse(html_path.read_text(encoding="utf-8"))
+    """Health check (Railway's health-check target). No data, no cost."""
+    return HTMLResponse(
+        "<!doctype html><html lang=\"sv\"><head><meta charset=\"utf-8\">"
+        "<title>Köpanalys engine</title></head>"
+        "<body><p>Köpanalys engine — OK</p></body></html>"
+    )

@@ -1,129 +1,51 @@
-# BRF Scraper
+# BRF annual report extractor (`brf_scraper`)
 
-Production-ready BRF (Bostadsrättsförening) annual report scraper for Swedish real estate analysis.
+Reads **one BRF annual report that the buyer has uploaded** — a PDF, a Word
+document or a photo — and returns the verified financial figures the analysis
+engine (`analysis_engine/`) turns into the "Bostadsrättsförening" chapter of
+the report.
 
-## Features
+> **There is no automatic retrieval of BRF reports.** Until 2026-10-02 this
+> package was a crawler/discovery platform that looked a BRF up through Hemnet,
+> Booli, Allabrf and the association's own website and downloaded its report.
+> That system was removed: the buyer uploads the report instead (the
+> "Ladda upp årsredovisning" button in the report). The last commit that has the
+> old code is tagged `archive/brf-automation-2026-10-02`; historical validation
+> reports are in `docs/archive/brf-automation/`.
 
-- Async-first architecture with Python 3.13
-- Modular pipeline: Discovery → Crawl → Download → Extract → Export
-- Structured logging with structlog
-- Redis caching and deduplication
-- Docker support for production deployment
-- Comprehensive test suite
+## What is here
 
-## Quick Start
+```
+src/brf_scraper/
+  extractor/
+    engine.py              extract_annual_report(path, file_kind) -> ExtractionResult
+    pdf_reader.py          pdfplumber text; per-page OCR fallback for scanned pages
+    docx_reader.py         Word documents
+    image_reader.py        a photo of a page (OCR)
+    ocr.py                 Tesseract (swe+eng) wrapper — also used for listing screenshots
+    financial_extractor.py income statement, balance sheet, loans, apartment mix
+    property_extractor.py  building year, area, number of apartments, ...
+    validation.py          cross-checks; only HIGH-confidence verified fields leave the extractor
+    models.py              ExtractionResult / ExtractedValue / Evidence / tiers
+    text_normalize.py
+  utils/logging.py         structlog setup
+```
 
-### Prerequisites
+`api/server.py` exposes this as `POST /api/brf-annual-report/upload` and
+`POST /api/ocr/extract-text`; the Next.js app calls them (with the shared
+`PYTHON_ENGINE_API_SECRET`) from `frontend/src/app/api/properties/[id]/brf-report`
+and `frontend/src/app/api/listing-screenshots/extract`.
 
-- Python 3.13+
-- uv (package manager)
-- Redis (optional, for caching)
-
-### Installation
+## Tests
 
 ```bash
-# Clone the repository
-git clone https://github.com/your-org/brf-scraper.git
-cd brf-scraper
-
-# Install dependencies
-make install
-
-# Or with dev dependencies
-make dev
+cd BRF-Scraper
+.venv/Scripts/python.exe -m pytest        # extraction validation + OCR
 ```
 
-### Configuration
-
-```bash
-# Copy environment file
-cp .env.example .env
-
-# Edit .env with your settings
-```
-
-### Running
-
-```bash
-# Run the CLI
-make run
-
-# Or with Docker
-make docker-up
-```
-
-## Development
-
-### Setup
-
-```bash
-# Install with all extras
-make dev
-
-# Install pre-commit hooks
-make pre-commit-install
-```
-
-### Code Quality
-
-```bash
-# Run all checks
-make check
-
-# Format code
-make format
-
-# Run linter
-make lint
-
-# Run type checker
-make typecheck
-```
-
-### Testing
-
-```bash
-# Run all tests
-make test
-
-# Run with coverage
-make test-cov
-
-# Run specific test types
-make test-unit
-make test-integration
-```
-
-## Architecture
-
-```
-brf-scraper/
-├── src/brf_scraper/      # Main package
-│   ├── discovery/        # BRF website discovery
-│   ├── crawler/          # Website crawling
-│   ├── downloader/       # PDF downloading
-│   ├── extractor/        # PDF data extraction
-│   ├── storage/          # Data persistence
-│   ├── models/           # Pydantic models
-│   ├── pipeline/         # Orchestration
-│   ├── exporters/        # JSON export
-│   └── utils/            # Shared utilities
-├── tests/                # Test suite
-├── configs/              # Configuration files
-├── data/                 # Runtime data
-└── docker/               # Docker configuration
-```
-
-## CLI Commands
-
-```bash
-brf-scraper --help           # Show help
-brf-scraper serve            # Start API server
-brf-scraper crawl <url>      # Crawl a BRF website
-brf-scraper db init          # Initialize database
-brf-scraper db migrate       # Run migrations
-```
-
-## License
-
-MIT
+The OCR tests need the `tesseract` binary on `PATH` (with the `swe` language
+pack); without it they skip themselves. `scripts/validate_financial_extraction.py`
+re-runs the nine real annual reports in `../validation_reports/` through the
+extractor and reports how much of what was found is trustworthy.
+`data/allabrf_validation/pdfs`, `data/production_validation/pdfs` and
+`data/allabrf_smoke` hold real annual reports used as extraction fixtures.

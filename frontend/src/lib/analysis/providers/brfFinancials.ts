@@ -2,25 +2,27 @@ import type { DataProvider, ProviderResult } from "./types";
 import { pythonEngineHeaders } from "@/lib/pythonEngine";
 
 /**
- * Bridges the `analysis_engine` Python library (calculator.py + reasoning.py
- * — deterministic BRF financial calculations and rule-based reasoning) into
- * the live analysis pipeline via the FastAPI service in api/server.py, the
- * same pattern locationIntelligence.ts and marketIntelligence.ts already use.
+ * The BRF chapter's data: bridges the `analysis_engine` Python library
+ * (calculator.py + reasoning.py — deterministic BRF financial calculations
+ * and rule-based reasoning) into the live analysis pipeline via the FastAPI
+ * service in api/server.py, the same pattern locationIntelligence.ts and
+ * marketIntelligence.ts use.
+ *
+ * Where the numbers come from: ONLY from an annual report the buyer has
+ * uploaded (api/properties/[id]/brf-report/route.ts extracts it through the
+ * Python engine and stores it as `property.attributes.brf_annual_report`).
+ * Nothing in the pipeline finds, looks up or downloads a BRF report — the
+ * automated acquisition (Hemnet/Booli/Allabrf crawl) was removed on
+ * 2026-10-02. Without an uploaded report this provider reports
+ * "not_connected" and the chapter asks the buyer to upload one.
  *
  * This provider does not compute anything itself — it forwards one fiscal
  * year's verified annual-report JSON to POST /api/brf-financials, which
  * calls calculate_metrics() + run_reasoning() and returns their output as
- * structured JSON instead of the prose report.py renders. Those two
- * functions remain the only place BRF financial reasoning happens; this
- * provider and housingAssociation.ts only consume their output.
- *
- * The genuinely unsolved problem — matching a BRF name to an
- * organisationsnummer and pulling its annual report from Bolagsverket (see
- * placeholders.ts's former brf_financials entry) — is still not connected.
- * Until a future source sets `attributes.brf_annual_report`, this correctly
- * reports "not_connected" rather than fabricating financial data. Forward
- * contract: `attributes.brf_annual_report` must be the one-fiscal-year JSON
- * shape calculate_metrics() consumes directly — see
+ * structured JSON. Those two functions remain the only place BRF financial
+ * reasoning happens; this provider and lib/report/build.ts only consume their
+ * output. Forward contract: `attributes.brf_annual_report` must be the
+ * one-fiscal-year JSON shape calculate_metrics() consumes directly — see
  * analysis_engine/sample_annual_report.json's `annual_reports[0]`.
  */
 
@@ -106,12 +108,11 @@ export interface ReasoningDto {
 
 /**
  * "ok": at least one financial signal was computed from verified data.
- * "insufficient_verified_data": an annual report was found and extracted,
+ * "insufficient_verified_data": an annual report was uploaded and extracted,
  * but nothing in it passed validation (see BRF-Scraper's
- * extractor/validation.py) — the housingAssociation analyzer must degrade
- * gracefully here rather than score from nothing. Distinct from the
- * provider-level "not_connected" status below, which means no annual
- * report was available at all.
+ * extractor/validation.py) — the report must say so rather than show numbers
+ * it can't stand behind. Distinct from the provider-level "not_connected"
+ * status below, which means no annual report was uploaded at all.
  */
 export type BrfFinancialDataStatus = "ok" | "insufficient_verified_data";
 
@@ -132,7 +133,7 @@ interface BrfFinancialsResponse {
 
 export const brfFinancialsProvider: DataProvider = {
   id: "brf_financials",
-  name: "Housing association finances (Bolagsverket)",
+  name: "Housing association annual report (uploaded by the buyer)",
   kind: "real",
 
   async collect({ property, extracted }): Promise<ProviderResult> {
@@ -146,8 +147,8 @@ export const brfFinancialsProvider: DataProvider = {
           status: "not_connected",
           fields: [],
           detail:
-            "No verified annual-report data for this association yet — Bolagsverket's lookup API needs an " +
-            "organisationsnummer, and no BRF-name-to-org-number match exists (docs/22_user_input_flow.md §4).",
+            "No annual report has been uploaded for this association yet. BRF reports are uploaded by the " +
+            "buyer; nothing fetches them automatically.",
         },
         data: {},
       };

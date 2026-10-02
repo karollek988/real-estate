@@ -1,8 +1,8 @@
 import { createAdminClient } from "@/lib/supabase/admin";
 
 /**
- * Shared, deduplicated BRF annual report storage (see
- * supabase/migrations/20260722000300_brf_annual_reports.sql). Reports are
+ * Shared, deduplicated storage of the BRF annual reports buyers have uploaded
+ * (see supabase/migrations/20260722000300_brf_annual_reports.sql). Reports are
  * grouped by organization_number when known, or by the uploading property
  * as a fallback, and are never re-stored if byte-identical to an existing
  * report. Retention (365 days) is enforced at read time via retain_until —
@@ -96,7 +96,7 @@ export async function saveBrfReport(input: {
   originalFilename: string | null;
   fiscalYear: number | null;
   annualReport: Record<string, unknown>;
-  /** null for reports discovered by the automated background pipeline (no user in context) — the column is nullable for exactly this case. */
+  /** The uploading buyer. The column is nullable only because older rows were written by the removed automated pipeline (no user in context). */
   uploadedBy: string | null;
 }): Promise<BrfAnnualReportRecord> {
   const { data, error } = await createAdminClient()

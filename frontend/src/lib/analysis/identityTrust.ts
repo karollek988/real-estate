@@ -1,9 +1,8 @@
 /**
  * Identity fields where a lower-trust source must never silently overwrite
- * an already-known value (End-to-End Truth Audit finding #2: brf_acquisition's
- * Allabrf name match can be wrong — see discovery/allabrf_provider.py's
- * ambiguity gate — and used to unconditionally overwrite the housing
- * association name booliListingProvider already found from the real listing).
+ * an already-known value (End-to-End Truth Audit finding #2: a name matched
+ * by a free-text search can be wrong, and used to unconditionally overwrite
+ * the housing association name already found from the real listing).
  *
  * Maps each protected field to the one provider trusted to set/update it
  * freely (the listing provider itself, which always reflects this run's
@@ -25,10 +24,8 @@ export const TRUSTED_IDENTITY_SOURCE: Record<string, string> = {
   // housing_association was previously trusted to "booli_listing", but
   // that provider's rewrite (2026-07-22) stopped setting this field at all
   // (it has no verified equivalent on the real Booli Property object) —
-  // that made the entry a dead trust grant nobody could use. Now that
-  // brf_acquisition and parsebot_booli are both real, independent
-  // candidate writers for this field, Hemnet is the consistent choice,
-  // matching every other dual-source field below.
+  // that made the entry a dead trust grant nobody could use. Hemnet is the
+  // consistent choice, matching every other dual-source field below.
   housing_association: "hemnet_page_scrape",
   asking_price_sek: "hemnet_page_scrape",
   monthly_fee_sek: "hemnet_page_scrape",
