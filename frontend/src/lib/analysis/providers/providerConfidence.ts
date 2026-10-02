@@ -17,7 +17,6 @@ export const PROVIDER_CONFIDENCE: Record<string, number> = {
   osm_amenities: 0.8,
   infrastructure_projects: 0.8,
   booli_listing: 0.75,
-  brf_acquisition: 0.7,
   brf_financials: 0.7,
   location_intelligence: 0.7,
   market_intelligence: 0.7,

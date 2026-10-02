@@ -33,11 +33,6 @@ export const placeholderProviders: DataProvider[] = [
     "Municipality planning documents",
     "Detaljplaner and building permits near the property — no unified national API exists (fragmented per-municipality, docs/data-source-inventory.md entry 7); Stockholm's own open-data portal was unreachable when checked (2026-07-16)."
   ),
-  notConnected(
-    "brf_register",
-    "BRF information (allabrf/registry)",
-    "Association size, byggår and management data — same organisationsnummer blocker as brf_financials above."
-  ),
   // crime_statistics and public_transport placeholders retired here — both
   // are now real: crime/safety via locationIntelligence.ts's Polisen/Kolada
   // bridge, public transport via commute.ts's Trafiklab ResRobot

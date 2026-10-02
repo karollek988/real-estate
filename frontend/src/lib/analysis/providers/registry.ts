@@ -12,7 +12,6 @@ import { smhiClimateProvider } from "./smhi";
 import { trafikverketInfrastructureProvider } from "./trafikverket";
 import { locationIntelligenceProvider } from "./locationIntelligence";
 import { marketIntelligenceProvider } from "./marketIntelligence";
-import { brfAcquisitionProvider } from "./brfAcquisition";
 import { brfFinancialsProvider } from "./brfFinancials";
 import { placeholderProviders } from "./placeholders";
 
@@ -33,14 +32,12 @@ import { placeholderProviders } from "./placeholders";
  */
 
 /**
- * Wave 0 — no dependency on any other provider's output. Notably
- * brfAcquisitionProvider only needs extracted.hemnetUrl, not geocoding.
+ * Wave 0 — no dependency on any other provider's output.
  */
 const WAVE_0: DataProvider[] = [
   nominatimGeocoder,
   hemnetPageProvider,
   booliListingProvider,
-  brfAcquisitionProvider,
   riksbankenInterestRateProvider,
   ...placeholderProviders,
 ];
@@ -72,10 +69,12 @@ const WAVE_1: DataProvider[] = [
 
 /**
  * Wave 2 — brfFinancialsProvider reads property.attributes.brf_annual_report,
- * set by brfAcquisitionProvider (Wave 0) — per that provider's own comment:
- * "Runs before brfFinancialsProvider... so attributes.brf_annual_report is
- * set in time for that provider to pick it up." (Previously could also be
- * set by the now-removed broker-site document discovery provider.)
+ * which is written only by the buyer's upload of the association's annual
+ * report (api/properties/[id]/brf-report/route.ts) — nothing in the pipeline
+ * finds or downloads a BRF report any more (the automated acquisition
+ * provider was removed 2026-10-02). It is a separate wave from the rest only
+ * because it is a Python-engine call that needs no other provider's output;
+ * without an uploaded report it reports "not_connected".
  */
 const WAVE_2: DataProvider[] = [brfFinancialsProvider];
 

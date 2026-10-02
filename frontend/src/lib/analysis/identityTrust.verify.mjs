@@ -17,7 +17,7 @@ function check(name, actual, expected) {
 // 1. Lower-trust source may fill in an unset identity field.
 check(
   "fills in housing_association when not yet known",
-  applyProtectedIdentityFields({ housing_association: "Brf Solbacken" }, {}, "brf_acquisition"),
+  applyProtectedIdentityFields({ housing_association: "Brf Solbacken" }, {}, "booli_listing"),
   { housing_association: "Brf Solbacken" }
 );
 
@@ -28,13 +28,13 @@ check(
   applyProtectedIdentityFields(
     { housing_association: "Brf Wrong Match" },
     { housing_association: "Brf Solbacken" },
-    "brf_acquisition"
+    "booli_listing"
   ),
   {
     housing_association_conflict: {
       keptValue: "Brf Solbacken",
       rejectedValue: "Brf Wrong Match",
-      rejectedSource: "brf_acquisition",
+      rejectedSource: "booli_listing",
     },
   }
 );
@@ -45,7 +45,7 @@ check(
   applyProtectedIdentityFields(
     { housing_association: "Brf Solbacken" },
     { housing_association: "Brf Solbacken" },
-    "brf_acquisition"
+    "booli_listing"
   ),
   {}
 );
@@ -56,7 +56,7 @@ check(
   applyProtectedIdentityFields(
     { avg_monthly_fee: 4200 },
     { housing_association: "Brf Solbacken" },
-    "brf_acquisition"
+    "booli_listing"
   ),
   { avg_monthly_fee: 4200 }
 );
