@@ -90,14 +90,14 @@ LOAN_BOUNDS: dict[str, tuple[float, float]] = {
 # almost certainly a page number, footnote marker, or stray digit fragment
 # rather than real BRF financials — a real line item is either exactly
 # zero (a legitimate value for several of these) or at least a few
-# thousand kronor. Fields not listed here allow any in-bounds magnitude
-# (e.g. apartment/parking counts, where small integers are normal).
+# thousand kronor. Every SEK-denominated field gets this floor (derived
+# from the two SEK bounds tables below, not a hand-picked subset of them —
+# a note-reference digit ("5") sitting next to a header can land on ANY of
+# these fields, not just the ones someone remembered to list). Fields with
+# their own bounds table are exempt because small magnitudes are normal
+# for them (apartment/parking counts, interest rate percentages, etc).
 MIN_MAGNITUDE_SEK = 1_000
-FIELDS_REQUIRING_MAGNITUDE_OR_ZERO = frozenset({
-    "operating_profit", "financial_income", "financial_costs",
-    "profit_before_tax", "profit_after_tax",
-    "current_assets", "fixed_assets", "cash_and_bank", "short_term_debt",
-})
+FIELDS_REQUIRING_MAGNITUDE_OR_ZERO = frozenset(INCOME_STATEMENT_BOUNDS) | frozenset(BALANCE_SHEET_BOUNDS)
 
 
 def _out_of_bounds(value: object, bounds: tuple[float, float]) -> bool:
@@ -153,6 +153,20 @@ def _verify_section(
     return reports
 
 
+# Some fields are legitimately equal in a genuine statement, not evidence
+# of a column shift: a BRF that owes no corporate tax on its core operations
+# (the common case for a properly qualifying housing cooperative) reports an
+# identical profit_before_tax and profit_after_tax — confirmed on a real
+# annual report where "Resultat före skatt" and "Årets resultat" were both
+# genuinely 67 302 kr, which _flag_duplicate_values was discarding as a
+# false "same number matched twice". Equality is only waived for exactly
+# these known-benign groupings; any other pair of equal fields is still
+# flagged as before.
+_ALLOWED_EQUAL_FIELD_GROUPS: tuple[frozenset[str], ...] = (
+    frozenset({"profit_before_tax", "profit_after_tax"}),
+)
+
+
 def _flag_duplicate_values(reports: dict[str, FieldVerification]) -> None:
     """Two distinct line items sharing the exact same value almost never
     happens in a real statement — it is far more likely the same number was
@@ -166,6 +180,8 @@ def _flag_duplicate_values(reports: dict[str, FieldVerification]) -> None:
 
     for value, fields in by_value.items():
         if len(fields) < 2:
+            continue
+        if any(set(fields) <= group for group in _ALLOWED_EQUAL_FIELD_GROUPS):
             continue
         for field in fields:
             r = reports[field]

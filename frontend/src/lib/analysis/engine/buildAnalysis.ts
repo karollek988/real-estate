@@ -31,7 +31,7 @@ import { housingAssociationConflictOrNull, numberOrNull, stringOrNull } from "./
  * compared for cache freshness (see pipeline.ts::requestAnalysis).
  */
 export const TS_ENGINE_VERSION = "0.5.1";
-export const PYTHON_ENGINE_VERSION = "1.0.0";
+export const PYTHON_ENGINE_VERSION = "1.1.0";
 export const ENGINE_VERSION = `${TS_ENGINE_VERSION}+py${PYTHON_ENGINE_VERSION}`;
 
 /** Report UI card order — unchanged from the pre-Decision-Engine report. */

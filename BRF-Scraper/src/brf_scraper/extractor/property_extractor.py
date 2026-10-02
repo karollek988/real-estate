@@ -11,6 +11,7 @@ from brf_scraper.utils.logging import get_logger
 
 from .models import Evidence, ExtractedValue
 from .pdf_reader import PDFDocument
+from .text_normalize import fold_diacritics
 
 logger = get_logger(__name__)
 
@@ -98,24 +99,33 @@ def _find_name_near_role(
 
 
 # ── Property detail extraction ─────────────────────────────────────────
+#
+# Patterns are written in their diacritic-FOLDED form (å/ä/ö -> a/a/o) and
+# matched against fold_diacritics(page.text), not the raw page text — OCR
+# frequently drops these on a scanned page (see text_normalize.py), and a
+# literal "lägenheter" pattern simply never matches a scanned report's
+# "lagenheter". Folding preserves string length/position 1:1, so values are
+# still sliced back out of the ORIGINAL page.text by the match's offsets
+# (never out of the folded text itself), keeping correct Swedish spelling
+# wherever a field's value is text rather than a digit.
 
 PROPERTY_PATTERNS = {
     "year_built": [
-        r"byggår\s*[:\-–]?\s*(\d{4})",
+        r"byggar\s*[:\-–]?\s*(\d{4})",
         r"bygg\s*ar\s*[:\-–]?\s*(\d{4})",
-        r"uppförd\s*(\d{4})",
+        r"upprford\s*(\d{4})",
         r"tillkommit\s*(\d{4})",
         r"byggnaden\s*(\d{4})",
     ],
     "number_of_apartments": [
-        r"antal\s*(?:lägenheter|bostadsrätter)\s*[:\-–]?\s*(\d+)",
-        r"(\d+)\s*(?:lägenheter|bostadsrätter|bostäder)",
+        r"antal\s*(?:lagenheter|bostadsratter)\s*[:\-–]?\s*(\d+)",
+        r"(\d+)\s*(?:lagenheter|bostadsratter|bostader)",
     ],
     "energy_class": [
-        r"energiklass\s*[:\-–]?\s*([A-Fa-f])\b",
+        r"energiklass\s*[:\-–]?\s*([a-f])\b",
     ],
     "land_ownership": [
-        r"(äganderätt|tomträtt|tomtäganderätt)",
+        r"(aganderatt|tomtratt|tomtaganderatt)",
     ],
 }
 
@@ -125,14 +135,19 @@ def extract_property_details(doc: PDFDocument) -> dict[str, ExtractedValue]:
     results = {}
 
     for page in doc.pages:
+        folded_text = fold_diacritics(page.text)
         for field_name, patterns in PROPERTY_PATTERNS.items():
             if field_name in results:
                 continue
 
             for pattern in patterns:
-                m = re.search(pattern, page.text, re.IGNORECASE)
+                m = re.search(pattern, folded_text)
                 if m:
-                    value = m.group(1)
+                    # Sliced from the ORIGINAL page text at the folded
+                    # match's offsets (valid 1:1 — see module docstring),
+                    # so a text value keeps its real å/ä/ö instead of the
+                    # folded spelling used only to find it.
+                    value = page.text[m.start(1):m.end(1)]
                     # Try to parse as number
                     try:
                         value = int(value)
@@ -144,8 +159,17 @@ def extract_property_details(doc: PDFDocument) -> dict[str, ExtractedValue]:
                         evidence=Evidence(
                             page=page.page_number,
                             field=field_name,
-                            label=m.group(0)[:100],
-                            confidence=0.80,
+                            label=page.text[m.start():m.end()][:100],
+                            # An anchored regex match (digit immediately
+                            # adjacent to its keyword, e.g. "17 lägenheter")
+                            # is at least as reliable as the keyword-proximity
+                            # text search in financial_extractor.py's own
+                            # Strategy 1 (confidence 0.85) — it was previously
+                            # pinned to 0.80, just under HIGH_CONFIDENCE
+                            # (0.85) in validation.py, so a value this module
+                            # ever found was silently discarded as "uncertain"
+                            # regardless of how unambiguous the match was.
+                            confidence=0.90,
                             snippet=page.text[max(0, m.start() - 50):m.end() + 50][:300],
                         ),
                     )
