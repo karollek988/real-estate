@@ -2,8 +2,8 @@
 
 import { useEffect, useState } from "react";
 import { Reveal } from "@/components/Reveal";
-import { SectionBackground } from "@/components/SectionBackground";
 import { SectionIntro } from "@/components/SectionIntro";
+import { LANDING_CONTAINER } from "@/components/landing/container";
 import {
   BuildingIcon,
   ChartIcon,
@@ -13,6 +13,11 @@ import {
 import type { MarketStats } from "@/lib/marketStats";
 
 const PLOT = { left: 40, right: 428, top: 14, bottom: 112 };
+
+/* Chart colours on the light cards. */
+const LINE = "#2a7854";
+const LABEL = "#6b726d";
+const VALUE = "#1f2622";
 const LABEL_Y = 138;
 
 function xAt(i: number, n: number) {
@@ -57,10 +62,10 @@ function GridLine({ y, label }: { y: number; label: string }) {
         x2={PLOT.right}
         y1={y}
         y2={y}
-        stroke="rgba(255,255,255,0.08)"
+        stroke="rgba(15,31,24,0.09)"
         strokeDasharray="3 4"
       />
-      <text x={PLOT.left - 7} y={y + 3} textAnchor="end" fontSize="8.5" fill="#7c847f">
+      <text x={PLOT.left - 7} y={y + 3} textAnchor="end" fontSize="8.5" fill={LABEL}>
         {label}
       </text>
     </g>
@@ -69,13 +74,13 @@ function GridLine({ y, label }: { y: number; label: string }) {
 
 function ChartSkeleton() {
   return (
-    <div className="mt-4 h-[148px] w-full animate-pulse rounded-lg bg-white/[0.03]" />
+    <div className="mt-4 h-[148px] w-full animate-pulse rounded-lg bg-ka-ink/[0.04]" />
   );
 }
 
 function ChartUnavailable() {
   return (
-    <div className="mt-4 flex h-[148px] w-full items-center justify-center rounded-lg border border-white/5 text-xs text-neutral-600">
+    <div className="mt-4 flex h-[148px] w-full items-center justify-center rounded-lg border border-ka-line text-xs text-ka-muted">
       Data kunde inte hämtas just nu
     </div>
   );
@@ -107,14 +112,14 @@ function InterestRateChart({ values, quarterLabels }: { values: number[]; quarte
         pathLength={1}
         className="chart-line"
         fill="none"
-        stroke="#4ade80"
+        stroke={LINE}
         strokeWidth="2"
         strokeLinecap="round"
         strokeLinejoin="round"
       />
       {points.map((p, i) => (
         <g key={p.x}>
-          <circle className="chart-fade" cx={p.x} cy={p.y} r="2.2" fill="#4ade80" />
+          <circle className="chart-fade" cx={p.x} cy={p.y} r="2.2" fill={LINE} />
           <circle cx={p.x} cy={p.y} r="9" fill="transparent">
             <title>{`${quarterLabels[i]}: ${formatSwedishNumber(values[i], 2)} %`}</title>
           </circle>
@@ -127,12 +132,12 @@ function InterestRateChart({ values, quarterLabels }: { values: number[]; quarte
         textAnchor="end"
         fontSize="9"
         fontWeight="600"
-        fill="#e5e5e5"
+        fill={VALUE}
       >
         {formatSwedishNumber(values[values.length - 1], 2)}%
       </text>
       {years.map(({ label, i }) => (
-        <text key={label} x={xAt(i, values.length)} y={LABEL_Y} textAnchor="middle" fontSize="8.5" fill="#7c847f">
+        <text key={label} x={xAt(i, values.length)} y={LABEL_Y} textAnchor="middle" fontSize="8.5" fill={LABEL}>
           {label}
         </text>
       ))}
@@ -157,8 +162,8 @@ function HousePriceChart({ values, quarterLabels }: { values: number[]; quarterL
     >
       <defs>
         <linearGradient id="hox-area" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0%" stopColor="rgba(74,222,128,0.26)" />
-          <stop offset="100%" stopColor="rgba(74,222,128,0)" />
+          <stop offset="0%" stopColor="rgba(42,120,84,0.22)" />
+          <stop offset="100%" stopColor="rgba(42,120,84,0)" />
         </linearGradient>
       </defs>
       {gridSteps.map((v) => (
@@ -170,7 +175,7 @@ function HousePriceChart({ values, quarterLabels }: { values: number[]; quarterL
         pathLength={1}
         className="chart-line"
         fill="none"
-        stroke="#4ade80"
+        stroke={LINE}
         strokeWidth="2"
         strokeLinecap="round"
         strokeLinejoin="round"
@@ -185,7 +190,7 @@ function HousePriceChart({ values, quarterLabels }: { values: number[]; quarterL
         cx={points[points.length - 1].x}
         cy={points[points.length - 1].y}
         r="2.6"
-        fill="#4ade80"
+        fill={LINE}
       />
       <text
         className="chart-fade"
@@ -194,13 +199,13 @@ function HousePriceChart({ values, quarterLabels }: { values: number[]; quarterL
         textAnchor="end"
         fontSize="9"
         fontWeight="600"
-        fill="#e5e5e5"
+        fill={VALUE}
       >
         {values[values.length - 1]}
       </text>
       {quarterLabels.map((label, i) =>
         i % 2 === 0 ? (
-          <text key={i} x={points[i].x} y={LABEL_Y} textAnchor="middle" fontSize="8.5" fill="#7c847f">
+          <text key={i} x={points[i].x} y={LABEL_Y} textAnchor="middle" fontSize="8.5" fill={LABEL}>
             {label}
           </text>
         ) : null,
@@ -217,14 +222,14 @@ function SqmPriceChart({ areas }: { areas: { name: string; pricePerM2: number }[
       {areas.map(({ name, pricePerM2 }, i) => (
         <div key={name}>
           <div className="flex items-baseline justify-between text-xs">
-            <span className="text-neutral-300">{name}</span>
-            <span className="font-semibold text-neutral-100">
+            <span className="text-ka-muted">{name}</span>
+            <span className="font-semibold text-ka-ink">
               {pricePerM2.toLocaleString("sv-SE")} kr
             </span>
           </div>
-          <div className="mt-1.5 h-2 overflow-hidden rounded-full bg-white/[0.06]">
+          <div className="mt-1.5 h-2 overflow-hidden rounded-full bg-ka-ink/[0.06]">
             <div
-              className="chart-bar h-full rounded-full bg-gradient-to-r from-green-600 to-green-400"
+              className="chart-bar h-full rounded-full bg-gradient-to-r from-ka-green-800 to-ka-green-600"
               style={
                 {
                   width: `${(pricePerM2 / max) * 100}%`,
@@ -262,13 +267,13 @@ function InflationChart({ values, monthLabels }: { values: number[]; monthLabels
         x2={PLOT.right}
         y1={targetY}
         y2={targetY}
-        stroke="rgba(74,222,128,0.45)"
+        stroke="rgba(42,120,84,0.5)"
         strokeDasharray="5 4"
       />
-      <text x={PLOT.left - 7} y={targetY + 3} textAnchor="end" fontSize="8.5" fill="#7c847f">
+      <text x={PLOT.left - 7} y={targetY + 3} textAnchor="end" fontSize="8.5" fill={LABEL}>
         2%
       </text>
-      <text x={PLOT.right} y={targetY - 6} textAnchor="end" fontSize="8.5" fill="#7c847f">
+      <text x={PLOT.right} y={targetY - 6} textAnchor="end" fontSize="8.5" fill={LABEL}>
         Inflationsmål
       </text>
       <path
@@ -276,14 +281,14 @@ function InflationChart({ values, monthLabels }: { values: number[]; monthLabels
         pathLength={1}
         className="chart-line"
         fill="none"
-        stroke="#4ade80"
+        stroke={LINE}
         strokeWidth="2"
         strokeLinecap="round"
         strokeLinejoin="round"
       />
       {points.map((p, i) => (
         <g key={p.x}>
-          <circle className="chart-fade" cx={p.x} cy={p.y} r="2.2" fill="#4ade80" />
+          <circle className="chart-fade" cx={p.x} cy={p.y} r="2.2" fill={LINE} />
           <circle cx={p.x} cy={p.y} r="9" fill="transparent">
             <title>{`${monthLabels[i]}: ${formatSwedishNumber(values[i])} %`}</title>
           </circle>
@@ -291,7 +296,7 @@ function InflationChart({ values, monthLabels }: { values: number[]; monthLabels
       ))}
       {monthLabels.map((month, i) =>
         i % 2 === 0 ? (
-          <text key={i} x={points[i].x} y={LABEL_Y} textAnchor="middle" fontSize="8.5" fill="#7c847f">
+          <text key={i} x={points[i].x} y={LABEL_Y} textAnchor="middle" fontSize="8.5" fill={LABEL}>
             {month}
           </text>
         ) : null,
@@ -401,8 +406,7 @@ export function InsightsSection() {
 
   return (
     <section id="marknadsinsikter" className="relative scroll-mt-24">
-      <SectionBackground src="/marknads-instinkter.png" />
-      <div className="relative mx-auto w-full max-w-[1400px] px-6 py-20">
+      <div className={`${LANDING_CONTAINER} py-20 lg:py-28`}>
         <SectionIntro
           icon={ChartIcon}
           label="Marknadsinsikter"
@@ -410,37 +414,37 @@ export function InsightsSection() {
           description="Samma datapunkter som ligger till grund för varje analys – hämtade live från Riksbanken, SCB och Svensk Mäklarstatistik."
         />
 
-        <div className="mt-10 grid gap-5 lg:grid-cols-2">
+        <div className="mt-12 grid gap-5 lg:grid-cols-2">
           {cards.map(({ icon: Icon, label, sub, value, unit, badge, chart, source, updated }, i) => (
             <Reveal key={label} variant="up" delay={i * 90} className="h-full">
-              <div className="flex h-full flex-col rounded-2xl border border-white/10 bg-white/[0.03] p-6 transition duration-300 hover:border-white/20">
+              <div className="flex h-full flex-col rounded-[22px] border border-ka-line bg-white p-6 shadow-[0_18px_40px_-32px_rgba(15,31,24,0.45)] transition duration-300 hover:border-ka-green-700/25 sm:p-7">
                 <div className="flex items-start justify-between gap-3">
                   <div className="flex items-center gap-3">
-                    <span className="flex h-9 w-9 items-center justify-center rounded-lg border border-white/10 bg-white/[0.04]">
-                      <Icon className="h-[18px] w-[18px] text-green-400" />
+                    <span className="flex h-10 w-10 items-center justify-center rounded-full bg-ka-green-800 text-white">
+                      <Icon className="h-[18px] w-[18px]" />
                     </span>
                     <div>
-                      <p className="text-sm font-semibold">{label}</p>
-                      <p className="text-xs text-neutral-500">{sub}</p>
+                      <p className="text-[15px] font-bold text-ka-ink">{label}</p>
+                      <p className="text-xs text-ka-muted">{sub}</p>
                     </div>
                   </div>
                   {badge && (
-                    <span className="rounded-full border border-green-500/25 bg-green-500/10 px-2.5 py-1 text-[11px] font-semibold text-green-400">
+                    <span className="rounded-full bg-ka-sage/70 px-2.5 py-1 text-[11px] font-semibold text-ka-green-900">
                       {badge}
                     </span>
                   )}
                 </div>
 
                 <div className="mt-4 flex items-baseline gap-2">
-                  <span className="text-[28px] font-bold tracking-tight">
+                  <span className="font-display text-[34px] font-bold leading-none tracking-tight text-ka-ink">
                     {value ?? (loading ? "" : "—")}
                   </span>
-                  <span className="text-sm text-neutral-500">{unit}</span>
+                  <span className="text-sm text-ka-muted">{unit}</span>
                 </div>
 
                 {chart ?? (loading ? <ChartSkeleton /> : <ChartUnavailable />)}
 
-                <p className="mt-auto pt-4 text-[11px] text-neutral-600">
+                <p className="mt-auto pt-4 text-[11.5px] text-ka-muted">
                   Källa: {source}
                   {updated ? ` · Uppdaterad ${updated}` : ""}
                 </p>

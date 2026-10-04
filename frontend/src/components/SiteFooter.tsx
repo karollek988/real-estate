@@ -1,7 +1,7 @@
 "use client";
 
-import Image from "next/image";
 import Link from "next/link";
+import { BrandLogo } from "@/components/BrandLogo";
 import { CookieSettingsLinkInline } from "@/components/CookieSettingsLinkInline";
 import { FacebookIcon, InstagramIcon } from "@/components/icons";
 import { OPEN_ONBOARDING_MODAL_EVENT } from "@/lib/onboardingModalEvents";
@@ -19,51 +19,40 @@ const FORETAG_LINKS = [
   { label: "Kontakt", href: "/#contact" },
 ];
 
+/** Global footer (every page). Deep green, so it closes both the cream landing page and the dark app pages. */
 export function SiteFooter() {
   const year = new Date().getFullYear();
 
   return (
-    <footer className="border-t border-white/5 bg-[#0A0F0D]">
-      <div className="mx-auto w-full max-w-[1400px] px-5 lg:px-6">
-        <div className="grid grid-cols-1 gap-10 py-14 sm:grid-cols-2 lg:grid-cols-4 lg:gap-12">
+    <footer className="bg-ka-green-950 text-white">
+      <div className="mx-auto w-full max-w-[1680px] px-5 sm:px-8 xl:px-12 2xl:px-[84px]">
+        <div className="grid grid-cols-1 gap-10 py-16 sm:grid-cols-2 lg:grid-cols-4 lg:gap-12">
           {/* Brand column */}
           <div className="sm:col-span-2 lg:col-span-1">
-            <Link href="/" className="flex items-center gap-3">
-              <Image
-                src="/kopanalys-bostad-logo.png"
-                alt="Köpanalys"
-                width={72}
-                height={72}
-                className="h-9 w-9 rounded-full"
-              />
-              <span className="text-lg font-semibold tracking-tight text-white">Köpanalys</span>
+            <Link href="/" aria-label="Köpanalys – till startsidan" className="inline-flex transition-opacity hover:opacity-80">
+              <BrandLogo className="text-[22px]" markClassName="h-9 w-auto text-ka-mint" />
             </Link>
-            <p className="mt-4 max-w-[260px] text-[14px] leading-relaxed text-neutral-400">
+            <p className="mt-5 max-w-[280px] text-[14px] leading-relaxed text-white/60">
               Köpa bostad? Vi visar vad du faktiskt köper — föreningens ekonomi, området och alla kostnader.
             </p>
           </div>
 
           {/* Produkt column */}
           <div>
-            <h3 className="mb-4 text-[13px] font-semibold uppercase tracking-wider text-neutral-500">
-              Produkt
-            </h3>
+            <h3 className="mb-4 text-[12px] font-semibold uppercase tracking-[0.12em] text-ka-mint/80">Produkt</h3>
             <ul className="flex flex-col gap-3">
               <li>
                 <button
                   type="button"
                   onClick={() => window.dispatchEvent(new Event(OPEN_ONBOARDING_MODAL_EVENT))}
-                  className="cursor-pointer text-[14px] text-neutral-300 transition hover:text-green-400"
+                  className="cursor-pointer text-[14.5px] text-white/75 transition hover:text-white"
                 >
                   Så fungerar det
                 </button>
               </li>
               {PRODUKT_LINKS.map(({ label, href }) => (
                 <li key={label}>
-                  <Link
-                    href={href}
-                    className="text-[14px] text-neutral-300 transition hover:text-green-400"
-                  >
+                  <Link href={href} className="text-[14.5px] text-white/75 transition hover:text-white">
                     {label}
                   </Link>
                 </li>
@@ -73,16 +62,11 @@ export function SiteFooter() {
 
           {/* Företag column */}
           <div>
-            <h3 className="mb-4 text-[13px] font-semibold uppercase tracking-wider text-neutral-500">
-              Företag
-            </h3>
+            <h3 className="mb-4 text-[12px] font-semibold uppercase tracking-[0.12em] text-ka-mint/80">Företag</h3>
             <ul className="flex flex-col gap-3">
               {FORETAG_LINKS.map(({ label, href }) => (
                 <li key={label}>
-                  <Link
-                    href={href}
-                    className="text-[14px] text-neutral-300 transition hover:text-green-400"
-                  >
+                  <Link href={href} className="text-[14.5px] text-white/75 transition hover:text-white">
                     {label}
                   </Link>
                 </li>
@@ -95,8 +79,8 @@ export function SiteFooter() {
         </div>
 
         {/* Bottom bar */}
-        <div className="flex flex-col items-center justify-between gap-3 border-t border-white/5 py-6 sm:flex-row">
-          <p className="text-[12px] text-neutral-500">
+        <div className="flex flex-col items-center justify-between gap-3 border-t border-white/10 py-6 sm:flex-row">
+          <p className="text-[12.5px] text-white/50">
             &copy; {year} Köpanalys. Org.nr 9811048793
           </p>
           <div className="flex items-center gap-3">
@@ -105,7 +89,7 @@ export function SiteFooter() {
               target="_blank"
               rel="noopener noreferrer"
               aria-label="Köpanalys på Facebook"
-              className="text-neutral-500 transition hover:text-green-400"
+              className="text-white/50 transition hover:text-ka-mint"
             >
               <FacebookIcon className="h-4 w-4" />
             </a>
@@ -114,7 +98,7 @@ export function SiteFooter() {
               target="_blank"
               rel="noopener noreferrer"
               aria-label="Köpanalys på Instagram"
-              className="text-neutral-500 transition hover:text-green-400"
+              className="text-white/50 transition hover:text-ka-mint"
             >
               <InstagramIcon className="h-4 w-4" />
             </a>

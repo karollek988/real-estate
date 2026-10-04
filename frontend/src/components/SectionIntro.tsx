@@ -4,9 +4,9 @@ import { Reveal } from "@/components/Reveal";
 
 /**
  * Shared premium introduction for every major section below the hero:
- * icon tile + green category label + headline + short explanation on the
- * left (slides in from the left), a decorative illustration on the right
- * (slides in from the right). Keeps the hero's existing type scale.
+ * category pill + serif headline + short explanation on the left (slides in
+ * from the left), a decorative icon tile on the right (slides in from the
+ * right). Uses the landing page's serif (font-display), which page.tsx loads.
  */
 export function SectionIntro({
   icon: Icon,
@@ -24,25 +24,23 @@ export function SectionIntro({
   return (
     <div className="flex flex-wrap items-end justify-between gap-6">
       <Reveal variant="left">
-        <div className="max-w-[620px]">
-          <span className="flex h-12 w-12 items-center justify-center rounded-xl border border-green-500/25 bg-green-500/10">
-            <Icon className="h-6 w-6 text-green-400" />
-          </span>
-          <p className="mt-5 text-sm font-semibold text-green-400">{label}</p>
-          <h2 className="mt-2 text-[32px] font-bold leading-tight tracking-tight sm:text-[36px]">
+        <div className="max-w-[660px]">
+          <p className="inline-flex items-center gap-2 rounded-full bg-ka-sage/70 px-3.5 py-1.5 text-[12px] font-semibold uppercase tracking-[0.08em] text-ka-green-900">
+            <Icon className="h-4 w-4" />
+            {label}
+          </p>
+          <h2 className="mt-5 font-display text-[34px] font-bold leading-[1.08] tracking-[-0.015em] text-ka-ink sm:text-[44px]">
             {title}
           </h2>
-          <p className="mt-3 max-w-[520px] text-[15px] leading-relaxed text-neutral-400">
-            {description}
-          </p>
+          <p className="mt-4 max-w-[560px] text-[16px] leading-relaxed text-ka-muted sm:text-[17px]">{description}</p>
           {action && <div className="mt-6">{action}</div>}
         </div>
       </Reveal>
 
       <Reveal variant="right" className="hidden lg:block">
-        <div className="relative flex h-28 w-28 items-center justify-center rounded-2xl border border-white/10 bg-white/[0.03]">
-          <div className="absolute inset-0 rounded-2xl bg-[radial-gradient(circle_at_center,rgba(74,222,128,0.14),transparent_72%)]" />
-          <Icon className="relative h-10 w-10 text-green-400" />
+        <div className="relative flex h-28 w-28 items-center justify-center rounded-[28px] border border-ka-line bg-white shadow-[0_24px_48px_-32px_rgba(15,31,24,0.5)]">
+          <div className="absolute inset-0 rounded-[28px] bg-[radial-gradient(circle_at_center,rgba(42,120,84,0.13),transparent_72%)]" />
+          <Icon className="relative h-10 w-10 text-ka-green-700" />
         </div>
       </Reveal>
     </div>

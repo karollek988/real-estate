@@ -9,7 +9,7 @@ export function CookieSettingsLinkInline() {
     <button
       type="button"
       onClick={reopenCookieConsent}
-      className="cursor-pointer text-[12px] text-neutral-500 underline underline-offset-2 transition hover:text-neutral-300"
+      className="cursor-pointer text-[12.5px] text-white/50 underline underline-offset-2 transition hover:text-white"
     >
       Cookie-inställningar
     </button>

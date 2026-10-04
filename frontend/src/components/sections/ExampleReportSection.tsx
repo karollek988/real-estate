@@ -3,8 +3,9 @@
 import Link from "next/link";
 import { Reveal } from "@/components/Reveal";
 import { SectionBackground } from "@/components/SectionBackground";
+import { LANDING_CONTAINER } from "@/components/landing/container";
 import { BrfAnalysis } from "@/components/report/BrfAnalysis";
-import { ArrowRightIcon, ShieldIcon } from "@/components/icons";
+import { ArrowRightIcon, FileTextIcon } from "@/components/icons";
 import { EMPTY_BRF_FIGURES } from "@/lib/brf/figures";
 import { interpretBrf } from "@/lib/brf/interpret";
 import { BRF_REVIEW_PROMISE } from "@/lib/packages";
@@ -40,12 +41,12 @@ const EXAMPLE_READING = interpretBrf(EXAMPLE_FIGURES, { livingAreaM2: 64, monthl
 
 export function ExampleReportSection() {
   return (
-    <section id="example-report" className="relative scroll-mt-24">
+    <section id="example-report" className="relative scroll-mt-24 overflow-hidden bg-ka-green-950 text-white">
       <SectionBackground src="/report-blueprint-picture.png" />
-      <div className="relative mx-auto w-full max-w-[1400px] px-6 py-20">
-        <div className="flex flex-col gap-12 lg:flex-row lg:items-center lg:gap-14">
+      <div className={`relative ${LANDING_CONTAINER} py-20 lg:py-28`}>
+        <div className="flex flex-col gap-12 lg:flex-row lg:items-center lg:gap-16">
           <Reveal variant="left" className="w-full lg:w-[58%]">
-            <div className="relative overflow-hidden rounded-2xl border border-white/10 bg-[#FBF9F4] shadow-[0_24px_60px_rgba(0,0,0,0.35)]">
+            <div className="relative overflow-hidden rounded-[22px] border border-white/10 bg-[#FBF9F4] shadow-[0_40px_80px_-30px_rgba(0,0,0,0.6)]">
               <div className="flex items-center justify-between border-b border-black/10 bg-[#0E2B1F] px-5 py-3">
                 <span className="text-[11px] font-semibold uppercase tracking-[0.16em] text-[#D8CBA3]">Köpanalys · Bostadsrättsförening</span>
                 <span className="rounded-full bg-[#D8B563]/20 px-2.5 py-0.5 text-[11px] font-semibold text-[#D8B563]">
@@ -64,28 +65,28 @@ export function ExampleReportSection() {
           </Reveal>
 
           <Reveal variant="right" className="w-full lg:w-[42%]">
-            <span className="flex h-12 w-12 items-center justify-center rounded-xl border border-green-500/25 bg-green-500/10">
-              <ShieldIcon className="h-6 w-6 text-green-400" />
-            </span>
-            <p className="mt-5 text-sm font-semibold text-green-400">Exempelrapport</p>
-            <h2 className="mt-2 text-[32px] font-bold leading-tight tracking-tight sm:text-[36px]">
+            <p className="inline-flex items-center gap-2 rounded-full bg-white/10 px-3.5 py-1.5 text-[12px] font-semibold uppercase tracking-[0.08em] text-ka-mint">
+              <FileTextIcon className="h-4 w-4" />
+              Exempelrapport
+            </p>
+            <h2 className="mt-5 font-display text-[34px] font-bold leading-[1.08] tracking-[-0.015em] sm:text-[44px]">
               Föreningens ekonomi i klartext
             </h2>
-            <p className="mt-3 max-w-[440px] text-[15px] leading-relaxed text-neutral-400">
+            <p className="mt-4 max-w-[460px] text-[16px] leading-relaxed text-white/75 sm:text-[17px]">
               Varje nyckeltal i årsredovisningen förklaras, jämförs med vad som brukar räknas som lågt och högt, och räknas om
               till vad det betyder för dig i kronor. {BRF_REVIEW_PROMISE}
             </p>
-            <p className="mt-3 max-w-[440px] text-[13px] leading-relaxed text-neutral-500">
+            <p className="mt-3 max-w-[460px] text-[14px] leading-relaxed text-white/55">
               Utöver BRF-analysen innehåller rapporten området, möjliga risker och frågorna att ställa till mäklaren och
               föreningen.
             </p>
 
             <Link
               href="/#priser"
-              className="mt-8 inline-flex items-center gap-2.5 rounded-[10px] bg-green-600 px-6 py-3 text-[15px] font-semibold text-white transition hover:scale-[1.02] hover:bg-green-500 active:scale-[0.99]"
+              className="group mt-8 inline-flex items-center gap-2.5 rounded-[12px] bg-ka-cream px-6 py-3.5 text-[15px] font-semibold text-ka-green-950 transition-all duration-200 hover:-translate-y-0.5 hover:bg-white"
             >
               Se priserna
-              <ArrowRightIcon className="h-5 w-5" />
+              <ArrowRightIcon className="h-5 w-5 transition-transform duration-200 group-hover:translate-x-1" />
             </Link>
           </Reveal>
         </div>
