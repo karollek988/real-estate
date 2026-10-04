@@ -5,6 +5,109 @@
 > otherwise leave it alone. Detailed research/product docs live in `docs/`;
 > this file is the "what's actually true right now" summary.
 
+Last updated: 2026-09-28 — `mapDemoIntegration` now carries both the
+**admin portal** (`admin.kopanalys.se`: login + embedded map demo, see §3g
+and the admin bullet in §6 — needs a Vercel domain + DNS record before it's
+reachable) and the Eighth session's FAQ value-communication work below
+(merged together on this branch for the `admin.kopanalys.se` test
+deployment; neither is on `main` yet). Before that, 2026-09-18 — see the
+Seventh session note below; that branch has since been re-verified, merged,
+pushed, and deployed to `main` (see "Merge, push & deploy" at the end of
+that section for the full record).
+
+**Eighth session — FAQ value-communication audit + rewrite.** Branch
+`feature/faq-value-communication` (branched from `main`), **not merged,
+not deployed**, per explicit instruction. Task: make the homepage FAQ
+(`frontend/src/lib/faq.ts`, rendered by
+`frontend/src/components/sections/FaqSection.tsx`) clearly communicate
+Köpanalys's value versus pasting the same screenshots into a general-purpose
+AI chat, and — per explicit instruction — audit every existing FAQ answer
+against actual current product behavior rather than assume old copy was
+still accurate. No product/feature behavior touched — only content: all of
+`faq.ts`, plus the same 4 stale facts (Hemnet-link-only intake, card-only
+payment, "cancel via inställningar," "delete account via support") fixed a
+second time in `app/api/chat/route.ts`'s `SYSTEM_PROMPT`, once noticed
+there too. That prompt already appends the full live `FAQ_ITEMS` array as
+reference text after its own hardcoded bullets (`route.ts:52-53`), so the
+hardcoded bullets were the only remaining place these facts could still
+contradict the FAQ.
+
+Audit findings, each cross-checked against code/DB migrations/git history,
+not assumed:
+- Intake-method claim was stale: FAQ said "endast länkar från Hemnet
+  stöds," but the homepage has had no URL input since the screenshot-OCR
+  flow shipped (§2 below) — `ScreenshotUploadForm.tsx` + `ManualEntryForm.tsx`
+  are the only two intake paths today, and `screenshotExtract.ts`'s
+  regex-label extraction isn't Hemnet-specific. Fixed to describe
+  screenshot-of-any-site-or-manual-entry instead.
+- "Används AI i analysen?" overclaimed: it said AI reads "mäklarens
+  dokument" and summarizes a besiktningsprotokoll. That path is dormant —
+  the "Dokument hos mäklaren" feature was fully removed (see the Seventh
+  session's note below), and `risk.ts`'s own comment confirms
+  `inspection_findings` "stays dormant until a future provider populates
+  the same attribute shape." Also added that screenshot reading is
+  deterministic OCR (Tesseract + regex), not AI vision — relevant context
+  for the new AI-comparison question below. Fixed.
+- "Vad är skillnaden mellan gratis- och Premium-analys?" still listed
+  "dokument hos mäklaren" as a Premium-only chapter; that chapter no
+  longer exists (same removal). Fixed.
+- Account-deletion FAQ said "kontakta oss" — it's actually self-serve
+  (`app/dashboard/settings/page.tsx`'s "Radera konto permanent," calls
+  `DELETE /api/profile`). Subscription-cancellation FAQ pointed to
+  "dashboardens inställningar" — it's the separate "Prenumerationer" page
+  (`app/dashboard/subscriptions/page.tsx`, opens the Stripe billing
+  portal via `/api/stripe/portal`). Fixed both.
+- Payment methods: FAQ said "kort" only; `PaymentMethodsCard.tsx` also
+  lists Klarna. Fixed.
+- Two questions ("Vilka datakällor används?" / "Var kommer datan ifrån?")
+  were near-duplicates with slightly different source lists. Merged into
+  one.
+- Verified real, then documented in the FAQ for the first time: the
+  automatic quota refund on analysis failure.
+  `pipeline.ts`'s `InsufficientListingDataError` path calls
+  `ownership.ts:refundAnalysisRequestsQuota()` → the `refund_analysis_quota`
+  RPC (`supabase/migrations/20260814020000_refund_analysis_quota.sql`,
+  the same RPC pen-tested in this doc's security-fix history) whenever a
+  listing's essential fields can't be gathered — the credit genuinely goes
+  back on its own; this isn't a manual support process.
+  `report/page.tsx`'s own failure screen already tells the user this; the
+  new FAQ answer says the same thing and deliberately no more — it does
+  **not** promise a monetary refund, since no `stripe.refunds.create` call
+  (or any Stripe refund call) exists anywhere in the codebase, confirmed by
+  a full-repo search.
+- Verified real, then added to the FAQ for the first time: the BRF
+  annual-report self-upload (`SectionDocumentUpload` →
+  `POST /api/properties/[id]/brf-report` → `rerunAnalysisForProperty`, no
+  quota consumed) — already built (§ below, "Generic 'upload document →
+  extract → regenerate' mechanism") but never mentioned in the FAQ.
+
+New question added per explicit instruction: "Varför ska jag använda
+Köpanalys istället för vanlig AI?" — names ChatGPT/Claude explicitly (as
+instructed), does not claim generic AI "can never" do this, and instead
+states the concrete, verified differentiators: purpose-built analysis
+pipeline, named external sources cited per datapoint, explicit
+"Uppgift saknas" instead of guessing, the BRF-document complement feature,
+and PDF export.
+
+`FAQ_ITEMS` grew from 17 to 21 questions: one duplicate pair merged, six
+new (the AI-comparison question, missing/wrong-data handling, the
+BRF-document complement, the failed-analysis/paid-but-no-report question,
+and a dedicated support-contact question), the rest edited only where
+audited and found stale, otherwise left untouched.
+
+**Tests this session**: `npx tsc --noEmit` (frontend) clean. `npm run
+lint` still fails immediately with the pre-existing "no eslint.config"
+error (G4 below — unrelated to, and not introduced by, this change).
+Manually verified in the running dev server (`http://localhost:3001/#faq`):
+all 21 questions render in the intended order, the new/edited ones open
+and show the intended text (checked via the DOM, not just source), no
+console errors, no React key collisions (`FAQ_ITEMS.map(..., key=
+{question})` — all 21 question strings confirmed unique via a page-context
+`querySelectorAll` check).
+
+**Known gap found incidentally, not fixed (out of FAQ scope)**: see G10
+below — Premium/Ultra subscription plans do not appear to actually grant
+their advertised monthly analysis credits anywhere in the codebase.
 Last updated: 2026-10-02 — see the Ninth session note first (pitch-deck alignment,
 person-reviewed BRF analysis; **merged to `main` and deployed to production 2026-10-02 ~21:02**).
 The Seventh session note below was re-verified, merged, pushed, and deployed to `main` (see
@@ -581,9 +684,87 @@ attacker-chosen `token_hash`/`redirect_to`.
 
 `isDevAdmin()` (`lib/auth/devAdmin.ts`) is hard-gated on
 `NODE_ENV === "development"`, never true in a Vercel production build. No
-other admin/debug HTTP routes exist. Stripe webhook verifies signatures
-correctly (`stripe.webhooks.constructEvent`). No `.update`/`.upsert` on
-`profiles` anywhere outside the service-role admin client.
+other admin/debug HTTP routes existed at the time of this check (the admin
+portal added on 2026-09-28 is documented separately in §3g). Stripe webhook
+verifies signatures correctly (`stripe.webhooks.constructEvent`). No
+`.update`/`.upsert` on `profiles` anywhere outside the service-role admin
+client.
+
+### 3g. Admin portal (`admin.kopanalys.se`) — login + embedded map demo
+
+Added 2026-09-28. `admin.kopanalys.se` shows a login box; after login it shows
+the KopanalysMapDemo "Atlas" map workspace (github.com/intothenether/KopanalysMapDemo,
+ported into `frontend/src/components/admin/atlas/`, differences listed in that
+file's header comment). Everything lives under `frontend/src/lib/admin/`,
+`src/components/admin/`, `src/pages/` and `src/app/api/admin-portal/`.
+
+- **Routing.** `proxy.ts` runs `lib/admin/adminProxy.ts` first. On the admin
+  host `/` is rewritten to `src/pages/admin-portal`; only
+  `/api/admin-portal/{login,logout}` and Next internals stay reachable — every
+  other site page/API answers 404 there, and the Supabase `updateSession`
+  never runs. On every other host the portal page, its `_next/data` route and
+  its API answer 404. Hosts: `admin.kopanalys.se` and (dev) `admin.localhost`
+  — `lib/admin/host.ts`. **Run locally:** `npm run dev` in `frontend/`, then
+  open `http://admin.localhost:3001` (Chromium/Firefox resolve `*.localhost`
+  to loopback — no hosts-file edit; the portal needs no Supabase env vars).
+  Dev uses an ephemeral session key, so restarting the dev server signs you out.
+- **Why the Pages Router.** `app/layout.tsx` wraps every App Router page in
+  Tailwind + the marketing chrome (footer, cookie banner, chat widget, Supabase
+  provider); a route can only escape it by moving *all* site routes into a
+  route group and enabling the experimental `globalNotFound` flag for a 404
+  page. A `pages/` route sits outside that layout with no change to the site's
+  route tree (verified: `next build` route table for `app` is unchanged, `/`
+  still prerenders, the site's own 404 still renders inside its layout).
+  **Side effect:** with a `pages/` dir Next adds
+  `next/navigation-types/compat/navigation` to `next-env.d.ts`, which makes
+  `useSearchParams()/usePathname()/useParams()` typed as nullable project-wide.
+  Three existing pages (`analyzing`, `buy`, `dashboard/inspection`) got
+  `searchParams?.get(...) ?? null` — type-only, no runtime change. New code that
+  uses those hooks needs the same null handling.
+- **Credentials.** Username `admin`. The password is stored **only as a scrypt
+  hash** (N=2^16, r=8, p=2, random salt; `lib/admin/password.ts`) — built into
+  `lib/admin/credentials.ts`, overridable with `ADMIN_PASSWORD_HASH`; create a
+  hash with `npm run admin:hash`. The plaintext is not in any file. Login
+  always verifies the password even for a wrong username (no timing/enumeration
+  signal), compares in constant time, and caps concurrent scrypt runs per
+  instance (memory).
+- **Session.** Stateless signed cookie (`lib/admin/session.ts`): HMAC-SHA256,
+  8 h, `HttpOnly; Secure; SameSite=Strict; Path=/`, `__Host-` prefixed on https
+  (host-only — never sent to `kopanalys.se`). The signature covers a
+  fingerprint of the password hash, so **changing the password signs every
+  session out**. Key = `ADMIN_SESSION_SECRET`, else derived (HKDF) from
+  `SUPABASE_SERVICE_ROLE_KEY`; with neither, production login is disabled
+  (fails closed, verified). No server-side revocation: logout clears the cookie
+  only, a copied cookie stays valid until expiry.
+- **Abuse limits.** 5 failed logins / 15 min per client → 429 with
+  `Retry-After` (`lib/admin/loginThrottle.ts`), checked *before* hashing.
+  In-memory and per serverless instance — same caveat as `lib/rateLimit.ts`;
+  add a Vercel Firewall rate-limit rule on `POST /api/admin-portal/login` for a
+  shared limit. POSTs must be same-origin (Origin + Sec-Fetch-Site) and JSON.
+- **Headers (admin host only, `next.config.ts`).** Strict CSP in production
+  (`script-src 'self'` — verified it blocks injected inline script and inline
+  handlers; allows https images, Nominatim, inline styles), `geolocation=(self)`
+  for the map's "use my location" (the site-wide policy blocks it), noindex,
+  COOP; login/page responses `no-store`.
+- **The demo's own "Logga in med BankID" button is a client-side mock** (it flips
+  a localStorage flag) and has nothing to do with the admin login. Its data
+  lives in `localStorage` of the `admin.kopanalys.se` origin, nothing is
+  sent to a server. The port HTML-escapes user/geocoder text and restricts
+  link/image URLs (the original interpolated them raw into `innerHTML`).
+- **Known weakness — by request, not by design.** The account uses the
+  password `[redacted]`, which is in every common-password list: anyone who
+  finds `admin.kopanalys.se` can log in on the first try, and the hash (built
+  into the code, so visible to anyone with repo access) offers no protection
+  because it can be dictionary-attacked offline in seconds. Hashing/lockouts
+  only help against leaks and guessing, not against a known-weak password.
+  Rotate it: `npm run admin:hash` → set `ADMIN_PASSWORD_HASH` in Vercel.
+- **Tests.** `npx tsx src/lib/admin/admin.verify.mjs` (70 checks: hashing,
+  sessions, throttle, host routing, login/logout handlers; generated
+  passwords only). Manually verified on `next dev` and on a production
+  `next build` + `next start` at `http://admin.localhost:3001`: login, wrong
+  password, lockout, fail-closed, session persistence, sign-out, headers/CSP,
+  main-host 404s, desktop + mobile layout, every demo feature. **Not yet
+  verified on Vercel** (needs the domain below).
 
 ## 4. Known gaps / next steps
 
@@ -671,6 +852,34 @@ correctly (`stripe.webhooks.constructEvent`). No `.update`/`.upsert` on
     `fonts-dejavu-core`; `api/requirements.txt` has `pytesseract`, `pillow`,
     `python-docx`; the internal-auth middleware added no new dependency and
     doesn't touch the Docker build steps.
+
+- **G10** (eighth session, open — found incidentally while fact-checking
+  FAQ copy against the account/credit system, not itself a FAQ-scope fix;
+  flagging for engineering attention): the Premium/Ultra **subscription**
+  plans (`app/dashboard/subscriptions/page.tsx`'s "15 Premium Decision
+  Analyses/månad" / "30 ... /månad" copy) do not appear to actually grant
+  `premium_analyses_remaining` anywhere in the codebase. In
+  `lib/stripe/webhooks.ts`, `handleCheckoutSessionCompleted`'s
+  `mode === "subscription"` branch and both
+  `handleSubscriptionCreatedOrUpdated` and `handleInvoicePaid` only write
+  `subscription_status`/`subscription_tier`/period dates to `profiles` —
+  the *only* place `premium_analyses_remaining` is incremented anywhere in
+  `frontend/src` is the one-time `premium_analysis` purchase branch of
+  `handleCheckoutSessionCompleted` (adds exactly 1). No cron/Edge
+  Function/scheduled route exists to top it up either (`supabase/functions`
+  is empty; no `vercel.json` crons in the repo). `consume_analysis_quota`
+  (the RPC gating every analysis request, `supabase/migrations/20260722000100_quotas.sql`)
+  is a plain counter decrement with no subscription-tier awareness at all.
+  **Net effect, strongly indicated by a full-repo search but not verified
+  end-to-end against a real Stripe subscription**: subscribing may
+  currently buy `subscription_status`/billing-portal access without
+  actually increasing the buyer's usable analysis balance. This session's
+  FAQ rewrite deliberately avoids asserting specific subscription-renewal
+  numbers or mechanics (it points to the dashboard instead) so as not to
+  promise something that may not hold — but the underlying gap is a
+  product/billing issue independent of the FAQ, worth an engineering look,
+  since a real customer could be paying monthly for credits they never
+  receive.
 
 - **G10** (ninth session, DONE 2026-10-02): production rollout — migrations applied by the user via
   the SQL Editor (verified read-only), Stripe Prices + Vercel env set by the user, `main` pushed and
@@ -818,3 +1027,20 @@ PASS = actually run and green. FAIL = actually run and red. BLOCKED = not run.
 - Docker image (`Dockerfile`) now also installs `fonts-dejavu-core` (a few
   hundred KB) so the OCR test suite has a real TrueType font to render
   against inside the container — small, low-risk addition.
+- **Admin portal (`admin.kopanalys.se`, §3g) — manual steps, none of which the
+  code can do for you:**
+  1. Vercel → project `real-estate` → Settings → Domains → add
+     `admin.kopanalys.se`, then create the DNS record Vercel shows (normally a
+     CNAME `admin` → `cname.vercel-dns.com`; nothing to do if the domain's
+     nameservers are already on Vercel). Until then the portal is unreachable.
+  2. `ADMIN_SESSION_SECRET` (server-only, ≥ 32 random characters) on Vercel is
+     recommended. If it's missing the session key is derived from
+     `SUPABASE_SERVICE_ROLE_KEY` (already set), so login still works; only if
+     *neither* exists is login disabled (503 "not configured").
+  3. Optional but advisable: rotate the password (`npm run admin:hash`, set
+     `ADMIN_PASSWORD_HASH`) — see the known weakness in §3g — and add a Vercel
+     Firewall rate-limit rule for `POST /api/admin-portal/login`.
+  4. Deploying changes `frontend/package.json`/lockfile (adds `leaflet`,
+     `@types/leaflet`); the lockfile was patched by hand to avoid npm-on-Windows
+     dropping the `libc` fields of the Linux native-binary entries, so if you
+     re-run `npm install` locally, check `git diff package-lock.json` stays small.

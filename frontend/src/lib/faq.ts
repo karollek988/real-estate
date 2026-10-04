@@ -59,7 +59,7 @@ export const FAQ_ITEMS = [
       "Då körs ingen analys och inget dras från dig. Köp en Områdesanalys eller ett Trygghetspaket så kan du fortsätta. Går en analys inte att slutföra, till exempel för att vi inte kan hämta tillräckligt med uppgifter om en adress, får du tillbaka din analys automatiskt.",
   },
   {
-    question: "Hur snabb är en analys?",
+    question: "Vad ingår i en Områdesanalys?",
     answer:
       "Områdesanalysen och de automatiska delarna av Trygghetspaketet är oftast klara inom ett par minuter. BRF-analysen granskas av en person och är klar inom 24 timmar – du får ett mejl när den är publicerad i din rapport.",
   },
@@ -94,7 +94,7 @@ export const FAQ_ITEMS = [
       "Ja – varje färdig rapport har en \"Ladda ner PDF\"-knapp så att du enkelt kan spara eller dela den. Rapporten är också fullt läsbar direkt i webbläsaren på dator och mobil.",
   },
   {
-    question: "Hur avbokar eller avslutar jag mitt konto?",
+    question: "Hur avslutar jag min prenumeration eller raderar mitt konto?",
     answer:
       "Har du ett äldre abonnemang säger du upp det under Köp & saldo i dashboarden. För att helt ta bort ditt konto och alla dina sparade uppgifter, kontakta oss via länken nedan så hjälper vi dig.",
   },
