@@ -26,12 +26,15 @@ Last updated: 2026-10-05 — Tenth session: landing-page redesign on branch `sty
   unchanged forms; `FOCUS_URL_INPUT_EVENT` may carry `{ method }` to open a tab.
 - Hero laptop: `public/images/hero-laptop.png`, cut out of the RGB render by
   `frontend/scripts/make-hero-laptop.py`.
-- **Open, waiting for the user:** (1) no clean Stockholm hero photo exists, so `HERO_PHOTO = null`
-  shows an interim gradient (`LandingHero.tsx`); (2) "Visa karta" scrolls to "Så fungerar det"
-  until the public map ships (`MAP_TARGET`); (3) the hero card copy "Se om priset är rimligt med
-  hjälp av data och historik" is the reference's wording, but no price-reasonableness feature
-  exists; (4) the cleanup candidates and merged branches from the session report await approval —
-  nothing was deleted.
+- **Decided by the user (2026-10-05):** "Visa karta" scrolls to "Så fungerar det" until the public
+  map ships (`MAP_TARGET`); the card copy "Se om priset är rimligt med hjälp av data och historik"
+  stays as in the reference.
+- **Still open:** (1) no clean Stockholm hero photo exists, so `HERO_PHOTO = null` shows an interim
+  gradient (`LandingHero.tsx`); `public/hero-background.png` is the old villa image with baked-in
+  price tags and a market panel and does not work behind the new hero. (2) Vercel's production
+  deploy of `bbef750` failed (GitHub status, 2026-10-04 19:28 UTC); production still serves
+  `429bb66` until `ee2fb36` + `bf2e5e4` reach `main`. (3) The cleanup candidates and merged branches
+  from the session report await approval — nothing was deleted.
 
 Last updated: 2026-09-28 — `mapDemoIntegration` now carries both the
 **admin portal** (`admin.kopanalys.se`: login + embedded map demo, see §3g
