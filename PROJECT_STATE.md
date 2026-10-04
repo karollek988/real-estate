@@ -5,6 +5,21 @@
 > otherwise leave it alone. Detailed research/product docs live in `docs/`;
 > this file is the "what's actually true right now" summary.
 
+Last updated: 2026-10-05 — build fix and approved cleanup (tenth session). The landing-page
+redesign from the same session lives on branch `styleRedesign` and is not merged.
+- **The build had failed since `bbef750`** (Vercel deploy failed 2026-10-04; production kept
+  serving `429bb66`): the admin portal's `src/pages/` types the App Router hooks as nullable and
+  `/buy` called `searchParams.get()` directly. Fixed in `ee2fb36`. `bf2e5e4` restores two FAQ
+  questions that merge had reverted. `npm run lint` runs again (`frontend/eslint.config.mjs`;
+  14 pre-existing react-hooks problems), and `tsconfig.tsbuildinfo` is untracked.
+- **Cleanup, approved by the user** (`88cf634`): unused public assets (9 design blueprints, 2
+  loading videos), dead code (`lib/placeholders.ts`, Premium-shimmer and score-ring CSS, 9 unused
+  icons, `.eslintrc.json`) and unused root folders (`ai-orchestrator/`, `deepseek-tasks/`, the
+  `Market_Intelligence_Engine/` Docker scaffold — its audit is now
+  `docs/market_intelligence_audit_sprint5.md` — `Future_investment_engine/`, `notebooks/`,
+  `data/`), plus `CHANGELOG.md` and `scripts/hemnet-graphql-poc.mjs`. Kept on purpose:
+  `BLUEPRINT.md`, `notion-project-plan-prompt.md`, `start_frontend.bat`.
+
 Last updated: 2026-09-28 — `mapDemoIntegration` now carries both the
 **admin portal** (`admin.kopanalys.se`: login + embedded map demo, see §3g
 and the admin bullet in §6 — needs a Vercel domain + DNS record before it's
