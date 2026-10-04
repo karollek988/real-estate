@@ -116,19 +116,6 @@ body {
   );
 }
 
-/* Section divider: dark gray hairline with a faint green glow */
-.section-divider {
-  background: linear-gradient(
-    to right,
-    transparent,
-    rgba(115, 125, 120, 0.35) 30%,
-    rgba(74, 222, 128, 0.4) 50%,
-    rgba(115, 125, 120, 0.35) 70%,
-    transparent
-  );
-  box-shadow: 0 0 12px rgba(74, 222, 128, 0.18);
-}
-
 /* === Landing hero === */
 
 /* Soft cream field behind the centred hero text: an almost opaque core that

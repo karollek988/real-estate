@@ -34,6 +34,9 @@ Reference: `docs/design/landing-2026-10/kopanalys-new-design.png`.
   unchanged forms; `FOCUS_URL_INPUT_EVENT` may carry `{ method }` to open a tab.
 - Hero laptop: `public/images/hero-laptop.png`, cut out of the RGB render by
   `frontend/scripts/make-hero-laptop.py`.
+- Removed here only, unused after the redesign but still used by `main`'s old landing page:
+  `SectionDivider` (+ `.section-divider`), `PlayCircleIcon`, `good-to-know.png`,
+  `marknads-instinkter.png`.
 - **Decided by the user (2026-10-05):** "Visa karta" scrolls to "Så fungerar det" until the public
   map ships (`MAP_TARGET`); the card copy "Se om priset är rimligt med hjälp av data och historik"
   stays as in the reference.
