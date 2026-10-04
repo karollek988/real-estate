@@ -630,3 +630,31 @@ export function WalkIcon(props: React.SVGProps<SVGSVGElement>) {
     </svg>
   );
 }
+
+export function MapFoldIcon(props: React.SVGProps<SVGSVGElement>) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinejoin="round" {...props}>
+      <path d="M3.5 6.2l5.3-2.2 6.4 2.4 5.3-2.2v13.6l-5.3 2.2-6.4-2.4-5.3 2.2V6.2z" />
+      <path d="M8.8 4v13.6M15.2 6.4V20" />
+    </svg>
+  );
+}
+
+export function FileTextIcon(props: React.SVGProps<SVGSVGElement>) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinejoin="round" {...props}>
+      <path d="M6.5 3h7.5l4.5 4.5v12A1.5 1.5 0 0117 21H6.5A1.5 1.5 0 015 19.5v-15A1.5 1.5 0 016.5 3z" />
+      <path d="M13.5 3v5h5M8.5 13h7M8.5 16.5h5" strokeLinecap="round" />
+    </svg>
+  );
+}
+
+/** House with an arched door - the "Köp analys" button icon in the landing design. */
+export function HouseDoorIcon(props: React.SVGProps<SVGSVGElement>) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.7} strokeLinejoin="round" {...props}>
+      <path d="M4.5 20V10.2c0-.4.2-.8.5-1L11.4 4a1 1 0 011.2 0L19 9.2c.3.2.5.6.5 1V20H4.5z" />
+      <path d="M10 20v-2.6a2 2 0 014 0V20" />
+    </svg>
+  );
+}
