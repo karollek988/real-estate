@@ -5,6 +5,34 @@
 > otherwise leave it alone. Detailed research/product docs live in `docs/`;
 > this file is the "what's actually true right now" summary.
 
+Last updated: 2026-10-05 — Tenth session: landing-page redesign on branch `styleRedesign`
+(pushed, **not merged to `main`, not deployed**). Everything below this note is older.
+
+**Tenth session — landing redesign + build fixes (branch `styleRedesign`).** Reference:
+`docs/design/landing-2026-10/kopanalys-new-design.png`.
+- **The build was broken on `origin/main`** (`bbef750`): the mapDemoIntegration merge added
+  `src/pages/`, which types the App Router hooks as nullable, and `/buy` called
+  `searchParams.get()` directly. Fixed here (`ee2fb36`); `main` still needs it.
+- The same merge reverted two FAQ questions (a duplicate "Vad ingår i en Områdesanalys?" and a
+  subscription-era account question); restored to `77b5d6f` (`bf2e5e4`).
+- `npm run lint` runs again (`frontend/eslint.config.mjs`); 14 pre-existing react-hooks problems
+  remain, none in landing-page files. `tsconfig.tsbuildinfo` is finally untracked.
+- Redesign: `ka-*` tokens in `globals.css`; display serif = the report's Source Serif 4
+  (`lib/fonts.ts`); `BrandLogo`; `SiteHeader` has a `variant` ("light" on `/`, default "dark" for
+  `/buy` and the dashboard until they are redesigned); `components/landing/` (LandingHero,
+  AnalyzeSection, ScrollLink, container); every landing section restyled to cream/sand with deep
+  green; deep green global footer.
+- The analysis card (screenshot / manual / area) moved from the hero into AnalyzeSection with
+  unchanged forms; `FOCUS_URL_INPUT_EVENT` may carry `{ method }` to open a tab.
+- Hero laptop: `public/images/hero-laptop.png`, cut out of the RGB render by
+  `frontend/scripts/make-hero-laptop.py`.
+- **Open, waiting for the user:** (1) no clean Stockholm hero photo exists, so `HERO_PHOTO = null`
+  shows an interim gradient (`LandingHero.tsx`); (2) "Visa karta" scrolls to "Så fungerar det"
+  until the public map ships (`MAP_TARGET`); (3) the hero card copy "Se om priset är rimligt med
+  hjälp av data och historik" is the reference's wording, but no price-reasonableness feature
+  exists; (4) the cleanup candidates and merged branches from the session report await approval —
+  nothing was deleted.
+
 Last updated: 2026-09-28 — `mapDemoIntegration` now carries both the
 **admin portal** (`admin.kopanalys.se`: login + embedded map demo, see §3g
 and the admin bullet in §6 — needs a Vercel domain + DNS record before it's
