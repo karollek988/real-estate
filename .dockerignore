@@ -9,7 +9,6 @@ __pycache__
 .ruff_cache
 .mypy_cache
 .cache
-deepseek-tasks
 Stripe_API-keys
 supabase/.branches
 supabase/.temp

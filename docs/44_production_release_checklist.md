@@ -123,7 +123,7 @@ to `merge.py`. Verified with `python -m py_compile` on both files.
 package name returns zero hits. The live pipeline
 (`frontend/src/lib/analysis/pipeline.ts`, `providers/registry.ts:25-34`)
 uses a separate, smaller set of hand-written TypeScript providers. The MI
-engine's own audit (`Market_Intelligence_Engine/AUDIT_SPRINT5.md:430-435`)
+engine's own audit (`docs/market_intelligence_audit_sprint5.md:430-435`)
 lists "Analysis Engine consuming MI+LI data" as future work, i.e.
 self-documents that nothing downstream consumes it. Every "Wave 2
 complete" / test-passing claim in PROJECT_STATUS.md is true only for the
@@ -430,9 +430,8 @@ uncommitted, exactly as it was found.
 - Two of ~11 registered `location_intelligence` providers (Trafikverket,
   Lantmäteriet) are honestly stubbed pending API keys/OAuth — not a defect,
   just incomplete, and only matters once B6 is addressed.
-- Fake quota counter (`lib/placeholders.ts` `PLACEHOLDER_FREE_PREVIEWS`) is
-  currently dead code (report page hardcodes `fullReportUnlocked = true`)
-  but will show a fabricated "2 of 3 left" the moment that flag changes.
+- ~~Fake quota counter (`lib/placeholders.ts` `PLACEHOLDER_FREE_PREVIEWS`)~~ —
+  removed 2026-10-05 (the free tier it counted no longer exists).
 - Hardcoded local Supabase URL in `.env.example` with no documented
   production `.env` reference.
 - Hardcoded personal email as a dev-admin fallback (`lib/auth/devAdmin.ts`)

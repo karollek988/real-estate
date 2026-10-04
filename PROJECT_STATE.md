@@ -5,23 +5,31 @@
 > otherwise leave it alone. Detailed research/product docs live in `docs/`;
 > this file is the "what's actually true right now" summary.
 
-Last updated: 2026-10-05 — Tenth session: landing-page redesign on branch `styleRedesign`
-(pushed, **not merged to `main`, not deployed**). Everything below this note is older.
+Last updated: 2026-10-05 — Tenth session, in two parts. Everything below this note is older.
 
-**Tenth session — landing redesign + build fixes (branch `styleRedesign`).** Reference:
-`docs/design/landing-2026-10/kopanalys-new-design.png`.
-- **The build was broken on `origin/main`** (`bbef750`): the mapDemoIntegration merge added
-  `src/pages/`, which types the App Router hooks as nullable, and `/buy` called
-  `searchParams.get()` directly. Fixed here (`ee2fb36`); `main` still needs it.
-- The same merge reverted two FAQ questions (a duplicate "Vad ingår i en Områdesanalys?" and a
-  subscription-era account question); restored to `77b5d6f` (`bf2e5e4`).
-- `npm run lint` runs again (`frontend/eslint.config.mjs`); 14 pre-existing react-hooks problems
-  remain, none in landing-page files. `tsconfig.tsbuildinfo` is finally untracked.
-- Redesign: `ka-*` tokens in `globals.css`; display serif = the report's Source Serif 4
-  (`lib/fonts.ts`); `BrandLogo`; `SiteHeader` has a `variant` ("light" on `/`, default "dark" for
-  `/buy` and the dashboard until they are redesigned); `components/landing/` (LandingHero,
-  AnalyzeSection, ScrollLink, container); every landing section restyled to cream/sand with deep
-  green; deep green global footer.
+**1. Build fix + approved cleanup — meant for `main`.** Commits `ee2fb36`..`6a84bb9` (local branch
+`chore/main-cleanup`, a pure fast-forward of `origin/main`; already merged into `styleRedesign`).
+- **The build had failed since `bbef750`** (Vercel's deploy failed 2026-10-04): the admin portal's
+  `src/pages/` types the App Router hooks as nullable and `/buy` called `searchParams.get()`
+  directly. Fixed in `ee2fb36`. `bf2e5e4` restores two FAQ questions that merge had reverted.
+  `npm run lint` runs again (`frontend/eslint.config.mjs`; 14 pre-existing react-hooks problems),
+  and `tsconfig.tsbuildinfo` is untracked.
+- **Cleanup, approved by the user** (`88cf634`): unused public assets (9 design blueprints, 2
+  loading videos), dead code (`lib/placeholders.ts`, Premium-shimmer and score-ring CSS, 9 unused
+  icons, `.eslintrc.json`) and unused root folders (`ai-orchestrator/`, `deepseek-tasks/`, the
+  `Market_Intelligence_Engine/` Docker scaffold — its audit is now
+  `docs/market_intelligence_audit_sprint5.md` — `Future_investment_engine/`, `notebooks/`,
+  `data/`), plus `CHANGELOG.md` and `scripts/hemnet-graphql-poc.mjs`. Kept on purpose:
+  `BLUEPRINT.md`, `notion-project-plan-prompt.md`, `start_frontend.bat`.
+- Until `origin/main` is fast-forwarded to `6a84bb9`, production keeps serving `429bb66`.
+
+**2. Landing redesign — branch `styleRedesign`** (pushed, **not merged to `main`, not deployed**).
+Reference: `docs/design/landing-2026-10/kopanalys-new-design.png`.
+- `ka-*` tokens in `globals.css`; display serif = the report's Source Serif 4 (`lib/fonts.ts`);
+  `BrandLogo`; `SiteHeader` has a `variant` ("light" on `/`, default "dark" for `/buy` and the
+  dashboard until they are redesigned); `components/landing/` (LandingHero, AnalyzeSection,
+  ScrollLink, container); every landing section restyled to cream/sand with deep green; deep
+  green global footer.
 - The analysis card (screenshot / manual / area) moved from the hero into AnalyzeSection with
   unchanged forms; `FOCUS_URL_INPUT_EVENT` may carry `{ method }` to open a tab.
 - Hero laptop: `public/images/hero-laptop.png`, cut out of the RGB render by
@@ -31,10 +39,8 @@ Last updated: 2026-10-05 — Tenth session: landing-page redesign on branch `sty
   stays as in the reference.
 - **Still open:** (1) no clean Stockholm hero photo exists, so `HERO_PHOTO = null` shows an interim
   gradient (`LandingHero.tsx`); `public/hero-background.png` is the old villa image with baked-in
-  price tags and a market panel and does not work behind the new hero. (2) Vercel's production
-  deploy of `bbef750` failed (GitHub status, 2026-10-04 19:28 UTC); production still serves
-  `429bb66` until `ee2fb36` + `bf2e5e4` reach `main`. (3) The cleanup candidates and merged branches
-  from the session report await approval — nothing was deleted.
+  price tags and a market panel and does not work behind the new hero. (2) The merged branches
+  listed in the session report await the user's answer — none were deleted.
 
 Last updated: 2026-09-28 — `mapDemoIntegration` now carries both the
 **admin portal** (`admin.kopanalys.se`: login + embedded map demo, see §3g
