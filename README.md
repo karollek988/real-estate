@@ -40,8 +40,6 @@ docs/                         Design- och researchdokument (~45 filer)
 notion-project-plan-prompt.md Prompt att klistra in i Notion för att bygga projektplanen mot mäklarlansering
 
 src/real_estate/               Ursprunglig Python-skeleton — ersätt av ovanstående, betrakta som inaktuell/vestigial
-Market_Intelligence_Engine/    Endast Docker-scaffold, ingen källkod — klärggör om den behövs eller kan tas bort
-Future_investment_engine/      I praktiken tom — motsvarande logik ligger idag i src/lib/analysis/engine/analyzers/futureDevelopment.ts
 ```
 
 ## Vad fungerar idag
