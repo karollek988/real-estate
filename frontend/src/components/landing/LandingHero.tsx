@@ -73,7 +73,7 @@ const STEP_CARD_HIGHLIGHTED =
   "border border-ka-mint/50 bg-gradient-to-b from-ka-green-800 to-ka-green-900 shadow-[0_22px_44px_-24px_rgba(6,40,28,0.85),0_0_24px_-4px_rgba(76,232,166,0.35)]";
 
 const BUTTON_BASE =
-  "group inline-flex h-14 items-center justify-center gap-3 rounded-[14px] px-8 text-[17px] font-semibold transition-all duration-200 hover:-translate-y-0.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ka-green-700 focus-visible:ring-offset-2 focus-visible:ring-offset-ka-cream active:translate-y-0 xl:h-[65px] xl:text-[19px] short:h-14 short:text-[17px]";
+  "group inline-flex h-12 items-center justify-center gap-2.5 rounded-[12px] px-6 text-[16px] font-semibold transition-all duration-200 hover:-translate-y-0.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ka-green-700 focus-visible:ring-offset-2 focus-visible:ring-offset-ka-cream active:translate-y-0 xl:h-[54px] xl:text-[17px] short:h-12 short:text-[16px]";
 
 /**
  * The Stockholm photo around the laptop - decoration, so no alt text. The
@@ -169,17 +169,17 @@ export function LandingHero() {
           <div className="animate-fade-in-up delay-3 mt-7 flex w-full flex-col gap-3 sm:w-auto sm:flex-row sm:gap-[15px] lg:mt-[18px] short:mt-4">
             <Link
               href={ROUTES.karta}
-              className={`${BUTTON_BASE} bg-ka-green-900 text-white shadow-[0_14px_30px_-16px_rgba(12,42,31,0.9)] hover:bg-ka-green-800 hover:shadow-[0_18px_34px_-16px_rgba(12,42,31,0.95)] sm:min-w-[260px] xl:min-w-[305px]`}
+              className={`${BUTTON_BASE} bg-ka-green-900 text-white shadow-[0_14px_30px_-16px_rgba(12,42,31,0.9)] hover:bg-ka-green-800 hover:shadow-[0_18px_34px_-16px_rgba(12,42,31,0.95)] sm:min-w-[220px] xl:min-w-[244px]`}
             >
-              <MapFoldIcon className="h-6 w-6 xl:h-7 xl:w-7" />
+              <MapFoldIcon className="h-5 w-5 xl:h-[22px] xl:w-[22px]" />
               Visa karta
-              <ArrowRightIcon className="h-5 w-5 transition-transform duration-200 group-hover:translate-x-1" />
+              <ArrowRightIcon className="h-[18px] w-[18px] transition-transform duration-200 group-hover:translate-x-1" />
             </Link>
             <ScrollLink
               target="exempelrapport"
-              className={`${BUTTON_BASE} border-[1.5px] border-ka-green-900/55 bg-ka-paper/95 text-ka-ink hover:border-ka-green-900 hover:bg-white sm:min-w-[250px] xl:min-w-[289px]`}
+              className={`${BUTTON_BASE} border-[1.5px] border-ka-green-900/55 bg-ka-paper/95 text-ka-ink hover:border-ka-green-900 hover:bg-white sm:min-w-[212px] xl:min-w-[232px]`}
             >
-              <FileTextIcon className="h-6 w-6 xl:h-7 xl:w-7" />
+              <FileTextIcon className="h-5 w-5 xl:h-[22px] xl:w-[22px]" />
               Se exempelrapport
             </ScrollLink>
           </div>
