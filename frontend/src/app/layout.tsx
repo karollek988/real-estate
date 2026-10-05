@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
-import "./globals.css";
+import "./globals.scss";
 import { AuthProvider } from "@/lib/auth/AuthProvider";
 import { ChatWidget } from "@/components/ChatWidget";
 import { CookieConsentBanner } from "@/components/CookieConsentBanner";

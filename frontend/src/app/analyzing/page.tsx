@@ -3,7 +3,7 @@
 import { Suspense, useEffect, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Script from "next/script";
-import "./ldbar.css";
+import "./ldbar.scss";
 
 interface LdBarInstance {
   set: (value: number, doTransition?: boolean) => void;
