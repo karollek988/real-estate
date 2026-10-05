@@ -5,7 +5,7 @@
 > otherwise leave it alone. Detailed research/product docs live in `docs/`;
 > this file is the "what's actually true right now" summary.
 
-Last updated: 2026-10-05 — Tenth session, in two parts. Everything below this note is older.
+Last updated: 2026-10-05 — Tenth session, in three parts. Everything below this note is older.
 
 **1. Build fix + approved cleanup — meant for `main`.** Commits `ee2fb36`..`6a84bb9` (local branch
 `chore/main-cleanup`, a pure fast-forward of `origin/main`; already merged into `styleRedesign`).
@@ -25,7 +25,7 @@ Last updated: 2026-10-05 — Tenth session, in two parts. Everything below this 
 
 **2. Landing redesign — branch `styleRedesign`** (pushed, **not merged to `main`, not deployed**).
 Reference: `docs/design/landing-2026-10/kopanalys-new-design.png`.
-- `ka-*` tokens in `globals.css`; display serif = the report's Source Serif 4 (`lib/fonts.ts`);
+- `ka-*` colour tokens (since part 3 in `styles/_variables.scss`); display serif = the report's Source Serif 4 (`lib/fonts.ts`);
   `BrandLogo`; `SiteHeader` has a `variant` ("light" on `/`, default "dark" for `/buy` and the
   dashboard until they are redesigned); `components/landing/` (LandingHero, AnalyzeSection,
   ScrollLink, container); every landing section restyled to cream/sand with deep green; deep
@@ -44,6 +44,22 @@ Reference: `docs/design/landing-2026-10/kopanalys-new-design.png`.
   gradient (`LandingHero.tsx`); `public/hero-background.png` is the old villa image with baked-in
   price tags and a market panel and does not work behind the new hero. (2) The merged branches
   listed in the session report await the user's answer — none were deleted.
+
+**3. Sass — branch `styleRedesign`** (user request 2026-10-05). Every stylesheet is SCSS (`sass`
+devDependency; Next.js compiles it, then Tailwind's PostCSS plugin runs on the result):
+- **Master variables: `frontend/src/styles/_variables.scss`** — all colour palettes (public brand
+  `ka-*`, hero, dashboard, admin portal/map), font stacks, easings, breakpoints, admin shadows and
+  the `reduced-motion` mixin. It emits no CSS; each stylesheet `@use`s it with a relative path.
+- `app/globals.scss` generates Tailwind's `@theme` colours from `$ka-palette` (add a colour there →
+  `bg-ka-<name>` exists) and imports Tailwind as `@import "tailwindcss/index.css"` — the `.css`
+  extension keeps it a plain CSS import for Tailwind; a bare `"tailwindcss"` would make Sass inline
+  the file and break Tailwind's own imports. The other stylesheets: `app/analyzing/ldbar.scss`,
+  `components/admin/admin.scss`, `components/admin/atlas/atlas.scss` (the admin ones stay separate:
+  the Pages Router loads them only on the admin host, and atlas carries global resets).
+- Verified as a pure refactor: the production build ships byte-identical CSS for 5 of 6 files; the
+  sixth (the main stylesheet) differs only by three whitespace characters the minifier now drops.
+- Not covered: colours written into components (Tailwind's own palette, arbitrary `[#…]` values,
+  inline SVG/email/report colours) — those don't go through the stylesheets.
 
 Last updated: 2026-09-28 — `mapDemoIntegration` now carries both the
 **admin portal** (`admin.kopanalys.se`: login + embedded map demo, see §3g
