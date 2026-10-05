@@ -2,6 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { ChevronRightIcon, TrendingUpIcon } from "@/components/icons";
+import { ROUTES } from "@/components/site/navigation";
 
 // Only actions with a real destination this sprint — "Lägg till bevakning",
 // "Spara bostad" and "Hjälpcenter" had no destination (dead links) and were
@@ -14,7 +15,7 @@ export function QuickActionsCard() {
       <div className="mt-3 flex flex-col gap-1">
         <button
           type="button"
-          onClick={() => router.push("/")}
+          onClick={() => router.push(ROUTES.skapaAnalys)}
           className="flex items-center justify-between rounded-xl px-2.5 py-2.5 text-sm text-neutral-300 transition hover:bg-white/5 hover:text-white active:scale-[0.98]"
         >
           <span className="flex items-center gap-2.5">

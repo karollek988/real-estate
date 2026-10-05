@@ -569,3 +569,76 @@ export function HouseDoorIcon(props: React.SVGProps<SVGSVGElement>) {
     </svg>
   );
 }
+
+/** Four bars of different heights - "Prisutveckling" in the header's Bostadsanalys menu. */
+export function BarChartIcon(props: React.SVGProps<SVGSVGElement>) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.7} strokeLinecap="round" strokeLinejoin="round" {...props}>
+      <rect x="3.5" y="13" width="3" height="7" rx="1" />
+      <rect x="8.5" y="8.5" width="3" height="11.5" rx="1" />
+      <rect x="13.5" y="11" width="3" height="9" rx="1" />
+      <rect x="18.5" y="4" width="3" height="16" rx="1" />
+    </svg>
+  );
+}
+
+/** Open book - the header's "Kunskap" menu. */
+export function BookOpenIcon(props: React.SVGProps<SVGSVGElement>) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.7} strokeLinejoin="round" {...props}>
+      <path d="M12 6.5C10.2 5 7.7 4.4 3.5 4.5v13.2c4.2-.1 6.7.5 8.5 2 1.8-1.5 4.3-2.1 8.5-2V4.5c-4.2-.1-6.7.5-8.5 2z" />
+      <path d="M12 6.5v13.2" />
+    </svg>
+  );
+}
+
+/** Document with a plus badge - "Skapa analys". */
+export function FilePlusIcon(props: React.SVGProps<SVGSVGElement>) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.7} strokeLinecap="round" strokeLinejoin="round" {...props}>
+      <path d="M12.5 21H6.5A1.5 1.5 0 015 19.5v-15A1.5 1.5 0 016.5 3h7l4.5 4.5V11" />
+      <path d="M13.5 3v4.5H18" />
+      <circle cx="17.5" cy="17.5" r="4" />
+      <path d="M17.5 15.6v3.8M15.6 17.5h3.8" />
+    </svg>
+  );
+}
+
+/** Notepad with lines - "Blogg". */
+export function NotepadIcon(props: React.SVGProps<SVGSVGElement>) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.7} strokeLinecap="round" strokeLinejoin="round" {...props}>
+      <rect x="5" y="4.5" width="14" height="16.5" rx="2" />
+      <path d="M9 3v3M15 3v3M8.5 10.5h7M8.5 14h7M8.5 17.5h4" />
+    </svg>
+  );
+}
+
+/** Price tag - "Priser". */
+export function TagIcon(props: React.SVGProps<SVGSVGElement>) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.7} strokeLinejoin="round" {...props}>
+      <path d="M3.5 12.1V4.5a1 1 0 011-1h7.6a1 1 0 01.7.3l8 8a1 1 0 010 1.4l-7.6 7.6a1 1 0 01-1.4 0l-8-8a1 1 0 01-.3-.7z" />
+      <circle cx="8.2" cy="8.2" r="1.4" />
+    </svg>
+  );
+}
+
+/** Arrow out of a box corner - links that leave the site. */
+export function ArrowUpRightIcon(props: React.SVGProps<SVGSVGElement>) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.9} strokeLinecap="round" strokeLinejoin="round" {...props}>
+      <path d="M7 17L17 7M8.5 7H17v8.5" />
+    </svg>
+  );
+}
+
+/** Clock - reading time on articles and response times. */
+export function ClockIcon(props: React.SVGProps<SVGSVGElement>) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.7} strokeLinecap="round" {...props}>
+      <circle cx="12" cy="12" r="8.5" />
+      <path d="M12 7.5V12l3 2" />
+    </svg>
+  );
+}

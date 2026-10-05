@@ -1,0 +1,76 @@
+// The map workspace on the public map page (/karta, components/map/PublicMap).
+//
+// Everything is scoped under the workspace's root (.atlas-root.atlas-public),
+// and the keyframes are renamed (atlas-*): Next keeps a route's CSS loaded
+// after you navigate away, so nothing here may reach the rest of the site.
+// What :root and body gave the workspace in the admin portal is set on the
+// root itself; box-sizing and font inheritance come from Tailwind's preflight.
+@use "../../../styles/variables" as *;
+@use "atlas-workspace";
+
+.atlas-root.atlas-public {
+  height: 100%;
+  color: $admin-text-bright;
+  background: $admin-canvas;
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+
+  button {
+    cursor: pointer;
+  }
+
+  @include atlas-workspace.workspace($keyframe-prefix: "atlas-");
+
+  // Fills the space under the site header instead of the whole viewport.
+  .app-shell {
+    height: 100%;
+  }
+
+  // The sidebar heading is an h2 here (the page has its own h1); keep the h1 look.
+  .sidebar-header h2 {
+    font-size: 31px;
+    line-height: 1.15;
+    margin-bottom: 0;
+  }
+
+  // The site's floating chat button (bottom right) and cookie-settings link
+  // (bottom left) sit on top of the map: keep the legend, the hint and the
+  // OpenStreetMap attribution (required by its licence) clear of them.
+  .map-legend {
+    bottom: 84px;
+  }
+
+  .leaflet-bottom.leaflet-right {
+    bottom: 62px;
+  }
+
+  .sidebar {
+    padding-bottom: 56px;
+  }
+
+  // Phones: the map is the point of the page, so it gets the larger share.
+  @media (max-width: $map-bp-stacked) {
+    .sidebar {
+      flex-basis: 34%;
+    }
+
+    .map-wrap {
+      flex-basis: 66%;
+    }
+
+    .map-legend {
+      bottom: 72px;
+    }
+
+    // The bottom edge is crowded on a phone; the top left of the map is free.
+    .map-hint {
+      top: 12px;
+      right: auto;
+      bottom: auto;
+      left: 12px;
+      max-width: calc(100% - 84px);
+      transform: none;
+    }
+  }
+}

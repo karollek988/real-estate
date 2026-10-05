@@ -11,7 +11,13 @@
  *  - localStorage reads tolerate missing or corrupt data instead of crashing the page;
  *  - the topbar logo goes through Next's image optimizer (/_next/image) instead of loading the
  *    1 MB original for a 32px icon;
- *  - the CSS imports live in pages/_app.tsx (Pages Router only allows global CSS there).
+ *  - the CSS imports live in pages/_app.tsx (Pages Router only allows global CSS there);
+ *  - since 2026-10-05 the same workspace is also the public map page /karta
+ *    (components/map/PublicMap.tsx) through `variant: 'public'`: no brand (the site header has
+ *    it), no demo BankID sign-in, inbox or sign-out (the site header has the real sign-in),
+ *    "Mina annonser" open to everyone, "Skapa analys" wired to the analysis form, no
+ *    search-as-you-type against Nominatim (its usage policy does not allow autocomplete), and
+ *    a heading level that fits under the page's h1. Its CSS is atlas-public.scss.
  *
  * Browser-only: it touches window/document/localStorage on mount and imports Leaflet, which
  * needs the DOM at import time - load it via dynamic import() from an effect, never on the server.
@@ -94,7 +100,23 @@ const defaultExchangePins: ExchangePin[] = [
   { id: 215, title: 'Flyttar till huvudstaden', details: 'Erbjuder en lägenhet i Uppsala och söker nytt hem i Stockholm.', meta: 'Erbjuder 2 rum · Söker 2–3 rum', from: { note: 'Uppsala', lat: 59.8586, lng: 17.6389 }, to: { note: 'Kungsholmen, Stockholm', lat: 59.3310, lng: 18.0300 } },
 ]
 
-export function mountAtlas(root: HTMLElement): () => void {
+export interface AtlasOptions {
+  /** 'admin' (default) is the admin portal's workspace; 'public' is /karta - see the header comment. */
+  variant?: 'admin' | 'public'
+  /** Looked up as soon as the map is ready (/karta?q=...). */
+  initialQuery?: string
+  /** The "Skapa analys" button in a listing's detail panel. */
+  onCreateAnalysis?: () => void
+}
+
+export interface AtlasHandle {
+  /** Looks a query up among the pins, then as a place in Sweden - the search form's own search. */
+  search: (query: string) => void
+  unmount: () => void
+}
+
+export function mountAtlas(root: HTMLElement, options: AtlasOptions = {}): AtlasHandle {
+  const isPublic = options.variant === 'public'
   let pins: SavedPin[] = readStoredPins(storageKey, defaultPins)
   let buyerPins: SavedPin[] = readStoredPins(buyerStorageKey, defaultBuyerPins)
   function loadExchangePins(): ExchangePin[] {
@@ -109,12 +131,15 @@ export function mountAtlas(root: HTMLElement): () => void {
   let exchangePins: ExchangePin[] = loadExchangePins()
   const visibleKinds: Record<PinKind, boolean> = { sale: true, buyer: true, exchange: true }
 
+  // On /karta the site layout already has the page's <main>.
+  const shellTag = isPublic ? 'div' : 'main'
   root.innerHTML = `
-    <main class="app-shell">
+    <${shellTag} class="app-shell">
       <header class="topbar">
-        <a class="brand" href="/" aria-label="Köpanalys Karta"><img class="brand-mark" src="/_next/image?url=%2Fkopanalys-bostad-logo.png&w=64&q=75" alt="Köpanalys"><span>Köpanalys Karta</span></a>
+        ${isPublic ? '' : '<a class="brand" href="/" aria-label="Köpanalys Karta"><img class="brand-mark" src="/_next/image?url=%2Fkopanalys-bostad-logo.png&w=64&q=75" alt="Köpanalys"><span>Köpanalys Karta</span></a>'}
         <form class="search-form" id="search-form" role="search"><span class="search-icon">⌕</span><input id="search-input" list="search-suggestions" type="search" placeholder="Sök plats eller pin..." autocomplete="off" aria-label="Sök plats eller pin"><datalist id="search-suggestions"></datalist><button type="submit">Sök</button></form>
         <div class="topbar-actions">
+          ${isPublic ? '<div class="auth-actions" id="auth-actions"><button class="icon-button" id="my-listings-button" type="button" aria-label="Mina annonser" title="Mina annonser"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="3" width="16" height="18" rx="2"></rect><line x1="8" y1="8" x2="16" y2="8"></line><line x1="8" y1="12" x2="16" y2="12"></line><line x1="8" y1="16" x2="12" y2="16"></line></svg></button></div>' : `
           <button class="bankid-button" id="bankid-button" type="button"><span class="bankid-mark">ID</span><span class="bankid-label">Logga in med BankID</span></button>
           <div class="auth-actions" id="auth-actions" hidden>
             <div class="inbox-wrap">
@@ -129,27 +154,28 @@ export function mountAtlas(root: HTMLElement): () => void {
             <button class="icon-button" id="my-listings-button" type="button" aria-label="Mina annonser" title="Mina annonser"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="3" width="16" height="18" rx="2"></rect><line x1="8" y1="8" x2="16" y2="8"></line><line x1="8" y1="12" x2="16" y2="12"></line><line x1="8" y1="16" x2="12" y2="16"></line></svg></button>
             <button class="logout-button" id="logout-button" type="button">Logga ut</button>
           </div>
-          <button class="icon-button" id="locate-button" title="Use my location" aria-label="Use my location">⌖</button>
+          `}
+          <button class="icon-button" id="locate-button" title="Visa min position" aria-label="Visa min position">⌖</button>
         </div>
       </header>
       <section class="workspace">
         <aside class="sidebar">
-          <div class="sidebar-header"><div><p class="eyebrow">Karta</p><h1>Bostadsmarknaden</h1></div></div>
+          <div class="sidebar-header"><div><p class="eyebrow">Karta</p>${isPublic ? '<h2>Bostadsmarknaden</h2>' : '<h1>Bostadsmarknaden</h1>'}</div></div>
           <p class="intro">Översikt över Sveriges bostadsmarknad. Här kan du se bostäder till salu och köpförfrågan.</p>
-          <div class="action-row"><button class="primary-button" id="add-button"><span>＋</span> Skapa anons</button></div>
+          <div class="action-row"><button class="primary-button" id="add-button"><span>＋</span> Skapa annons</button></div>
           <button type="button" class="list-heading" data-filter-section="sale" aria-pressed="true"><span class="heading-dot"></span><span>Till salu</span><strong id="pin-count">${pins.length}</strong></button>
           <div class="pin-list" id="pin-list" data-filter-section="sale"></div>
           <button type="button" class="list-heading buyer-heading" data-filter-section="buyer" aria-pressed="true"><span class="heading-dot"></span><span>Köpare söker</span><strong id="buyer-count">${buyerPins.length}</strong></button>
           <div class="pin-list" id="buyer-list" data-filter-section="buyer"></div>
           <button type="button" class="list-heading exchange-heading" data-filter-section="exchange" aria-pressed="true"><span class="heading-dot"></span><span>Byter bostad</span><strong id="exchange-count">${exchangePins.length}</strong></button>
           <div class="pin-list" id="exchange-list" data-filter-section="exchange"></div>
-          <div class="sidebar-footer"><div class="source-row"><span class="map-badge">●</span><span>OpenStreetMap data</span><a href="https://www.openstreetmap.org/copyright" target="_blank">About</a></div><small class="copyright">© 2026 Köpanalys. Org.nr 9811048793</small></div>
+          <div class="sidebar-footer"><div class="source-row"><span class="map-badge">●</span><span>OpenStreetMap data</span><a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noreferrer">Om</a></div>${isPublic ? '' : '<small class="copyright">© 2026 Köpanalys. Org.nr 9811048793</small>'}</div>
         </aside>
-        <div class="map-wrap"><div id="map"></div><div class="map-hint" id="map-hint"><span>＋</span> Klicka för att lägga till ett pin.</div><div class="zoom-control" id="zoom-control"><button id="zoom-in" aria-label="Zoom in">＋</button><button id="zoom-out" aria-label="Zoom out">−</button><button id="map-style-toggle" class="map-style-toggle" aria-label="Byt till satellitkarta" title="Satellit"><svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><g transform="rotate(-45 12 12)"><rect x="2.5" y="9.5" width="6" height="5" rx="1.2"></rect><rect x="15.5" y="9.5" width="6" height="5" rx="1.2"></rect><rect x="9.5" y="9" width="5" height="6" rx="1.2"></rect><line x1="8.5" y1="12" x2="9.5" y2="12"></line><line x1="14.5" y1="12" x2="15.5" y2="12"></line></g></svg></button><button id="transit-toggle" class="transit-toggle" aria-label="Visa tåg- och tunnelbanelinjer" title="Tåg- och tunnelbanelinjer"><svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="3" width="12" height="13" rx="4"></rect><line x1="6" y1="10" x2="18" y2="10"></line><circle cx="9.5" cy="13.2" r="0.6" fill="currentColor" stroke="none"></circle><circle cx="14.5" cy="13.2" r="0.6" fill="currentColor" stroke="none"></circle><line x1="8" y1="17" x2="6" y2="20"></line><line x1="16" y1="17" x2="18" y2="20"></line></svg></button></div><div class="map-legend" id="map-legend" role="group" aria-label="Filtrera kartan"><button type="button" class="legend-item" data-filter-section="sale" aria-pressed="true"><span class="legend-dot"></span>Till salu</button><button type="button" class="legend-item" data-filter-section="buyer" aria-pressed="true"><span class="legend-dot"></span>Köpare söker</button><button type="button" class="legend-item" data-filter-section="exchange" aria-pressed="true"><span class="legend-dot"></span>Byter bostad</button></div><aside class="detail-panel" id="detail-panel" hidden></aside></div>
+        <div class="map-wrap"><div id="map"></div><div class="map-hint" id="map-hint"><span>＋</span> Klicka för att lägga till ett pin.</div><div class="zoom-control" id="zoom-control"><button id="zoom-in" aria-label="Zooma in">＋</button><button id="zoom-out" aria-label="Zooma ut">−</button><button id="map-style-toggle" class="map-style-toggle" aria-label="Byt till satellitkarta" title="Satellit"><svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><g transform="rotate(-45 12 12)"><rect x="2.5" y="9.5" width="6" height="5" rx="1.2"></rect><rect x="15.5" y="9.5" width="6" height="5" rx="1.2"></rect><rect x="9.5" y="9" width="5" height="6" rx="1.2"></rect><line x1="8.5" y1="12" x2="9.5" y2="12"></line><line x1="14.5" y1="12" x2="15.5" y2="12"></line></g></svg></button><button id="transit-toggle" class="transit-toggle" aria-label="Visa tåg- och tunnelbanelinjer" title="Tåg- och tunnelbanelinjer"><svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="3" width="12" height="13" rx="4"></rect><line x1="6" y1="10" x2="18" y2="10"></line><circle cx="9.5" cy="13.2" r="0.6" fill="currentColor" stroke="none"></circle><circle cx="14.5" cy="13.2" r="0.6" fill="currentColor" stroke="none"></circle><line x1="8" y1="17" x2="6" y2="20"></line><line x1="16" y1="17" x2="18" y2="20"></line></svg></button></div><div class="map-legend" id="map-legend" role="group" aria-label="Filtrera kartan"><button type="button" class="legend-item" data-filter-section="sale" aria-pressed="true"><span class="legend-dot"></span>Till salu</button><button type="button" class="legend-item" data-filter-section="buyer" aria-pressed="true"><span class="legend-dot"></span>Köpare söker</button><button type="button" class="legend-item" data-filter-section="exchange" aria-pressed="true"><span class="legend-dot"></span>Byter bostad</button></div><aside class="detail-panel" id="detail-panel" hidden></aside></div>
       </section>
       <div class="modal-backdrop" id="modal-backdrop" hidden><form class="place-modal" id="place-form"><button type="button" class="modal-close" id="modal-close" aria-label="Stäng">×</button><p class="eyebrow">Ny kartmarkering</p><h2 id="form-title">Lägg till bostad till salu</h2><div class="pin-type-switch" role="tablist" aria-label="Typ av pin"><button type="button" class="type-option is-active" data-pin-kind="sale" role="tab" aria-selected="true">Till salu</button><button type="button" class="type-option" data-pin-kind="buyer" role="tab" aria-selected="false">Köpare söker</button><button type="button" class="type-option" data-pin-kind="exchange" role="tab" aria-selected="false">Byter bostad</button></div><div class="field-grid"><label>Rubrik<input name="title" required maxlength="60" placeholder="t.ex. Villa nära centrum"></label><label id="note-label">Plats eller område<span class="address-input"><input name="note" required maxlength="100" placeholder="t.ex. Eslövs kommun"><button type="button" class="map-pick-button" data-pick-target="note" aria-label="Välj plats på kartan" title="Välj plats på kartan">⌖</button></span></label></div><div class="form-section" data-form-section="sale"><label>Pris, storlek och rum<input name="meta" maxlength="100" placeholder="t.ex. 3 rum · 78 m² · 2 495 000 kr"></label><div class="image-field"><div class="field-grid"><label>Bildlänk <span>valfritt</span><input name="image" type="url" placeholder="https://..."></label><label class="file-field">Ladda upp bild <span>valfritt</span><input name="imageFile" type="file" accept="image/*" class="file-input"></label></div><div class="image-preview" hidden><img alt=""><button type="button" class="image-preview-remove" aria-label="Ta bort bild">×</button></div></div><label>Annonslänk <span>valfritt</span><input name="link" type="url" placeholder="https://www.hemnet.se/..."></label><label>Beskrivning <span>valfritt</span><textarea name="details" maxlength="300" placeholder="Beskriv bostaden kort"></textarea></label></div><div class="form-section" data-form-section="buyer" hidden><label>Budget och önskemål<input name="meta" maxlength="120" placeholder="t.ex. Budget upp till 3 000 000 kr · 2–3 rum"></label><div class="image-field"><div class="field-grid"><label>Bildlänk <span>valfritt</span><input name="image" type="url" placeholder="https://..."></label><label class="file-field">Ladda upp bild <span>valfritt</span><input name="imageFile" type="file" accept="image/*" class="file-input"></label></div><div class="image-preview" hidden><img alt=""><button type="button" class="image-preview-remove" aria-label="Ta bort bild">×</button></div></div><label>Mer information<textarea name="details" maxlength="300" placeholder="Vad söker köparen? Berätta om läge, storlek och tidsplan."></textarea></label></div><div class="form-section" data-form-section="exchange" hidden><div class="field-grid"><label>Erbjuder och söker<input name="meta" maxlength="120" placeholder="t.ex. Erbjuder 3 rum · Söker 4+ rum"></label><label>Vill bo i<span class="address-input"><input name="toNote" required maxlength="100" placeholder="t.ex. Uppsala"><button type="button" class="map-pick-button" data-pick-target="toNote" aria-label="Välj plats på kartan" title="Välj plats på kartan">⌖</button></span></label></div><div class="image-field"><div class="field-grid"><label>Bildlänk <span>valfritt</span><input name="image" type="url" placeholder="https://..."></label><label class="file-field">Ladda upp bild <span>valfritt</span><input name="imageFile" type="file" accept="image/*" class="file-input"></label></div><div class="image-preview" hidden><img alt=""><button type="button" class="image-preview-remove" aria-label="Ta bort bild">×</button></div></div><label>Bytesinformation<textarea name="details" maxlength="300" placeholder="Beskriv bostaden som erbjuds och vad personen vill byta till."></textarea></label></div><button class="primary-button form-submit" type="submit">Spara pin</button></form></div>
       <div class="modal-backdrop" id="my-listings-backdrop" hidden><div class="place-modal my-listings-modal"><button type="button" class="modal-close" id="my-listings-close" aria-label="Stäng">×</button><p class="eyebrow">Mitt konto</p><h2>Mina annonser</h2><div class="my-listings-list" id="my-listings-list"></div></div></div>
-    </main>
+    </${shellTag}>
   `
 
   const map = L.map(root.querySelector<HTMLElement>('#map')!, { zoomControl: false })
@@ -178,11 +204,12 @@ export function mountAtlas(root: HTMLElement): () => void {
   const searchSuggestions = root.querySelector<HTMLDataListElement>('#search-suggestions')!
   const modal = root.querySelector<HTMLDivElement>('#modal-backdrop')!
   const form = root.querySelector<HTMLFormElement>('#place-form')!
-  const bankidButton = root.querySelector<HTMLButtonElement>('#bankid-button')!
+  // The demo sign-in, inbox and sign-out exist only in the admin portal.
+  const bankidButton = root.querySelector<HTMLButtonElement>('#bankid-button')
   const authActions = root.querySelector<HTMLElement>('#auth-actions')!
-  const inboxButton = root.querySelector<HTMLButtonElement>('#inbox-button')!
-  const inboxDropdown = root.querySelector<HTMLElement>('#inbox-dropdown')!
-  const logoutButton = root.querySelector<HTMLButtonElement>('#logout-button')!
+  const inboxButton = root.querySelector<HTMLButtonElement>('#inbox-button')
+  const inboxDropdown = root.querySelector<HTMLElement>('#inbox-dropdown')
+  const logoutButton = root.querySelector<HTMLButtonElement>('#logout-button')
   const myListingsButton = root.querySelector<HTMLButtonElement>('#my-listings-button')!
   const myListingsBackdrop = root.querySelector<HTMLDivElement>('#my-listings-backdrop')!
   const myListingsList = root.querySelector<HTMLDivElement>('#my-listings-list')!
@@ -221,6 +248,7 @@ export function mountAtlas(root: HTMLElement): () => void {
     detailPanel.innerHTML = panelContent
     detailPanel.hidden = false
     detailPanel.querySelector('#detail-close')?.addEventListener('click', closeDetail)
+    if (options.onCreateAnalysis) detailPanel.querySelector('.detail-create-analysis')?.addEventListener('click', options.onCreateAnalysis)
   }
   function closeDetail() { detailPanel.hidden = true; setArcHighlight(null); setSelectedMarker(null) }
   function isFilterVisible(kind: PinKind) { return visibleKinds[kind] }
@@ -447,7 +475,7 @@ export function mountAtlas(root: HTMLElement): () => void {
       toggle.classList.toggle('is-off', !active)
       toggle.setAttribute('aria-pressed', String(active))
     })
-    list.innerHTML = pins.length ? pins.map((pin, index) => `<button class="pin-item" data-id="${pin.id}">${thumbMarkup(pin.image, index + 1)}<span class="pin-item-text"><strong>${esc(pin.title)}</strong><small>${esc(pin.note || `${pin.lat.toFixed(4)}, ${pin.lng.toFixed(4)}`)}</small></span><span class="item-arrow">›</span></button>`).join('') : '<div class="empty-state">No places yet.<br>Click the map to start exploring.</div>'
+    list.innerHTML = pins.length ? pins.map((pin, index) => `<button class="pin-item" data-id="${pin.id}">${thumbMarkup(pin.image, index + 1)}<span class="pin-item-text"><strong>${esc(pin.title)}</strong><small>${esc(pin.note || `${pin.lat.toFixed(4)}, ${pin.lng.toFixed(4)}`)}</small></span><span class="item-arrow">›</span></button>`).join('') : '<div class="empty-state">Inga bostäder ännu.<br>Klicka på kartan för att lägga till en.</div>'
     buyerList.innerHTML = buyerPins.length ? buyerPins.map((pin, index) => `<button class="pin-item buyer-item" data-id="${pin.id}">${thumbMarkup(pin.image, index + 1)}<span class="pin-item-text"><strong>${esc(pin.title)}</strong><small>${esc(pin.note || `${pin.lat.toFixed(4)}, ${pin.lng.toFixed(4)}`)}</small></span><span class="item-arrow">›</span></button>`).join('') : '<div class="empty-state">Inga köpare ännu.</div>'
     exchangeList.innerHTML = exchangePins.length ? exchangePins.map((pin, index) => `<button class="pin-item exchange-item" data-id="${pin.id}">${thumbMarkup(pin.image, index + 1)}<span class="pin-item-text"><strong>${esc(pin.title)}</strong><small>${esc(pin.from.note)} → ${esc(pin.to.note)}</small></span><span class="item-arrow">›</span></button>`).join('') : '<div class="empty-state">Inga bytesförfrågningar ännu.</div>'
     root.querySelector('#pin-count')!.textContent = String(pins.length)
@@ -579,7 +607,7 @@ export function mountAtlas(root: HTMLElement): () => void {
     pins.filter((pin) => pin.isMine).forEach((pin) => rows.push(myListingRow('sale', pin.id, pin.image, pin.title, pin.note, '', 'Till salu')))
     buyerPins.filter((pin) => pin.isMine).forEach((pin) => rows.push(myListingRow('buyer', pin.id, pin.image, pin.title, pin.note, ' my-listing-tag-buyer', 'Köpare söker')))
     exchangePins.filter((pin) => pin.isMine).forEach((pin) => rows.push(myListingRow('exchange', pin.id, pin.image, pin.title, `${pin.from.note} → ${pin.to.note}`, ' my-listing-tag-exchange', 'Byter bostad')))
-    myListingsList.innerHTML = rows.length ? rows.join('') : '<div class="empty-state">Du har inte lagt till några annonser ännu.<br>Klicka på "Skapa anons" för att komma igång.</div>'
+    myListingsList.innerHTML = rows.length ? rows.join('') : '<div class="empty-state">Du har inte lagt till några annonser ännu.<br>Klicka på "Skapa annons" för att komma igång.</div>'
   }
 
   function openEditModal(kind: PinKind, id: number) {
@@ -635,9 +663,10 @@ export function mountAtlas(root: HTMLElement): () => void {
   }
 
   function applyAuthState() {
-    bankidButton.hidden = isLoggedIn
+    if (isPublic) return
+    if (bankidButton) bankidButton.hidden = isLoggedIn
     authActions.hidden = !isLoggedIn
-    if (!isLoggedIn) inboxDropdown.hidden = true
+    if (!isLoggedIn && inboxDropdown) inboxDropdown.hidden = true
   }
   function login() { isLoggedIn = true; localStorage.setItem(loginStorageKey, 'true'); applyAuthState() }
   function logout() { isLoggedIn = false; localStorage.setItem(loginStorageKey, 'false'); applyAuthState(); myListingsBackdrop.hidden = true }
@@ -711,17 +740,18 @@ export function mountAtlas(root: HTMLElement): () => void {
   root.querySelector<HTMLButtonElement>('#transit-toggle')!.addEventListener('click', (event) => { const button = event.currentTarget as HTMLButtonElement; const showingTransit = map.hasLayer(transitLayer); if (showingTransit) { map.removeLayer(transitLayer); button.classList.remove('is-active'); button.setAttribute('aria-label', 'Visa tåg- och tunnelbanelinjer') } else { transitLayer.addTo(map); button.classList.add('is-active'); button.setAttribute('aria-label', 'Dölj tåg- och tunnelbanelinjer') } })
   root.querySelector('#locate-button')!.addEventListener('click', () => map.locate({ setView: true, maxZoom: 16 }))
   searchForm.addEventListener('submit', (event) => { event.preventDefault(); void searchMap(searchInput.value) })
-  searchInput.addEventListener('input', () => { updatePinSuggestions(searchInput.value); updateLocationSuggestions(searchInput.value) })
+  searchInput.addEventListener('input', () => { updatePinSuggestions(searchInput.value); if (!isPublic) updateLocationSuggestions(searchInput.value) })
   root.querySelectorAll<HTMLButtonElement>('.list-heading[data-filter-section], .legend-item[data-filter-section]').forEach((toggle) => toggle.addEventListener('click', () => toggleKind(toggle.dataset.filterSection as PinKind)))
-  bankidButton.addEventListener('click', login)
-  logoutButton.addEventListener('click', logout)
-  inboxButton.addEventListener('click', () => {
+  bankidButton?.addEventListener('click', login)
+  logoutButton?.addEventListener('click', logout)
+  inboxButton?.addEventListener('click', () => {
+    if (!inboxDropdown) return
     const nextHidden = !inboxDropdown.hidden
     inboxDropdown.hidden = nextHidden
     inboxButton.setAttribute('aria-expanded', String(!nextHidden))
   })
   const onDocumentClick = (event: MouseEvent) => {
-    if (!inboxDropdown.hidden && !(event.target as HTMLElement).closest('.inbox-wrap')) { inboxDropdown.hidden = true; inboxButton.setAttribute('aria-expanded', 'false') }
+    if (inboxDropdown && !inboxDropdown.hidden && !(event.target as HTMLElement).closest('.inbox-wrap')) { inboxDropdown.hidden = true; inboxButton?.setAttribute('aria-expanded', 'false') }
   }
   document.addEventListener('click', onDocumentClick)
   myListingsButton.addEventListener('click', () => { renderMyListingsDialog(); myListingsBackdrop.hidden = false })
@@ -737,13 +767,21 @@ export function mountAtlas(root: HTMLElement): () => void {
   applyAuthState()
   updatePinSuggestions('')
   renderPins()
-  return () => {
-    if (suggestionTimer) clearTimeout(suggestionTimer)
-    suggestionRequestId += 1
-    document.removeEventListener('keydown', onDocumentKeydown)
-    document.removeEventListener('click', onDocumentClick)
-    map.stopLocate()
-    map.remove()
-    root.innerHTML = ''
+  function search(query: string) {
+    searchInput.value = query
+    void searchMap(query)
+  }
+  if (options.initialQuery?.trim()) search(options.initialQuery)
+  return {
+    search,
+    unmount: () => {
+      if (suggestionTimer) clearTimeout(suggestionTimer)
+      suggestionRequestId += 1
+      document.removeEventListener('keydown', onDocumentKeydown)
+      document.removeEventListener('click', onDocumentClick)
+      map.stopLocate()
+      map.remove()
+      root.innerHTML = ''
+    },
   }
 }

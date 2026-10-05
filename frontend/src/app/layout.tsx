@@ -14,10 +14,22 @@ const inter = Inter({
   display: "swap",
 });
 
+const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://kopanalys.se";
+
 export const metadata: Metadata = {
-  title: "Köpanalys – vi visar vad du faktiskt köper",
+  metadataBase: new URL(SITE_URL),
+  // Pages set their own title ("Priser") and get " | Köpanalys" appended.
+  title: {
+    default: "Köpanalys – vi visar vad du faktiskt köper",
+    template: "%s | Köpanalys",
+  },
   description:
     "En oberoende granskning av bostaden du vill köpa: föreningens ekonomi, området och alla kostnader. Områdesanalys 99 kr, Trygghetspaketet 499 kr.",
+  openGraph: {
+    type: "website",
+    locale: "sv_SE",
+    siteName: "Köpanalys",
+  },
 };
 
 export default function RootLayout({

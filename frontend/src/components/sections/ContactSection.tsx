@@ -5,7 +5,15 @@ import { Reveal } from "@/components/Reveal";
 import { LANDING_CONTAINER } from "@/components/landing/container";
 import { MailIcon } from "@/components/icons";
 
-export function ContactSection() {
+/** The contact form (POST /api/contact). The landing page's last section and the body of /kontakt. */
+export function ContactSection({
+  titleAs: Title = "h2",
+  title = "Har du en fråga?",
+}: {
+  /** "h1" when the section opens its page (/kontakt). */
+  titleAs?: "h1" | "h2";
+  title?: string;
+} = {}) {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [message, setMessage] = useState("");
@@ -58,7 +66,7 @@ export function ContactSection() {
   }
 
   return (
-    <section id="contact" className="scroll-mt-24 bg-ka-cream">
+    <section id="kontakt" aria-labelledby="kontakt-title" className="scroll-mt-24 bg-ka-cream">
       <div className={`${LANDING_CONTAINER} py-20 lg:py-28`}>
         <div className="grid gap-10 lg:grid-cols-[1fr_1.5fr] lg:gap-16">
           <Reveal variant="left">
@@ -67,9 +75,12 @@ export function ContactSection() {
                 <MailIcon className="h-4 w-4" />
                 Kontakt
               </p>
-              <h2 className="mt-5 font-display text-[34px] font-bold leading-[1.08] tracking-[-0.015em] text-ka-ink sm:text-[44px]">
-                Har du en fråga?
-              </h2>
+              <Title
+                id="kontakt-title"
+                className="mt-5 font-display text-[34px] font-bold leading-[1.08] tracking-[-0.015em] text-ka-ink sm:text-[44px]"
+              >
+                {title}
+              </Title>
               <p className="mt-4 max-w-[420px] text-[16px] leading-relaxed text-ka-muted sm:text-[17px]">
                 Har du en fråga, ett förslag eller något annat på hjärtat? Skicka ett meddelande
                 så återkommer vi, eller mejla oss direkt på{" "}

@@ -16,6 +16,7 @@ import { useAuth } from "@/lib/auth/AuthProvider";
 import type { ProfileSummary } from "@/lib/analysis/ownership";
 import { uploadBrfAnnualReport } from "@/lib/brf/uploadClient";
 import { BRF_REPORT_ACCEPT } from "@/lib/brf/uploadLimits";
+import { ROUTES } from "@/components/site/navigation";
 
 interface OwnedAnalysis {
   requestId: string;
@@ -154,7 +155,7 @@ export default function DashboardPage() {
                     title="Skapa din första analys"
                     description="Du har inga analyser än. Analysera området runt en adress, eller ta fram hela bilden av en bostad med Trygghetspaketet."
                     actionLabel="Skapa din första analys"
-                    onAction={() => router.push("/")}
+                    onAction={() => router.push(ROUTES.skapaAnalys)}
                   />
                 ) : null}
               </DashboardSection>

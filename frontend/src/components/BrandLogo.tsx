@@ -1,25 +1,36 @@
-/**
- * The Köpanalys mark - a house outline with a rising bar chart inside - and
- * the "Köpanalys.se" wordmark, drawn after the landing-page design reference
- * (docs/design/landing-2026-10). Both take their colour from `currentColor`.
- */
-export function BrandMark(props: React.SVGProps<SVGSVGElement>) {
-  return (
-    <svg viewBox="0 0 40 44" fill="none" aria-hidden="true" {...props}>
-      <path d="M10.5 41.6H4.6V16.9L20 4.4l15.4 12.5v24.8" stroke="currentColor" strokeWidth={2.9} strokeLinejoin="round" />
-      <rect x="13.1" y="33.2" width="3.5" height="8.4" rx="0.9" fill="currentColor" />
-      <rect x="19.1" y="28.6" width="3.5" height="13" rx="0.9" fill="currentColor" />
-      <rect x="25.1" y="25.4" width="3.5" height="16.2" rx="0.9" fill="currentColor" />
-    </svg>
-  );
-}
+import Image from "next/image";
 
-export function BrandLogo({ className = "", markClassName = "h-9 w-auto" }: { className?: string; markClassName?: string }) {
+/**
+ * The Köpanalys logo: the real logo file (public/kopanalys-bostad-logo.png, cut
+ * out of its white square by frontend/scripts/make-brand-assets.py) next to the
+ * "Köpanalys.se" wordmark, as in the header reference
+ * (docs/design/landing-2026-10/New-Header-Design.png). The wordmark takes its
+ * colour from `currentColor`; the parent link carries the accessible name.
+ */
+export function BrandLogo({
+  className = "",
+  markClassName = "h-10 w-10",
+  markSizes = "48px",
+}: {
+  className?: string;
+  /** Rendered size of the round mark - give it a square size. */
+  markClassName?: string;
+  /** The mark's largest rendered width, so the browser picks a sharp but small file. */
+  markSizes?: string;
+}) {
   return (
-    <span className={`inline-flex items-center gap-3 ${className}`}>
-      <BrandMark className={markClassName} />
+    <span className={`inline-flex items-center gap-2.5 ${className}`}>
+      <Image
+        src="/images/kopanalys-logo-mark.png"
+        alt=""
+        width={512}
+        height={512}
+        sizes={markSizes}
+        loading="eager"
+        className={`shrink-0 select-none ${markClassName}`}
+      />
       <span className="whitespace-nowrap font-bold tracking-[-0.03em]">
-        Köpanalys<span className="text-[0.82em] font-medium tracking-[-0.01em]">.se</span>
+        Köpanalys<span className="text-[0.86em] font-medium tracking-[-0.01em] opacity-90">.se</span>
       </span>
     </span>
   );

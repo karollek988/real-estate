@@ -329,7 +329,8 @@ function capitalize(s: string): string {
   return s.length > 0 ? s[0].toUpperCase() + s.slice(1) : s;
 }
 
-export function InsightsSection() {
+/** Live market statistics (styrränta, bostadspriser, kvm-pris, inflation) via /api/market-stats - the body of /prisutveckling. */
+export function InsightsSection({ intro = true }: { intro?: boolean } = {}) {
   const [stats, setStats] = useState<MarketStats | null>(null);
   const [loadFailed, setLoadFailed] = useState(false);
 
@@ -405,16 +406,18 @@ export function InsightsSection() {
   ];
 
   return (
-    <section id="marknadsinsikter" className="relative scroll-mt-24">
-      <div className={`${LANDING_CONTAINER} py-20 lg:py-28`}>
-        <SectionIntro
-          icon={ChartIcon}
-          label="Marknadsinsikter"
-          title="Siffrorna som styr marknaden"
-          description="Samma datapunkter som ligger till grund för varje analys – hämtade live från Riksbanken, SCB och Svensk Mäklarstatistik."
-        />
+    <section id="marknadsinsikter" aria-label="Marknadsinsikter" className="relative scroll-mt-24">
+      <div className={`${LANDING_CONTAINER} ${intro ? "py-20 lg:py-28" : "py-14 lg:py-20"}`}>
+        {intro && (
+          <SectionIntro
+            icon={ChartIcon}
+            label="Marknadsinsikter"
+            title="Siffrorna som styr marknaden"
+            description="Samma datapunkter som ligger till grund för varje analys – hämtade live från Riksbanken, SCB och Svensk Mäklarstatistik."
+          />
+        )}
 
-        <div className="mt-12 grid gap-5 lg:grid-cols-2">
+        <div className={`grid gap-5 lg:grid-cols-2 ${intro ? "mt-12" : ""}`}>
           {cards.map(({ icon: Icon, label, sub, value, unit, badge, chart, source, updated }, i) => (
             <Reveal key={label} variant="up" delay={i * 90} className="h-full">
               <div className="flex h-full flex-col rounded-[22px] border border-ka-line bg-white p-6 shadow-[0_18px_40px_-32px_rgba(15,31,24,0.45)] transition duration-300 hover:border-ka-green-700/25 sm:p-7">

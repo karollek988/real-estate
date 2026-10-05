@@ -35,6 +35,7 @@ $ka-sand: #f1ece3;
 $ka-paper: #fcfbf7;
 $ka-line: #e3ded3;
 $ka-sage: #d5dbc9;
+$ka-stone: #ebe7de; // round controls on cream: the header's profile button
 $ka-ink: #0f1f18;
 $ka-text: #1f2622;
 $ka-muted: #5b625d;
@@ -55,6 +56,7 @@ $ka-palette: (
   "paper": $ka-paper,
   "line": $ka-line,
   "sage": $ka-sage,
+  "stone": $ka-stone,
   "ink": $ka-ink,
   "text": $ka-text,
   "muted": $ka-muted,
@@ -72,22 +74,12 @@ $ka-palette: (
 $page-background: $white;
 $page-foreground: #0a0a0a;
 
-// Landing hero: the cream field that keeps the hero text readable over the photo
+// Landing hero: the cream wash that keeps the hero text readable over the photo (.hero-scrim)
 $hero-mist: #f7f3ea;
 
-// Landing hero: stand-in backdrop until a clean Stockholm photo is added
-// (LandingHero HERO_PHOTO) - cool sky left, low sun right, green city below.
-// Remove these together with .hero-interim-backdrop.
-$hero-backdrop-sun: #fbd8aa;
-$hero-backdrop-sky: #7e9aaa;
-$hero-backdrop-park: #223a2e;
-$hero-backdrop-olive: #464a3a;
-$hero-backdrop-haze: #788c8c;
-$hero-backdrop-sky-top: #b9c6ca;
-$hero-backdrop-horizon: #e5dccb;
-$hero-backdrop-dusk: #8a8f7c;
-$hero-backdrop-city: #3a4c40;
-$hero-backdrop-city-deep: #2c3b33;
+// Content width of the public pages; keep equal to max-w-[1680px] in
+// components/landing/container.ts (LANDING_CONTAINER)
+$landing-max-width: 1680px;
 
 // Dashboard (dark): hover glow under the nav tabs (Tailwind green-400)
 $dash-tab-glow: #4ade80;

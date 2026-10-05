@@ -36,6 +36,11 @@ body {
   font-family: $font-sans;
 }
 
+// The page behind a modal <dialog> (the example report) stays put.
+html:has(dialog[open]) {
+  overflow: hidden;
+}
+
 @keyframes fade-in-up {
   from {
     opacity: 0;
@@ -83,6 +88,22 @@ body {
   animation: overlay-fade-in 0.3s ease-out both;
 }
 
+// Mobile menu (header MobileNav): a short fade and drop into place
+@keyframes drawer-in {
+  from {
+    opacity: 0;
+    transform: translateY(-8px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+.animate-drawer-in {
+  animation: drawer-in 0.22s $ease-out-expo both;
+}
+
 .animate-modal-pop-in {
   animation: modal-pop-in 0.4s $ease-out-expo both;
 }
@@ -96,47 +117,26 @@ body {
 
 // === Landing hero ===
 
-// Soft cream field behind the centred hero text: an almost opaque core that
-// feathers out into the photo, so the text reads as if the photo simply gets
-// lighter there - never a box. Sized and placed by the element itself.
-.hero-readability {
-  background: radial-gradient(
-    ellipse 50% 50% at 50% 50%,
-    rgba($hero-mist, 0.97) 0%,
-    rgba($hero-mist, 0.95) 58%,
-    rgba($hero-mist, 0.8) 69%,
-    rgba($hero-mist, 0.42) 83%,
-    rgba($hero-mist, 0) 100%
-  );
-}
-
-// Stand-in for the hero photo until a clean one is added (LandingHero HERO_PHOTO):
-// the reference's light - cool sky left, low sun right, green city below.
-.hero-interim-backdrop {
+// Readability over the Stockholm photo (LandingHero, from lg up): a cream wash,
+// opaque behind the text column (the photo's own price tags must not ghost
+// through behind the headline), that dissolves into the photo just past
+// it so the price tags on the right stay visible; the bottom edge melts into
+// the page under the feature cards. The column's right edge is computed like
+// the layout does it - the centred container's margin, its padding and the
+// text width - from --hero-pad and --hero-text, which the hero sets per
+// breakpoint, so the wash follows the text at every width.
+.hero-scrim {
+  $text-end: calc(max(0px, (100% - #{$landing-max-width}) / 2) + var(--hero-pad) + var(--hero-text));
   background:
-    radial-gradient(55% 48% at 90% 8%, rgba($hero-backdrop-sun, 0.95), transparent 72%),
-    radial-gradient(48% 42% at 6% 6%, rgba($hero-backdrop-sky, 0.9), transparent 72%),
-    radial-gradient(60% 50% at 14% 74%, rgba($hero-backdrop-park, 0.95), transparent 76%),
-    radial-gradient(60% 50% at 86% 70%, rgba($hero-backdrop-olive, 0.92), transparent 76%),
-    radial-gradient(40% 22% at 50% 52%, rgba($hero-backdrop-haze, 0.5), transparent 80%),
+    linear-gradient(to bottom, rgba($ka-cream, 0) 62%, rgba($ka-cream, 0.75) 86%, $ka-cream 100%),
     linear-gradient(
-      to bottom,
-      $hero-backdrop-sky-top 0%,
-      $hero-backdrop-horizon 28%,
-      $hero-backdrop-dusk 50%,
-      $hero-backdrop-city 72%,
-      $hero-backdrop-city-deep 100%
+      90deg,
+      $hero-mist 0,
+      $hero-mist calc(#{$text-end} - 60px),
+      rgba($hero-mist, 0.72) calc(#{$text-end} + 40px),
+      rgba($hero-mist, 0.25) calc(#{$text-end} + 110px),
+      rgba($hero-mist, 0) calc(#{$text-end} + 170px)
     );
-}
-
-// Small screens: the text spans the width, so the field becomes a top-down wash.
-.hero-readability-mobile {
-  background: linear-gradient(
-    to bottom,
-    rgba($hero-mist, 0.94) 0%,
-    rgba($hero-mist, 0.9) 72%,
-    rgba($hero-mist, 0) 100%
-  );
 }
 
 @keyframes hero-float {
@@ -153,26 +153,8 @@ body {
   animation: hero-float 7s ease-in-out infinite;
 }
 
-// Glow ring that breathes out of a price marker's data point
-@keyframes marker-pulse {
-  0% {
-    transform: scale(1);
-    opacity: 0.6;
-  }
-  70%,
-  100% {
-    transform: scale(2.6);
-    opacity: 0;
-  }
-}
-
-.marker-pulse {
-  animation: marker-pulse 3s ease-out infinite;
-}
-
 @include reduced-motion {
-  .hero-float,
-  .marker-pulse {
+  .hero-float {
     animation: none;
   }
 }
@@ -387,7 +369,8 @@ body {
 @include reduced-motion {
   .animate-fade-in-up,
   .animate-overlay-fade-in,
-  .animate-modal-pop-in {
+  .animate-modal-pop-in,
+  .animate-drawer-in {
     animation: none;
     opacity: 1;
     transform: none;

@@ -34,6 +34,7 @@ import type {
 import { DOCUMENT_TYPE_LABELS, PREP_STEPS } from "@/lib/inspection/types";
 import { buildDataGaps, buildBrfQuestions, buildBrokerQuestions, type DataGap } from "@/lib/inspection/gaps";
 import type { AnalysisReport } from "@/lib/analysis/types";
+import { ROUTES } from "@/components/site/navigation";
 
 const stagger = (n: number) => ({ "--dash-stagger": n }) as React.CSSProperties;
 
@@ -293,7 +294,7 @@ function InspectionPageContent() {
               title="Ingen analys hittades"
               description="Visningsguiden ingår i Trygghetspaketet. Analysera en bostad med ett Trygghetspaket för att komma igång."
               actionLabel="Starta en analys"
-              onAction={() => router.push("/")}
+              onAction={() => router.push(ROUTES.skapaAnalys)}
             />
           )}
         </div>
@@ -308,7 +309,7 @@ function InspectionPageContent() {
           title="Kräver Trygghetspaketet"
           description="Den här bostaden har ingen hel analys kopplad till ditt konto. Visningsguiden ingår i Trygghetspaketet."
           actionLabel="Starta en analys"
-          onAction={() => router.push("/")}
+          onAction={() => router.push(ROUTES.skapaAnalys)}
         />
       </div>
     );
