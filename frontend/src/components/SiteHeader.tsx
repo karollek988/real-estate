@@ -87,10 +87,11 @@ export function SiteHeader({ variant = "dark" }: { variant?: SiteHeaderVariant }
         }`}
       >
         {variant === "light" && (
-          // Faint topographic contours behind the right half, as in the design reference.
+          // Faint topographic contours behind the right half, as in the design reference;
+          // never wider than the space left of the edge, or the page scrolls sideways.
           <div
             aria-hidden
-            className="pointer-events-none absolute inset-y-0 left-[48%] hidden w-[640px] overflow-hidden bg-[url('/images/header-contours.svg')] bg-[length:640px_80px] bg-no-repeat opacity-50 lg:block"
+            className="pointer-events-none absolute inset-y-0 left-[48%] hidden w-[min(640px,52%)] overflow-hidden bg-[url('/images/header-contours.svg')] bg-[length:640px_80px] bg-no-repeat opacity-50 lg:block"
           />
         )}
         <div className={`relative flex h-16 items-center gap-3 lg:h-[76px] xl:gap-4 2xl:h-[84px] ${LANDING_CONTAINER}`}>
