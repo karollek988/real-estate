@@ -23,7 +23,8 @@ the landing page changed.
   there); 03 Besluta tryggare — shown on deep green but deliberately not linked yet (a plain `div`).
   The cards are HTML; only the 3D icons come from the picture (`scripts/make-brand-assets.py steps` →
   `public/images/steg-*.png`, cut out with colour-to-alpha). New colour token `$ka-mint-bright`. The
-  cards grow by 6 % under the mouse (all three, as asked) and under keyboard focus (the two links).
+  cards grow by 6 % under the mouse (all three, as asked) and under keyboard focus (the two links),
+  and have a 1.5 px outline in the ink colour (`ka-ink`) so they stand off the page.
 - **Photo**: `hero-stockholm.jpg` runs behind the laptop, its sky fading into the cream under the text.
   Its price tags are printed on the picture, so `.hero-city-stacked` (below xl) and `.hero-city-wide`
   (xl+) in `globals.scss` place it so every tag is fully visible or fully behind the laptop or a card,

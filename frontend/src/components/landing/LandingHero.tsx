@@ -59,19 +59,20 @@ const STEPS: Step[] = [
   },
 ];
 
-// The step cards: opaque (a price tag of the photo may sit right behind one),
-// a little larger under the pointer or keyboard focus,
-// one height per breakpoint (from xl the hero's --hero-card-h, which the photo
-// placement also reads); the line between two steps is the item's ::after -
-// down the left below lg, across from lg.
+// The step cards: outlined in the ink colour so they stand off the page,
+// opaque (a price tag of the photo may sit right behind one), a little larger
+// under the pointer or keyboard focus, one height per breakpoint (from xl the
+// hero's --hero-card-h, which the photo placement also reads); the line
+// between two steps is the item's ::after - down the left below lg, across
+// from lg.
 const STEP_ITEM =
   "animate-fade-in-up relative after:absolute after:left-[21px] after:top-full after:h-3 after:w-0.5 after:bg-ka-mint/80 last:after:hidden lg:after:left-full lg:after:top-1/2 lg:after:h-0.5 lg:after:w-6 lg:after:-translate-y-1/2";
 const STEP_CARD =
-  "relative flex h-[80px] items-center rounded-[15px] pl-2 pr-2.5 transition-all duration-300 hover:scale-[1.06] lg:h-[86px] xl:h-[var(--hero-card-h)] xl:rounded-[16px] xl:pl-2.5 xl:pr-3";
+  "relative flex h-[80px] items-center rounded-[15px] border-[1.5px] border-ka-ink pl-2 pr-2.5 transition-all duration-300 hover:scale-[1.06] lg:h-[86px] xl:h-[var(--hero-card-h)] xl:rounded-[16px] xl:pl-2.5 xl:pr-3";
 const STEP_CARD_LIGHT =
-  "group border border-white/80 bg-ka-paper shadow-[0_22px_44px_-26px_rgba(15,31,24,0.6)] hover:border-ka-green-700/25 hover:shadow-[0_28px_52px_-26px_rgba(15,31,24,0.7)] focus-visible:scale-[1.06] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ka-green-700";
+  "group bg-ka-paper shadow-[0_22px_44px_-26px_rgba(15,31,24,0.6)] hover:shadow-[0_28px_52px_-26px_rgba(15,31,24,0.7)] focus-visible:scale-[1.06] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ka-green-700";
 const STEP_CARD_HIGHLIGHTED =
-  "border border-ka-mint/50 bg-gradient-to-b from-ka-green-800 to-ka-green-900 shadow-[0_22px_44px_-24px_rgba(6,40,28,0.85),0_0_24px_-4px_rgba(76,232,166,0.35)]";
+  "bg-gradient-to-b from-ka-green-800 to-ka-green-900 shadow-[0_22px_44px_-24px_rgba(6,40,28,0.85),0_0_24px_-4px_rgba(76,232,166,0.35)]";
 
 const BUTTON_BASE =
   "group inline-flex h-14 items-center justify-center gap-3 rounded-[14px] px-8 text-[17px] font-semibold transition-all duration-200 hover:-translate-y-0.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ka-green-700 focus-visible:ring-offset-2 focus-visible:ring-offset-ka-cream active:translate-y-0 xl:h-[65px] xl:text-[19px] short:h-14 short:text-[17px]";
