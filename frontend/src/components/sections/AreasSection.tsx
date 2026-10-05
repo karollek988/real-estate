@@ -1,4 +1,3 @@
-import Image from "next/image";
 import Link from "next/link";
 import { Reveal } from "@/components/Reveal";
 import { LANDING_CONTAINER } from "@/components/landing/container";
@@ -9,13 +8,14 @@ import { AREA_ANALYSIS_PROMISE } from "@/lib/packages";
 import { OMRADESANALYS_PRICE_SEK } from "@/lib/pricing";
 
 /**
- * The landing page's "Områden": what the area analysis shows, with a preview
- * of the map (the laptop render that used to sit in the hero) leading to /karta.
+ * The landing page's "Områden": what the area analysis shows, with the ways to
+ * order one and to explore the map (/karta). The map itself is pictured in the
+ * hero, so this section has no picture of its own.
  */
 export function AreasSection() {
   return (
     <section id="omraden" aria-labelledby="omraden-title" className="relative scroll-mt-24 overflow-hidden bg-ka-sand">
-      <div className={`${LANDING_CONTAINER} grid items-center gap-12 py-20 lg:grid-cols-[minmax(0,0.95fr)_minmax(0,1.05fr)] lg:gap-16 lg:py-28`}>
+      <div className={`${LANDING_CONTAINER} grid items-center gap-12 py-20 lg:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)] lg:gap-16 lg:py-28`}>
         <Reveal variant="left">
           <p className="inline-flex items-center gap-2 rounded-full bg-ka-sage/80 px-3.5 py-1.5 text-[12px] font-semibold uppercase tracking-[0.08em] text-ka-green-900">
             <MapPinIcon className="h-4 w-4" />
@@ -30,20 +30,6 @@ export function AreasSection() {
           <p className="mt-4 max-w-[540px] text-[16px] leading-relaxed text-ka-muted sm:text-[17px]">
             Ange en adress så visar vi vad som finns runt den och hur området utvecklas. {AREA_ANALYSIS_PROMISE}
           </p>
-
-          <ul className="mt-8 grid gap-x-6 gap-y-5 sm:grid-cols-2">
-            {AREA_TOPICS.map(({ icon: Icon, title, text }) => (
-              <li key={title} className="flex gap-3.5">
-                <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-white text-ka-green-800 ring-1 ring-ka-line">
-                  <Icon className="h-5 w-5" />
-                </span>
-                <span>
-                  <span className="block text-[15.5px] font-bold text-ka-ink">{title}</span>
-                  <span className="mt-0.5 block text-[14px] leading-relaxed text-ka-muted">{text}</span>
-                </span>
-              </li>
-            ))}
-          </ul>
 
           <div className="mt-9 flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center">
             <Link
@@ -64,25 +50,22 @@ export function AreasSection() {
         </Reveal>
 
         <Reveal variant="right">
-          <Link href={ROUTES.karta} className="group relative block" aria-label="Öppna kartan">
-            <div className="hero-float [perspective:1800px]">
-              <Image
-                src="/images/hero-laptop.png"
-                alt="Köpanalys-kartan med bostäder i Stockholm, visad på en laptop"
-                width={1515}
-                height={930}
-                sizes="(min-width: 1024px) 50vw, 100vw"
-                className="h-auto w-full origin-bottom transition-transform duration-500 [transform:rotateX(8deg)] drop-shadow-[0_34px_44px_rgba(10,22,16,0.3)] group-hover:[transform:rotateX(4deg)]"
-              />
-            </div>
-            <span className="absolute bottom-[6%] left-1/2 inline-flex -translate-x-1/2 items-center gap-2 whitespace-nowrap rounded-full border border-white/70 bg-ka-paper/95 px-4 py-2 text-[13.5px] font-semibold text-ka-ink shadow-[0_14px_30px_-16px_rgba(15,31,24,0.6)] backdrop-blur transition group-hover:bg-white">
-              <span className="rounded-full bg-ka-sage px-2 py-0.5 text-[11px] font-bold uppercase tracking-wide text-ka-green-900">
-                Förhandsversion
-              </span>
-              Se kartan
-              <ArrowRightIcon className="h-4 w-4 transition-transform duration-200 group-hover:translate-x-0.5" />
-            </span>
-          </Link>
+          <div className="rounded-[24px] border border-ka-line bg-white px-6 py-7 shadow-[0_24px_50px_-34px_rgba(15,31,24,0.5)] sm:px-8">
+            <p className="text-[13px] font-semibold uppercase tracking-[0.08em] text-ka-green-700">Det här visar områdesanalysen</p>
+            <ul className="mt-2 divide-y divide-ka-line">
+              {AREA_TOPICS.map(({ icon: Icon, title, text }) => (
+                <li key={title} className="flex items-start gap-4 py-4 last:pb-0">
+                  <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-ka-green-800 text-white">
+                    <Icon className="h-5 w-5" />
+                  </span>
+                  <span className="pt-0.5">
+                    <span className="block text-[16px] font-bold text-ka-ink">{title}</span>
+                    <span className="mt-0.5 block text-[14.5px] leading-relaxed text-ka-muted">{text}</span>
+                  </span>
+                </li>
+              ))}
+            </ul>
+          </div>
         </Reveal>
       </div>
     </section>

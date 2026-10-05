@@ -117,26 +117,59 @@ html:has(dialog[open]) {
 
 // === Landing hero ===
 
-// Readability over the Stockholm photo (LandingHero, from lg up): a cream wash,
-// opaque behind the text column (the photo's own price tags must not ghost
-// through behind the headline), that dissolves into the photo just past
-// it so the price tags on the right stay visible; the bottom edge melts into
-// the page under the feature cards. The column's right edge is computed like
-// the layout does it - the centred container's margin, its padding and the
-// text width - from --hero-pad and --hero-text, which the hero sets per
-// breakpoint, so the wash follows the text at every width.
-.hero-scrim {
-  $text-end: calc(max(0px, (100% - #{$landing-max-width}) / 2) + var(--hero-pad) + var(--hero-text));
-  background:
-    linear-gradient(to bottom, rgba($ka-cream, 0) 62%, rgba($ka-cream, 0.75) 86%, $ka-cream 100%),
-    linear-gradient(
-      90deg,
-      $hero-mist 0,
-      $hero-mist calc(#{$text-end} - 60px),
-      rgba($hero-mist, 0.72) calc(#{$text-end} + 40px),
-      rgba($hero-mist, 0.25) calc(#{$text-end} + 110px),
-      rgba($hero-mist, 0) calc(#{$text-end} + 170px)
-    );
+// The Stockholm photo around the hero laptop (LandingHero CityPhoto). The
+// picture has price tags printed on it, so it is placed to keep each tag either
+// in full view or fully behind the laptop or a feature card - never cut through
+// by an edge. Fractions of the picture's height, measured on hero-stockholm.jpg:
+$city-ratio: 0.5628; // height / width (941 / 1672)
+$city-sky: 0.133; // the sky ends and the city begins
+$city-fade: 0.125; // the fade-in from the cream is done, just above the first tag
+$city-tag-gap: 0.3125; // between the two left tags: Vasastan ends at 0.298, Östermalm starts at 0.327
+$city-tags-end: 0.393; // the lowest tag beside the laptop (Östermalm) ends
+
+// Below xl the laptop sits in the flow with the cards stacked under it: the
+// sky ends just under the laptop's top edge and the photo fades out where the
+// cards begin (the bottom offset is set in LandingHero, beside the overlap).
+.hero-city-stacked {
+  --city-w: max(112vw, 960px);
+  width: var(--city-w);
+  top: calc(28px - var(--city-w) * #{$city-ratio * $city-sky});
+  $fade: linear-gradient(
+    to bottom,
+    transparent 0,
+    black calc(var(--city-w) * #{$city-ratio * $city-fade}),
+    black calc(100% - 32px),
+    transparent 100%
+  );
+  -webkit-mask-image: $fade;
+  mask-image: $fade;
+}
+
+// From xl the cards overlap the laptop's lower half, and how much photo shows
+// between them depends on the screen height. Two placements:
+//   A - the sky ends just under the laptop's top edge and every tag beside the
+//       laptop clears the cards (taller screens, where there is room), or
+//   B - the cards' top edge runs between the two left tags, so the lower one
+//       hides fully behind them (most laptop screens).
+// 100% is the laptop area (the laptop overhangs its top by 8px) and
+// --hero-card-h the cards' height, both set in LandingHero. The photo is 112 %
+// of the page so the side tags clear the laptop; the laptop stops growing at
+// 1010px, so past that no more than 2045px is needed (never less than the page).
+.hero-city-wide {
+  --city-w: max(100vw, min(112vw, 2045px));
+  --city-h: calc(var(--city-w) * #{$city-ratio});
+  --cards-top: calc(100% - 24px - var(--hero-card-h));
+  --top-a: calc(4px - var(--city-h) * #{$city-sky});
+  --top-b: calc(var(--cards-top) - var(--city-h) * #{$city-tag-gap});
+  // >= 0 when placement A leaves 12px between the lowest tag and the cards
+  --room-a: calc(var(--cards-top) - 12px - var(--top-a) - var(--city-h) * #{$city-tags-end});
+  width: var(--city-w);
+  aspect-ratio: 1672 / 941;
+  // A when there is room, otherwise B (the * 1000 turns --room-a into a switch)
+  top: calc(var(--top-b) - max(0px, min(var(--top-b) - var(--top-a), var(--room-a) * 1000)));
+  $fade: linear-gradient(to bottom, transparent 0, black #{$city-fade * 100%});
+  -webkit-mask-image: $fade;
+  mask-image: $fade;
 }
 
 @keyframes hero-float {

@@ -74,13 +74,6 @@ $ka-palette: (
 $page-background: $white;
 $page-foreground: #0a0a0a;
 
-// Landing hero: the cream wash that keeps the hero text readable over the photo (.hero-scrim)
-$hero-mist: #f7f3ea;
-
-// Content width of the public pages; keep equal to max-w-[1680px] in
-// components/landing/container.ts (LANDING_CONTAINER)
-$landing-max-width: 1680px;
-
 // Dashboard (dark): hover glow under the nav tabs (Tailwind green-400)
 $dash-tab-glow: #4ade80;
 
