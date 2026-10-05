@@ -28,7 +28,8 @@ the landing page changed.
   (xl+) in `globals.scss` place it so every tag is fully visible or fully behind the laptop or a card,
   never cut through. From xl it switches in pure CSS between two placements, depending on the room
   between laptop and cards. That relies on `--hero-card-h`, the step cards' fixed height per breakpoint
-  (148 px, 132 px on short screens, 160 px from 2xl), set in LandingHero.
+  (104 px, 96 px on short screens, 112 px from 2xl), set in LandingHero. From xl the row of steps is
+  at most 78 % of the screen wide, so its first card still covers the lowest left tag in placement B.
 - **Områden** no longer shows the laptop render (it would appear twice); its topics are a card instead.
 - **Header bugfix**: the decorative contours made the page scroll sideways at 1024–1230 px; now capped.
 - **Verified**: `tsc` clean, `next build` OK, `eslint` 14 problems (all pre-existing); key routes at

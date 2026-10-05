@@ -64,9 +64,9 @@ const STEPS: Step[] = [
 // placement also reads); the line between two steps is the item's ::after -
 // down the left below lg, across from lg.
 const STEP_ITEM =
-  "animate-fade-in-up relative after:absolute after:left-[26px] after:top-full after:h-3 after:w-0.5 after:bg-ka-mint/80 last:after:hidden lg:after:left-full lg:after:top-1/2 lg:after:h-0.5 lg:after:w-6 lg:after:-translate-y-1/2 xl:after:w-7";
+  "animate-fade-in-up relative after:absolute after:left-[22px] after:top-full after:h-3 after:w-0.5 after:bg-ka-mint/80 last:after:hidden lg:after:left-full lg:after:top-1/2 lg:after:h-0.5 lg:after:w-6 lg:after:-translate-y-1/2";
 const STEP_CARD =
-  "relative flex h-[104px] items-center rounded-[18px] pl-2.5 pr-3 lg:h-[116px] xl:h-[var(--hero-card-h)] xl:rounded-[22px] xl:pl-3 xl:pr-4";
+  "relative flex h-[88px] items-center rounded-[16px] pl-2 pr-2.5 lg:h-[96px] xl:h-[var(--hero-card-h)] xl:rounded-[18px] xl:pl-2.5 xl:pr-3";
 const STEP_CARD_LIGHT =
   "group border border-white/80 bg-ka-paper shadow-[0_22px_44px_-26px_rgba(15,31,24,0.6)] transition-all duration-300 hover:-translate-y-1 hover:border-ka-green-700/25 hover:shadow-[0_28px_52px_-26px_rgba(15,31,24,0.7)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ka-green-700";
 const STEP_CARD_HIGHLIGHTED =
@@ -96,35 +96,35 @@ function StepContent({ step }: { step: Step }) {
     <>
       <span
         aria-hidden
-        className={`absolute left-2.5 top-2.5 z-[1] flex h-8 w-8 items-center justify-center rounded-full text-[12px] font-bold lg:h-9 lg:w-9 lg:text-[13px] xl:left-3 xl:top-3 xl:h-[42px] xl:w-[42px] xl:text-[15px] ${
+        className={`absolute left-2 top-2 z-[1] flex h-7 w-7 items-center justify-center rounded-full text-[11px] font-bold xl:h-[30px] xl:w-[30px] xl:text-[12px] ${
           dark ? "bg-ka-mint-bright text-ka-green-950" : "bg-ka-mint/45 text-ka-green-900"
         }`}
       >
         {step.number}
       </span>
-      <span className="relative ml-1 mt-3 h-[72px] w-[88px] shrink-0 lg:h-[78px] lg:w-[96px] xl:h-[100px] xl:w-[124px] 2xl:h-[110px] 2xl:w-[136px]">
+      <span className="relative ml-1 mt-2.5 h-[58px] w-[72px] shrink-0 lg:h-[62px] lg:w-[76px] xl:h-[68px] xl:w-[84px] 2xl:h-[74px] 2xl:w-[92px]">
         <Image
           src={step.icon.src}
           alt=""
           fill
-          sizes="(min-width: 1536px) 136px, (min-width: 1280px) 124px, 96px"
+          sizes="(min-width: 1536px) 92px, (min-width: 1280px) 84px, 76px"
           className="object-contain"
         />
       </span>
-      <span aria-hidden className={`mx-3 h-[58%] w-px shrink-0 xl:mx-4 ${dark ? "bg-white/15" : "bg-ka-mint/60"}`} />
+      <span aria-hidden className={`mx-2.5 h-[56%] w-px shrink-0 xl:mx-3 ${dark ? "bg-white/15" : "bg-ka-mint/60"}`} />
       <span className="min-w-0 flex-1 leading-[1.2]">
-        <span className={`block text-[20px] font-bold tracking-[-0.02em] xl:text-[25px] 2xl:text-[27px] ${dark ? "text-white" : "text-ka-ink"}`}>
+        <span className={`block text-[17px] font-bold tracking-[-0.02em] lg:text-[18px] xl:text-[20px] 2xl:text-[21px] ${dark ? "text-white" : "text-ka-ink"}`}>
           {step.title}
         </span>{" "}
-        <span className={`block text-[17px] xl:text-[21px] 2xl:text-[23px] ${dark ? "text-white/90" : "text-ka-ink"}`}>{step.subtitle}</span>
+        <span className={`block text-[15px] xl:text-[16px] 2xl:text-[17px] ${dark ? "text-white/90" : "text-ka-ink"}`}>{step.subtitle}</span>
       </span>
       <span
         aria-hidden
-        className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-full transition-colors duration-300 xl:h-12 xl:w-12 2xl:h-[52px] 2xl:w-[52px] ${
+        className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full transition-colors duration-300 xl:h-[38px] xl:w-[38px] 2xl:h-10 2xl:w-10 ${
           dark ? "bg-ka-mint-bright text-white" : "bg-ka-mint/25 text-ka-ink group-hover:bg-ka-green-900 group-hover:text-white"
         }`}
       >
-        <ArrowRightIcon className="h-5 w-5 transition-transform duration-300 group-hover:translate-x-0.5 xl:h-6 xl:w-6" />
+        <ArrowRightIcon className="h-[18px] w-[18px] transition-transform duration-300 group-hover:translate-x-0.5" />
       </span>
     </>
   );
@@ -186,7 +186,7 @@ export function LandingHero() {
         </div>
 
         {/* The laptop in front of the city, the three steps over its lower half */}
-        <div className="relative mt-10 xl:mt-7 xl:min-h-[330px] xl:flex-1 xl:[--hero-card-h:148px] short:min-h-[250px] short:[--hero-card-h:132px] 2xl:[--hero-card-h:160px]">
+        <div className="relative mt-10 xl:mt-7 xl:min-h-[330px] xl:flex-1 xl:[--hero-card-h:104px] short:min-h-[250px] short:[--hero-card-h:96px] 2xl:[--hero-card-h:112px]">
           {/* From xl: the photo behind the laptop area, placed against the cards */}
           <CityPhoto className="hero-city-wide hidden xl:block" sizes="(min-width: 1280px) 112vw, 1px" loading="eager" />
 
@@ -208,7 +208,9 @@ export function LandingHero() {
             </div>
           </div>
 
-          <ol className="relative z-[3] -mt-10 grid gap-3 sm:mx-auto sm:-mt-16 sm:w-full sm:max-w-[460px] lg:max-w-none lg:grid-cols-3 lg:gap-6 xl:absolute xl:inset-x-0 xl:bottom-6 xl:mt-0 xl:gap-7">
+          {/* From xl at most 78 % of the screen wide: the first card must still cover the photo's lowest
+              left price tag (13-26 % from the left) when .hero-city-wide uses placement B */}
+          <ol className="relative z-[3] -mt-10 grid gap-3 sm:mx-auto sm:-mt-16 sm:w-full sm:max-w-[400px] lg:max-w-[880px] lg:grid-cols-3 lg:gap-6 xl:absolute xl:inset-x-0 xl:bottom-6 xl:mt-0 xl:max-w-[78vw]">
             {STEPS.map((step, i) => (
               <li key={step.number} className={STEP_ITEM} style={{ animationDelay: `${0.45 + i * 0.08}s` }}>
                 {step.href ? (
