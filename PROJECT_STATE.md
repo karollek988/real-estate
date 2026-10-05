@@ -13,9 +13,10 @@ hero (text left, photo right). Header, menus, pages and routing stay exactly as 
 the landing page changed.
 - **Hero** (`components/landing/LandingHero.tsx`) is back to the centred composition of
   `docs/design/landing-2026-10/kopanalys-new-design.png` (as in `b0e77d4`): badge, H1, text,
-  [Visa karta → `/karta`] [Se exempelrapport → `#exempelrapport`], trust points, the map laptop in the
-  middle, the four feature cards over its lower half. "Skapa analys" and "Så fungerar det" left the hero
-  (the user's sketch); "Skapa analys" stays in the header.
+  [Visa karta → `/karta`] [Se exempelrapport → `#exempelrapport`], the map laptop in the middle, the
+  four feature cards over its lower half. "Skapa analys" and "Så fungerar det" left the hero (the user's
+  sketch; "Skapa analys" stays in the header), and so did the four trust points ("Oberoende analys" …),
+  which the user asked to remove afterwards.
 - **Photo**: `hero-stockholm.jpg` runs behind the laptop, its sky fading into the cream under the text.
   Its price tags are printed on the picture, so `.hero-city-stacked` (below xl) and `.hero-city-wide`
   (xl+) in `globals.scss` place it so every tag is fully visible or fully behind the laptop or a card,

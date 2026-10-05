@@ -6,7 +6,6 @@ import { ROUTES } from "@/components/site/navigation";
 import {
   ArrowRightIcon,
   BuildingIcon,
-  CheckIcon,
   ChevronRightIcon,
   FileTextIcon,
   MapFoldIcon,
@@ -17,16 +16,14 @@ import {
 
 /**
  * The landing hero, built after docs/design/landing-2026-10/kopanalys-new-design.png:
- * everything on the centre line - badge, headline, text, the two buttons and
- * the trust points - then the map laptop floating in front of the Stockholm
- * photo, with the four feature cards over its lower half. The photo
+ * everything on the centre line - badge, headline, text and the two buttons -
+ * then the map laptop floating in front of the Stockholm photo, with the four
+ * feature cards over its lower half. The photo
  * (New-Landingpage-BK.png, served as public/images/hero-stockholm.jpg) starts
  * behind the laptop with its sky melting into the cream above, so the price
  * tags printed on it sit around the laptop, never behind the text (CityPhoto).
  * Server-rendered; the only client code is ScrollLink.
  */
-
-const TRUST_POINTS = ["Oberoende analys", "Flera datakällor", "Enklare beslut", "Spara tid och pengar"];
 
 const FEATURES: {
   icon: React.ComponentType<React.SVGProps<SVGSVGElement>>;
@@ -132,24 +129,10 @@ export function LandingHero() {
               Se exempelrapport
             </ScrollLink>
           </div>
-
-          <ul className="animate-fade-in-up delay-4 mt-6 grid grid-cols-2 gap-x-5 gap-y-3 text-left sm:flex sm:flex-wrap sm:justify-center sm:gap-x-8 lg:mt-[15px] short:mt-3">
-            {TRUST_POINTS.map((point) => (
-              <li
-                key={point}
-                className="flex items-center gap-2.5 text-[14.5px] text-ka-text sm:text-[15px] xl:text-[16.5px] short:text-[15px]"
-              >
-                <span className="flex h-[22px] w-[22px] shrink-0 items-center justify-center rounded-full bg-ka-green-800 text-white xl:h-[23px] xl:w-[23px]">
-                  <CheckIcon className="h-3.5 w-3.5" strokeWidth={2.6} />
-                </span>
-                {point}
-              </li>
-            ))}
-          </ul>
         </div>
 
         {/* The laptop in front of the city, the feature cards over its lower half */}
-        <div className="relative mt-10 xl:mt-0 xl:min-h-[330px] xl:flex-1 xl:[--hero-card-h:122px] short:min-h-[250px] 2xl:[--hero-card-h:130px] min-[1700px]:[--hero-card-h:109px]">
+        <div className="relative mt-10 xl:mt-7 xl:min-h-[330px] xl:flex-1 xl:[--hero-card-h:122px] short:min-h-[250px] 2xl:[--hero-card-h:130px] min-[1700px]:[--hero-card-h:109px]">
           {/* From xl: the photo behind the laptop area, placed against the cards */}
           <CityPhoto className="hero-city-wide hidden xl:block" sizes="(min-width: 1280px) 112vw, 1px" loading="eager" />
 
