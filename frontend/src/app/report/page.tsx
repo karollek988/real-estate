@@ -925,7 +925,7 @@ export default async function ReportPage({
             </div>
           ) : (
             <p className="mt-4 text-sm leading-relaxed text-[#5B5648]">
-              Något gick fel vid analysen av {property.address}. Kontakta oss gärna på info@kopanalys.se om
+              Något gick fel vid analysen av {property.address}. Kontakta oss gärna på kontakt@kopanalys.se om
               problemet kvarstår.
             </p>
           )}

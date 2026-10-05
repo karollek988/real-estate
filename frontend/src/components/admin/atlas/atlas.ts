@@ -234,7 +234,7 @@ export function mountAtlas(root: HTMLElement, options: AtlasOptions = {}): Atlas
     map.flyTo([pin.lat, pin.lng], 15, { duration: 0.8 })
     const labels: Record<'sale' | 'buyer', string> = { sale: 'Till salu', buyer: 'Köpare söker' }
     const googleMapsLink = `https://www.google.com/maps/search/?api=1&query=${pin.lat},${pin.lng}`
-    const contactLink = `mailto:info@kopanalys.se?subject=${encodeURIComponent(`Kontakt om ${pin.title}`)}`
+    const contactLink = `mailto:kontakt@kopanalys.se?subject=${encodeURIComponent(`Kontakt om ${pin.title}`)}`
     const hasPhoto = kind === 'sale' || Boolean(pin.image)
     const tag = `<span class="detail-tag${kind === 'buyer' ? ' detail-tag-buyer' : ''}">${labels[kind]}</span>`
     const photoBlock = hasPhoto ? `<div class="detail-photo-wrap"><img class="detail-photo" src="${esc(safeImage(pin.image) ?? DEFAULT_LISTING_PHOTO)}" alt="Foto av ${esc(pin.title)}">${tag}</div>` : ''
@@ -318,7 +318,7 @@ export function mountAtlas(root: HTMLElement, options: AtlasOptions = {}): Atlas
     map.flyToBounds(bounds, { padding: [90, 90], maxZoom: 13, duration: 0.8 })
     const fromMapsLink = `https://www.google.com/maps/search/?api=1&query=${pin.from.lat},${pin.from.lng}`
     const toMapsLink = `https://www.google.com/maps/search/?api=1&query=${pin.to.lat},${pin.to.lng}`
-    const contactLink = `mailto:info@kopanalys.se?subject=${encodeURIComponent(`Kontakt om ${pin.title}`)}`
+    const contactLink = `mailto:kontakt@kopanalys.se?subject=${encodeURIComponent(`Kontakt om ${pin.title}`)}`
     const tag = `<span class="detail-tag detail-tag-exchange">Byter bostad</span>`
     const photoBlock = pin.image ? `<div class="detail-photo-wrap"><img class="detail-photo" src="${esc(safeImage(pin.image))}" alt="Foto av ${esc(pin.title)}">${tag}</div>` : ''
     const bodyOpen = pin.image ? '<div class="detail-body">' : '<div class="detail-body detail-body-compact">'

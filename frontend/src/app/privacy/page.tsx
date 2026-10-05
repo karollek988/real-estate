@@ -30,10 +30,10 @@ export default function PrivacyPage() {
                 av dina personuppgifter. Vid frågor om hur vi behandlar dina uppgifter,
                 kontakta oss på{" "}
                 <a
-                  href="mailto:info@kopanalys.se"
+                  href="mailto:kontakt@kopanalys.se"
                   className="text-green-400 underline underline-offset-4 transition hover:text-green-300"
                 >
-                  info@kopanalys.se
+                  kontakt@kopanalys.se
                 </a>
                 .
               </p>
@@ -192,10 +192,10 @@ export default function PrivacyPage() {
               <p className="mt-3">
                 För att utöva dina rättigheter, kontakta oss på{" "}
                 <a
-                  href="mailto:info@kopanalys.se"
+                  href="mailto:kontakt@kopanalys.se"
                   className="text-green-400 underline underline-offset-4 transition hover:text-green-300"
                 >
-                  info@kopanalys.se
+                  kontakt@kopanalys.se
                 </a>
                 .
               </p>
@@ -224,10 +224,10 @@ export default function PrivacyPage() {
                 <li>
                   Kontakta oss på{" "}
                   <a
-                    href="mailto:info@kopanalys.se"
+                    href="mailto:kontakt@kopanalys.se"
                     className="text-green-400 underline underline-offset-4 transition hover:text-green-300"
                   >
-                    info@kopanalys.se
+                    kontakt@kopanalys.se
                   </a>{" "}
                   så hjälper vi dig.
                 </li>
@@ -247,10 +247,10 @@ export default function PrivacyPage() {
                 Org.nr: 9811048793<br />
                 E-post:{" "}
                 <a
-                  href="mailto:info@kopanalys.se"
+                  href="mailto:kontakt@kopanalys.se"
                   className="text-green-400 underline underline-offset-4 transition hover:text-green-300"
                 >
-                  info@kopanalys.se
+                  kontakt@kopanalys.se
                 </a>
               </p>
             </section>

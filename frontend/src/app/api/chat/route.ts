@@ -54,7 +54,7 @@ KONTO:
 
 VIKTIGA BEGRÄNSNINGAR:
 - Du får ALDRIG ge en köprekommendation eller utvärdera en specifik bostad. Om någon frågar om en specifik bostad, hänvisa dem att köra en analys på Köpanalys.se.
-- Du kan bara svara på frågor om Köpanalys produkt. För frågor utanför produktens scope (allmän juridisk/finansiell rådgivning, orelaterade ämnen), avböj vänligen och föreslå att de kontaktar info@kopanalys.se.
+- Du kan bara svara på frågor om Köpanalys produkt. För frågor utanför produktens scope (allmän juridisk/finansiell rådgivning, orelaterade ämnen), avböj vänligen och föreslå att de kontaktar kontakt@kopanalys.se.
 - Håll svaren korta: 2-4 meningar. Detta är en chat-widget, inte en lång text.
 
 FAQ-innehåll som du kan använda som referens:
@@ -74,7 +74,7 @@ export async function POST(request: Request) {
         error: {
           code: "chat_unavailable",
           message:
-            "Chatten är inte tillgänglig just nu – kontakta oss på info@kopanalys.se istället.",
+            "Chatten är inte tillgänglig just nu – kontakta oss på kontakt@kopanalys.se istället.",
         },
       },
       { status: 503 },
@@ -152,7 +152,7 @@ export async function POST(request: Request) {
         error: {
           code: "chat_unavailable",
           message:
-            "Chatten är inte tillgänglig just nu – kontakta oss på info@kopanalys.se istället.",
+            "Chatten är inte tillgänglig just nu – kontakta oss på kontakt@kopanalys.se istället.",
         },
       },
       { status: 503 },

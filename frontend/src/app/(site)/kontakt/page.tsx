@@ -5,7 +5,7 @@ import { ROUTES } from "@/components/site/navigation";
 
 export const metadata: Metadata = {
   title: "Kontakt",
-  description: "Har du en fråga om Köpanalys eller din analys? Skicka ett meddelande eller mejla info@kopanalys.se.",
+  description: "Har du en fråga om Köpanalys eller din analys? Skicka ett meddelande eller mejla kontakt@kopanalys.se.",
   alternates: { canonical: ROUTES.kontakt },
 };
 

@@ -118,10 +118,10 @@ export default function TermsPage() {
               <p>
                 Har du frågor om dessa villkor? Kontakta oss på{" "}
                 <a
-                  href="mailto:info@kopanalys.se"
+                  href="mailto:kontakt@kopanalys.se"
                   className="text-green-400 underline underline-offset-4 transition hover:text-green-300"
                 >
-                  info@kopanalys.se
+                  kontakt@kopanalys.se
                 </a>
                 .
               </p>
