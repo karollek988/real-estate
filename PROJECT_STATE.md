@@ -5,7 +5,63 @@
 > otherwise leave it alone. Detailed research/product docs live in `docs/`;
 > this file is the "what's actually true right now" summary.
 
-Last updated: 2026-10-05 — Tenth session, in three parts. Everything below this note is older.
+Last updated: 2026-10-05 — Eleventh session (header, landing page and site navigation), on
+`styleRedesign`, **not merged to `main`, not deployed**. The tenth session follows below it.
+
+**Eleventh session — new header, hero background, real logo, all public pages.** References:
+`docs/design/landing-2026-10/New-Header-Design.png` and `New-Landingpage-BK.png` (moved there from
+`public/`; they are sources, not runtime assets).
+- **Assets** (`frontend/scripts/make-brand-assets.py`): `public/images/kopanalys-logo-mark.png` is the
+  real logo (`public/kopanalys-bostad-logo.png`) cut out of its white square with an ellipse mask (the
+  original has no transparency); `public/images/hero-stockholm.jpg` is the background as a JPEG. The
+  source photo is only 1672 × 941 px — a ≥ 2560 px export would be sharper on large/retina screens.
+- **Routes**: every public page is in the route group `app/(site)/` (one layout: light header, cream,
+  `<main id="main">`). New: `/karta`, `/omraden`, `/priser`, `/prisutveckling`, `/skapa-analys`,
+  `/sa-fungerar-det`, `/kontakt`, `/blogg` + `/blogg/[slug]`, `/guider` + `/guider/[slug]`, `/nyheter`,
+  plus `app/not-found.tsx`, `app/sitemap.ts`, `app/robots.ts`. `/contact` redirects to `/kontakt`.
+  Every URL lives in `components/site/navigation.ts` (`ROUTES`, `MAIN_NAV`); header, footer and CTAs
+  read it.
+- **Header** (`SiteHeader` + `components/header/`): menus Bostadsanalys (Karta, Skapa analys,
+  Prisutveckling) and Kunskap (Blogg, Nyheter, Guider) as disclosure menus (hover, click/tap, full
+  keyboard), search → `/karta?q=…`, "Skapa analys" (on `/` it scrolls to the form), profile/sign-in.
+  Below xl a full-screen menu dialog. Nav icons from 1400 px. The menu item is called
+  "Prisutveckling", not "Priser" as in the reference (judgment call: "Priser" is already the top-level
+  link to the package prices). `variant="dark"` stays for `/buy`, the dashboard and the legal pages
+  (which now have the header).
+- **Landing page** order: hero → Så fungerar det (3 steps) → Bostadsanalys (AnalyzeSection with the
+  form) → Områden (new, with the laptop map render that used to be in the hero) → Priser (compact) →
+  Exempelrapport (chapter list + dialog with the whole example chapter) → Kunskap teaser → FAQ (6, then
+  "Visa alla") → Kontakt. Problem/"Bra att veta" sections moved to `/sa-fungerar-det`, market data to
+  `/prisutveckling`, news to `/nyheter`. The decorative price markers are gone (the photo has its own).
+- **Map**: `/karta` is the admin portal's atlas workspace (`components/admin/atlas/atlas.ts`) in a new
+  `variant: 'public'` (`components/map/PublicMap.tsx`): no brand, no demo BankID/inbox/sign-out (the
+  site header has the real sign-in), "Mina annonser" open to all, detail-panel "Skapa analys" →
+  `/skapa-analys`, no search-as-you-type against Nominatim (its usage policy forbids autocomplete). Its
+  styles: the workspace rules moved into the mixin `_atlas-workspace.scss`; `atlas.scss` (admin) compiles
+  **byte-identical** to before, `atlas-public.scss` scopes everything under `.atlas-root.atlas-public`
+  and prefixes the keyframes (`atlas-*` — the workspace had its own `fade-in-up`). The page says
+  "Förhandsversion · exempelannonser" (the pins are the demo's made-up listings). This replaces the
+  2026-10-05 decision that "Visa karta" scrolls to "Så fungerar det" (the user asked for `/karta`).
+- **Content**: `lib/kunskap/articles.ts` — 3 guides + 3 posts, written from what the product already
+  uses (BRF levels from `lib/brf/interpret.ts`, costs/mortgage rules imported from
+  `lib/report/housingCost.ts`, questions from `lib/report/questions.ts`). `lib/faq.ts`: items have ids,
+  reordered to the questions buyers ask first, 3 new answers (Hur fungerar en bostadsanalys?, Kan jag
+  använda Köpanalys innan visning?, Är Köpanalys en ersättning för mäklare eller besiktningsman?) and
+  4 renamed questions; the audited answers are unchanged.
+- **Small fixes**: start-analysis links in the dashboard and report → `/skapa-analys`;
+  `ScrollRestorationReset` keeps a `#section` on page load; "Skapa anons" typo and English map texts.
+- **Still open / for the user**: "Om oss" in the footer was left out (no page or content exists); the
+  fake "4.8/5 – 256 omdömen" card stays (earlier decision); OnboardingModal is now opened from "Hur går
+  det till?" on the analysis card; the public map uses OpenStreetMap's own tile servers and Nominatim,
+  whose usage policies don't cover production traffic — pick a tile/geocoding provider before launch.
+- **Verified**: `tsc` clean, `next build` OK (all new pages static/SSG), `eslint` 14 problems — all
+  pre-existing, none in touched code; every route at 390/1440 px: 200, one h1, one `<main>`, no
+  horizontal scroll, no console errors; header/drawer/search/dialog keyboard and focus behaviour tested
+  with headless Chrome; the admin variant of the map exercised on a temporary page (removed).
+
+---
+
+Tenth session, in three parts:
 
 **1. Build fix + approved cleanup — meant for `main`.** Commits `ee2fb36`..`6a84bb9` (local branch
 `chore/main-cleanup`, a pure fast-forward of `origin/main`; already merged into `styleRedesign`).
