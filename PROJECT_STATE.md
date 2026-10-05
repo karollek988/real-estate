@@ -14,15 +14,21 @@ the landing page changed.
 - **Hero** (`components/landing/LandingHero.tsx`) is back to the centred composition of
   `docs/design/landing-2026-10/kopanalys-new-design.png` (as in `b0e77d4`): badge, H1, text,
   [Visa karta → `/karta`] [Se exempelrapport → `#exempelrapport`], the map laptop in the middle, the
-  four feature cards over its lower half. "Skapa analys" and "Så fungerar det" left the hero (the user's
+  three steps over its lower half. "Skapa analys" and "Så fungerar det" left the hero (the user's
   sketch; "Skapa analys" stays in the header), and so did the four trust points ("Oberoende analys" …),
   which the user asked to remove afterwards.
+- **Steps** (replaced the four feature cards at the user's request, after
+  `docs/design/landing-2026-10/tre-steg-tryggare.png`, moved there from `public/`): 01 Hitta bostaden →
+  `/karta`; 02 Analysera bostaden → the analysis form on the page (as the header's "Skapa analys" does
+  there); 03 Besluta tryggare — shown on deep green but deliberately not linked yet (a plain `div`).
+  The cards are HTML; only the 3D icons come from the picture (`scripts/make-brand-assets.py steps` →
+  `public/images/steg-*.png`, cut out with colour-to-alpha). New colour token `$ka-mint-bright`.
 - **Photo**: `hero-stockholm.jpg` runs behind the laptop, its sky fading into the cream under the text.
   Its price tags are printed on the picture, so `.hero-city-stacked` (below xl) and `.hero-city-wide`
   (xl+) in `globals.scss` place it so every tag is fully visible or fully behind the laptop or a card,
   never cut through. From xl it switches in pure CSS between two placements, depending on the room
-  between laptop and cards. That relies on `--hero-card-h`, the cards' height per breakpoint, set in
-  LandingHero and kept as the cards' min-height: re-measure it if the card texts change.
+  between laptop and cards. That relies on `--hero-card-h`, the step cards' fixed height per breakpoint
+  (148 px, 132 px on short screens, 160 px from 2xl), set in LandingHero.
 - **Områden** no longer shows the laptop render (it would appear twice); its topics are a card instead.
 - **Header bugfix**: the decorative contours made the page scroll sideways at 1024–1230 px; now capped.
 - **Verified**: `tsc` clean, `next build` OK, `eslint` 14 problems (all pre-existing); key routes at

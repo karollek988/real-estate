@@ -17,7 +17,7 @@
 }
 
 // Wide but short viewports (most laptops): the landing hero tightens so the
-// feature cards stay above the fold.
+// step cards stay above the fold.
 @custom-variant short (@media (min-width: #{$bp-xl}) and (max-height: #{$bp-short-max-height}));
 
 // `inline`: the variable is set by next/font on the landing page wrapper, not on :root.
@@ -119,7 +119,7 @@ html:has(dialog[open]) {
 
 // The Stockholm photo around the hero laptop (LandingHero CityPhoto). The
 // picture has price tags printed on it, so it is placed to keep each tag either
-// in full view or fully behind the laptop or a feature card - never cut through
+// in full view or fully behind the laptop or a step card - never cut through
 // by an edge. Fractions of the picture's height, measured on hero-stockholm.jpg:
 $city-ratio: 0.5628; // height / width (941 / 1672)
 $city-sky: 0.133; // the sky ends and the city begins

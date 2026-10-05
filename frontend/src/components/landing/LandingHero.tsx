@@ -3,61 +3,74 @@ import Link from "next/link";
 import { ScrollLink, type AnalysisMethod } from "@/components/landing/ScrollLink";
 import { LANDING_CONTAINER } from "@/components/landing/container";
 import { ROUTES } from "@/components/site/navigation";
-import {
-  ArrowRightIcon,
-  BuildingIcon,
-  ChevronRightIcon,
-  FileTextIcon,
-  MapFoldIcon,
-  MapPinIcon,
-  SearchIcon,
-  ShieldIcon,
-} from "@/components/icons";
+import { ArrowRightIcon, FileTextIcon, MapFoldIcon } from "@/components/icons";
 
 /**
  * The landing hero, built after docs/design/landing-2026-10/kopanalys-new-design.png:
  * everything on the centre line - badge, headline, text and the two buttons -
- * then the map laptop floating in front of the Stockholm photo, with the four
- * feature cards over its lower half. The photo
+ * then the map laptop floating in front of the Stockholm photo, with the
+ * three steps of the customer journey over its lower half. The photo
  * (New-Landingpage-BK.png, served as public/images/hero-stockholm.jpg) starts
  * behind the laptop with its sky melting into the cream above, so the price
  * tags printed on it sit around the laptop, never behind the text (CityPhoto).
  * Server-rendered; the only client code is ScrollLink.
  */
 
-const FEATURES: {
-  icon: React.ComponentType<React.SVGProps<SVGSVGElement>>;
+type Step = {
+  number: string;
   title: string;
-  text: string;
-  target: string;
-  analysisMethod?: AnalysisMethod;
-}[] = [
+  subtitle: string;
+  /** 3D icon cut from the design reference (scripts/make-brand-assets.py) */
+  icon: { src: string; width: number; height: number };
+  /** Where the step leads: a page, or a section of this page */
+  href?: string;
+  scrollTo?: { target: string; analysisMethod: AnalysisMethod };
+  /** The deep green card of the last step */
+  highlighted?: boolean;
+};
+
+/**
+ * The customer journey, after docs/design/landing-2026-10/tre-steg-tryggare.png:
+ * find a home on the map, analyse it (the form further down this page, as the
+ * header's "Skapa analys" does here), decide. The last step has no page of its
+ * own yet, so it is shown but leads nowhere.
+ */
+const STEPS: Step[] = [
   {
-    icon: SearchIcon,
-    title: "Analysera bostäder",
-    text: "Se om priset är rimligt med hjälp av data och historik.",
-    target: "analyze",
-    analysisMethod: "screenshot",
+    number: "01",
+    title: "Hitta",
+    subtitle: "bostaden",
+    icon: { src: "/images/steg-hitta.png", width: 274, height: 229 },
+    href: ROUTES.karta,
   },
   {
-    icon: MapPinIcon,
-    title: "Utforska områden",
-    text: "Jämför områden, se prisutveckling och närliggande service.",
-    target: "omraden",
+    number: "02",
+    title: "Analysera",
+    subtitle: "bostaden",
+    icon: { src: "/images/steg-analysera.png", width: 260, height: 212 },
+    scrollTo: { target: "analyze", analysisMethod: "screenshot" },
   },
   {
-    icon: BuildingIcon,
-    title: "Granska föreningar",
-    text: "Få insikter om BRF:ens ekonomi och möjliga risker.",
-    target: "exempelrapport",
-  },
-  {
-    icon: ShieldIcon,
-    title: "Minska riskerna",
-    text: "Upptäck varningssignaler och fatta tryggare beslut.",
-    target: "bostadsanalys",
+    number: "03",
+    title: "Besluta",
+    subtitle: "tryggare",
+    icon: { src: "/images/steg-besluta.png", width: 201, height: 210 },
+    highlighted: true,
   },
 ];
+
+// The step cards: opaque (a price tag of the photo may sit right behind one),
+// one height per breakpoint (from xl the hero's --hero-card-h, which the photo
+// placement also reads); the line between two steps is the item's ::after -
+// down the left below lg, across from lg.
+const STEP_ITEM =
+  "animate-fade-in-up relative after:absolute after:left-[26px] after:top-full after:h-3 after:w-0.5 after:bg-ka-mint/80 last:after:hidden lg:after:left-full lg:after:top-1/2 lg:after:h-0.5 lg:after:w-6 lg:after:-translate-y-1/2 xl:after:w-7";
+const STEP_CARD =
+  "relative flex h-[104px] items-center rounded-[18px] pl-2.5 pr-3 lg:h-[116px] xl:h-[var(--hero-card-h)] xl:rounded-[22px] xl:pl-3 xl:pr-4";
+const STEP_CARD_LIGHT =
+  "group border border-white/80 bg-ka-paper shadow-[0_22px_44px_-26px_rgba(15,31,24,0.6)] transition-all duration-300 hover:-translate-y-1 hover:border-ka-green-700/25 hover:shadow-[0_28px_52px_-26px_rgba(15,31,24,0.7)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ka-green-700";
+const STEP_CARD_HIGHLIGHTED =
+  "border border-ka-mint/50 bg-gradient-to-b from-ka-green-800 to-ka-green-900 shadow-[0_22px_44px_-24px_rgba(6,40,28,0.85),0_0_24px_-4px_rgba(76,232,166,0.35)]";
 
 const BUTTON_BASE =
   "group inline-flex h-14 items-center justify-center gap-3 rounded-[14px] px-8 text-[17px] font-semibold transition-all duration-200 hover:-translate-y-0.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ka-green-700 focus-visible:ring-offset-2 focus-visible:ring-offset-ka-cream active:translate-y-0 xl:h-[65px] xl:text-[19px] short:h-14 short:text-[17px]";
@@ -66,13 +79,54 @@ const BUTTON_BASE =
  * The Stockholm photo around the laptop - decoration, so no alt text. The
  * picture has price tags printed on it; .hero-city-stacked and .hero-city-wide
  * (globals.scss) place it so every tag is either in full view or fully behind
- * the laptop or a feature card, never cut through by an edge.
+ * the laptop or a step card, never cut through by an edge.
  */
 function CityPhoto({ className, sizes, loading }: { className: string; sizes: string; loading: "eager" | "lazy" }) {
   return (
     <div aria-hidden className={`pointer-events-none absolute left-1/2 -z-10 -translate-x-1/2 ${className}`}>
       <Image src="/images/hero-stockholm.jpg" alt="" fill sizes={sizes} loading={loading} quality={80} className="object-cover object-top" />
     </div>
+  );
+}
+
+/** Inside a step card: number, icon, divider, the two words and the arrow. */
+function StepContent({ step }: { step: Step }) {
+  const dark = step.highlighted;
+  return (
+    <>
+      <span
+        aria-hidden
+        className={`absolute left-2.5 top-2.5 z-[1] flex h-8 w-8 items-center justify-center rounded-full text-[12px] font-bold lg:h-9 lg:w-9 lg:text-[13px] xl:left-3 xl:top-3 xl:h-[42px] xl:w-[42px] xl:text-[15px] ${
+          dark ? "bg-ka-mint-bright text-ka-green-950" : "bg-ka-mint/45 text-ka-green-900"
+        }`}
+      >
+        {step.number}
+      </span>
+      <span className="relative ml-1 mt-3 h-[72px] w-[88px] shrink-0 lg:h-[78px] lg:w-[96px] xl:h-[100px] xl:w-[124px] 2xl:h-[110px] 2xl:w-[136px]">
+        <Image
+          src={step.icon.src}
+          alt=""
+          fill
+          sizes="(min-width: 1536px) 136px, (min-width: 1280px) 124px, 96px"
+          className="object-contain"
+        />
+      </span>
+      <span aria-hidden className={`mx-3 h-[58%] w-px shrink-0 xl:mx-4 ${dark ? "bg-white/15" : "bg-ka-mint/60"}`} />
+      <span className="min-w-0 flex-1 leading-[1.2]">
+        <span className={`block text-[20px] font-bold tracking-[-0.02em] xl:text-[25px] 2xl:text-[27px] ${dark ? "text-white" : "text-ka-ink"}`}>
+          {step.title}
+        </span>{" "}
+        <span className={`block text-[17px] xl:text-[21px] 2xl:text-[23px] ${dark ? "text-white/90" : "text-ka-ink"}`}>{step.subtitle}</span>
+      </span>
+      <span
+        aria-hidden
+        className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-full transition-colors duration-300 xl:h-12 xl:w-12 2xl:h-[52px] 2xl:w-[52px] ${
+          dark ? "bg-ka-mint-bright text-white" : "bg-ka-mint/25 text-ka-ink group-hover:bg-ka-green-900 group-hover:text-white"
+        }`}
+      >
+        <ArrowRightIcon className="h-5 w-5 transition-transform duration-300 group-hover:translate-x-0.5 xl:h-6 xl:w-6" />
+      </span>
+    </>
   );
 }
 
@@ -131,13 +185,13 @@ export function LandingHero() {
           </div>
         </div>
 
-        {/* The laptop in front of the city, the feature cards over its lower half */}
-        <div className="relative mt-10 xl:mt-7 xl:min-h-[330px] xl:flex-1 xl:[--hero-card-h:122px] short:min-h-[250px] 2xl:[--hero-card-h:130px] min-[1700px]:[--hero-card-h:109px]">
+        {/* The laptop in front of the city, the three steps over its lower half */}
+        <div className="relative mt-10 xl:mt-7 xl:min-h-[330px] xl:flex-1 xl:[--hero-card-h:148px] short:min-h-[250px] short:[--hero-card-h:132px] 2xl:[--hero-card-h:160px]">
           {/* From xl: the photo behind the laptop area, placed against the cards */}
           <CityPhoto className="hero-city-wide hidden xl:block" sizes="(min-width: 1280px) 112vw, 1px" loading="eager" />
 
           <div className="relative -mx-3 sm:mx-auto sm:w-[86%] lg:w-[min(80%,880px)] xl:absolute xl:-top-2 xl:left-1/2 xl:mx-0 xl:w-[min(57vw,1010px)] xl:-translate-x-1/2">
-            {/* Below xl: the photo around the laptop, ending where the cards (overlapping it by 40/64px) begin */}
+            {/* Below xl: the photo around the laptop, ending where the steps (overlapping it by 40/64px) begin */}
             <CityPhoto className="hero-city-stacked bottom-10 sm:bottom-16 xl:hidden" sizes="(min-width: 858px) 112vw, 960px" loading="lazy" />
             <div className="animate-fade-in-up delay-3">
               <div className="hero-float [perspective:1800px]">
@@ -154,31 +208,29 @@ export function LandingHero() {
             </div>
           </div>
 
-          <ul className="relative z-[3] -mt-10 grid gap-3 sm:-mt-16 sm:grid-cols-2 xl:absolute xl:inset-x-0 xl:bottom-6 xl:mt-0 xl:grid-cols-4">
-            {FEATURES.map(({ icon: Icon, title, text, target, analysisMethod }, i) => (
-              <li key={title} className="animate-fade-in-up" style={{ animationDelay: `${0.45 + i * 0.08}s` }}>
-                <ScrollLink
-                  target={target}
-                  analysisMethod={analysisMethod}
-                  className="group flex h-full items-center gap-4 rounded-[18px] border border-white/80 bg-ka-paper/95 p-3.5 pr-3 shadow-[0_22px_44px_-26px_rgba(15,31,24,0.6)] backdrop-blur-sm transition-all duration-300 hover:-translate-y-1 hover:border-ka-green-700/25 hover:bg-white hover:shadow-[0_28px_52px_-26px_rgba(15,31,24,0.7)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ka-green-700 xl:min-h-[var(--hero-card-h)] 2xl:gap-3.5 2xl:py-4 2xl:pl-[14px] 2xl:pr-3"
-                >
-                  <span className="flex h-14 w-14 shrink-0 items-center justify-center rounded-full bg-ka-green-800 text-white transition-colors duration-300 group-hover:bg-ka-green-900 2xl:h-[60px] 2xl:w-[60px]">
-                    <Icon className="h-7 w-7 2xl:h-[30px] 2xl:w-[30px]" strokeWidth={1.6} />
-                  </span>
-                  <span className="min-w-0 flex-1">
-                    <span className="block text-[16.5px] font-bold tracking-[-0.01em] text-ka-ink 2xl:text-[18px]">{title}</span>
-                    <span className="mt-1 block text-[14px] leading-[1.5] tracking-[-0.01em] text-ka-text/85 2xl:text-[14.5px]">
-                      {text}
-                    </span>
-                  </span>
-                  <ChevronRightIcon
-                    className="-ml-2.5 h-[22px] w-[22px] shrink-0 text-ka-ink transition-transform duration-300 group-hover:translate-x-1"
-                    strokeWidth={2.2}
-                  />
-                </ScrollLink>
+          <ol className="relative z-[3] -mt-10 grid gap-3 sm:mx-auto sm:-mt-16 sm:w-full sm:max-w-[460px] lg:max-w-none lg:grid-cols-3 lg:gap-6 xl:absolute xl:inset-x-0 xl:bottom-6 xl:mt-0 xl:gap-7">
+            {STEPS.map((step, i) => (
+              <li key={step.number} className={STEP_ITEM} style={{ animationDelay: `${0.45 + i * 0.08}s` }}>
+                {step.href ? (
+                  <Link href={step.href} className={`${STEP_CARD} ${STEP_CARD_LIGHT}`}>
+                    <StepContent step={step} />
+                  </Link>
+                ) : step.scrollTo ? (
+                  <ScrollLink
+                    target={step.scrollTo.target}
+                    analysisMethod={step.scrollTo.analysisMethod}
+                    className={`${STEP_CARD} ${STEP_CARD_LIGHT}`}
+                  >
+                    <StepContent step={step} />
+                  </ScrollLink>
+                ) : (
+                  <div className={`${STEP_CARD} ${step.highlighted ? STEP_CARD_HIGHLIGHTED : STEP_CARD_LIGHT}`}>
+                    <StepContent step={step} />
+                  </div>
+                )}
               </li>
             ))}
-          </ul>
+          </ol>
         </div>
       </div>
 

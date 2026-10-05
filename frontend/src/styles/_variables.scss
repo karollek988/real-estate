@@ -46,6 +46,7 @@ $ka-green-700: #155a3c;
 $ka-green-600: #2a7854;
 $ka-green-400: #63b088;
 $ka-mint: #9fd8b8; // accent text on deep green
+$ka-mint-bright: #4ce8a6; // the highlighted third step in the landing hero (tre-steg-tryggare.png)
 $ka-red-600: #bb3b34;
 
 // Every entry becomes a Tailwind colour named ka-<key>. Add a colour above,
@@ -67,6 +68,7 @@ $ka-palette: (
   "green-600": $ka-green-600,
   "green-400": $ka-green-400,
   "mint": $ka-mint,
+  "mint-bright": $ka-mint-bright,
   "red-600": $ka-red-600,
 );
 
