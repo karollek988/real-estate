@@ -1,0 +1,434 @@
+// Global stylesheet of the public site (App Router; imported by app/layout.tsx).
+// Sass compiles it first, then Tailwind (PostCSS) processes the result. Colours,
+// fonts, easings and breakpoints come from the master variables file.
+@use "sass:meta";
+@use "../styles/variables" as *;
+
+// Tailwind, as a plain CSS import: the .css extension makes Sass leave it for
+// Tailwind to resolve. (A Sass import would inline the file and break
+// Tailwind's own relative imports.)
+@import "tailwindcss/index.css";
+
+// The brand palette as Tailwind colours: bg-ka-cream, text-ka-green-700 ...
+@theme {
+  @each $name, $color in $ka-palette {
+    --color-ka-#{$name}: #{$color};
+  }
+}
+
+// Wide but short viewports (most laptops): the landing hero tightens so the
+// step cards stay above the fold.
+@custom-variant short (@media (min-width: #{$bp-xl}) and (max-height: #{$bp-short-max-height}));
+
+// `inline`: the variable is set by next/font on the landing page wrapper, not on :root.
+@theme inline {
+  --font-display: #{meta.inspect($font-display)};
+}
+
+:root {
+  --background: #{$page-background};
+  --foreground: #{$page-foreground};
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: $font-sans;
+}
+
+// The page behind a modal <dialog> (the example report) stays put.
+html:has(dialog[open]) {
+  overflow: hidden;
+}
+
+@keyframes fade-in-up {
+  from {
+    opacity: 0;
+    transform: translateY(14px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-fade-in-up {
+  animation: fade-in-up 0.8s $ease-out-expo both;
+}
+
+// .delay-1 ... .delay-4: entrance stagger, 80ms apart
+@for $step from 1 through 4 {
+  .delay-#{$step} {
+    animation-delay: $step * 0.08s;
+  }
+}
+
+// Auth modal entrance
+@keyframes overlay-fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes modal-pop-in {
+  from {
+    opacity: 0;
+    transform: translateY(10px) scale(0.965);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+.animate-overlay-fade-in {
+  animation: overlay-fade-in 0.3s ease-out both;
+}
+
+// Mobile menu (header MobileNav): a short fade and drop into place
+@keyframes drawer-in {
+  from {
+    opacity: 0;
+    transform: translateY(-8px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+.animate-drawer-in {
+  animation: drawer-in 0.22s $ease-out-expo both;
+}
+
+.animate-modal-pop-in {
+  animation: modal-pop-in 0.4s $ease-out-expo both;
+}
+
+// Section atmosphere: backdrop dissolves into the page at both edges
+.section-bg {
+  $fade-both-edges: linear-gradient(to bottom, transparent 0%, black 20%, black 80%, transparent 100%);
+  -webkit-mask-image: $fade-both-edges;
+  mask-image: $fade-both-edges;
+}
+
+// === Landing hero ===
+
+// The Stockholm photo around the hero laptop (LandingHero CityPhoto). The
+// picture has price tags printed on it, so it is placed to keep each tag either
+// in full view or fully behind the laptop or a step card - never cut through
+// by an edge. Fractions of the picture's height, measured on hero-stockholm.jpg:
+$city-ratio: 0.5628; // height / width (941 / 1672)
+$city-sky: 0.133; // the sky ends and the city begins
+$city-fade: 0.125; // the fade-in from the cream is done, just above the first tag
+$city-tag-gap: 0.3125; // between the two left tags: Vasastan ends at 0.298, Östermalm starts at 0.327
+$city-tags-end: 0.393; // the lowest tag beside the laptop (Östermalm) ends
+
+// Below xl the laptop sits in the flow with the cards stacked under it: the
+// sky ends just under the laptop's top edge and the photo fades out where the
+// cards begin (the bottom offset is set in LandingHero, beside the overlap).
+.hero-city-stacked {
+  --city-w: max(112vw, 960px);
+  width: var(--city-w);
+  top: calc(28px - var(--city-w) * #{$city-ratio * $city-sky});
+  $fade: linear-gradient(
+    to bottom,
+    transparent 0,
+    black calc(var(--city-w) * #{$city-ratio * $city-fade}),
+    black calc(100% - 32px),
+    transparent 100%
+  );
+  -webkit-mask-image: $fade;
+  mask-image: $fade;
+}
+
+// From xl the cards overlap the laptop's lower half, and how much photo shows
+// between them depends on the screen height. Two placements:
+//   A - the sky ends just under the laptop's top edge and every tag beside the
+//       laptop clears the cards (taller screens, where there is room), or
+//   B - the cards' top edge runs between the two left tags, so the lower one
+//       hides fully behind them (most laptop screens).
+// 100% is the laptop area (the laptop overhangs its top by 8px) and
+// --hero-card-h the cards' height, both set in LandingHero. The photo is 112 %
+// of the page so the side tags clear the laptop; the laptop stops growing at
+// 1010px, so past that no more than 2045px is needed (never less than the page).
+.hero-city-wide {
+  --city-w: max(100vw, min(112vw, 2045px));
+  --city-h: calc(var(--city-w) * #{$city-ratio});
+  --cards-top: calc(100% - 24px - var(--hero-card-h));
+  --top-a: calc(4px - var(--city-h) * #{$city-sky});
+  --top-b: calc(var(--cards-top) - var(--city-h) * #{$city-tag-gap});
+  // >= 0 when placement A leaves 12px between the lowest tag and the cards
+  --room-a: calc(var(--cards-top) - 12px - var(--top-a) - var(--city-h) * #{$city-tags-end});
+  width: var(--city-w);
+  aspect-ratio: 1672 / 941;
+  // A when there is room, otherwise B (the * 1000 turns --room-a into a switch)
+  top: calc(var(--top-b) - max(0px, min(var(--top-b) - var(--top-a), var(--room-a) * 1000)));
+  $fade: linear-gradient(to bottom, transparent 0, black #{$city-fade * 100%});
+  -webkit-mask-image: $fade;
+  mask-image: $fade;
+}
+
+@keyframes hero-float {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-7px);
+  }
+}
+
+.hero-float {
+  animation: hero-float 7s ease-in-out infinite;
+}
+
+@include reduced-motion {
+  .hero-float {
+    animation: none;
+  }
+}
+
+// Scroll reveal
+.reveal {
+  opacity: 0;
+  transition:
+    opacity 0.75s $ease-out-expo,
+    transform 0.75s $ease-out-expo;
+  will-change: opacity, transform;
+}
+
+.reveal-up {
+  transform: translateY(26px);
+}
+
+.reveal-left {
+  transform: translateX(-30px);
+}
+
+.reveal-right {
+  transform: translateX(30px);
+}
+
+.reveal.is-visible {
+  opacity: 1;
+  transform: none;
+}
+
+// Chart entrance choreography (scoped to a Reveal wrapper)
+.reveal {
+  .chart-line {
+    stroke-dasharray: 1;
+    stroke-dashoffset: 1;
+  }
+
+  &.is-visible .chart-line {
+    stroke-dashoffset: 0;
+    transition: stroke-dashoffset 1.2s $ease-in-out-cubic 0.2s;
+  }
+
+  .chart-area,
+  .chart-fade {
+    opacity: 0;
+  }
+
+  &.is-visible .chart-area {
+    opacity: 1;
+    transition: opacity 0.9s ease-out 0.55s;
+  }
+
+  &.is-visible .chart-fade {
+    opacity: 1;
+    transition: opacity 0.5s ease-out 0.8s;
+  }
+
+  .chart-bar {
+    transform: scaleX(0);
+    transform-origin: left;
+  }
+
+  &.is-visible .chart-bar {
+    transform: scaleX(1);
+    transition: transform 0.9s $ease-out-expo var(--chart-bar-delay, 0ms);
+  }
+}
+
+// === Dashboard micro-interactions ===
+
+// Content enter: fade + gentle rise, staggered per section (~55ms apart)
+@keyframes dash-enter {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.dash-enter {
+  animation: dash-enter 0.3s $ease-out-expo both;
+  animation-delay: calc(var(--dash-stagger, 0) * 55ms);
+}
+
+// Sliding active-tab underline
+.dash-nav-indicator {
+  transition:
+    transform 0.3s $ease-out-expo,
+    width 0.3s $ease-out-expo,
+    opacity 0.3s ease;
+  will-change: transform, width;
+}
+
+// Nav tabs: text color fades, quick press response, soft glow on hover
+.dash-tab {
+  transition:
+    color 0.3s ease,
+    transform 0.12s ease;
+
+  &:active {
+    transform: scale(0.97);
+  }
+
+  &::before {
+    content: "";
+    position: absolute;
+    inset: 6px 0;
+    border-radius: 10px;
+    background: radial-gradient(70% 90% at 50% 100%, rgba($dash-tab-glow, 0.12), transparent 70%);
+    opacity: 0;
+    transition: opacity 0.3s ease;
+    pointer-events: none;
+  }
+
+  &:hover::before {
+    opacity: 1;
+  }
+}
+
+.dash-tab-icon {
+  transition:
+    transform 0.25s ease,
+    color 0.3s ease;
+}
+
+.dash-tab:hover .dash-tab-icon {
+  transform: scale(1.08);
+}
+
+@keyframes dash-icon-pop {
+  0% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.08);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+.dash-tab[data-active="true"] .dash-tab-icon {
+  animation: dash-icon-pop 0.35s ease-in-out;
+}
+
+// Interactive cards: lift, brighten and deepen shadow on hover.
+// card-lift keeps a card's own border/shadow (for highlighted variants);
+// card-interactive also brightens the border and strengthens the shadow.
+.card-lift,
+.card-interactive {
+  position: relative;
+  transition:
+    transform 0.25s $ease-out-expo,
+    border-color 0.25s ease,
+    box-shadow 0.25s ease;
+
+  &::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    background: rgba($white, 0.03);
+    opacity: 0;
+    transition: opacity 0.25s ease;
+    pointer-events: none;
+  }
+
+  &:hover {
+    transform: translateY(-2px);
+  }
+
+  &:hover::after {
+    opacity: 1;
+  }
+}
+
+.card-interactive:hover {
+  border-color: rgba($white, 0.18);
+  box-shadow: 0 12px 32px -12px rgba($black, 0.55);
+}
+
+@include reduced-motion {
+  .dash-enter {
+    animation: none;
+  }
+
+  .dash-nav-indicator,
+  .dash-tab,
+  .dash-tab-icon,
+  .card-lift,
+  .card-interactive,
+  .card-lift::after,
+  .card-interactive::after {
+    transition: none;
+  }
+
+  .dash-tab[data-active="true"] .dash-tab-icon {
+    animation: none;
+  }
+
+  .dash-tab:active,
+  .dash-tab:hover .dash-tab-icon,
+  .card-lift:hover,
+  .card-interactive:hover {
+    transform: none;
+  }
+}
+
+@include reduced-motion {
+  .animate-fade-in-up,
+  .animate-overlay-fade-in,
+  .animate-modal-pop-in,
+  .animate-drawer-in {
+    animation: none;
+    opacity: 1;
+    transform: none;
+  }
+
+  .reveal {
+    opacity: 1 !important;
+    transform: none !important;
+    transition: none;
+
+    .chart-line {
+      stroke-dasharray: none;
+      stroke-dashoffset: 0;
+      transition: none;
+    }
+
+    .chart-area,
+    .chart-fade {
+      opacity: 1;
+      transition: none;
+    }
+
+    .chart-bar {
+      transform: none;
+      transition: none;
+    }
+  }
+}

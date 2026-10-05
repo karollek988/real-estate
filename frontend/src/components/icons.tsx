@@ -8,14 +8,6 @@ export function DatabaseIcon(props: React.SVGProps<SVGSVGElement>) {
   );
 }
 
-export function SparkleIcon(props: React.SVGProps<SVGSVGElement>) {
-  return (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.6} {...props}>
-      <path d="M12 3l1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8L12 3z" />
-    </svg>
-  );
-}
-
 export function ShieldIcon(props: React.SVGProps<SVGSVGElement>) {
   return (
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.6} {...props}>
@@ -53,15 +45,6 @@ export function HouseIcon(props: React.SVGProps<SVGSVGElement>) {
   );
 }
 
-export function PlayCircleIcon(props: React.SVGProps<SVGSVGElement>) {
-  return (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.6} {...props}>
-      <circle cx="12" cy="12" r="9" />
-      <path d="M10 8.5l6 3.5-6 3.5V8.5z" />
-    </svg>
-  );
-}
-
 export function PencilIcon(props: React.SVGProps<SVGSVGElement>) {
   return (
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.6} {...props}>
@@ -71,45 +54,11 @@ export function PencilIcon(props: React.SVGProps<SVGSVGElement>) {
   );
 }
 
-export function LinkIcon(props: React.SVGProps<SVGSVGElement>) {
-  return (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.6} {...props}>
-      <path d="M10 13a5 5 0 007.5.5l3-3a5 5 0 00-7-7l-1.7 1.7" />
-      <path d="M14 11a5 5 0 00-7.5-.5l-3 3a5 5 0 007 7l1.7-1.7" />
-    </svg>
-  );
-}
-
 export function SearchIcon(props: React.SVGProps<SVGSVGElement>) {
   return (
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} {...props}>
       <circle cx="11" cy="11" r="7" />
       <path d="M21 21l-4.3-4.3" />
-    </svg>
-  );
-}
-
-export function ZapIcon(props: React.SVGProps<SVGSVGElement>) {
-  return (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.6} {...props}>
-      <path d="M13 2L3 14h7l-1 8 10-12h-7l1-8z" />
-    </svg>
-  );
-}
-
-export function BrainIcon(props: React.SVGProps<SVGSVGElement>) {
-  return (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.6} {...props}>
-      <path d="M12 4.5A2.5 2.5 0 009.5 2 2.5 2.5 0 007 4.5c-1.7 0-3 1.3-3 3 0 .6.2 1.2.5 1.7A3 3 0 004 12c0 1 .5 1.9 1.3 2.4-.2.4-.3.9-.3 1.4a3 3 0 003 3c.2 1.3 1.2 2.2 2.5 2.2a2.5 2.5 0 002.5-2.5v-14z" />
-      <path d="M12 4.5A2.5 2.5 0 0114.5 2 2.5 2.5 0 0117 4.5c1.7 0 3 1.3 3 3 0 .6-.2 1.2-.5 1.7A3 3 0 0120 12c0 1-.5 1.9-1.3 2.4.2.4.3.9.3 1.4a3 3 0 01-3 3c-.2 1.3-1.2 2.2-2.5 2.2a2.5 2.5 0 01-2.5-2.5v-14z" />
-    </svg>
-  );
-}
-
-export function StarIcon(props: React.SVGProps<SVGSVGElement>) {
-  return (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.6} {...props}>
-      <path d="M12 2.5l2.9 5.9 6.5.9-4.7 4.6 1.1 6.5L12 17.3l-5.8 3.1 1.1-6.5L2.6 9.3l6.5-.9L12 2.5z" />
     </svg>
   );
 }
@@ -286,25 +235,6 @@ export function GoogleIcon(props: React.SVGProps<SVGSVGElement>) {
   );
 }
 
-export function AppleIcon(props: React.SVGProps<SVGSVGElement>) {
-  return (
-    <svg viewBox="0 0 24 24" fill="currentColor" {...props}>
-      <path d="M16.36 12.76c-.02-2.16 1.76-3.2 1.84-3.25-1-1.47-2.57-1.67-3.12-1.69-1.33-.14-2.6.78-3.27.78-.67 0-1.72-.76-2.82-.74-1.45.02-2.79.84-3.54 2.14-1.51 2.62-.39 6.5 1.09 8.63.72 1.04 1.58 2.21 2.7 2.17 1.09-.04 1.5-.7 2.81-.7 1.31 0 1.68.7 2.83.68 1.17-.02 1.91-1.06 2.62-2.11.83-1.21 1.17-2.38 1.19-2.44-.03-.01-2.28-.87-2.33-3.47zM14.2 5.99c.6-.73 1.01-1.74.9-2.75-.87.04-1.92.58-2.54 1.3-.56.65-1.05 1.68-.92 2.67.97.08 1.96-.49 2.56-1.22z" />
-    </svg>
-  );
-}
-
-export function MicrosoftIcon(props: React.SVGProps<SVGSVGElement>) {
-  return (
-    <svg viewBox="0 0 24 24" {...props}>
-      <path fill="#F25022" d="M2 2h9.5v9.5H2z" />
-      <path fill="#7FBA00" d="M12.5 2H22v9.5h-9.5z" />
-      <path fill="#00A4EF" d="M2 12.5h9.5V22H2z" />
-      <path fill="#FFB900" d="M12.5 12.5H22V22h-9.5z" />
-    </svg>
-  );
-}
-
 export function MenuIcon(props: React.SVGProps<SVGSVGElement>) {
   return (
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} {...props}>
@@ -379,16 +309,6 @@ export function ShoppingBagIcon(props: React.SVGProps<SVGSVGElement>) {
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.6} {...props}>
       <path d="M6 8h12l-1 12a2 2 0 01-2 2H9a2 2 0 01-2-2L6 8z" />
       <path d="M9 8V6a3 3 0 016 0v2" />
-    </svg>
-  );
-}
-
-export function LockClosedBadgeIcon(props: React.SVGProps<SVGSVGElement>) {
-  return (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.6} {...props}>
-      <path d="M12 2.5l7 3v6c0 4.5-3 7.5-7 9-4-1.5-7-4.5-7-9v-6l7-3z" />
-      <rect x="9" y="11" width="6" height="4.5" rx="1" />
-      <path d="M10.2 11V9.6a1.8 1.8 0 013.6 0V11" />
     </svg>
   );
 }
@@ -507,15 +427,6 @@ export function UserIcon(props: React.SVGProps<SVGSVGElement>) {
   );
 }
 
-export function GemIcon(props: React.SVGProps<SVGSVGElement>) {
-  return (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.6} {...props}>
-      <path d="M5.5 3h13l3.5 5.5L12 21 2 8.5 5.5 3z" strokeLinejoin="round" />
-      <path d="M2 8.5h20M8.5 3L5.5 8.5 12 21l6.5-12.5L15.5 3" strokeLinejoin="round" />
-    </svg>
-  );
-}
-
 export function VisaIcon(props: React.SVGProps<SVGSVGElement>) {
   return (
     <svg viewBox="0 0 48 20" {...props}>
@@ -627,6 +538,107 @@ export function WalkIcon(props: React.SVGProps<SVGSVGElement>) {
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.6} {...props}>
       <circle cx="13" cy="4.5" r="1.6" fill="currentColor" stroke="none" />
       <path d="M10.5 21l1.5-6-2-2 1-4.5 3 1.5 1 3 3 1.5M9 12l3-1.5" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
+export function MapFoldIcon(props: React.SVGProps<SVGSVGElement>) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinejoin="round" {...props}>
+      <path d="M3.5 6.2l5.3-2.2 6.4 2.4 5.3-2.2v13.6l-5.3 2.2-6.4-2.4-5.3 2.2V6.2z" />
+      <path d="M8.8 4v13.6M15.2 6.4V20" />
+    </svg>
+  );
+}
+
+export function FileTextIcon(props: React.SVGProps<SVGSVGElement>) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinejoin="round" {...props}>
+      <path d="M6.5 3h7.5l4.5 4.5v12A1.5 1.5 0 0117 21H6.5A1.5 1.5 0 015 19.5v-15A1.5 1.5 0 016.5 3z" />
+      <path d="M13.5 3v5h5M8.5 13h7M8.5 16.5h5" strokeLinecap="round" />
+    </svg>
+  );
+}
+
+/** House with an arched door - the "Köp analys" button icon in the landing design. */
+export function HouseDoorIcon(props: React.SVGProps<SVGSVGElement>) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.7} strokeLinejoin="round" {...props}>
+      <path d="M4.5 20V10.2c0-.4.2-.8.5-1L11.4 4a1 1 0 011.2 0L19 9.2c.3.2.5.6.5 1V20H4.5z" />
+      <path d="M10 20v-2.6a2 2 0 014 0V20" />
+    </svg>
+  );
+}
+
+/** Four bars of different heights - "Prisutveckling" in the header's Bostadsanalys menu. */
+export function BarChartIcon(props: React.SVGProps<SVGSVGElement>) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.7} strokeLinecap="round" strokeLinejoin="round" {...props}>
+      <rect x="3.5" y="13" width="3" height="7" rx="1" />
+      <rect x="8.5" y="8.5" width="3" height="11.5" rx="1" />
+      <rect x="13.5" y="11" width="3" height="9" rx="1" />
+      <rect x="18.5" y="4" width="3" height="16" rx="1" />
+    </svg>
+  );
+}
+
+/** Open book - the header's "Kunskap" menu. */
+export function BookOpenIcon(props: React.SVGProps<SVGSVGElement>) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.7} strokeLinejoin="round" {...props}>
+      <path d="M12 6.5C10.2 5 7.7 4.4 3.5 4.5v13.2c4.2-.1 6.7.5 8.5 2 1.8-1.5 4.3-2.1 8.5-2V4.5c-4.2-.1-6.7.5-8.5 2z" />
+      <path d="M12 6.5v13.2" />
+    </svg>
+  );
+}
+
+/** Document with a plus badge - "Skapa analys". */
+export function FilePlusIcon(props: React.SVGProps<SVGSVGElement>) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.7} strokeLinecap="round" strokeLinejoin="round" {...props}>
+      <path d="M12.5 21H6.5A1.5 1.5 0 015 19.5v-15A1.5 1.5 0 016.5 3h7l4.5 4.5V11" />
+      <path d="M13.5 3v4.5H18" />
+      <circle cx="17.5" cy="17.5" r="4" />
+      <path d="M17.5 15.6v3.8M15.6 17.5h3.8" />
+    </svg>
+  );
+}
+
+/** Notepad with lines - "Blogg". */
+export function NotepadIcon(props: React.SVGProps<SVGSVGElement>) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.7} strokeLinecap="round" strokeLinejoin="round" {...props}>
+      <rect x="5" y="4.5" width="14" height="16.5" rx="2" />
+      <path d="M9 3v3M15 3v3M8.5 10.5h7M8.5 14h7M8.5 17.5h4" />
+    </svg>
+  );
+}
+
+/** Price tag - "Priser". */
+export function TagIcon(props: React.SVGProps<SVGSVGElement>) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.7} strokeLinejoin="round" {...props}>
+      <path d="M3.5 12.1V4.5a1 1 0 011-1h7.6a1 1 0 01.7.3l8 8a1 1 0 010 1.4l-7.6 7.6a1 1 0 01-1.4 0l-8-8a1 1 0 01-.3-.7z" />
+      <circle cx="8.2" cy="8.2" r="1.4" />
+    </svg>
+  );
+}
+
+/** Arrow out of a box corner - links that leave the site. */
+export function ArrowUpRightIcon(props: React.SVGProps<SVGSVGElement>) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.9} strokeLinecap="round" strokeLinejoin="round" {...props}>
+      <path d="M7 17L17 7M8.5 7H17v8.5" />
+    </svg>
+  );
+}
+
+/** Clock - reading time on articles and response times. */
+export function ClockIcon(props: React.SVGProps<SVGSVGElement>) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.7} strokeLinecap="round" {...props}>
+      <circle cx="12" cy="12" r="8.5" />
+      <path d="M12 7.5V12l3 2" />
     </svg>
   );
 }

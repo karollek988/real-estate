@@ -72,6 +72,7 @@ import {
   DatabaseIcon,
   QuestionIcon,
 } from "@/components/icons";
+import { ROUTES } from "@/components/site/navigation";
 
 const serif = localFont({
   src: [
@@ -962,7 +963,7 @@ export default async function ReportPage({
     <div className={`${serif.variable} min-h-screen bg-[#F7F4EC]`}>
       {/* ── Screen-only top bar (hidden in print) ── */}
       <div className="no-print mx-auto flex w-full max-w-[880px] items-center justify-between px-8 py-5 sm:px-16">
-        <Link href="/" className="text-sm font-medium text-[#5B5648] transition hover:text-[#12271D]">
+        <Link href={ROUTES.skapaAnalys} className="text-sm font-medium text-[#5B5648] transition hover:text-[#12271D]">
           ← Ny analys
         </Link>
         <a

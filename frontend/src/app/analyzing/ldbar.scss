@@ -1,0 +1,28 @@
+// The ldBar (loading.io loading-bar) progress ring on /analyzing.
+@use "../../styles/variables" as *;
+
+.ldBar {
+  position: relative;
+
+  > .ldBar-label {
+    display: none;
+  }
+
+  &.label-center > .ldBar-label {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    -webkit-transform: translate(-50%, -50%);
+    transform: translate(-50%, -50%);
+    text-shadow: 0 0 3px $white;
+  }
+}
+
+.ldBar-label:after {
+  content: "%";
+  display: inline;
+}
+
+.ldBar.no-percent .ldBar-label:after {
+  content: "";
+}

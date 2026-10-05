@@ -29,7 +29,8 @@ const stagger = (n: number) => ({ "--dash-stagger": n }) as React.CSSProperties;
 
 function BuyPageContent() {
   const searchParams = useSearchParams();
-  const checkout = searchParams.get("checkout");
+  // Typed nullable since src/pages/ (the admin portal) exists; never null in the App Router.
+  const checkout = searchParams?.get("checkout") ?? null;
   const [authOpen, setAuthOpen] = useState(false);
 
   const requireAuth = () => setAuthOpen(true);

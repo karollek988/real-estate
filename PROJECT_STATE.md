@@ -5,6 +5,148 @@
 > otherwise leave it alone. Detailed research/product docs live in `docs/`;
 > this file is the "what's actually true right now" summary.
 
+Last updated: 2026-10-05 — Twelfth session (landing hero centred again), on `styleRedesign`,
+**not merged to `main`, not deployed**. The eleventh and tenth sessions follow below it.
+
+**Twelfth session — the landing hero is centred again.** The user rejected the eleventh session's split
+hero (text left, photo right). Header, menus, pages and routing stay exactly as built; only the top of
+the landing page changed.
+- **Hero** (`components/landing/LandingHero.tsx`) is back to the centred composition of
+  `docs/design/landing-2026-10/kopanalys-new-design.png` (as in `b0e77d4`): badge, H1, text,
+  [Visa karta → `/karta`] [Se exempelrapport → `#exempelrapport`], the map laptop in the middle, the
+  three steps over its lower half. "Skapa analys" and "Så fungerar det" left the hero (the user's
+  sketch; "Skapa analys" stays in the header), and so did the four trust points ("Oberoende analys" …),
+  which the user asked to remove afterwards.
+- **Steps** (replaced the four feature cards at the user's request, after
+  `docs/design/landing-2026-10/tre-steg-tryggare.png`, moved there from `public/`): 01 Hitta bostaden →
+  `/karta`; 02 Analysera bostaden → the analysis form on the page (as the header's "Skapa analys" does
+  there); 03 Besluta tryggare — shown on deep green but deliberately not linked yet (a plain `div`).
+  The cards are HTML; only the 3D icons come from the picture (`scripts/make-brand-assets.py steps` →
+  `public/images/steg-*.png`, cut out with colour-to-alpha). New colour token `$ka-mint-bright`. The
+  cards grow by 6 % under the mouse (all three, as asked) and under keyboard focus (the two links),
+  and have a 1.5 px outline in the ink colour (`ka-ink`) so they stand off the page.
+- **Photo**: `hero-stockholm.jpg` runs behind the laptop, its sky fading into the cream under the text.
+  Its price tags are printed on the picture, so `.hero-city-stacked` (below xl) and `.hero-city-wide`
+  (xl+) in `globals.scss` place it so every tag is fully visible or fully behind the laptop or a card,
+  never cut through. From xl it switches in pure CSS between two placements, depending on the room
+  between laptop and cards. That relies on `--hero-card-h`, the step cards' fixed height per breakpoint
+  (92 px, 86 px on short screens, 100 px from 2xl), set in LandingHero. From xl the row of steps is
+  at most 76 % of the screen wide, so its first card still covers the lowest left tag in placement B.
+- **Områden** no longer shows the laptop render (it would appear twice); its topics are a card instead.
+- **Header bugfix**: the decorative contours made the page scroll sideways at 1024–1230 px; now capped.
+- **Verified**: `tsc` clean, `next build` OK, `eslint` 14 problems (all pre-existing); key routes at
+  390–1920 px with no horizontal scroll or console errors; hero screenshots at 390, 768, 1024,
+  1280×720, 1366×650, 1440×780/900, 1536×730 and 1920×950/1000.
+
+**Eleventh session — new header, hero background, real logo, all public pages.** References:
+`docs/design/landing-2026-10/New-Header-Design.png` and `New-Landingpage-BK.png` (moved there from
+`public/`; they are sources, not runtime assets).
+- **Assets** (`frontend/scripts/make-brand-assets.py`): `public/images/kopanalys-logo-mark.png` is the
+  real logo (`public/kopanalys-bostad-logo.png`) cut out of its white square with an ellipse mask (the
+  original has no transparency); `public/images/hero-stockholm.jpg` is the background as a JPEG. The
+  source photo is only 1672 × 941 px — a ≥ 2560 px export would be sharper on large/retina screens.
+- **Routes**: every public page is in the route group `app/(site)/` (one layout: light header, cream,
+  `<main id="main">`). New: `/karta`, `/omraden`, `/priser`, `/prisutveckling`, `/skapa-analys`,
+  `/sa-fungerar-det`, `/kontakt`, `/blogg` + `/blogg/[slug]`, `/guider` + `/guider/[slug]`, `/nyheter`,
+  plus `app/not-found.tsx`, `app/sitemap.ts`, `app/robots.ts`. `/contact` redirects to `/kontakt`.
+  Every URL lives in `components/site/navigation.ts` (`ROUTES`, `MAIN_NAV`); header, footer and CTAs
+  read it.
+- **Header** (`SiteHeader` + `components/header/`): menus Bostadsanalys (Karta, Skapa analys,
+  Prisutveckling) and Kunskap (Blogg, Nyheter, Guider) as disclosure menus (hover, click/tap, full
+  keyboard), search → `/karta?q=…`, "Skapa analys" (on `/` it scrolls to the form), profile/sign-in.
+  Below xl a full-screen menu dialog. Nav icons from 1400 px. The menu item is called
+  "Prisutveckling", not "Priser" as in the reference (judgment call: "Priser" is already the top-level
+  link to the package prices). `variant="dark"` stays for `/buy`, the dashboard and the legal pages
+  (which now have the header).
+- **Landing page** order: hero → Så fungerar det (3 steps) → Bostadsanalys (AnalyzeSection with the
+  form) → Områden (new, with the laptop map render that used to be in the hero) → Priser (compact) →
+  Exempelrapport (chapter list + dialog with the whole example chapter) → Kunskap teaser → FAQ (6, then
+  "Visa alla") → Kontakt. Problem/"Bra att veta" sections moved to `/sa-fungerar-det`, market data to
+  `/prisutveckling`, news to `/nyheter`. The decorative price markers are gone (the photo has its own).
+- **Map**: `/karta` is the admin portal's atlas workspace (`components/admin/atlas/atlas.ts`) in a new
+  `variant: 'public'` (`components/map/PublicMap.tsx`): no brand, no demo BankID/inbox/sign-out (the
+  site header has the real sign-in), "Mina annonser" open to all, detail-panel "Skapa analys" →
+  `/skapa-analys`, no search-as-you-type against Nominatim (its usage policy forbids autocomplete). Its
+  styles: the workspace rules moved into the mixin `_atlas-workspace.scss`; `atlas.scss` (admin) compiles
+  **byte-identical** to before, `atlas-public.scss` scopes everything under `.atlas-root.atlas-public`
+  and prefixes the keyframes (`atlas-*` — the workspace had its own `fade-in-up`). The page says
+  "Förhandsversion · exempelannonser" (the pins are the demo's made-up listings). This replaces the
+  2026-10-05 decision that "Visa karta" scrolls to "Så fungerar det" (the user asked for `/karta`).
+- **Content**: `lib/kunskap/articles.ts` — 3 guides + 3 posts, written from what the product already
+  uses (BRF levels from `lib/brf/interpret.ts`, costs/mortgage rules imported from
+  `lib/report/housingCost.ts`, questions from `lib/report/questions.ts`). `lib/faq.ts`: items have ids,
+  reordered to the questions buyers ask first, 3 new answers (Hur fungerar en bostadsanalys?, Kan jag
+  använda Köpanalys innan visning?, Är Köpanalys en ersättning för mäklare eller besiktningsman?) and
+  4 renamed questions; the audited answers are unchanged.
+- **Small fixes**: start-analysis links in the dashboard and report → `/skapa-analys`;
+  `ScrollRestorationReset` keeps a `#section` on page load; "Skapa anons" typo and English map texts.
+- **Still open / for the user**: "Om oss" in the footer was left out (no page or content exists); the
+  fake "4.8/5 – 256 omdömen" card stays (earlier decision); OnboardingModal is now opened from "Hur går
+  det till?" on the analysis card; the public map uses OpenStreetMap's own tile servers and Nominatim,
+  whose usage policies don't cover production traffic — pick a tile/geocoding provider before launch.
+- **Verified**: `tsc` clean, `next build` OK (all new pages static/SSG), `eslint` 14 problems — all
+  pre-existing, none in touched code; every route at 390/1440 px: 200, one h1, one `<main>`, no
+  horizontal scroll, no console errors; header/drawer/search/dialog keyboard and focus behaviour tested
+  with headless Chrome; the admin variant of the map exercised on a temporary page (removed).
+
+---
+
+Tenth session, in three parts:
+
+**1. Build fix + approved cleanup — meant for `main`.** Commits `ee2fb36`..`6a84bb9` (local branch
+`chore/main-cleanup`, a pure fast-forward of `origin/main`; already merged into `styleRedesign`).
+- **The build had failed since `bbef750`** (Vercel's deploy failed 2026-10-04): the admin portal's
+  `src/pages/` types the App Router hooks as nullable and `/buy` called `searchParams.get()`
+  directly. Fixed in `ee2fb36`. `bf2e5e4` restores two FAQ questions that merge had reverted.
+  `npm run lint` runs again (`frontend/eslint.config.mjs`; 14 pre-existing react-hooks problems),
+  and `tsconfig.tsbuildinfo` is untracked.
+- **Cleanup, approved by the user** (`88cf634`): unused public assets (9 design blueprints, 2
+  loading videos), dead code (`lib/placeholders.ts`, Premium-shimmer and score-ring CSS, 9 unused
+  icons, `.eslintrc.json`) and unused root folders (`ai-orchestrator/`, `deepseek-tasks/`, the
+  `Market_Intelligence_Engine/` Docker scaffold — its audit is now
+  `docs/market_intelligence_audit_sprint5.md` — `Future_investment_engine/`, `notebooks/`,
+  `data/`), plus `CHANGELOG.md` and `scripts/hemnet-graphql-poc.mjs`. Kept on purpose:
+  `BLUEPRINT.md`, `notion-project-plan-prompt.md`, `start_frontend.bat`.
+- Until `origin/main` is fast-forwarded to `6a84bb9`, production keeps serving `429bb66`.
+
+**2. Landing redesign — branch `styleRedesign`** (pushed, **not merged to `main`, not deployed**).
+Reference: `docs/design/landing-2026-10/kopanalys-new-design.png`.
+- `ka-*` colour tokens (since part 3 in `styles/_variables.scss`); display serif = the report's Source Serif 4 (`lib/fonts.ts`);
+  `BrandLogo`; `SiteHeader` has a `variant` ("light" on `/`, default "dark" for `/buy` and the
+  dashboard until they are redesigned); `components/landing/` (LandingHero, AnalyzeSection,
+  ScrollLink, container); every landing section restyled to cream/sand with deep green; deep
+  green global footer.
+- The analysis card (screenshot / manual / area) moved from the hero into AnalyzeSection with
+  unchanged forms; `FOCUS_URL_INPUT_EVENT` may carry `{ method }` to open a tab.
+- Hero laptop: `public/images/hero-laptop.png`, cut out of the RGB render by
+  `frontend/scripts/make-hero-laptop.py`.
+- Removed here only, unused after the redesign but still used by `main`'s old landing page:
+  `SectionDivider` (+ `.section-divider`), `PlayCircleIcon`, `good-to-know.png`,
+  `marknads-instinkter.png`.
+- **Decided by the user (2026-10-05):** "Visa karta" scrolls to "Så fungerar det" until the public
+  map ships (`MAP_TARGET`); the card copy "Se om priset är rimligt med hjälp av data och historik"
+  stays as in the reference.
+- **Still open:** (1) no clean Stockholm hero photo exists, so `HERO_PHOTO = null` shows an interim
+  gradient (`LandingHero.tsx`); `public/hero-background.png` is the old villa image with baked-in
+  price tags and a market panel and does not work behind the new hero. (2) The merged branches
+  listed in the session report await the user's answer — none were deleted.
+
+**3. Sass — branch `styleRedesign`** (user request 2026-10-05). Every stylesheet is SCSS (`sass`
+devDependency; Next.js compiles it, then Tailwind's PostCSS plugin runs on the result):
+- **Master variables: `frontend/src/styles/_variables.scss`** — all colour palettes (public brand
+  `ka-*`, hero, dashboard, admin portal/map), font stacks, easings, breakpoints, admin shadows and
+  the `reduced-motion` mixin. It emits no CSS; each stylesheet `@use`s it with a relative path.
+- `app/globals.scss` generates Tailwind's `@theme` colours from `$ka-palette` (add a colour there →
+  `bg-ka-<name>` exists) and imports Tailwind as `@import "tailwindcss/index.css"` — the `.css`
+  extension keeps it a plain CSS import for Tailwind; a bare `"tailwindcss"` would make Sass inline
+  the file and break Tailwind's own imports. The other stylesheets: `app/analyzing/ldbar.scss`,
+  `components/admin/admin.scss`, `components/admin/atlas/atlas.scss` (the admin ones stay separate:
+  the Pages Router loads them only on the admin host, and atlas carries global resets).
+- Verified as a pure refactor: the production build ships byte-identical CSS for 5 of 6 files; the
+  sixth (the main stylesheet) differs only by three whitespace characters the minifier now drops.
+- Not covered: colours written into components (Tailwind's own palette, arbitrary `[#…]` values,
+  inline SVG/email/report colours) — those don't go through the stylesheets.
+
 Last updated: 2026-09-28 — `mapDemoIntegration` now carries both the
 **admin portal** (`admin.kopanalys.se`: login + embedded map demo, see §3g
 and the admin bullet in §6 — needs a Vercel domain + DNS record before it's

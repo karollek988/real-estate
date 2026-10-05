@@ -2,9 +2,18 @@
 
 import { useEffect, useRef, useState } from "react";
 import { Reveal } from "@/components/Reveal";
+import { LANDING_CONTAINER } from "@/components/landing/container";
 import { MailIcon } from "@/components/icons";
 
-export function ContactSection() {
+/** The contact form (POST /api/contact). The landing page's last section and the body of /kontakt. */
+export function ContactSection({
+  titleAs: Title = "h2",
+  title = "Har du en fråga?",
+}: {
+  /** "h1" when the section opens its page (/kontakt). */
+  titleAs?: "h1" | "h2";
+  title?: string;
+} = {}) {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [message, setMessage] = useState("");
@@ -57,24 +66,27 @@ export function ContactSection() {
   }
 
   return (
-    <section id="contact" className="scroll-mt-24">
-      <div className="mx-auto w-full max-w-[1400px] px-6 py-20">
+    <section id="kontakt" aria-labelledby="kontakt-title" className="scroll-mt-24 bg-ka-cream">
+      <div className={`${LANDING_CONTAINER} py-20 lg:py-28`}>
         <div className="grid gap-10 lg:grid-cols-[1fr_1.5fr] lg:gap-16">
           <Reveal variant="left">
-            <div className="lg:sticky lg:top-10">
-              <span className="flex h-12 w-12 items-center justify-center rounded-xl border border-green-500/25 bg-green-500/10">
-                <MailIcon className="h-6 w-6 text-green-400" />
-              </span>
-              <p className="mt-5 text-sm font-semibold text-green-400">Kontakt</p>
-              <h2 className="mt-2 text-[32px] font-bold leading-tight tracking-tight sm:text-[36px]">
-                Har du en fråga?
-              </h2>
-              <p className="mt-3 max-w-[400px] text-[15px] leading-relaxed text-neutral-400">
+            <div className="lg:sticky lg:top-28">
+              <p className="inline-flex items-center gap-2 rounded-full bg-ka-sage/70 px-3.5 py-1.5 text-[12px] font-semibold uppercase tracking-[0.08em] text-ka-green-900">
+                <MailIcon className="h-4 w-4" />
+                Kontakt
+              </p>
+              <Title
+                id="kontakt-title"
+                className="mt-5 font-display text-[34px] font-bold leading-[1.08] tracking-[-0.015em] text-ka-ink sm:text-[44px]"
+              >
+                {title}
+              </Title>
+              <p className="mt-4 max-w-[420px] text-[16px] leading-relaxed text-ka-muted sm:text-[17px]">
                 Har du en fråga, ett förslag eller något annat på hjärtat? Skicka ett meddelande
                 så återkommer vi, eller mejla oss direkt på{" "}
                 <a
                   href="mailto:info@kopanalys.se"
-                  className="font-medium text-green-400 underline underline-offset-4 hover:text-green-300"
+                  className="font-semibold text-ka-green-700 underline underline-offset-4 hover:text-ka-green-900"
                 >
                   info@kopanalys.se
                 </a>
@@ -84,20 +96,20 @@ export function ContactSection() {
           </Reveal>
 
           <Reveal variant="up">
-            <div className="rounded-2xl border border-white/10 bg-white/[0.02] p-6 sm:p-8">
+            <div className="rounded-[22px] border border-ka-line bg-white p-6 shadow-[0_18px_40px_-32px_rgba(15,31,24,0.45)] sm:p-8">
               {success ? (
                 <div className="flex flex-col items-center gap-4 py-8 text-center">
-                  <div className="flex h-14 w-14 items-center justify-center rounded-full bg-green-600/20">
-                    <MailIcon className="h-7 w-7 text-green-400" />
+                  <div className="flex h-14 w-14 items-center justify-center rounded-full bg-ka-sage/70">
+                    <MailIcon className="h-7 w-7 text-ka-green-800" />
                   </div>
-                  <p className="text-lg font-semibold text-white">Meddelande skickat!</p>
-                  <p className="text-sm text-neutral-400">
+                  <p className="text-lg font-bold text-ka-ink">Meddelande skickat!</p>
+                  <p className="text-sm text-ka-muted">
                     Tack för ditt meddelande. Vi återkommer så snart vi kan.
                   </p>
                   <button
                     type="button"
                     onClick={() => setSuccess(false)}
-                    className="mt-2 text-sm font-medium text-green-400 underline underline-offset-4 transition hover:text-green-300"
+                    className="mt-2 text-sm font-semibold text-ka-green-700 underline underline-offset-4 transition hover:text-ka-green-900"
                   >
                     Skicka ett till meddelande
                   </button>
@@ -106,7 +118,7 @@ export function ContactSection() {
                 <form onSubmit={handleSubmit} className="flex flex-col gap-5">
                   <div className="grid gap-5 sm:grid-cols-2">
                     <div>
-                      <label htmlFor="contact-name" className="text-sm font-medium text-neutral-200">
+                      <label htmlFor="contact-name" className="text-sm font-semibold text-ka-ink">
                         Namn
                       </label>
                       <div className="relative mt-2">
@@ -118,13 +130,13 @@ export function ContactSection() {
                           value={name}
                           onChange={(e) => setName(e.target.value)}
                           required
-                          className="w-full rounded-xl border border-white/10 bg-black/40 py-3 pl-4 pr-4 text-sm text-white placeholder:text-neutral-500 outline-none transition focus:border-green-500/60 focus:ring-4 focus:ring-green-500/10"
+                          className="w-full rounded-xl border border-ka-line bg-white py-3 pl-4 pr-4 text-[15px] text-ka-ink placeholder:text-ka-muted/60 outline-none transition focus:border-ka-green-700 focus:ring-4 focus:ring-ka-green-700/10"
                         />
                       </div>
                     </div>
 
                     <div>
-                      <label htmlFor="contact-email" className="text-sm font-medium text-neutral-200">
+                      <label htmlFor="contact-email" className="text-sm font-semibold text-ka-ink">
                         E-post
                       </label>
                       <div className="relative mt-2">
@@ -136,14 +148,14 @@ export function ContactSection() {
                           value={email}
                           onChange={(e) => setEmail(e.target.value)}
                           required
-                          className="w-full rounded-xl border border-white/10 bg-black/40 py-3 pl-4 pr-4 text-sm text-white placeholder:text-neutral-500 outline-none transition focus:border-green-500/60 focus:ring-4 focus:ring-green-500/10"
+                          className="w-full rounded-xl border border-ka-line bg-white py-3 pl-4 pr-4 text-[15px] text-ka-ink placeholder:text-ka-muted/60 outline-none transition focus:border-ka-green-700 focus:ring-4 focus:ring-ka-green-700/10"
                         />
                       </div>
                     </div>
                   </div>
 
                   <div>
-                    <label htmlFor="contact-message" className="text-sm font-medium text-neutral-200">
+                    <label htmlFor="contact-message" className="text-sm font-semibold text-ka-ink">
                       Meddelande
                     </label>
                     <div className="relative mt-2">
@@ -154,20 +166,20 @@ export function ContactSection() {
                         value={message}
                         onChange={(e) => setMessage(e.target.value)}
                         required
-                        className="w-full resize-y rounded-xl border border-white/10 bg-black/40 py-3 pl-4 pr-4 text-sm text-white placeholder:text-neutral-500 outline-none transition focus:border-green-500/60 focus:ring-4 focus:ring-green-500/10"
+                        className="w-full resize-y rounded-xl border border-ka-line bg-white py-3 pl-4 pr-4 text-[15px] text-ka-ink placeholder:text-ka-muted/60 outline-none transition focus:border-ka-green-700 focus:ring-4 focus:ring-ka-green-700/10"
                       />
                     </div>
                   </div>
 
                   {error && (
-                    <p className="rounded-xl border border-red-400/20 bg-red-400/10 px-4 py-2.5 text-sm text-red-400">
+                    <p className="rounded-xl border border-ka-red-600/25 bg-ka-red-600/[0.06] px-4 py-2.5 text-sm text-ka-red-600">
                       {error.includes("mejla oss") ? (
                         <>
                           {error.split("istället")[0]}
                           istället
                           <a
                             href="mailto:info@kopanalys.se"
-                            className="ml-1 font-medium text-green-400 underline underline-offset-4 hover:text-green-300"
+                            className="ml-1 font-semibold text-ka-green-700 underline underline-offset-4 hover:text-ka-green-900"
                           >
                             info@kopanalys.se
                           </a>
@@ -181,7 +193,7 @@ export function ContactSection() {
                   <button
                     type="submit"
                     disabled={loading}
-                    className="mt-1 flex w-full cursor-pointer items-center justify-center gap-2.5 rounded-2xl bg-green-600 py-3.5 text-base font-semibold text-white transition hover:bg-green-500 disabled:cursor-not-allowed disabled:opacity-60 sm:w-auto sm:px-10"
+                    className="mt-1 flex w-full cursor-pointer items-center justify-center gap-2.5 rounded-[12px] bg-ka-green-900 py-3.5 text-[15px] font-semibold text-white shadow-[0_14px_30px_-16px_rgba(12,42,31,0.9)] transition-all duration-200 hover:-translate-y-0.5 hover:bg-ka-green-800 disabled:cursor-not-allowed disabled:opacity-60 disabled:hover:translate-y-0 sm:w-auto sm:px-10"
                   >
                     <MailIcon className="h-5 w-5" />
                     {loading ? "Skickar..." : "Skicka meddelande"}

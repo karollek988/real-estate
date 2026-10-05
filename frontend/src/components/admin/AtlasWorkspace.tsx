@@ -17,7 +17,7 @@ export function AtlasWorkspace() {
     let unmount: (() => void) | undefined;
     import("./atlas/atlas")
       .then(({ mountAtlas }) => {
-        if (!cancelled) unmount = mountAtlas(root);
+        if (!cancelled) unmount = mountAtlas(root).unmount;
       })
       .catch(() => {
         if (!cancelled) setLoadFailed(true);

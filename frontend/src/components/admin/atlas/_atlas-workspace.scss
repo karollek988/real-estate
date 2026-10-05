@@ -1,0 +1,1834 @@
+// Atlas map workspace - every rule of the workspace itself, as one mixin.
+//
+// The admin portal (atlas.scss) emits it globally, exactly as before; the
+// public map page /karta (atlas-public.scss) emits it under its own root, so
+// none of the workspace's generic class names (.topbar, .brand, .sidebar ...)
+// or element rules (h1, h2) reach the rest of the public site. Keyframe names
+// take a prefix for the same reason: the workspace has its own "fade-in-up".
+//
+// Ported from KopanalysMapDemo/src/style.css (commit 10152df); see atlas.scss
+// for the history.
+@use "../../../styles/variables" as *;
+
+@mixin workspace($keyframe-prefix: "") {
+  .app-shell {
+    height: 100svh;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    background: $admin-canvas;
+  }
+
+  .topbar {
+    height: 68px;
+    flex: 0 0 68px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 28px;
+    background: $admin-base;
+    border-bottom: 1px solid rgba($white, 0.07);
+  }
+
+  .search-form {
+    position: relative;
+    display: flex;
+    align-items: center;
+    width: min(430px, 36vw);
+    height: 38px;
+    margin: 0 20px;
+    color: $admin-text;
+    background: rgba($white, 0.04);
+    border: 1px solid rgba($white, 0.08);
+    border-radius: 10px;
+  }
+
+  .search-icon {
+    padding-left: 12px;
+    color: $admin-green;
+    font-size: 22px;
+    line-height: 1;
+  }
+
+  .search-form input {
+    min-width: 0;
+    flex: 1;
+    height: 100%;
+    padding: 0 9px;
+    color: $admin-text-strong;
+    background: transparent;
+    border: 0;
+    outline: 0;
+    font-size: 12px;
+
+    &::placeholder {
+      color: $admin-text-subtle;
+    }
+  }
+
+  .search-form button {
+    height: 28px;
+    margin-right: 5px;
+    padding: 0 11px;
+    color: $admin-on-green;
+    background: $admin-green;
+    border: 0;
+    border-radius: 7px;
+    font-size: 11px;
+    font-weight: 700;
+
+    &:hover {
+      background: $admin-green-light;
+    }
+  }
+
+  .brand {
+    display: flex;
+    align-items: center;
+    gap: 9px;
+    color: $white;
+    font-size: 20px;
+    font-weight: 600;
+    text-decoration: none;
+  }
+
+  .brand-mark {
+    display: block;
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    object-fit: cover;
+  }
+
+  .topbar-meta {
+    display: flex;
+    align-items: center;
+    gap: 9px;
+    color: $admin-text-subtle;
+    font: 11px $admin-font-mono;
+    letter-spacing: .1px;
+    text-transform: uppercase;
+  }
+
+  .status-dot {
+    width: 6px;
+    height: 6px;
+    background: $admin-green;
+    border-radius: 50%;
+  }
+
+  .divider {
+    height: 13px;
+    width: 1px;
+    background: rgba($white, 0.102);
+    margin: 0 4px;
+  }
+
+  .icon-button,
+  .more-button {
+    color: $admin-text-muted;
+    background: transparent;
+    border: 0;
+    font-size: 25px;
+    line-height: 1;
+
+    &:hover {
+      color: $admin-green;
+    }
+  }
+
+  .topbar-actions {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+  }
+
+  .bankid-button {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    height: 38px;
+    padding: 0 16px 0 10px;
+    color: $white;
+    background: $bankid-blue;
+    border: 0;
+    border-radius: 8px;
+    font-size: 12px;
+    font-weight: 700;
+    white-space: nowrap;
+
+    &[hidden] {
+      display: none;
+    }
+
+    &:hover {
+      background: $bankid-blue-hover;
+    }
+  }
+
+  .bankid-mark {
+    display: grid;
+    place-items: center;
+    width: 22px;
+    height: 22px;
+    color: $bankid-blue;
+    background: $white;
+    border-radius: 5px;
+    font: 800 10px $admin-font-mono;
+  }
+
+  .auth-actions {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+
+    &[hidden] {
+      display: none;
+    }
+  }
+
+  .logout-button {
+    height: 38px;
+    padding: 0 14px;
+    color: $admin-text-soft;
+    background: rgba($white, 0.04);
+    border: 1px solid rgba($white, 0.07);
+    border-radius: 8px;
+    font-size: 12px;
+    font-weight: 700;
+    white-space: nowrap;
+
+    &:hover {
+      background: rgba($white, 0.07);
+      color: $white;
+    }
+  }
+
+  .inbox-wrap {
+    position: relative;
+  }
+
+  .inbox-badge {
+    position: absolute;
+    top: -4px;
+    right: -4px;
+    min-width: 15px;
+    height: 15px;
+    padding: 0 3px;
+    display: grid;
+    place-items: center;
+    color: $admin-on-green;
+    background: $admin-green;
+    border-radius: 999px;
+    font: 700 9px $admin-font-mono;
+  }
+
+  .inbox-dropdown {
+    position: absolute;
+    z-index: 1100;
+    top: calc(100% + 10px);
+    right: 0;
+    width: 290px;
+    padding: 14px;
+    background: rgba($admin-surface, 0.96);
+    border: 1px solid rgba($white, 0.094);
+    border-radius: 16px;
+    box-shadow: $admin-shadow-popover;
+    backdrop-filter: blur(14px);
+
+    &[hidden] {
+      display: none;
+    }
+  }
+
+  .inbox-message {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    padding: 10px 2px;
+    border-top: 1px solid rgba($white, 0.05);
+
+    &:first-of-type {
+      border-top: 0;
+      padding-top: 2px;
+    }
+
+    strong {
+      color: $admin-text-strong;
+      font-size: 12px;
+    }
+  }
+
+  .inbox-time {
+    margin-left: auto;
+    color: $admin-text-faint;
+    font: 10px $admin-font-mono;
+  }
+
+  .inbox-message p {
+    flex-basis: 100%;
+    margin: 4px 0 0;
+    color: $admin-text-muted;
+    font-size: 11px;
+    line-height: 1.5;
+  }
+
+  .workspace {
+    display: flex;
+    flex: 1;
+    min-height: 0;
+  }
+
+  .sidebar {
+    width: 355px;
+    flex: 0 0 355px;
+    display: flex;
+    flex-direction: column;
+    padding: 38px 30px 24px;
+    background: $admin-canvas;
+    border-right: 1px solid rgba($white, 0.07);
+    overflow-y: auto;
+  }
+
+  .sidebar-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+  }
+
+  .eyebrow {
+    margin: 0 0 9px;
+    color: $admin-green;
+    font: 11px $admin-font-mono;
+    letter-spacing: .8px;
+    text-transform: uppercase;
+  }
+
+  h1,
+  h2 {
+    margin: 0;
+    color: $white;
+    font-family: $admin-font-serif;
+    font-weight: 400;
+    letter-spacing: -.5px;
+  }
+
+  h1 {
+    font-size: 31px;
+    line-height: 1.15;
+  }
+
+  h2 {
+    font-size: 28px;
+    margin-bottom: 24px;
+  }
+
+  .more-button {
+    font-size: 17px;
+    letter-spacing: 2px;
+    padding: 0 2px;
+  }
+
+  .intro {
+    max-width: 270px;
+    margin: 15px 0 27px;
+    color: $admin-text-muted;
+    font-size: 13px;
+    line-height: 1.7;
+  }
+
+  .action-row {
+    display: flex;
+    gap: 9px;
+    margin-bottom: 39px;
+  }
+
+  .primary-button,
+  .secondary-button {
+    border: 0;
+    border-radius: 10px;
+    font-size: 12px;
+    font-weight: 700;
+  }
+
+  .primary-button {
+    padding: 12px 17px;
+    color: $admin-on-green;
+    background: $admin-green-strong;
+    box-shadow: $admin-shadow-glow;
+
+    &:hover {
+      background: $admin-green;
+    }
+
+    span {
+      margin-right: 4px;
+      font-size: 16px;
+      vertical-align: -1px;
+    }
+  }
+
+  .secondary-button {
+    padding: 12px 14px;
+    color: $admin-text-soft;
+    background: rgba($white, 0.04);
+    border: 1px solid rgba($white, 0.07);
+
+    &:hover {
+      background: rgba($white, 0.07);
+    }
+  }
+
+  .list-heading {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    width: 100%;
+    margin-bottom: 13px;
+    padding: 4px 2px;
+    color: $admin-text-subtle;
+    background: transparent;
+    border: 0;
+    font: 11px $admin-font-mono;
+    letter-spacing: .6px;
+    text-transform: uppercase;
+    text-align: left;
+    cursor: pointer;
+    transition: opacity .15s ease;
+
+    &:hover {
+      color: $admin-text-muted;
+    }
+
+    &.is-off {
+      opacity: .45;
+    }
+
+    strong {
+      margin-left: auto;
+      color: $admin-green;
+      font-weight: 500;
+    }
+  }
+
+  .buyer-heading,
+  .exchange-heading {
+    margin-top: 27px;
+  }
+
+  .buyer-heading strong {
+    color: $admin-blue;
+  }
+
+  .exchange-heading strong {
+    color: $admin-red;
+  }
+
+  .heading-dot {
+    flex: 0 0 7px;
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: $admin-green;
+    border: 1.5px solid $admin-green;
+    box-sizing: border-box;
+    transition: background .15s ease;
+  }
+
+  .buyer-heading .heading-dot {
+    background: $admin-blue;
+    border-color: $admin-blue;
+  }
+
+  .exchange-heading .heading-dot {
+    background: $admin-red;
+    border-color: $admin-red;
+  }
+
+  .list-heading.is-off .heading-dot {
+    background: transparent;
+  }
+
+  .pin-item {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    gap: 11px;
+    padding: 9px 8px;
+    color: $admin-text-strong;
+    text-align: left;
+    background: transparent;
+    border: 0;
+    border-top: 1px solid rgba($white, 0.05);
+    border-radius: 10px;
+
+    &:hover {
+      background: rgba($white, 0.03);
+    }
+
+    &.is-selected {
+      background: rgba($admin-green, 0.08);
+      box-shadow: inset 3px 0 0 $admin-green;
+
+      .item-arrow {
+        color: $admin-green;
+      }
+    }
+  }
+
+  .buyer-item.is-selected {
+    background: rgba($admin-blue, 0.08);
+    box-shadow: inset 3px 0 0 $admin-blue;
+
+    .item-arrow {
+      color: $admin-blue;
+    }
+  }
+
+  .exchange-item.is-selected {
+    background: rgba($admin-red, 0.08);
+    box-shadow: inset 3px 0 0 $admin-red;
+
+    .item-arrow {
+      color: $admin-red;
+    }
+  }
+
+  .pin-thumb {
+    position: relative;
+    flex: 0 0 44px;
+    width: 44px;
+    height: 44px;
+    overflow: hidden;
+    border-radius: 10px;
+    background: rgba($white, 0.05);
+
+    img {
+      display: block;
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+  }
+
+  .pin-thumb-fallback {
+    display: block;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(145deg, rgba($admin-green, 0.25), rgba($admin-green, 0.063));
+  }
+
+  .buyer-item .pin-thumb-fallback {
+    background: linear-gradient(145deg, rgba($admin-blue, 0.25), rgba($admin-blue, 0.063));
+  }
+
+  .exchange-item .pin-thumb-fallback {
+    background: linear-gradient(145deg, rgba($admin-red, 0.25), rgba($admin-red, 0.063));
+  }
+
+  .pin-number {
+    position: absolute;
+    left: 3px;
+    top: 3px;
+    display: grid;
+    place-items: center;
+    width: 16px;
+    height: 16px;
+    color: $admin-on-green;
+    background: rgba($admin-green, 0.8);
+    border-radius: 50%;
+    font: 8px $admin-font-mono;
+    box-shadow: 0 1px 3px rgba($black, 0.4);
+  }
+
+  .buyer-item .pin-number {
+    color: $admin-on-blue;
+    background: rgba($admin-blue, 0.8);
+  }
+
+  .exchange-item .pin-number {
+    color: $admin-on-red;
+    background: rgba($admin-red, 0.8);
+  }
+
+  .pin-item-text {
+    min-width: 0;
+    flex: 1 1 auto;
+  }
+
+  .pin-item-text strong,
+  .pin-item-text small {
+    display: block;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .pin-item-text strong {
+    font-size: 12px;
+    font-weight: 700;
+  }
+
+  .pin-item-text small {
+    margin-top: 3px;
+    color: $admin-text-subtle;
+    font-size: 10px;
+  }
+
+  .item-arrow {
+    flex: 0 0 auto;
+    margin-left: auto;
+    color: $admin-text-faint;
+    font-size: 20px;
+  }
+
+  .empty-state {
+    padding: 21px 4px;
+    color: $admin-text-subtle;
+    font-size: 12px;
+    line-height: 1.7;
+  }
+
+  .sidebar-footer {
+    margin-top: auto;
+    padding-top: 22px;
+    color: $admin-text-subtle;
+    font: 10px $admin-font-mono;
+  }
+
+  .source-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .sidebar-footer a {
+    margin-left: auto;
+    color: $admin-text-muted;
+  }
+
+  .copyright {
+    display: block;
+    margin-top: 8px;
+    color: $admin-text-fainter;
+    font-size: 9px;
+  }
+
+  .map-badge {
+    color: $admin-green;
+    font-size: 15px;
+  }
+
+  .map-wrap {
+    position: relative;
+    flex: 1;
+    min-width: 0;
+
+    #map {
+      width: 100%;
+      height: 100%;
+      background: $map-tiles-bg;
+    }
+  }
+
+  .leaflet-tile {
+    filter: saturate(.88) brightness(1.02) contrast(1.01);
+  }
+
+  .leaflet-control-attribution {
+    font: 9px $admin-font-mono;
+    opacity: .7;
+  }
+
+  .custom-pin {
+    background: transparent;
+
+    span {
+      display: block;
+      width: 25px;
+      height: 25px;
+      background: $admin-green;
+      border: 3px solid $admin-base;
+      border-radius: 50% 50% 50% 2px;
+      box-shadow: 0 3px 12px rgba($black, 0.4);
+      transform: rotate(-45deg);
+      transition: transform .2s $ease-out-back, box-shadow .2s ease;
+    }
+  }
+
+  .pin-selected {
+    z-index: 1000 !important;
+
+    span {
+      transform: rotate(-45deg) scale(1.4);
+      box-shadow: 0 6px 18px rgba($black, 0.627);
+    }
+  }
+
+  .custom-pin span::after {
+    content: '';
+    display: block;
+    width: 5px;
+    height: 5px;
+    margin: 7px;
+    background: $admin-base;
+    border-radius: 50%;
+  }
+
+  .custom-buyer-pin span {
+    background: $admin-blue;
+
+    &::after {
+      background: $admin-on-blue;
+    }
+  }
+
+  .custom-exchange-pin span {
+    background: $admin-red;
+
+    &::after {
+      background: $admin-on-red;
+    }
+  }
+
+  .custom-exchange-to span {
+    background: $admin-canvas;
+    border-color: $admin-red;
+
+    &::after {
+      background: $admin-red;
+    }
+  }
+
+  .pending-pin {
+    background: transparent;
+
+    span {
+      display: block;
+      width: 14px;
+      height: 14px;
+      background: $white;
+      border: 3px solid $admin-green-strong;
+      border-radius: 50%;
+      box-shadow: 0 2px 8px rgba($black, 0.4);
+      animation: #{$keyframe-prefix}pending-pulse 1.4s ease-in-out infinite;
+    }
+  }
+
+  .pending-pin-to span {
+    border-color: $admin-amber;
+  }
+
+  @keyframes #{$keyframe-prefix}pending-pulse {
+    0%, 100% {
+      transform: scale(1);
+      opacity: 1;
+    }
+
+    50% {
+      transform: scale(1.3);
+      opacity: .65;
+    }
+  }
+
+  @include reduced-motion {
+    .pending-pin span {
+      animation: none;
+    }
+  }
+
+  .exchange-arc {
+    animation: #{$keyframe-prefix}exchange-arc-flow 1.4s linear infinite;
+  }
+
+  @keyframes #{$keyframe-prefix}exchange-arc-flow {
+    to {
+      stroke-dashoffset: -22;
+    }
+  }
+
+  @include reduced-motion {
+    .exchange-arc {
+      animation: none;
+    }
+  }
+
+  .exchange-arc-active {
+    filter: drop-shadow(0 0 6px rgba($admin-red, 0.8));
+  }
+
+  .search-pin {
+    background: transparent;
+
+    span {
+      display: block;
+      width: 19px;
+      height: 19px;
+      background: $admin-green-strong;
+      border: 3px solid $white;
+      border-radius: 50%;
+      box-shadow: 0 2px 8px rgba($black, 0.333);
+
+      &::after {
+        content: '';
+        display: block;
+        width: 5px;
+        height: 5px;
+        margin: 4px;
+        background: $white;
+        border-radius: 50%;
+      }
+    }
+  }
+
+  .map-hint {
+    position: absolute;
+    z-index: 500;
+    left: 50%;
+    bottom: 25px;
+    transform: translateX(-50%);
+    padding: 10px 15px;
+    color: $map-panel-text;
+    background: rgba($map-panel, 0.92);
+    border: 1px solid $white;
+    border-radius: 10px;
+    box-shadow: $map-shadow-float;
+    font-size: 11px;
+    white-space: nowrap;
+
+    span {
+      color: $admin-green-strong;
+      font-size: 15px;
+      vertical-align: -1px;
+    }
+  }
+
+  .zoom-control {
+    position: absolute;
+    z-index: 500;
+    top: 23px;
+    right: 25px;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    border-radius: 10px;
+    box-shadow: 0 3px 12px rgba($black, 0.25);
+
+    button {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 37px;
+      height: 36px;
+      color: $map-panel-text;
+      background: rgba($map-panel, 0.92);
+      border: 0;
+      border-bottom: 1px solid $map-panel-divider;
+      font-size: 21px;
+
+      &:hover {
+        color: $admin-green-deep;
+        background: $white;
+      }
+
+      &:last-child {
+        border: 0;
+      }
+    }
+
+    .map-style-toggle.is-active {
+      color: $admin-on-green;
+      background: $admin-green;
+
+      &:hover {
+        background: $admin-green-light;
+      }
+    }
+
+    .transit-toggle.is-active {
+      color: $admin-on-green;
+      background: $admin-green;
+
+      &:hover {
+        background: $admin-green-light;
+      }
+    }
+  }
+
+  .map-legend {
+    position: absolute;
+    z-index: 500;
+    right: 25px;
+    bottom: 25px;
+    display: flex;
+    flex-direction: column;
+    gap: 1px;
+    padding: 6px;
+    background: rgba($map-panel, 0.92);
+    border: 1px solid $white;
+    border-radius: 10px;
+    box-shadow: $map-shadow-float;
+  }
+
+  .legend-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 9px;
+    color: $map-panel-text;
+    background: transparent;
+    border: 0;
+    border-radius: 7px;
+    font-size: 11px;
+    font-weight: 600;
+    text-align: left;
+    white-space: nowrap;
+    transition: opacity .15s ease;
+
+    &:hover {
+      background: rgba($black, 0.063);
+    }
+
+    &.is-off {
+      opacity: .45;
+    }
+  }
+
+  .legend-dot {
+    flex: 0 0 8px;
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: $admin-green-strong;
+    border: 1.5px solid $admin-green-strong;
+    box-sizing: border-box;
+    transition: background .15s ease;
+  }
+
+  .legend-item[data-filter-section="buyer"] .legend-dot {
+    background: $admin-blue-strong;
+    border-color: $admin-blue-strong;
+  }
+
+  .legend-item[data-filter-section="exchange"] .legend-dot {
+    background: $admin-red-strong;
+    border-color: $admin-red-strong;
+  }
+
+  .legend-item.is-off .legend-dot {
+    background: transparent;
+  }
+
+  .modal-backdrop {
+    position: fixed;
+    z-index: 1000;
+    inset: 0;
+    display: grid;
+    place-items: center;
+    background: rgba($admin-scrim, 0.72);
+    backdrop-filter: blur(8px);
+
+    &[hidden] {
+      display: none;
+    }
+  }
+
+  .place-modal {
+    position: relative;
+    width: min(390px, calc(100% - 36px));
+    padding: 31px;
+    background: $admin-surface;
+    border: 1px solid rgba($white, 0.07);
+    border-radius: 20px;
+    box-shadow: $admin-shadow-modal;
+  }
+
+  .modal-close {
+    position: absolute;
+    top: 18px;
+    right: 20px;
+    color: $admin-text-subtle;
+    background: transparent;
+    border: 0;
+    font-size: 24px;
+  }
+
+  .place-modal label {
+    display: block;
+    margin: 17px 0;
+    color: $admin-text;
+    font-size: 11px;
+    font-weight: 700;
+
+    span {
+      color: $admin-text-subtle;
+      font-weight: 400;
+    }
+  }
+
+  .place-modal input,
+  .place-modal textarea {
+    display: block;
+    width: 100%;
+    margin-top: 7px;
+    padding: 11px 12px;
+    color: $admin-text-strong;
+    background: rgba($white, 0.03);
+    border: 1px solid rgba($white, 0.07);
+    border-radius: 10px;
+    outline-color: $admin-green;
+    font-size: 12px;
+  }
+
+  .place-modal textarea {
+    min-height: 78px;
+    resize: vertical;
+  }
+
+  .place-modal .primary-button {
+    width: 100%;
+    margin-top: 5px;
+  }
+
+  .my-listings-modal {
+    width: min(520px, calc(100% - 36px));
+    max-height: calc(100svh - 60px);
+    overflow-y: auto;
+  }
+
+  .my-listings-list {
+    margin-top: 14px;
+  }
+
+  .my-listing-row {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px 11px;
+    padding: 13px 4px;
+    border-top: 1px solid rgba($white, 0.05);
+
+    &:first-child {
+      border-top: 0;
+    }
+
+    .pin-thumb {
+      flex: 0 0 44px;
+    }
+
+    .pin-item-text {
+      flex: 1 1 150px;
+      min-width: 130px;
+    }
+  }
+
+  .my-listing-actions {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-left: auto;
+  }
+
+  .my-listing-tag {
+    flex: 0 0 auto;
+    padding: 4px 9px;
+    color: $admin-on-green;
+    background: $admin-green;
+    border-radius: 999px;
+    font: 9px $admin-font-mono;
+    text-transform: uppercase;
+    white-space: nowrap;
+  }
+
+  .my-listing-tag-buyer {
+    color: $admin-on-blue;
+    background: $admin-blue;
+  }
+
+  .my-listing-tag-exchange {
+    color: $admin-on-red;
+    background: $admin-red;
+  }
+
+  .my-listing-edit,
+  .my-listing-delete {
+    flex: 0 0 auto;
+    padding: 7px 11px;
+    color: $admin-text-soft;
+    background: rgba($white, 0.04);
+    border: 1px solid rgba($white, 0.07);
+    border-radius: 8px;
+    font-size: 10px;
+    font-weight: 700;
+    white-space: nowrap;
+  }
+
+  .my-listing-edit:hover {
+    color: $admin-on-green;
+    background: $admin-green;
+    border-color: $admin-green;
+  }
+
+  .my-listing-delete:hover {
+    color: $white;
+    background: $admin-red-strong;
+    border-color: $admin-red-strong;
+  }
+
+  .address-input {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin-top: 7px;
+
+    input {
+      margin-top: 0;
+      flex: 1;
+      min-width: 0;
+    }
+  }
+
+  .map-pick-button {
+    flex: 0 0 auto;
+    display: grid;
+    place-items: center;
+    width: 38px;
+    height: 38px;
+    color: $admin-text-muted;
+    background: rgba($white, 0.03);
+    border: 1px solid rgba($white, 0.07);
+    border-radius: 10px;
+    font-size: 16px;
+
+    &:hover {
+      color: $admin-green;
+      border-color: rgba($admin-green, 0.35);
+    }
+
+    &.is-picking {
+      color: $admin-on-green;
+      background: $admin-green;
+      border-color: $admin-green;
+    }
+  }
+
+  .place-modal {
+    max-height: calc(100svh - 36px);
+    overflow-y: auto;
+  }
+
+  .pin-type-switch {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 4px;
+    margin: 24px 0 4px;
+    padding: 4px;
+    background: rgba($white, 0.03);
+    border: 1px solid rgba($white, 0.05);
+    border-radius: 12px;
+  }
+
+  .type-option {
+    min-width: 0;
+    padding: 9px 5px;
+    color: $admin-text-subtle;
+    background: transparent;
+    border: 0;
+    border-radius: 8px;
+    font-size: 10px;
+    font-weight: 700;
+
+    &:hover {
+      color: $admin-text-strong;
+    }
+
+    &.is-active {
+      color: $admin-on-green;
+      background: $admin-green;
+    }
+  }
+
+  .field-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0 12px;
+  }
+
+  .place-modal label {
+    min-width: 0;
+  }
+
+  .place-modal input:disabled,
+  .place-modal textarea:disabled {
+    opacity: .45;
+  }
+
+  .form-submit {
+    min-height: 42px;
+  }
+
+  .image-field {
+    margin: 17px 0;
+  }
+
+  .file-field {
+    margin: 0;
+  }
+
+  .place-modal input[type="file"] {
+    padding: 8px 10px;
+    color: $admin-text-subtle;
+    font-size: 10px;
+
+    &::file-selector-button {
+      margin-right: 8px;
+      padding: 6px 10px;
+      color: $admin-on-green;
+      background: $admin-green;
+      border: 0;
+      border-radius: 7px;
+      font-size: 10px;
+      font-weight: 700;
+      cursor: pointer;
+
+      &:hover {
+        background: $admin-green-light;
+      }
+    }
+
+    &:disabled::file-selector-button {
+      cursor: default;
+    }
+  }
+
+  .image-preview {
+    position: relative;
+    display: inline-block;
+    margin-top: 12px;
+
+    &[hidden] {
+      display: none;
+    }
+
+    img {
+      display: block;
+      width: 84px;
+      height: 84px;
+      object-fit: cover;
+      border-radius: 10px;
+      border: 1px solid rgba($white, 0.094);
+    }
+  }
+
+  .image-preview-remove {
+    position: absolute;
+    top: -7px;
+    right: -7px;
+    width: 22px;
+    height: 22px;
+    display: grid;
+    place-items: center;
+    color: $admin-text-strong;
+    background: $admin-raised;
+    border: 1px solid rgba($white, 0.14);
+    border-radius: 50%;
+    font-size: 14px;
+    line-height: 1;
+    box-shadow: 0 2px 6px rgba($black, 0.333);
+
+    &:hover {
+      color: $admin-red;
+    }
+  }
+
+  .detail-panel {
+    position: absolute;
+    z-index: 600;
+    top: 24px;
+    right: 24px;
+    width: min(390px, calc(100% - 48px));
+    overflow: hidden;
+    background: rgba($admin-surface, 0.96);
+    border: 1px solid rgba($white, 0.094);
+    border-radius: 20px;
+    box-shadow: $admin-shadow-popover;
+    backdrop-filter: blur(14px);
+    animation: #{$keyframe-prefix}detail-pop .35s $ease-out-expo both;
+
+    &[hidden] {
+      display: none;
+    }
+  }
+
+  .detail-photo-wrap {
+    position: relative;
+    height: 180px;
+  }
+
+  .detail-photo {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+
+  .detail-photo-wrap::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(180deg, rgba($black, 0.03) 40%, $admin-surface 100%);
+  }
+
+  .detail-tag {
+    position: absolute;
+    z-index: 1;
+    top: 14px;
+    left: 15px;
+    padding: 5px 9px;
+    color: $admin-on-green;
+    background: $admin-green;
+    border-radius: 999px;
+    font: 10px $admin-font-mono;
+    text-transform: uppercase;
+  }
+
+  .detail-body {
+    position: relative;
+    padding: 0 25px 25px;
+  }
+
+  .detail-body-compact {
+    padding-top: 28px;
+  }
+
+  .detail-body h2 {
+    max-width: 310px;
+    margin-bottom: 7px;
+    font-size: 27px;
+    line-height: 1.1;
+  }
+
+  .detail-note {
+    margin: 0 0 14px;
+    color: $admin-text-muted;
+    font-size: 12px;
+  }
+
+  .detail-meta {
+    margin: 0 0 14px;
+    color: $admin-green;
+    font: 11px $admin-font-mono;
+    line-height: 1.6;
+  }
+
+  .detail-description {
+    margin: 0 0 18px;
+    color: $admin-text;
+    font-size: 12px;
+    line-height: 1.65;
+  }
+
+  .detail-link,
+  .detail-map-link {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 11px 13px;
+    color: $admin-on-green;
+    background: $admin-green;
+    border-radius: 10px;
+    font-size: 12px;
+    font-weight: 700;
+    text-decoration: none;
+  }
+
+  .detail-link:hover {
+    background: $admin-green-light;
+  }
+
+  .detail-map-link {
+    margin-top: 8px;
+    color: $admin-blue-pale;
+    background: $admin-blue-strong;
+
+    &:hover {
+      background: $admin-blue-hover;
+    }
+  }
+
+  .detail-create-analysis {
+    display: flex;
+    align-items: center;
+    width: 100%;
+    min-height: 43px;
+    box-sizing: border-box;
+    margin-top: 8px;
+    padding: 11px 13px;
+    color: $admin-on-gold;
+    background: $admin-gold;
+    border: 0;
+    border-radius: 10px;
+    font: inherit;
+    font-size: 12px;
+    font-weight: 700;
+    text-align: left;
+    cursor: pointer;
+
+    &:hover {
+      background: $admin-gold-light;
+    }
+
+    &:focus-visible {
+      outline: 2px solid $admin-gold-light;
+      outline-offset: 2px;
+    }
+  }
+
+  .detail-link span,
+  .detail-map-link span {
+    font-size: 17px;
+  }
+
+  .detail-close {
+    position: absolute;
+    z-index: 2;
+    top: 12px;
+    right: 14px;
+    width: 28px;
+    height: 28px;
+    color: $admin-text-muted;
+    background: rgba($admin-surface, 0.8);
+    border: 0;
+    border-radius: 50%;
+    font-size: 21px;
+    line-height: 1;
+
+    &:hover {
+      color: $white;
+    }
+  }
+
+  .contact-dot {
+    width: 7px;
+    height: 7px;
+    background: $admin-green;
+    border-radius: 50%;
+  }
+
+  .detail-contact {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 18px;
+    color: $admin-text-subtle;
+    font: 10px $admin-font-mono;
+    text-transform: uppercase;
+  }
+
+  .detail-body-compact .detail-tag {
+    position: static;
+    display: inline-flex;
+    margin-bottom: 17px;
+  }
+
+  .detail-tag-buyer {
+    color: $admin-on-blue;
+    background: $admin-blue;
+  }
+
+  .detail-tag-exchange {
+    color: $admin-on-red;
+    background: $admin-red;
+  }
+
+  .exchange-route {
+    display: flex;
+    align-items: stretch;
+    gap: 6px;
+    margin-bottom: 16px;
+    padding: 6px;
+    background: rgba($white, 0.03);
+    border: 1px solid rgba($white, 0.07);
+    border-radius: 12px;
+  }
+
+  .exchange-stop {
+    display: flex;
+    flex: 1 1 0;
+    align-items: center;
+    gap: 9px;
+    min-width: 0;
+    padding: 8px;
+    color: inherit;
+    background: transparent;
+    border: 0;
+    border-radius: 8px;
+    font: inherit;
+    text-align: left;
+  }
+
+  .exchange-stop:hover,
+  .exchange-stop.is-active {
+    background: rgba($white, 0.08);
+  }
+
+  .exchange-stop:focus-visible {
+    outline: 2px solid $admin-red;
+    outline-offset: -2px;
+  }
+
+  .exchange-stop > div {
+    min-width: 0;
+  }
+
+  .exchange-stop small {
+    display: block;
+    color: $admin-text-subtle;
+    font: 10px $admin-font-mono;
+    text-transform: uppercase;
+  }
+
+  .exchange-stop strong {
+    display: block;
+    overflow-wrap: break-word;
+    color: $admin-text-strong;
+    font-size: 12px;
+    font-weight: 700;
+    line-height: 1.35;
+  }
+
+  .exchange-dot {
+    flex: 0 0 9px;
+    width: 9px;
+    height: 9px;
+    border-radius: 50%;
+  }
+
+  .exchange-dot-from {
+    background: $admin-red;
+  }
+
+  .exchange-dot-to {
+    background: transparent;
+    border: 2px solid $admin-red;
+  }
+
+  .exchange-route-arrow {
+    flex: 0 0 auto;
+    align-self: center;
+    color: $admin-red;
+    font-size: 15px;
+  }
+
+  .detail-contact-link {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 11px 13px;
+    color: $admin-green-pale;
+    background: rgba($white, 0.05);
+    border: 1px solid rgba($admin-green, 0.35);
+    border-radius: 10px;
+    font-size: 12px;
+    font-weight: 700;
+    text-decoration: none;
+
+    &:hover {
+      color: $admin-on-green;
+      background: $admin-green-light;
+    }
+
+    span {
+      font-size: 17px;
+    }
+  }
+
+  @keyframes #{$keyframe-prefix}detail-pop {
+    from {
+      opacity: 0;
+      transform: translateY(10px) scale(.98);
+    }
+
+    to {
+      opacity: 1;
+      transform: none;
+    }
+  }
+
+  @keyframes #{$keyframe-prefix}fade-in-up {
+    from {
+      opacity: 0;
+      transform: translateY(10px);
+    }
+
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  .sidebar {
+    animation: #{$keyframe-prefix}fade-in-up .55s $ease-out-expo both;
+  }
+
+  .map-wrap {
+    animation: #{$keyframe-prefix}fade-in-up .65s .08s $ease-out-expo both;
+  }
+
+  @include reduced-motion {
+    .sidebar,
+    .map-wrap {
+      animation: none;
+    }
+  }
+
+  @include reduced-motion {
+    .detail-panel {
+      animation: none;
+    }
+  }
+
+  @media (max-width: $map-bp-stacked) {
+    .topbar {
+      flex: 0 0 auto;
+      height: auto;
+      min-height: 58px;
+      flex-wrap: wrap;
+      gap: 10px;
+      padding: 10px 17px;
+      position: relative;
+      z-index: 10;
+    }
+
+    .topbar-meta {
+      display: none;
+    }
+
+    .search-form {
+      order: 3;
+      width: 100%;
+      margin: 0;
+    }
+
+    .workspace {
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    .sidebar {
+      width: 100%;
+      flex: 0 0 42%;
+      min-height: 0;
+      overflow-y: auto;
+      padding: 22px 20px 14px;
+      border-right: 0;
+      border-bottom: 1px solid rgba($white, 0.07);
+
+      .list-heading {
+        flex-shrink: 0;
+      }
+
+      .pin-list {
+        flex: 0 0 auto;
+        overflow: visible;
+      }
+    }
+
+    .map-wrap {
+      flex: 0 0 58%;
+      min-height: 0;
+    }
+
+    .intro {
+      margin: 11px 0 15px;
+    }
+
+    .action-row {
+      margin-bottom: 18px;
+    }
+
+    .sidebar-footer {
+      flex-shrink: 0;
+      padding-top: 12px;
+    }
+
+    .map-hint {
+      right: 60px;
+      bottom: 12px;
+      max-width: calc(100% - 125px);
+      padding: 8px 10px;
+      white-space: normal;
+      text-align: center;
+    }
+
+    .zoom-control {
+      top: 12px;
+      right: 12px;
+    }
+
+    .map-legend {
+      right: 12px;
+      bottom: 12px;
+      padding: 4px;
+    }
+
+    .legend-item {
+      padding: 5px 7px;
+      gap: 6px;
+      font-size: 10px;
+    }
+
+    .detail-panel {
+      top: 12px;
+      right: 12px;
+      width: min(340px, calc(100% - 24px));
+      max-height: calc(100% - 24px);
+      overflow-y: auto;
+    }
+
+    .detail-photo-wrap {
+      height: 120px;
+    }
+
+    .detail-body {
+      padding: 0 17px 17px;
+    }
+
+    .detail-body-compact {
+      padding-top: 21px;
+    }
+
+    .detail-body h2 {
+      font-size: 22px;
+    }
+
+    .modal-backdrop {
+      align-items: flex-end;
+      padding: 12px;
+    }
+
+    .place-modal {
+      width: 100%;
+      max-height: calc(100svh - 24px);
+      padding: 24px 18px 18px;
+      border-radius: 20px;
+    }
+
+    .field-grid {
+      grid-template-columns: 1fr;
+    }
+
+    .pin-type-switch {
+      margin-top: 19px;
+    }
+
+    .type-option {
+      font-size: 9px;
+    }
+  }
+
+  @media (max-width: $map-bp-narrow) {
+    .brand {
+      gap: 7px;
+      font-size: 16px;
+    }
+
+    .brand-mark {
+      width: 25px;
+      height: 25px;
+      font-size: 16px;
+    }
+
+    .icon-button {
+      font-size: 22px;
+    }
+
+    .topbar-actions {
+      gap: 10px;
+    }
+
+    .bankid-button {
+      height: 32px;
+      padding: 0 10px 0 7px;
+      font-size: 10px;
+    }
+
+    .bankid-label {
+      display: none;
+    }
+
+    .bankid-mark {
+      width: 18px;
+      height: 18px;
+      font-size: 8px;
+    }
+
+    .search-form input {
+      font-size: 11px;
+    }
+
+    .sidebar {
+      padding: 17px 15px 12px;
+    }
+
+    .sidebar-header h1 {
+      font-size: 27px;
+    }
+
+    .list-heading {
+      margin-bottom: 8px;
+    }
+
+    .buyer-heading,
+    .exchange-heading {
+      margin-top: 19px;
+    }
+
+    .pin-item {
+      padding: 10px 5px;
+
+      small {
+        max-width: 185px;
+      }
+    }
+
+    .detail-panel {
+      top: 8px;
+      right: 8px;
+      width: calc(100% - 16px);
+      max-height: calc(100% - 16px);
+    }
+
+    .detail-photo-wrap {
+      height: 105px;
+    }
+  }
+
+  .brand,
+  .brand-mark,
+  .topbar-meta,
+  .eyebrow,
+  .list-heading,
+  .leaflet-control-attribution,
+  .zoom-control .map-style-toggle,
+  .detail-tag,
+  .sidebar-footer,
+  .copyright {
+    font-family: inherit !important;
+    letter-spacing: 0 !important;
+  }
+
+  h1,
+  h2 {
+    font-family: inherit !important;
+    font-weight: 700;
+    letter-spacing: 0;
+  }
+
+  .brand {
+    font-weight: 600;
+  }
+
+  .brand-mark {
+    font-weight: 700;
+  }
+}

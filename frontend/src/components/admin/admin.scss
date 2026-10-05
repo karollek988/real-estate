@@ -1,0 +1,252 @@
+// Admin portal chrome: login card and the session bar above the embedded map.
+// Shares the admin palette (styles/_variables.scss) with the map workspace
+// (atlas/atlas.scss), which supplies the base resets (box-sizing, body margin,
+// button/input font inheritance).
+@use "../../styles/variables" as *;
+
+.admin-login {
+  min-height: 100svh;
+  display: grid;
+  place-items: center;
+  padding: 24px 16px;
+  background: radial-gradient(1200px 600px at 50% -10%, rgba($admin-green-strong, 0.12), transparent 60%), $admin-base;
+}
+
+.admin-login-card {
+  width: min(400px, 100%);
+  padding: 32px 28px 28px;
+  background: $admin-surface;
+  border: 1px solid rgba($white, 0.07);
+  border-radius: 20px;
+  box-shadow: $admin-shadow-modal;
+}
+
+.admin-login-brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: $white;
+  font-size: 15px;
+  font-weight: 600;
+
+  img {
+    display: block;
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    object-fit: cover;
+  }
+}
+
+.admin-login-card h1 {
+  margin: 26px 0 4px;
+  font-size: 24px;
+  line-height: 1.2;
+}
+
+.admin-login-lead {
+  margin: 0 0 6px;
+  color: $admin-text-muted;
+  font-size: 13px;
+}
+
+.admin-login-card label {
+  display: block;
+  margin: 18px 0 0;
+  color: $admin-text;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.admin-login-card input {
+  display: block;
+  width: 100%;
+  margin-top: 7px;
+  padding: 12px;
+  color: $admin-text-strong;
+  background: rgba($white, 0.03);
+  border: 1px solid rgba($white, 0.12);
+  border-radius: 10px;
+  font-size: 14px;
+
+  &:focus-visible {
+    outline: 2px solid $admin-green;
+    outline-offset: 1px;
+    border-color: transparent;
+  }
+}
+
+.admin-login-password {
+  position: relative;
+
+  input {
+    padding-right: 64px;
+  }
+}
+
+.admin-login-reveal {
+  position: absolute;
+  top: 7px;
+  bottom: 0;
+  right: 4px;
+  padding: 0 12px;
+  color: $admin-text-muted;
+  background: transparent;
+  border: 0;
+  border-radius: 8px;
+  font-size: 12px;
+  font-weight: 700;
+
+  &:hover {
+    color: $admin-green;
+  }
+
+  &:focus-visible {
+    outline: 2px solid $admin-green;
+  }
+}
+
+.admin-login-error {
+  margin: 16px 0 0;
+  padding: 10px 12px;
+  color: $admin-red-pale;
+  background: rgba($admin-red, 0.102);
+  border: 1px solid rgba($admin-red, 0.4);
+  border-radius: 10px;
+  font-size: 13px;
+  line-height: 1.45;
+}
+
+.admin-login-submit {
+  width: 100%;
+  margin-top: 20px;
+  padding: 13px 17px;
+  color: $admin-on-green;
+  background: $admin-green-strong;
+  border: 0;
+  border-radius: 10px;
+  box-shadow: $admin-shadow-glow;
+  font-size: 14px;
+  font-weight: 700;
+  transition: background .15s ease;
+
+  &:hover:not(:disabled) {
+    background: $admin-green;
+  }
+
+  &:focus-visible {
+    outline: 2px solid $white;
+    outline-offset: 2px;
+  }
+
+  &:disabled {
+    opacity: .55;
+    cursor: not-allowed;
+  }
+}
+
+.admin-shell {
+  display: flex;
+  flex-direction: column;
+  height: 100svh;
+}
+
+.admin-strip {
+  flex: 0 0 36px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 0 16px;
+  color: $admin-text-muted;
+  background: $admin-bar;
+  border-bottom: 1px solid rgba($white, 0.07);
+  font-size: 12px;
+}
+
+.admin-strip-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: $admin-text-strong;
+  font-weight: 700;
+  white-space: nowrap;
+
+  svg {
+    color: $admin-green;
+  }
+}
+
+.admin-strip-spacer {
+  flex: 1;
+}
+
+.admin-strip-user {
+  white-space: nowrap;
+}
+
+.admin-strip-error {
+  color: $admin-red-light;
+  white-space: nowrap;
+}
+
+.admin-strip button {
+  height: 24px;
+  padding: 0 10px;
+  color: $admin-text-soft;
+  background: rgba($white, 0.04);
+  border: 1px solid rgba($white, 0.094);
+  border-radius: 6px;
+  font-size: 11px;
+  font-weight: 700;
+  white-space: nowrap;
+
+  &:hover:not(:disabled) {
+    color: $white;
+    background: rgba($white, 0.08);
+  }
+
+  &:disabled {
+    opacity: .55;
+    cursor: default;
+  }
+
+  &:focus-visible {
+    outline: 2px solid $admin-green;
+    outline-offset: 1px;
+  }
+}
+
+// The map workspace fills whatever is left below the bar (its own CSS sizes it to 100svh).
+.atlas-root {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+
+  > .app-shell {
+    flex: 1;
+    height: auto;
+    min-height: 0;
+  }
+}
+
+.admin-load-error {
+  margin: 24px 16px;
+  color: $admin-red-pale;
+  font-size: 14px;
+}
+
+@media (max-width: $admin-bp-phone) {
+  .admin-strip-user {
+    display: none;
+  }
+
+  .admin-login-card {
+    padding: 26px 20px 22px;
+  }
+
+  // 16px stops iOS Safari from zooming the page when an input is focused.
+  .admin-login-card input {
+    font-size: 16px;
+  }
+}
