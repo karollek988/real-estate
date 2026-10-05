@@ -1,7 +1,7 @@
-// Admin portal chrome: login card and the session bar above the embedded map.
+// Admin portal chrome: login card, the session bar and the empty page below it.
 // Shares the admin palette (styles/_variables.scss) with the map workspace
-// (atlas/atlas.scss), which supplies the base resets (box-sizing, body margin,
-// button/input font inheritance).
+// (atlas/atlas.scss), which still supplies the base resets (box-sizing, body
+// margin, button/input font inheritance) and the page background.
 @use "../../styles/variables" as *;
 
 .admin-login {
@@ -216,24 +216,10 @@
   }
 }
 
-// The map workspace fills whatever is left below the bar (its own CSS sizes it to 100svh).
-.atlas-root {
+// The empty page fills whatever is left below the bar.
+.admin-content {
   flex: 1;
   min-height: 0;
-  display: flex;
-  flex-direction: column;
-
-  > .app-shell {
-    flex: 1;
-    height: auto;
-    min-height: 0;
-  }
-}
-
-.admin-load-error {
-  margin: 24px 16px;
-  color: $admin-red-pale;
-  font-size: 14px;
 }
 
 @media (max-width: $admin-bp-phone) {

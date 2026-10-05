@@ -12,7 +12,7 @@ interface AdminPortalProps {
 /**
  * The admin portal. proxy.ts rewrites "/" on admin.kopanalys.se to this page and
  * answers 404 for it on every other host; the host is re-checked here as well.
- * Signed out: the login form. Signed in: the embedded map workspace.
+ * Signed out: the login form. Signed in: an empty page under the session bar.
  */
 export const getServerSideProps: GetServerSideProps<AdminPortalProps> = async ({ req, res }) => {
   if (!isAdminHost(req.headers.host)) return { notFound: true };

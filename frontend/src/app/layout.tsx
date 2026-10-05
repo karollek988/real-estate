@@ -39,7 +39,9 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="sv">
-      <body className={`${inter.variable} antialiased`}>
+      {/* Browser extensions (Grammarly, password managers) add attributes to <body> before React hydrates.
+          suppressHydrationWarning covers this element's own attributes only, not its children. */}
+      <body className={`${inter.variable} antialiased`} suppressHydrationWarning>
         <AuthProvider>
           <ScrollRestorationReset />
           {children}

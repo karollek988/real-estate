@@ -5,8 +5,23 @@
 > otherwise leave it alone. Detailed research/product docs live in `docs/`;
 > this file is the "what's actually true right now" summary.
 
-Last updated: 2026-10-05 — Twelfth session (landing hero centred again), on `styleRedesign`,
-**not merged to `main`, not deployed**. The eleventh and tenth sessions follow below it.
+Last updated: 2026-10-06 — Thirteenth session (admin portal map removed); uncommitted on `main`. The
+twelfth session (landing hero centred again, on `styleRedesign`, since merged to `main`) follows
+below it, then the eleventh and tenth.
+
+**Thirteenth session — the admin portal no longer has a map.** On `admin.kopanalys.se` a signed-in
+admin now sees the slim session bar ("Köpanalys Admin" · "Logga ut") above an empty page
+(`<main className="admin-content" />` in `AdminShell.tsx`); the login, routing, session and headers
+are unchanged. `components/admin/AtlasWorkspace.tsx` (its only user) was deleted, along with the
+`.atlas-root` / `.admin-load-error` rules in `admin.scss` and the `leaflet.css` import in
+`pages/_app.tsx`. `components/admin/atlas/` stays: the public `/karta` (`PublicMap`) still mounts
+it, and `atlas.scss` is still imported by `_app.tsx` for the admin's page resets and background.
+The admin host's CSP (§3g) still allows Nominatim/https images for the map; tighten it when the
+admin page gets its real content. "Visa karta" in the landing hero already linked to `/karta`
+(twelfth session) — nothing to change there. **Verified:** `tsc` clean, `admin.verify.mjs` passes,
+the admin login page and `/karta` return 200 on the running dev server, `/admin-portal` on the main
+host 404s. **Not verified:** the signed-in empty page in a browser (no throwaway login possible
+while the user's dev server holds Next's lock on the project folder).
 
 **Twelfth session — the landing hero is centred again.** The user rejected the eleventh session's split
 hero (text left, photo right). Header, menus, pages and routing stay exactly as built; only the top of
@@ -832,12 +847,16 @@ verifies signatures correctly (`stripe.webhooks.constructEvent`). No
 `.update`/`.upsert` on `profiles` anywhere outside the service-role admin
 client.
 
-### 3g. Admin portal (`admin.kopanalys.se`) — login + embedded map demo
+### 3g. Admin portal (`admin.kopanalys.se`) — login + empty page
 
-Added 2026-09-28. `admin.kopanalys.se` shows a login box; after login it shows
+Added 2026-09-28. `admin.kopanalys.se` shows a login box; after login it showed
 the KopanalysMapDemo "Atlas" map workspace (github.com/intothenether/KopanalysMapDemo,
 ported into `frontend/src/components/admin/atlas/`, differences listed in that
-file's header comment). Everything lives under `frontend/src/lib/admin/`,
+file's header comment). **Since 2026-10-06 the map is gone from the admin portal** — after login
+there is only the session bar above an empty page (see the thirteenth session); the atlas port
+now serves only the public `/karta`, so the bullets below that mention "the demo" / "the map"
+(BankID mock, localStorage, geolocation, Nominatim) no longer apply to the admin host.
+Everything lives under `frontend/src/lib/admin/`,
 `src/components/admin/`, `src/pages/` and `src/app/api/admin-portal/`.
 
 - **Routing.** `proxy.ts` runs `lib/admin/adminProxy.ts` first. On the admin

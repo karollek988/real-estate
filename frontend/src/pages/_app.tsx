@@ -1,6 +1,5 @@
 import type { AppProps } from "next/app";
 import { Inter } from "next/font/google";
-import "leaflet/dist/leaflet.css";
 import "@/components/admin/atlas/atlas.scss";
 import "@/components/admin/admin.scss";
 

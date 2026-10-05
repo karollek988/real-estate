@@ -1,7 +1,6 @@
 import { useState } from "react";
-import { AtlasWorkspace } from "./AtlasWorkspace";
 
-/** What a signed-in admin sees: a slim session bar above the embedded map workspace. */
+/** What a signed-in admin sees: a slim session bar above an empty page. */
 export function AdminShell() {
   const [signingOut, setSigningOut] = useState(false);
   const [signOutFailed, setSignOutFailed] = useState(false);
@@ -45,7 +44,7 @@ export function AdminShell() {
           {signingOut ? "Loggar ut…" : "Logga ut"}
         </button>
       </header>
-      <AtlasWorkspace />
+      <main className="admin-content" />
     </div>
   );
 }
