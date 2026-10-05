@@ -5,8 +5,12 @@
 > otherwise leave it alone. Detailed research/product docs live in `docs/`;
 > this file is the "what's actually true right now" summary.
 
-Last updated: 2026-10-05 — Twelfth session (landing hero centred again), on `styleRedesign`,
-**not merged to `main`, not deployed**. The eleventh and tenth sessions follow below it.
+Last updated: 2026-10-05 — Twelfth session (landing hero centred again). **Merged to `main` and
+deployed to production the same day at the user's request**: `main` = `2420a7c`, a merge commit of
+`styleRedesign` (`9e020de`) onto the old `main` (`bbef750`), no conflicts (main had nothing the branch
+lacked). Vercel (kopanalys.se) and Railway (`kopanalys-python-api`, API code unchanged) both deployed
+successfully; the merge also brought the earlier build fix and approved cleanup to `main`. The eleventh
+and tenth sessions follow below it.
 
 **Twelfth session — the landing hero is centred again.** The user rejected the eleventh session's split
 hero (text left, photo right). Header, menus, pages and routing stay exactly as built; only the top of
