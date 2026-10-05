@@ -5,8 +5,28 @@
 > otherwise leave it alone. Detailed research/product docs live in `docs/`;
 > this file is the "what's actually true right now" summary.
 
-Last updated: 2026-10-05 — Eleventh session (header, landing page and site navigation), on
-`styleRedesign`, **not merged to `main`, not deployed**. The tenth session follows below it.
+Last updated: 2026-10-05 — Twelfth session (landing hero centred again), on `styleRedesign`,
+**not merged to `main`, not deployed**. The eleventh and tenth sessions follow below it.
+
+**Twelfth session — the landing hero is centred again.** The user rejected the eleventh session's split
+hero (text left, photo right). Header, menus, pages and routing stay exactly as built; only the top of
+the landing page changed.
+- **Hero** (`components/landing/LandingHero.tsx`) is back to the centred composition of
+  `docs/design/landing-2026-10/kopanalys-new-design.png` (as in `b0e77d4`): badge, H1, text,
+  [Visa karta → `/karta`] [Se exempelrapport → `#exempelrapport`], trust points, the map laptop in the
+  middle, the four feature cards over its lower half. "Skapa analys" and "Så fungerar det" left the hero
+  (the user's sketch); "Skapa analys" stays in the header.
+- **Photo**: `hero-stockholm.jpg` runs behind the laptop, its sky fading into the cream under the text.
+  Its price tags are printed on the picture, so `.hero-city-stacked` (below xl) and `.hero-city-wide`
+  (xl+) in `globals.scss` place it so every tag is fully visible or fully behind the laptop or a card,
+  never cut through. From xl it switches in pure CSS between two placements, depending on the room
+  between laptop and cards. That relies on `--hero-card-h`, the cards' height per breakpoint, set in
+  LandingHero and kept as the cards' min-height: re-measure it if the card texts change.
+- **Områden** no longer shows the laptop render (it would appear twice); its topics are a card instead.
+- **Header bugfix**: the decorative contours made the page scroll sideways at 1024–1230 px; now capped.
+- **Verified**: `tsc` clean, `next build` OK, `eslint` 14 problems (all pre-existing); key routes at
+  390–1920 px with no horizontal scroll or console errors; hero screenshots at 390, 768, 1024,
+  1280×720, 1366×650, 1440×780/900, 1536×730 and 1920×950/1000.
 
 **Eleventh session — new header, hero background, real logo, all public pages.** References:
 `docs/design/landing-2026-10/New-Header-Design.png` and `New-Landingpage-BK.png` (moved there from
