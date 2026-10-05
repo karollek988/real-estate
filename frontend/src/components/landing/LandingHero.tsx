@@ -60,15 +60,16 @@ const STEPS: Step[] = [
 ];
 
 // The step cards: opaque (a price tag of the photo may sit right behind one),
+// a little larger under the pointer or keyboard focus,
 // one height per breakpoint (from xl the hero's --hero-card-h, which the photo
 // placement also reads); the line between two steps is the item's ::after -
 // down the left below lg, across from lg.
 const STEP_ITEM =
-  "animate-fade-in-up relative after:absolute after:left-[22px] after:top-full after:h-3 after:w-0.5 after:bg-ka-mint/80 last:after:hidden lg:after:left-full lg:after:top-1/2 lg:after:h-0.5 lg:after:w-6 lg:after:-translate-y-1/2";
+  "animate-fade-in-up relative after:absolute after:left-[21px] after:top-full after:h-3 after:w-0.5 after:bg-ka-mint/80 last:after:hidden lg:after:left-full lg:after:top-1/2 lg:after:h-0.5 lg:after:w-6 lg:after:-translate-y-1/2";
 const STEP_CARD =
-  "relative flex h-[88px] items-center rounded-[16px] pl-2 pr-2.5 lg:h-[96px] xl:h-[var(--hero-card-h)] xl:rounded-[18px] xl:pl-2.5 xl:pr-3";
+  "relative flex h-[80px] items-center rounded-[15px] pl-2 pr-2.5 transition-all duration-300 hover:scale-[1.06] lg:h-[86px] xl:h-[var(--hero-card-h)] xl:rounded-[16px] xl:pl-2.5 xl:pr-3";
 const STEP_CARD_LIGHT =
-  "group border border-white/80 bg-ka-paper shadow-[0_22px_44px_-26px_rgba(15,31,24,0.6)] transition-all duration-300 hover:-translate-y-1 hover:border-ka-green-700/25 hover:shadow-[0_28px_52px_-26px_rgba(15,31,24,0.7)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ka-green-700";
+  "group border border-white/80 bg-ka-paper shadow-[0_22px_44px_-26px_rgba(15,31,24,0.6)] hover:border-ka-green-700/25 hover:shadow-[0_28px_52px_-26px_rgba(15,31,24,0.7)] focus-visible:scale-[1.06] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ka-green-700";
 const STEP_CARD_HIGHLIGHTED =
   "border border-ka-mint/50 bg-gradient-to-b from-ka-green-800 to-ka-green-900 shadow-[0_22px_44px_-24px_rgba(6,40,28,0.85),0_0_24px_-4px_rgba(76,232,166,0.35)]";
 
@@ -96,35 +97,35 @@ function StepContent({ step }: { step: Step }) {
     <>
       <span
         aria-hidden
-        className={`absolute left-2 top-2 z-[1] flex h-7 w-7 items-center justify-center rounded-full text-[11px] font-bold xl:h-[30px] xl:w-[30px] xl:text-[12px] ${
+        className={`absolute left-2 top-2 z-[1] flex h-[26px] w-[26px] items-center justify-center rounded-full text-[10.5px] font-bold xl:h-7 xl:w-7 xl:text-[11px] ${
           dark ? "bg-ka-mint-bright text-ka-green-950" : "bg-ka-mint/45 text-ka-green-900"
         }`}
       >
         {step.number}
       </span>
-      <span className="relative ml-1 mt-2.5 h-[58px] w-[72px] shrink-0 lg:h-[62px] lg:w-[76px] xl:h-[68px] xl:w-[84px] 2xl:h-[74px] 2xl:w-[92px]">
+      <span className="relative ml-1 mt-2 h-[52px] w-[64px] shrink-0 lg:h-[55px] lg:w-[68px] xl:h-[60px] xl:w-[74px] 2xl:h-[65px] 2xl:w-[80px]">
         <Image
           src={step.icon.src}
           alt=""
           fill
-          sizes="(min-width: 1536px) 92px, (min-width: 1280px) 84px, 76px"
+          sizes="(min-width: 1536px) 80px, (min-width: 1280px) 74px, 68px"
           className="object-contain"
         />
       </span>
-      <span aria-hidden className={`mx-2.5 h-[56%] w-px shrink-0 xl:mx-3 ${dark ? "bg-white/15" : "bg-ka-mint/60"}`} />
+      <span aria-hidden className={`mx-2 h-[56%] w-px shrink-0 xl:mx-2.5 ${dark ? "bg-white/15" : "bg-ka-mint/60"}`} />
       <span className="min-w-0 flex-1 leading-[1.2]">
-        <span className={`block text-[17px] font-bold tracking-[-0.02em] lg:text-[18px] xl:text-[20px] 2xl:text-[21px] ${dark ? "text-white" : "text-ka-ink"}`}>
+        <span className={`block text-[16px] font-bold tracking-[-0.02em] lg:text-[17px] xl:text-[18px] 2xl:text-[19px] ${dark ? "text-white" : "text-ka-ink"}`}>
           {step.title}
         </span>{" "}
-        <span className={`block text-[15px] xl:text-[16px] 2xl:text-[17px] ${dark ? "text-white/90" : "text-ka-ink"}`}>{step.subtitle}</span>
+        <span className={`block text-[14px] xl:text-[15px] 2xl:text-[16px] ${dark ? "text-white/90" : "text-ka-ink"}`}>{step.subtitle}</span>
       </span>
       <span
         aria-hidden
-        className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full transition-colors duration-300 xl:h-[38px] xl:w-[38px] 2xl:h-10 2xl:w-10 ${
+        className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full transition-colors duration-300 xl:h-[34px] xl:w-[34px] 2xl:h-9 2xl:w-9 ${
           dark ? "bg-ka-mint-bright text-white" : "bg-ka-mint/25 text-ka-ink group-hover:bg-ka-green-900 group-hover:text-white"
         }`}
       >
-        <ArrowRightIcon className="h-[18px] w-[18px] transition-transform duration-300 group-hover:translate-x-0.5" />
+        <ArrowRightIcon className="h-4 w-4 transition-transform duration-300 group-hover:translate-x-0.5" />
       </span>
     </>
   );
@@ -186,7 +187,7 @@ export function LandingHero() {
         </div>
 
         {/* The laptop in front of the city, the three steps over its lower half */}
-        <div className="relative mt-10 xl:mt-7 xl:min-h-[330px] xl:flex-1 xl:[--hero-card-h:104px] short:min-h-[250px] short:[--hero-card-h:96px] 2xl:[--hero-card-h:112px]">
+        <div className="relative mt-10 xl:mt-7 xl:min-h-[330px] xl:flex-1 xl:[--hero-card-h:92px] short:min-h-[250px] short:[--hero-card-h:86px] 2xl:[--hero-card-h:100px]">
           {/* From xl: the photo behind the laptop area, placed against the cards */}
           <CityPhoto className="hero-city-wide hidden xl:block" sizes="(min-width: 1280px) 112vw, 1px" loading="eager" />
 
@@ -208,9 +209,9 @@ export function LandingHero() {
             </div>
           </div>
 
-          {/* From xl at most 78 % of the screen wide: the first card must still cover the photo's lowest
+          {/* From xl at most 76 % of the screen wide: the first card must still cover the photo's lowest
               left price tag (13-26 % from the left) when .hero-city-wide uses placement B */}
-          <ol className="relative z-[3] -mt-10 grid gap-3 sm:mx-auto sm:-mt-16 sm:w-full sm:max-w-[400px] lg:max-w-[880px] lg:grid-cols-3 lg:gap-6 xl:absolute xl:inset-x-0 xl:bottom-6 xl:mt-0 xl:max-w-[78vw]">
+          <ol className="relative z-[3] -mt-10 grid gap-3 sm:mx-auto sm:-mt-16 sm:w-full sm:max-w-[370px] lg:max-w-[820px] lg:grid-cols-3 lg:gap-6 xl:absolute xl:inset-x-0 xl:bottom-6 xl:mt-0 xl:max-w-[76vw]">
             {STEPS.map((step, i) => (
               <li key={step.number} className={STEP_ITEM} style={{ animationDelay: `${0.45 + i * 0.08}s` }}>
                 {step.href ? (

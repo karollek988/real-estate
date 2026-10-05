@@ -22,14 +22,15 @@ the landing page changed.
   `/karta`; 02 Analysera bostaden → the analysis form on the page (as the header's "Skapa analys" does
   there); 03 Besluta tryggare — shown on deep green but deliberately not linked yet (a plain `div`).
   The cards are HTML; only the 3D icons come from the picture (`scripts/make-brand-assets.py steps` →
-  `public/images/steg-*.png`, cut out with colour-to-alpha). New colour token `$ka-mint-bright`.
+  `public/images/steg-*.png`, cut out with colour-to-alpha). New colour token `$ka-mint-bright`. The
+  cards grow by 6 % under the mouse (all three, as asked) and under keyboard focus (the two links).
 - **Photo**: `hero-stockholm.jpg` runs behind the laptop, its sky fading into the cream under the text.
   Its price tags are printed on the picture, so `.hero-city-stacked` (below xl) and `.hero-city-wide`
   (xl+) in `globals.scss` place it so every tag is fully visible or fully behind the laptop or a card,
   never cut through. From xl it switches in pure CSS between two placements, depending on the room
   between laptop and cards. That relies on `--hero-card-h`, the step cards' fixed height per breakpoint
-  (104 px, 96 px on short screens, 112 px from 2xl), set in LandingHero. From xl the row of steps is
-  at most 78 % of the screen wide, so its first card still covers the lowest left tag in placement B.
+  (92 px, 86 px on short screens, 100 px from 2xl), set in LandingHero. From xl the row of steps is
+  at most 76 % of the screen wide, so its first card still covers the lowest left tag in placement B.
 - **Områden** no longer shows the laptop render (it would appear twice); its topics are a card instead.
 - **Header bugfix**: the decorative contours made the page scroll sideways at 1024–1230 px; now capped.
 - **Verified**: `tsc` clean, `next build` OK, `eslint` 14 problems (all pre-existing); key routes at
