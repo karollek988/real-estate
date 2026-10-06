@@ -149,6 +149,7 @@
   display: flex;
   flex-direction: column;
   height: 100svh;
+  background: $admin-base;
 }
 
 .admin-strip {
@@ -216,13 +217,556 @@
   }
 }
 
-// The empty page fills whatever is left below the bar.
+// ── Tabs, and the page that fills what is left below them ────────────────────
+
+.admin-tabs {
+  flex: 0 0 auto;
+  display: flex;
+  gap: 4px;
+  padding: 0 14px;
+  overflow-x: auto;
+  background: $admin-base;
+  border-bottom: 1px solid rgba($white, 0.07);
+
+  button {
+    position: relative;
+    padding: 13px 14px 12px;
+    color: $admin-text-muted;
+    background: transparent;
+    border: 0;
+    font-size: 13px;
+    font-weight: 600;
+    white-space: nowrap;
+
+    &:hover {
+      color: $admin-text-strong;
+    }
+
+    &[aria-selected="true"] {
+      color: $white;
+
+      // the open tab's underline sits on the bar's own border
+      &::after {
+        content: "";
+        position: absolute;
+        right: 10px;
+        bottom: -1px;
+        left: 10px;
+        height: 2px;
+        background: $admin-green;
+        border-radius: 2px 2px 0 0;
+      }
+    }
+
+    &:focus-visible {
+      outline: 2px solid $admin-green;
+      outline-offset: -3px;
+      border-radius: 8px;
+    }
+  }
+}
+
 .admin-content {
   flex: 1;
   min-height: 0;
+  overflow-y: auto;
+  background: $admin-base;
+}
+
+.admin-page {
+  max-width: 1240px;
+  margin: 0 auto;
+  padding: 24px 24px 56px;
+}
+
+// ── Statistics ───────────────────────────────────────────────────────────────
+
+.stats-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 14px 20px;
+  margin-bottom: 18px;
+
+  h2 {
+    margin: 0;
+    color: $admin-text-bright;
+    font-size: 22px;
+    line-height: 1.2;
+  }
+}
+
+.stats-sub {
+  margin: 5px 0 0;
+  color: $admin-text-muted;
+  font-size: 13px;
+}
+
+.range {
+  display: inline-flex;
+  gap: 2px;
+  padding: 3px;
+  background: rgba($white, 0.04);
+  border: 1px solid rgba($white, 0.08);
+  border-radius: 10px;
+
+  button {
+    height: 30px;
+    padding: 0 13px;
+    color: $admin-text-muted;
+    background: transparent;
+    border: 0;
+    border-radius: 7px;
+    font-size: 12px;
+    font-weight: 700;
+
+    &:hover {
+      color: $admin-text-strong;
+    }
+
+    &[aria-pressed="true"] {
+      color: $admin-on-green;
+      background: $admin-green;
+    }
+
+    &:focus-visible {
+      outline: 2px solid $white;
+      outline-offset: 1px;
+    }
+  }
+}
+
+.stats-banner {
+  margin: 0 0 16px;
+  padding: 10px 14px;
+  color: $admin-text;
+  background: rgba($white, 0.04);
+  border: 1px solid rgba($white, 0.08);
+  border-radius: 10px;
+  font-size: 13px;
+  line-height: 1.5;
+
+  &.is-demo {
+    background: rgba($admin-chart-orange, 0.1);
+    border-color: rgba($admin-chart-orange, 0.5);
+  }
+}
+
+.kpis {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 14px;
+  margin-bottom: 14px;
+}
+
+.kpi,
+.card {
+  min-width: 0;
+  background: $admin-surface;
+  border: 1px solid rgba($white, 0.07);
+  border-radius: 14px;
+}
+
+.kpi {
+  padding: 16px 18px 17px;
+}
+
+.kpi-label {
+  margin: 0;
+  color: $admin-text-muted;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+}
+
+.kpi-value {
+  margin: 8px 0 5px;
+  color: $admin-text-bright;
+  font-size: 28px;
+  font-weight: 700;
+  line-height: 1.1;
+  font-variant-numeric: tabular-nums;
+}
+
+.kpi-delta {
+  margin: 0;
+  color: $admin-text-muted;
+  font-size: 12px;
+}
+
+// The arrow and the words say which way it went; the colour only repeats it.
+.delta {
+  font-weight: 700;
+
+  &.is-up {
+    color: $admin-green;
+  }
+
+  &.is-down {
+    color: $admin-red-light;
+  }
+}
+
+.kpi-note {
+  margin: 9px 0 0;
+  color: $admin-text-muted;
+  font-size: 12px;
+  line-height: 1.45;
+}
+
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.card {
+  padding: 18px 20px 20px;
+
+  h3 {
+    margin: 0;
+    color: $admin-text-bright;
+    font-size: 15px;
+  }
+}
+
+.card-wide {
+  grid-column: span 2;
+}
+
+.card-sub {
+  margin: 4px 0 0;
+  color: $admin-text-muted;
+  font-size: 12px;
+}
+
+.card h3 + .chart,
+.card .card-sub + .chart {
+  margin-top: 14px;
+}
+
+// Charts. Each series sets --series (below); the shapes pick it up.
+.chart {
+  display: block;
+  width: 100%;
+  height: auto;
+  overflow: visible;
+  touch-action: pan-y;
+}
+
+.chart-grid {
+  stroke: rgba($white, 0.08);
+  stroke-width: 1;
+}
+
+.chart-tick {
+  fill: $admin-text-muted;
+  font-size: 11px;
+}
+
+.chart-line {
+  fill: none;
+  stroke: var(--series);
+  stroke-width: 2.4;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.chart-area {
+  fill: var(--series);
+  opacity: 0.16;
+}
+
+.chart-cursor {
+  stroke: rgba($white, 0.3);
+  stroke-dasharray: 3 3;
+}
+
+.chart-dot {
+  fill: var(--series);
+  stroke: $admin-surface;
+  stroke-width: 2;
+}
+
+.chart-bar rect {
+  fill: var(--series);
+  opacity: 0.9;
+}
+
+.chart-bar.is-hovered rect {
+  opacity: 1;
+}
+
+.chart-tooltip {
+  rect {
+    fill: $admin-base;
+    stroke: rgba($white, 0.2);
+  }
+
+  text {
+    fill: $admin-text;
+    font-size: 12px;
+
+    &.legend-text {
+      fill: var(--series);
+    }
+
+    &.is-strong {
+      fill: $white;
+      font-weight: 700;
+    }
+  }
+}
+
+.donut {
+  display: block;
+  width: 188px;
+  max-width: 100%;
+  margin: 12px auto 16px;
+}
+
+.donut-track,
+.donut-slice {
+  fill: none;
+  stroke-width: 26;
+}
+
+.donut-track {
+  stroke: rgba($white, 0.06);
+}
+
+.donut-slice {
+  stroke: var(--series);
+}
+
+.donut-value {
+  fill: $admin-text-bright;
+  font-size: 26px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.donut-caption {
+  fill: $admin-text-muted;
+  font-size: 12px;
+}
+
+.legend {
+  display: grid;
+  gap: 9px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+
+  li {
+    display: grid;
+    grid-template-columns: 12px minmax(0, 1fr) auto auto;
+    align-items: center;
+    gap: 10px;
+    color: $admin-text;
+    font-size: 13px;
+  }
+
+  &.is-inline {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px 20px;
+    margin-top: 14px;
+
+    li {
+      display: flex;
+      gap: 8px;
+    }
+  }
+}
+
+.legend-count {
+  color: $admin-text-bright;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.legend-share {
+  min-width: 46px;
+  color: $admin-text-muted;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.swatch {
+  width: 12px;
+  height: 12px;
+  background: var(--series);
+  border-radius: 3px;
+}
+
+.bars {
+  display: grid;
+  gap: 18px;
+  margin: 16px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.bars-row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  color: $admin-text;
+  font-size: 13px;
+}
+
+.bars-price {
+  margin-left: 8px;
+  color: $admin-text-muted;
+  font-size: 12px;
+}
+
+.bars-count {
+  color: $admin-text-bright;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.bars-share {
+  color: $admin-text-muted;
+  font-weight: 400;
+}
+
+.bars-track {
+  height: 8px;
+  margin-top: 8px;
+  overflow: hidden;
+  background: rgba($white, 0.07);
+  border-radius: 999px;
+}
+
+.bars-fill {
+  height: 100%;
+  background: var(--series);
+  border-radius: 999px;
+}
+
+.bars-revenue {
+  margin: 6px 0 0;
+  color: $admin-text-muted;
+  font-size: 12px;
+}
+
+// One colour per series, wherever it is drawn: a bar, a slice, a swatch, a line.
+@mixin series($key, $color) {
+  .series-#{$key} {
+    --series: #{$color};
+  }
+}
+
+@include series(visitors, $admin-green);
+@include series(mobile, $admin-chart-sky);
+@include series(tablet, $admin-chart-orange);
+@include series(desktop, $admin-chart-teal);
+@include series(omradesanalys, $admin-chart-pack-1);
+@include series(trygghetspaket, $admin-chart-pack-2);
+@include series(tre_bostader, $admin-chart-pack-3);
+@include series(other, $admin-chart-grey);
+
+.stats-foot {
+  max-width: 920px;
+  margin: 18px 2px 0;
+  color: $admin-text-muted;
+  font-size: 12px;
+  line-height: 1.65;
+}
+
+.stats-notice,
+.markov-card {
+  max-width: 680px;
+}
+
+.stats-notice {
+  padding: 24px 26px;
+  color: $admin-text;
+  background: $admin-surface;
+  border: 1px solid rgba($white, 0.07);
+  border-radius: 14px;
+  font-size: 14px;
+  line-height: 1.6;
+
+  h2 {
+    margin: 0 0 10px;
+    color: $admin-text-bright;
+    font-size: 18px;
+  }
+
+  p {
+    margin: 8px 0 0;
+  }
+}
+
+.stats-notice-detail {
+  color: $admin-red-pale;
+  word-break: break-word;
+}
+
+.stats code,
+.stats-notice code {
+  padding: 0.1em 0.4em;
+  color: $admin-text-strong;
+  background: rgba($white, 0.07);
+  border-radius: 5px;
+  font-size: 0.92em;
+}
+
+.soon {
+  padding: 5px 13px;
+  color: $admin-chart-orange;
+  border: 1px solid rgba($admin-chart-orange, 0.55);
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.markov-card p {
+  margin: 10px 0 0;
+  color: $admin-text;
+  font-size: 14px;
+  line-height: 1.65;
+}
+
+@media (max-width: $admin-bp-tablet) {
+  .kpis {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .stats-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .card-wide {
+    grid-column: auto;
+  }
 }
 
 @media (max-width: $admin-bp-phone) {
+  .admin-page {
+    padding: 18px 14px 48px;
+  }
+
+  .kpi {
+    padding: 14px 14px 15px;
+  }
+
+  .kpi-value {
+    font-size: 23px;
+  }
+
+  .card {
+    padding: 16px 14px 18px;
+  }
+
   .admin-strip-user {
     display: none;
   }

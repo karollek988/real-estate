@@ -5,6 +5,7 @@ import { AuthProvider } from "@/lib/auth/AuthProvider";
 import { ChatWidget } from "@/components/ChatWidget";
 import { CookieConsentBanner } from "@/components/CookieConsentBanner";
 import { CookieSettingsLink } from "@/components/CookieSettingsLink";
+import { PageViewTracker } from "@/components/analytics/PageViewTracker";
 import { ScrollRestorationReset } from "@/components/ScrollRestorationReset";
 import { SiteFooter } from "@/components/SiteFooter";
 
@@ -44,6 +45,7 @@ export default function RootLayout({
       <body className={`${inter.variable} antialiased`} suppressHydrationWarning>
         <AuthProvider>
           <ScrollRestorationReset />
+          <PageViewTracker />
           {children}
           <SiteFooter />
           <CookieConsentBanner />

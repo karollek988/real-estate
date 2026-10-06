@@ -5,11 +5,63 @@
 > otherwise leave it alone. Detailed research/product docs live in `docs/`;
 > this file is the "what's actually true right now" summary.
 
-Last updated: 2026-10-06 — Fourteenth session (the map page on the master variables, then the preview
-notice moved into the map's top bar), on top of the thirteenth (admin portal map removed). On `main`:
-the thirteenth is `e138616`, the fourteenth's palette work `a89c227`; the notice move is not committed yet.
-The twelfth session (landing hero
-centred again, on `styleRedesign`, since merged to `main`) follows below them, then the eleventh and tenth.
+Last updated: 2026-10-06 — Fifteenth session (admin statistics and visitor counting; not committed, and
+**the migration is not applied anywhere**). Before it: the fourteenth (the map page on the master
+variables) and the thirteenth (admin portal map removed), both on `main`; then the twelfth, eleventh, tenth.
+
+**Fifteenth session — the admin portal's page is now statistics + a placeholder for the Markov simulator.**
+After login on `admin.kopanalys.se`: the session bar, two tabs ("Statistik", "Markov-simulator"; the open tab
+is kept in the address as `#markov`), and the tab's page. Everything is Swedish.
+- **What the statistics page shows** (`components/admin/stats/`, data from `lib/admin/stats*.ts`): visitors,
+  page views, purchases and estimated revenue for 7/30/90 days, each against the period before; visitors per
+  day (area chart); the split of visitors on mobile/tablet/desktop (donut); purchases per day by package
+  (stacked bars); which package is chosen (share, count, revenue). Charts are hand-built SVG (no chart
+  library; drawn at their real width so phone labels stay readable; Okabe-Ito colours for devices, one green in
+  three lightnesses for packages — tokens `$admin-chart-*` — and every series is also named in text).
+  Built when the page is requested, for a signed-in admin only (`getServerSideProps`); the numbers are not in
+  the page for anyone else. If the database settings or the new tables are missing, or a query fails, the tab
+  says so and what to do instead of crashing.
+- **Visitor counting is new, first-party and cookieless** (chosen by the user over consent-only counting and
+  over sample data). `PageViewTracker` (root layout) sends a same-origin beacon `POST /api/analytics/hit` once
+  per page shown, with one bit of body (touch yes/no, to tell an iPad from a Mac). The route
+  (`app/api/analytics/hit/route.ts`) refuses the admin host, other sites, bots, Do Not Track / Global Privacy
+  Control, and more than 120 hits/min from one address; it keeps **no IP, user agent or URL**. A visitor is
+  `HMAC(secret, Stockholm day | IP | user agent)`: it changes every day and cannot be followed across days.
+  The secret is `ANALYTICS_HASH_SECRET` or, failing that, derived from `SUPABASE_SERVICE_ROLE_KEY`. So a
+  "visitor" over several days is the sum of daily visitors (someone who returns three days counts three times).
+  `proxy.ts` leaves `/api/analytics/hit` out of its matcher (no Supabase session refresh per page view).
+- **Database: `supabase/migrations/20261006000000_site_analytics.sql`** — `analytics_visitor_days` (the daily
+  hashes, deleted after two days by the function itself) and `analytics_daily` (visitors and page views per day
+  and device, kept), `record_page_view()` (service role only; anon/authenticated denied). **The user has to apply
+  it** (Supabase SQL Editor) before anything is counted; until then the Statistik tab shows a "tables missing"
+  notice. Purchases need nothing new: they come from `credit_purchases` (days in Swedish time; revenue =
+  count × today's list price, because the ledger stores no amounts, so discount codes are not reflected;
+  older price keys such as `premium_analysis` show as "Äldre / övrigt").
+- **Privacy policy changed** (`app/privacy/page.tsx`): it used to promise that any usage statistics would only
+  be collected with consent. It now describes the anonymous counting (what, how, two-day deletion), gives
+  legitimate interest (art. 6.1 f) as the basis and adds the retention line. **This is legal text and wants the
+  user's/legal's read**, like the terms. The consent banner is unchanged (marketing/analysis cookies are still
+  consent-only; counting uses none).
+- **Dev preview without data:** `ADMIN_STATS_DEMO=1` (development only; the loader ignores it in production)
+  shows deterministic made-up numbers under a "Demodata" banner. Documented in `.env.example` with
+  `ANALYTICS_HASH_SECRET`.
+- **Markov simulator tab:** only a placeholder ("Kommer snart"); what it takes as input and how it works is not
+  decided, and the text says so.
+- **Verified:** `analytics.verify.mjs` (48: devices, bots, the daily hash, the Swedish day, and the beacon
+  route with the outgoing database call intercepted — only day, hash and device leave), `stats.verify.mjs` (45:
+  day building, purchases bucketed by Swedish day, revenue, ranges, the loader against a stand-in REST server
+  including paging past 1000 rows and the missing-table case), the migration run against real Postgres
+  (PGlite: counting, same-visitor dedupe, the two-day purge, permissions), `admin.verify.mjs` (71), `tsc`,
+  eslint on the new code, and headless Chrome against a scratch copy: login, tabs (click, arrows, `#markov`
+  link after reload), ranges, hover readouts, phone layout (no sideways scroll), the real beacon from Chrome
+  (page views, in-site navigation, mobile, DNT/GPC sending nothing, admin host neither sending nor counted),
+  and the page on database rows.
+- **Not verified:** the migration on the real Supabase; any real traffic; the production deployment's
+  response times; the "two simultaneous first page views count one visitor" guarantee under true parallel
+  connections (PGlite is single-connection; it rests on the primary key). One run of `admin.verify.mjs`
+  reported 1 failed check (not captured) and did not repeat in 7 further runs.
+
+**Fourteenth session (before this one)** — the map page, see below.
 
 **Fourteenth session — `/karta` is on the brand palette.** The map used to be the dark demo
 (`$admin-*` colours) inside the cream site; it now takes every colour from the master variables.

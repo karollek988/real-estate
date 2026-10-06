@@ -1,9 +1,48 @@
-import { useState } from "react";
+import { useRef, useState, useSyncExternalStore, type KeyboardEvent } from "react";
+import type { AdminStatsResult } from "@/lib/admin/stats";
+import { MarkovPanel } from "./stats/MarkovPanel";
+import { StatsPanel } from "./stats/StatsPanel";
 
-/** What a signed-in admin sees: a slim session bar above an empty page. */
-export function AdminShell() {
+const TABS = [
+  { id: "stats", label: "Statistik" },
+  { id: "markov", label: "Markov-simulator" },
+] as const;
+type TabId = (typeof TABS)[number]["id"];
+
+// The open tab lives in the address (#markov), so a reload or a shared link lands on it. React reads
+// it as an external store: the server's HTML (and the browser's first pass over it) say "no
+// address", so both start on the statistics, and the browser then moves to the tab in the address.
+const subscribeToAddress = (onChange: () => void) => {
+  window.addEventListener("hashchange", onChange);
+  return () => window.removeEventListener("hashchange", onChange);
+};
+const readAddress = () => window.location.hash;
+const readAddressOnServer = () => "";
+
+/** What a signed-in admin sees: a slim session bar, the tabs, and the open tab's page. */
+export function AdminShell({ stats }: { stats: AdminStatsResult }) {
   const [signingOut, setSigningOut] = useState(false);
   const [signOutFailed, setSignOutFailed] = useState(false);
+  const address = useSyncExternalStore(subscribeToAddress, readAddress, readAddressOnServer);
+  const tab: TabId = TABS.find((t) => `#${t.id}` === address)?.id ?? "stats";
+  const tabButtons = useRef<Partial<Record<TabId, HTMLButtonElement | null>>>({});
+
+  function openTab(id: TabId, focus = false) {
+    window.history.replaceState(null, "", id === "stats" ? window.location.pathname + window.location.search : `#${id}`);
+    // replaceState says nothing to listeners; this is what makes the store re-read the address
+    window.dispatchEvent(new HashChangeEvent("hashchange"));
+    if (focus) tabButtons.current[id]?.focus();
+  }
+
+  // Arrow keys, Home and End move between the tabs, as a tab list is expected to.
+  function onTabKeyDown(event: KeyboardEvent<HTMLButtonElement>) {
+    const current = TABS.findIndex((t) => t.id === tab);
+    const target =
+      event.key === "ArrowRight" ? (current + 1) % TABS.length : event.key === "ArrowLeft" ? (current - 1 + TABS.length) % TABS.length : event.key === "Home" ? 0 : event.key === "End" ? TABS.length - 1 : -1;
+    if (target < 0) return;
+    event.preventDefault();
+    openTab(TABS[target].id, true);
+  }
 
   async function signOut() {
     setSigningOut(true);
@@ -44,7 +83,39 @@ export function AdminShell() {
           {signingOut ? "Loggar ut…" : "Logga ut"}
         </button>
       </header>
-      <main className="admin-content" />
+
+      <div className="admin-tabs" role="tablist" aria-label="Administration">
+        {TABS.map((t) => (
+          <button
+            key={t.id}
+            ref={(el) => {
+              tabButtons.current[t.id] = el;
+            }}
+            id={`admin-tab-${t.id}`}
+            type="button"
+            role="tab"
+            aria-selected={tab === t.id}
+            aria-controls={`admin-panel-${t.id}`}
+            tabIndex={tab === t.id ? 0 : -1}
+            onClick={() => openTab(t.id)}
+            onKeyDown={onTabKeyDown}
+          >
+            {t.label}
+          </button>
+        ))}
+      </div>
+
+      <main className="admin-content">
+        <div className="admin-page">
+          {/* both pages stay in the document, so the chosen period survives a trip to the other tab */}
+          <div role="tabpanel" id="admin-panel-stats" aria-labelledby="admin-tab-stats" hidden={tab !== "stats"}>
+            <StatsPanel result={stats} />
+          </div>
+          <div role="tabpanel" id="admin-panel-markov" aria-labelledby="admin-tab-markov" hidden={tab !== "markov"}>
+            <MarkovPanel />
+          </div>
+        </div>
+      </main>
     </div>
   );
 }

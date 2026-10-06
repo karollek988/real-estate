@@ -109,6 +109,20 @@ $admin-red: #f87171; // red-400
 $admin-red-light: #fca5a5; // red-300
 $admin-red-pale: #fecaca; // red-200
 
+// Charts on the statistics page. Devices use the Okabe-Ito colours, picked so
+// three series stay apart for people with red-green colour blindness (they
+// differ in lightness as well as hue). The packages are one green in three
+// lightnesses - the cheaper the package, the lighter - so their order reads
+// even without telling the greens apart. Every series is also named in text
+// beside the chart; colour is never the only way to read one.
+$admin-chart-sky: #56b4e9; // mobile
+$admin-chart-orange: #e69f00; // tablet; also "demo data" and "coming soon"
+$admin-chart-teal: #009e73; // desktop
+$admin-chart-pack-1: #b9efd0; // Områdesanalys
+$admin-chart-pack-2: #4cc487; // Trygghetspaketet
+$admin-chart-pack-3: #2a8c58; // Tre bostäder
+$admin-chart-grey: #8a949d; // older or unknown packages
+
 // BankID sign-in button (the demo's mock sign-in, not rendered on the public map)
 $bankid-blue: #1a3c5e;
 $bankid-blue-hover: #24507a;
@@ -194,6 +208,7 @@ $ease-out-back: cubic-bezier(0.34, 1.56, 0.64, 1); // map pins popping (overshoo
 $bp-xl: 1280px; // = Tailwind xl
 $bp-short-max-height: 860px; // short: variant - wide but short laptop screens
 $admin-bp-phone: 520px; // admin login and session bar
+$admin-bp-tablet: 1000px; // statistics page: the three-column card grid becomes one column
 $map-bp-stacked: 700px; // map workspace stacks the sidebar above the map
 $map-bp-narrow: 420px; // map workspace on small phones
 

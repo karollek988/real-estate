@@ -74,17 +74,39 @@ export default function PrivacyPage() {
               </ul>
 
               <h3 className="mb-2 mt-5 text-[15px] font-semibold text-white">
+                Besöksstatistik (utan cookies)
+              </h3>
+              <p>
+                Vi räknar hur många som besöker webbplatsen och vilken sorts enhet de
+                använder — mobil, surfplatta eller dator — för att förstå och förbättra
+                tjänsten. Räkningen görs av vår egen server, sätter inga cookies och
+                lagrar ingenting på din enhet. Vi sparar varken din IP-adress, din
+                webbläsares fullständiga beteckning eller vilka sidor du tittar på.
+              </p>
+              <p className="mt-2">
+                För att samma besökare inte ska räknas flera gånger under en dag skapas
+                ett engångsvärde av din IP-adress och webbläsarbeteckning tillsammans
+                med dagens datum och en hemlig nyckel som bara vår server känner till.
+                Värdet kan inte räknas tillbaka till dig och är ett annat varje dag, så
+                att du inte kan följas från en dag till nästa. Det raderas efter två
+                dygn. Det som sparas långsiktigt är bara summor per dag och enhetstyp.
+                Besökare som har Do Not Track eller Global Privacy Control påslaget i
+                sin webbläsare räknas inte alls.
+              </p>
+
+              <h3 className="mb-2 mt-5 text-[15px] font-semibold text-white">
                 Marknadsföring & analys (kräver samtycke)
               </h3>
               <p>
-                I dagsläget använder Köpanalys inga analys- eller
-                marknadsföringsverktyg (till exempel besöksstatistik eller
-                annonsspårning) — endast de nödvändiga sessionscookies som beskrivs
-                ovan sätts. Cookie-bannerns val för &quot;Acceptera alla&quot; finns
-                på plats i förberedande syfte: om vi i framtiden börjar samla in
-                användningsstatistik eller marknadsförings-/lead-trackingdata kommer
-                det endast att ske för besökare som aktivt samtyckt, och denna policy
-                uppdateras då med vad som samlas in och varför.
+                Utöver den anonyma besöksstatistiken ovan använder Köpanalys inga
+                analys- eller marknadsföringsverktyg (till exempel annonsspårning eller
+                tredjepartsverktyg för användaranalys) — i övrigt sätts endast de
+                nödvändiga sessionscookies som beskrivs ovan. Cookie-bannerns val för
+                &quot;Acceptera alla&quot; finns på plats i förberedande syfte: om vi i
+                framtiden börjar samla in annan användningsstatistik eller
+                marknadsförings-/lead-trackingdata kommer det endast att ske för
+                besökare som aktivt samtyckt, och denna policy uppdateras då med vad
+                som samlas in och varför.
               </p>
             </section>
 
@@ -97,6 +119,13 @@ export default function PrivacyPage() {
                   <strong>Nödvändiga uppgifter:</strong> Behandlingen är nödvändig för
                   att fullgöra avtalet med dig (art. 6.1 b GDPR) — det vill säga för att
                   leverera den tjänst du registrerat dig för.
+                </li>
+                <li>
+                  <strong>Besöksstatistik:</strong> Behandlingen baseras på vårt
+                  berättigade intresse av att förstå hur webbplatsen används och
+                  förbättra den (art. 6.1 f GDPR). Den är begränsad så långt det går:
+                  ingen cookie, inget lagrat på din enhet, ingen IP-adress eller sida
+                  sparas, och engångsvärdet raderas efter två dygn.
                 </li>
                 <li>
                   <strong>Marknadsföring & analys:</strong> Behandlingen baseras på ditt
@@ -157,6 +186,12 @@ export default function PrivacyPage() {
                 <li>
                   <strong>Analysdata</strong> (adresser, sparade rapporter) sparas så
                   länge ditt konto är aktivt, eller tills du aktivt raderar dem.
+                </li>
+                <li>
+                  <strong>Besöksstatistik:</strong> engångsvärdet som används för att
+                  räkna en besökare en gång per dag raderas efter två dygn. Summorna per
+                  dag och enhetstyp, som inte kan kopplas till någon enskild besökare,
+                  sparas tills vidare.
                 </li>
                 <li>
                   <strong>Marknadsförings- och analysdata</strong> sparas i högst 24
