@@ -1404,22 +1404,33 @@
     font-size: 17px;
   }
 
+  // A row with no height at the very top of the panel, holding the close button:
+  // the button is always in the panel's top right corner, over the photo when
+  // there is one, and sticky so it stays there while the phone sheet scrolls.
+  .detail-close-bar {
+    position: sticky;
+    z-index: 3;
+    top: 0;
+    height: 0;
+  }
+
   .detail-close {
     position: absolute;
-    z-index: 2;
     top: 12px;
     right: 14px;
     width: 28px;
     height: 28px;
     color: $map-text-muted;
-    background: rgba($map-surface, 0.8);
+    background: rgba($map-surface, 0.85);
     border: 0;
     border-radius: 50%;
+    box-shadow: 0 1px 4px rgba($map-wash, 0.25);
     font-size: 21px;
     line-height: 1;
 
     &:hover {
       color: $map-text-strong;
+      background: $map-surface;
     }
   }
 

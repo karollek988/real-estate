@@ -53,6 +53,10 @@ centred again, on `styleRedesign`, since merged to `main`) follows below them, t
   **Not tested on a real phone:** the gestures were driven with synthetic touch pointer events; iOS
   Safari and Android gesture navigation may claim a swipe that starts at the very edge, which is why
   the button is the primary way in.
+- **The detail panel's × is always in the panel's top right corner**, over the photo when there is one
+  (it used to sit in the text body, i.e. under the photo). It is a zero-height sticky row at the top of
+  the panel (`DETAIL_CLOSE` in `atlas.ts`, `.detail-close-bar` in the mixin), so it also stays put while
+  the phone sheet scrolls.
 - **Testing trap:** if the browser pane is not being displayed while `/karta` loads, the page sees a
   0 × 0 viewport and Leaflet fits Sweden's bounds against no size (the map opens at zoom 19 over
   forest). A real visible tab is unaffected; `mountAtlas` fits once and never re-measures.
