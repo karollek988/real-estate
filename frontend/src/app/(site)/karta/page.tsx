@@ -30,7 +30,7 @@ export default function KartaPage() {
         </div>
       </div>
       <div className="min-h-0 flex-1">
-        <Suspense fallback={<div className="h-full bg-ka-green-950" />}>
+        <Suspense fallback={<div className="h-full bg-ka-cream" />}>
           <PublicMap />
         </Suspense>
       </div>

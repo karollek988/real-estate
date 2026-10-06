@@ -5,9 +5,41 @@
 > otherwise leave it alone. Detailed research/product docs live in `docs/`;
 > this file is the "what's actually true right now" summary.
 
-Last updated: 2026-10-06 — Thirteenth session (admin portal map removed); uncommitted on `main`. The
-twelfth session (landing hero centred again, on `styleRedesign`, since merged to `main`) follows
-below it, then the eleventh and tenth.
+Last updated: 2026-10-06 — Fourteenth session (the map page on the master variables), on top of the
+thirteenth (admin portal map removed); both uncommitted on `main`. The twelfth session (landing hero
+centred again, on `styleRedesign`, since merged to `main`) follows below them, then the eleventh and tenth.
+
+**Fourteenth session — `/karta` is on the brand palette.** The map used to be the dark demo
+(`$admin-*` colours) inside the cream site; it now takes every colour from the master variables.
+- **Roles in `styles/_variables.scss`** ("Public map" section): `$map-canvas/-surface/-raised/-line/
+  -scrim/-wash`, `$map-text-strong/-text/-text-muted/-text-faint`, `$map-primary` (= the header's
+  "Skapa analys" green), `$map-accent`, `$map-sell` (pins, dots, counts: one shade brighter than the
+  accent so a dense cluster stays readable), `$map-buy`, `$map-exchange`, `$map-amber`, plus the
+  panel/shadow tokens. They are built on `$ka-*`: change a brand colour and the map follows. The one
+  new hue is the buyer blue (`#2f67b1`; the brand palette has none).
+- **`_atlas-workspace.scss`** (the 1,800-line mixin) names roles only; it has no hex colours and no
+  `$admin-*` any more. Headings use `$font-display` (the site's display serif) and the labels that
+  asked for "DM Mono" (never loaded, so they rendered in the browser's monospace) use `$font-sans`.
+  `atlas.ts` no longer sets the exchange arc's colour; the stylesheet does (`.exchange-arc { stroke }`
+  beats Leaflet's attribute).
+- **`atlas.scss` (admin) no longer emits the workspace**, only the page resets (colour, background,
+  box-sizing, body margin, form fonts): the admin has no map, and the workspace's global `h1, h2`
+  rules would otherwise have turned the admin login heading dark. The admin page ships 50 CSS rules
+  instead of ~1,000. This supersedes the eleventh session's "`atlas.scss` compiles byte-identical".
+- **Pruned** the 22 `$admin-*`/font tokens that only the old dark map used. Still admin: bar, base,
+  surface, canvas, text-bright/strong/text/soft/muted, green, green-strong, on-green, red, red-light,
+  red-pale, shadow-modal/glow, `$bankid-*`.
+- **Verified** (dev server, browser): `tsc` clean; every stylesheet compiles; `/karta` at desktop and
+  390 px — list, selected row, detail panel, "Skapa annons" and "Mina annonser" modals — no console
+  errors; computed colours of pins/arcs/panels equal the `$ka-*` values; admin login unchanged.
+  **Not checked:** the exchange route/arc with an active selection, the pending-pin pulse, the
+  address-picking mode and the broken-image fallback (the example data has no case for them).
+- **Dev tooling note (not code):** on Windows, `next dev` (Turbopack) can get into a state where it
+  serves a page whose scripts reference Next's *default* `_app` (or a 500 `SyntaxError: Unexpected end
+  of JSON input` from its own `manifest-loader`), which shows up as a hydration error on the admin
+  page. Stop the server, delete `frontend/.next`, start again; `next dev --webpack` avoids that code.
+  The "extension attributes on `<body>`" hydration warning (Grammarly) is silenced with
+  `suppressHydrationWarning` in `app/layout.tsx`.
 
 **Thirteenth session — the admin portal no longer has a map.** On `admin.kopanalys.se` a signed-in
 admin now sees the slim session bar ("Köpanalys Admin" · "Logga ut") above an empty page

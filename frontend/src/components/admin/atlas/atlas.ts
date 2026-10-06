@@ -1,6 +1,8 @@
 /**
- * Atlas map workspace - the KopanalysMapDemo project, embedded in the admin portal.
+ * Atlas map workspace - the KopanalysMapDemo project, now the public map page /karta.
  * Ported from github.com/intothenether/KopanalysMapDemo (src/main.ts, commit 10152df).
+ * Colours are not set here: the stylesheet owns them (the exchange line's stroke included),
+ * so the map follows the master variables in styles/_variables.scss.
  *
  * Changes from the standalone original (data, markup and behaviour are otherwise unchanged):
  *  - the script is wrapped in mountAtlas(root), which renders into `root` and returns a
@@ -294,7 +296,7 @@ export function mountAtlas(root: HTMLElement, options: AtlasOptions = {}): Atlas
   function setArcHighlight(id: number | null) {
     exchangeMarkers.forEach((group, groupId) => {
       const active = groupId === id
-      group.arc.setStyle({ color: active ? '#fca5a5' : '#f87171', weight: active ? 5 : 2, opacity: active ? 1 : id === null ? 0.8 : 0.2 })
+      group.arc.setStyle({ weight: active ? 5 : 2, opacity: active ? 1 : id === null ? 0.8 : 0.2 })
       group.arc.getElement()?.classList.toggle('exchange-arc-active', active)
       if (active) group.arc.bringToFront()
     })
@@ -484,7 +486,7 @@ export function mountAtlas(root: HTMLElement, options: AtlasOptions = {}): Atlas
     if (isFilterVisible('sale')) pins.forEach((pin, index) => { const marker = L.marker([pin.lat, pin.lng], { icon: pinIcon }).addTo(map).bindTooltip(`${index + 1}. ${esc(pin.title)}`, { direction: 'top', offset: [0, -28] }).on('click', () => selectPin(pin, 'sale')); markers.set(pin.id, marker) })
     if (isFilterVisible('buyer')) buyerPins.forEach((pin, index) => { const marker = L.marker([pin.lat, pin.lng], { icon: buyerPinIcon }).addTo(map).bindTooltip(`Köpare ${index + 1}. ${esc(pin.title)}`, { direction: 'top', offset: [0, -28] }).on('click', () => selectPin(pin, 'buyer')); buyerMarkers.set(pin.id, marker) })
     if (isFilterVisible('exchange')) exchangePins.forEach((pin, index) => {
-      const arc = L.polyline(buildArc(pin.from.lat, pin.from.lng, pin.to.lat, pin.to.lng), { className: 'exchange-arc', color: '#f87171', weight: 2, opacity: 0.8, dashArray: '1 10', lineCap: 'round' }).addTo(map)
+      const arc = L.polyline(buildArc(pin.from.lat, pin.from.lng, pin.to.lat, pin.to.lng), { className: 'exchange-arc', weight: 2, opacity: 0.8, dashArray: '1 10', lineCap: 'round' }).addTo(map)
       const fromMarker = L.marker([pin.from.lat, pin.from.lng], { icon: exchangeFromIcon }).addTo(map).bindTooltip(`Byte ${index + 1}: ${esc(pin.title)}`, { direction: 'top', offset: [0, -28] }).on('click', () => selectExchangePin(pin))
       const toMarker = L.marker([pin.to.lat, pin.to.lng], { icon: exchangeToIcon }).addTo(map).bindTooltip(`Byte ${index + 1}: vill bo i ${esc(pin.to.note)}`, { direction: 'top', offset: [0, -28] }).on('click', () => selectExchangePin(pin))
       exchangeMarkers.set(pin.id, { from: fromMarker, to: toMarker, arc })
