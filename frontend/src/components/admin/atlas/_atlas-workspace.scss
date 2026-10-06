@@ -282,6 +282,15 @@
     min-height: 0;
   }
 
+  // On a phone the sidebar is a drawer over the map (media query below); these
+  // four exist only for that.
+  .list-toggle,
+  .drawer-close,
+  .drawer-backdrop,
+  .drawer-edge {
+    display: none;
+  }
+
   .sidebar {
     width: 355px;
     flex: 0 0 355px;
@@ -1616,19 +1625,33 @@
       margin: 0;
     }
 
+    // The map gets the whole workspace; the sidebar is a drawer over it. Closed it
+    // waits off the left edge and is hidden from keyboard and screen readers;
+    // .drawer-open on .app-shell slides it in. (animation: none, because the
+    // entrance animation's end state would otherwise override the transform.)
     .workspace {
-      flex-direction: column;
+      position: relative;
       overflow: hidden;
     }
 
     .sidebar {
-      width: 100%;
-      flex: 0 0 42%;
+      position: absolute;
+      z-index: 700;
+      top: 0;
+      bottom: 0;
+      left: 0;
+      width: min(88%, 360px);
+      flex: none;
       min-height: 0;
       overflow-y: auto;
+      overscroll-behavior: contain;
+      touch-action: pan-y;
       padding: 22px 20px 14px;
-      border-right: 0;
-      border-bottom: 1px solid $map-line;
+      box-shadow: $map-shadow-popover;
+      transform: translateX(-102%);
+      visibility: hidden;
+      transition: transform .28s $ease-out-expo, visibility 0s .28s;
+      animation: none;
 
       .list-heading {
         flex-shrink: 0;
@@ -1640,9 +1663,100 @@
       }
     }
 
-    .map-wrap {
-      flex: 0 0 58%;
-      min-height: 0;
+    .app-shell.drawer-open .sidebar {
+      transform: none;
+      visibility: visible;
+      transition: transform .28s $ease-out-expo, visibility 0s;
+    }
+
+    .drawer-backdrop {
+      display: block;
+      position: absolute;
+      z-index: 690;
+      inset: 0;
+      background: rgba($map-scrim, 0.4);
+      opacity: 0;
+      pointer-events: none;
+      touch-action: none;
+      transition: opacity .28s ease;
+    }
+
+    .app-shell.drawer-open .drawer-backdrop {
+      opacity: 1;
+      pointer-events: auto;
+    }
+
+    // A strip along the left edge that catches the swipe which opens the drawer.
+    // It starts below the toggle button, so the button is never covered.
+    .drawer-edge {
+      display: block;
+      position: absolute;
+      z-index: 650;
+      top: 60px;
+      bottom: 0;
+      left: 0;
+      width: 22px;
+      touch-action: none;
+    }
+
+    .app-shell.drawer-open .drawer-edge {
+      display: none;
+    }
+
+    .app-shell.drawer-open .drawer-close {
+      display: grid;
+    }
+
+    .list-toggle {
+      position: absolute;
+      z-index: 660;
+      top: 12px;
+      left: 12px;
+      display: grid;
+      place-items: center;
+      width: 40px;
+      height: 40px;
+      color: $map-panel-text;
+      background: rgba($map-panel, 0.92);
+      border: 1px solid $white;
+      border-radius: 10px;
+      box-shadow: $map-shadow-float;
+
+      &:hover {
+        color: $map-accent;
+        background: $white;
+      }
+    }
+
+    // In the drawer's top right corner, outside the scrolling list; first in the
+    // tab order when the drawer opens. Only shown while it is open.
+    .drawer-close {
+      position: absolute;
+      z-index: 710;
+      top: 14px;
+      left: calc(min(88%, 360px) - 48px);
+      display: none;
+      place-items: center;
+      width: 34px;
+      height: 34px;
+      color: $map-text-muted;
+      background: $map-raised;
+      border: 0;
+      border-radius: 50%;
+      font-size: 22px;
+      line-height: 1;
+
+      &:hover {
+        color: $map-text-strong;
+        background: $map-raised-hover;
+      }
+    }
+
+    @include reduced-motion {
+      .sidebar,
+      .drawer-backdrop {
+        transition: none;
+      }
     }
 
     .intro {
@@ -1684,11 +1798,14 @@
       font-size: 10px;
     }
 
+    // A sheet along the bottom, so the pin that was just focused stays in view above it.
     .detail-panel {
-      top: 12px;
+      top: auto;
       right: 12px;
-      width: min(340px, calc(100% - 24px));
-      max-height: calc(100% - 24px);
+      bottom: 12px;
+      left: 12px;
+      width: auto;
+      max-height: 46%;
       overflow-y: auto;
     }
 
@@ -1799,10 +1916,9 @@
     }
 
     .detail-panel {
-      top: 8px;
       right: 8px;
-      width: calc(100% - 16px);
-      max-height: calc(100% - 16px);
+      bottom: 8px;
+      left: 8px;
     }
 
     .detail-photo-wrap {

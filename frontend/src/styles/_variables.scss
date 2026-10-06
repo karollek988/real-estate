@@ -132,6 +132,8 @@ $map-text-strong: $ka-ink;
 $map-text: $ka-text;
 $map-text-muted: $ka-muted;
 $map-text-faint: rgba($ka-muted, 0.6); // decorative arrows
+$map-badge: $ka-sage; // the "Förhandsversion" label
+$map-badge-text: $ka-green-900;
 
 // Actions
 $map-primary: $ka-green-900; // main buttons, as the header's "Skapa analys"

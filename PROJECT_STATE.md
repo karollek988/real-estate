@@ -5,8 +5,10 @@
 > otherwise leave it alone. Detailed research/product docs live in `docs/`;
 > this file is the "what's actually true right now" summary.
 
-Last updated: 2026-10-06 — Fourteenth session (the map page on the master variables), on top of the
-thirteenth (admin portal map removed); both uncommitted on `main`. The twelfth session (landing hero
+Last updated: 2026-10-06 — Fourteenth session (the map page on the master variables, then the preview
+notice moved into the map's top bar), on top of the thirteenth (admin portal map removed). On `main`:
+the thirteenth is `e138616`, the fourteenth's palette work `a89c227`; the notice move is not committed yet.
+The twelfth session (landing hero
 centred again, on `styleRedesign`, since merged to `main`) follows below them, then the eleventh and tenth.
 
 **Fourteenth session — `/karta` is on the brand palette.** The map used to be the dark demo
@@ -29,6 +31,31 @@ centred again, on `styleRedesign`, since merged to `main`) follows below them, t
 - **Pruned** the 22 `$admin-*`/font tokens that only the old dark map used. Still admin: bar, base,
   surface, canvas, text-bright/strong/text/soft/muted, green, green-strong, on-green, red, red-light,
   red-pale, shadow-modal/glow, `$bankid-*`.
+- **The "Karta · Förhandsversion · Kartan visar exempelannonser…" strip above the map is gone.** Its
+  content is now `.map-notice` in the map's top bar, between the search and the icons (template in
+  `atlas.ts`, public variant only; styles in `atlas-public.scss`; `$map-badge*` tokens). It wraps
+  below the title when the line doesn't fit, and on phones shares the first row with the icons. The
+  page's `h1` stays in `app/(site)/karta/page.tsx` as a visually hidden `h1` so it is in the
+  server-rendered HTML (the top bar only exists once the map has mounted); the visible "Karta" in
+  the bar is a plain label. The map now gets the whole height under the site header.
+- **Phone layout (≤ 700 px, `$map-bp-stacked`): the listing pane is a drawer over a full-size map**
+  instead of a block stacked above it. Opens from the list button in the map's top-left corner or by
+  a swipe in from the left edge (a 22 px strip, `.drawer-edge`); the drawer follows the finger and a
+  third of the way decides. Closes on choosing a listing (pin or exchange), a search, "Skapa annons",
+  the × in its corner, a tap on the dimmed map, Escape, or a swipe back. Closed, it is `visibility:
+  hidden` (not reachable by keyboard or screen reader); focus moves into it on open and back to the
+  list button on close; crossing the breakpoint resets it. Code: the drawer block above `selectPin`
+  in `atlas.ts` (the `700` there must match `$map-bp-stacked`), styles in the phone media query of
+  `_atlas-workspace.scss` and `atlas-public.scss`. The detail panel is a bottom sheet on phones
+  (max 46 % of the map, above the site's chat button) and `flyToPin` / the exchange framing put the
+  focused pin in the upper half, so the sheet never hides it. `setSelectedMarker` scrolls the sidebar
+  itself instead of calling `scrollIntoView`, which also moved the page and the clipped workspace.
+  **Not tested on a real phone:** the gestures were driven with synthetic touch pointer events; iOS
+  Safari and Android gesture navigation may claim a swipe that starts at the very edge, which is why
+  the button is the primary way in.
+- **Testing trap:** if the browser pane is not being displayed while `/karta` loads, the page sees a
+  0 × 0 viewport and Leaflet fits Sweden's bounds against no size (the map opens at zoom 19 over
+  forest). A real visible tab is unaffected; `mountAtlas` fits once and never re-measures.
 - **Verified** (dev server, browser): `tsc` clean; every stylesheet compiles; `/karta` at desktop and
   390 px — list, selected row, detail panel, "Skapa annons" and "Mina annonser" modals — no console
   errors; computed colours of pins/arcs/panels equal the `$ka-*` values; admin login unchanged.

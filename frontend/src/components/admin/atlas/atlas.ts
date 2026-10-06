@@ -19,7 +19,8 @@
  *    it), no demo BankID sign-in, inbox or sign-out (the site header has the real sign-in),
  *    "Mina annonser" open to everyone, "Skapa analys" wired to the analysis form, no
  *    search-as-you-type against Nominatim (its usage policy does not allow autocomplete), and
- *    a heading level that fits under the page's h1. Its CSS is atlas-public.scss.
+ *    a preview notice in the top bar next to the search (the page itself renders the h1, so
+ *    the sidebar heading is an h2). Its CSS is atlas-public.scss.
  *
  * Browser-only: it touches window/document/localStorage on mount and imports Leaflet, which
  * needs the DOM at import time - load it via dynamic import() from an effect, never on the server.
@@ -140,6 +141,7 @@ export function mountAtlas(root: HTMLElement, options: AtlasOptions = {}): Atlas
       <header class="topbar">
         ${isPublic ? '' : '<a class="brand" href="/" aria-label="Köpanalys Karta"><img class="brand-mark" src="/_next/image?url=%2Fkopanalys-bostad-logo.png&w=64&q=75" alt="Köpanalys"><span>Köpanalys Karta</span></a>'}
         <form class="search-form" id="search-form" role="search"><span class="search-icon">⌕</span><input id="search-input" list="search-suggestions" type="search" placeholder="Sök plats eller pin..." autocomplete="off" aria-label="Sök plats eller pin"><datalist id="search-suggestions"></datalist><button type="submit">Sök</button></form>
+        ${isPublic ? '<div class="map-notice"><strong class="map-notice-title">Karta</strong><span class="map-notice-badge">Förhandsversion</span><p>Kartan visar exempelannonser. Annonser du lägger till sparas bara i din webbläsare.</p></div>' : ''}
         <div class="topbar-actions">
           ${isPublic ? '<div class="auth-actions" id="auth-actions"><button class="icon-button" id="my-listings-button" type="button" aria-label="Mina annonser" title="Mina annonser"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="3" width="16" height="18" rx="2"></rect><line x1="8" y1="8" x2="16" y2="8"></line><line x1="8" y1="12" x2="16" y2="12"></line><line x1="8" y1="16" x2="12" y2="16"></line></svg></button></div>' : `
           <button class="bankid-button" id="bankid-button" type="button"><span class="bankid-mark">ID</span><span class="bankid-label">Logga in med BankID</span></button>
@@ -161,7 +163,8 @@ export function mountAtlas(root: HTMLElement, options: AtlasOptions = {}): Atlas
         </div>
       </header>
       <section class="workspace">
-        <aside class="sidebar">
+        <button type="button" class="drawer-close" id="drawer-close" aria-label="Stäng listan">×</button>
+        <aside class="sidebar" id="atlas-sidebar">
           <div class="sidebar-header"><div><p class="eyebrow">Karta</p>${isPublic ? '<h2>Bostadsmarknaden</h2>' : '<h1>Bostadsmarknaden</h1>'}</div></div>
           <p class="intro">Översikt över Sveriges bostadsmarknad. Här kan du se bostäder till salu och köpförfrågan.</p>
           <div class="action-row"><button class="primary-button" id="add-button"><span>＋</span> Skapa annons</button></div>
@@ -173,7 +176,9 @@ export function mountAtlas(root: HTMLElement, options: AtlasOptions = {}): Atlas
           <div class="pin-list" id="exchange-list" data-filter-section="exchange"></div>
           <div class="sidebar-footer"><div class="source-row"><span class="map-badge">●</span><span>OpenStreetMap data</span><a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noreferrer">Om</a></div>${isPublic ? '' : '<small class="copyright">© 2026 Köpanalys. Org.nr 9811048793</small>'}</div>
         </aside>
-        <div class="map-wrap"><div id="map"></div><div class="map-hint" id="map-hint"><span>＋</span> Klicka för att lägga till ett pin.</div><div class="zoom-control" id="zoom-control"><button id="zoom-in" aria-label="Zooma in">＋</button><button id="zoom-out" aria-label="Zooma ut">−</button><button id="map-style-toggle" class="map-style-toggle" aria-label="Byt till satellitkarta" title="Satellit"><svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><g transform="rotate(-45 12 12)"><rect x="2.5" y="9.5" width="6" height="5" rx="1.2"></rect><rect x="15.5" y="9.5" width="6" height="5" rx="1.2"></rect><rect x="9.5" y="9" width="5" height="6" rx="1.2"></rect><line x1="8.5" y1="12" x2="9.5" y2="12"></line><line x1="14.5" y1="12" x2="15.5" y2="12"></line></g></svg></button><button id="transit-toggle" class="transit-toggle" aria-label="Visa tåg- och tunnelbanelinjer" title="Tåg- och tunnelbanelinjer"><svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="3" width="12" height="13" rx="4"></rect><line x1="6" y1="10" x2="18" y2="10"></line><circle cx="9.5" cy="13.2" r="0.6" fill="currentColor" stroke="none"></circle><circle cx="14.5" cy="13.2" r="0.6" fill="currentColor" stroke="none"></circle><line x1="8" y1="17" x2="6" y2="20"></line><line x1="16" y1="17" x2="18" y2="20"></line></svg></button></div><div class="map-legend" id="map-legend" role="group" aria-label="Filtrera kartan"><button type="button" class="legend-item" data-filter-section="sale" aria-pressed="true"><span class="legend-dot"></span>Till salu</button><button type="button" class="legend-item" data-filter-section="buyer" aria-pressed="true"><span class="legend-dot"></span>Köpare söker</button><button type="button" class="legend-item" data-filter-section="exchange" aria-pressed="true"><span class="legend-dot"></span>Byter bostad</button></div><aside class="detail-panel" id="detail-panel" hidden></aside></div>
+        <div class="drawer-backdrop" id="drawer-backdrop"></div>
+        <div class="drawer-edge" id="drawer-edge"></div>
+        <div class="map-wrap"><div id="map"></div><button type="button" class="list-toggle" id="drawer-toggle" aria-label="Visa annonslistan" aria-expanded="false" aria-controls="atlas-sidebar"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="9" y1="6" x2="20" y2="6"></line><line x1="9" y1="12" x2="20" y2="12"></line><line x1="9" y1="18" x2="20" y2="18"></line><circle cx="4.5" cy="6" r="1"></circle><circle cx="4.5" cy="12" r="1"></circle><circle cx="4.5" cy="18" r="1"></circle></svg></button><div class="map-hint" id="map-hint"><span>＋</span> Klicka för att lägga till ett pin.</div><div class="zoom-control" id="zoom-control"><button id="zoom-in" aria-label="Zooma in">＋</button><button id="zoom-out" aria-label="Zooma ut">−</button><button id="map-style-toggle" class="map-style-toggle" aria-label="Byt till satellitkarta" title="Satellit"><svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><g transform="rotate(-45 12 12)"><rect x="2.5" y="9.5" width="6" height="5" rx="1.2"></rect><rect x="15.5" y="9.5" width="6" height="5" rx="1.2"></rect><rect x="9.5" y="9" width="5" height="6" rx="1.2"></rect><line x1="8.5" y1="12" x2="9.5" y2="12"></line><line x1="14.5" y1="12" x2="15.5" y2="12"></line></g></svg></button><button id="transit-toggle" class="transit-toggle" aria-label="Visa tåg- och tunnelbanelinjer" title="Tåg- och tunnelbanelinjer"><svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="3" width="12" height="13" rx="4"></rect><line x1="6" y1="10" x2="18" y2="10"></line><circle cx="9.5" cy="13.2" r="0.6" fill="currentColor" stroke="none"></circle><circle cx="14.5" cy="13.2" r="0.6" fill="currentColor" stroke="none"></circle><line x1="8" y1="17" x2="6" y2="20"></line><line x1="16" y1="17" x2="18" y2="20"></line></svg></button></div><div class="map-legend" id="map-legend" role="group" aria-label="Filtrera kartan"><button type="button" class="legend-item" data-filter-section="sale" aria-pressed="true"><span class="legend-dot"></span>Till salu</button><button type="button" class="legend-item" data-filter-section="buyer" aria-pressed="true"><span class="legend-dot"></span>Köpare söker</button><button type="button" class="legend-item" data-filter-section="exchange" aria-pressed="true"><span class="legend-dot"></span>Byter bostad</button></div><aside class="detail-panel" id="detail-panel" hidden></aside></div>
       </section>
       <div class="modal-backdrop" id="modal-backdrop" hidden><form class="place-modal" id="place-form"><button type="button" class="modal-close" id="modal-close" aria-label="Stäng">×</button><p class="eyebrow">Ny kartmarkering</p><h2 id="form-title">Lägg till bostad till salu</h2><div class="pin-type-switch" role="tablist" aria-label="Typ av pin"><button type="button" class="type-option is-active" data-pin-kind="sale" role="tab" aria-selected="true">Till salu</button><button type="button" class="type-option" data-pin-kind="buyer" role="tab" aria-selected="false">Köpare söker</button><button type="button" class="type-option" data-pin-kind="exchange" role="tab" aria-selected="false">Byter bostad</button></div><div class="field-grid"><label>Rubrik<input name="title" required maxlength="60" placeholder="t.ex. Villa nära centrum"></label><label id="note-label">Plats eller område<span class="address-input"><input name="note" required maxlength="100" placeholder="t.ex. Eslövs kommun"><button type="button" class="map-pick-button" data-pick-target="note" aria-label="Välj plats på kartan" title="Välj plats på kartan">⌖</button></span></label></div><div class="form-section" data-form-section="sale"><label>Pris, storlek och rum<input name="meta" maxlength="100" placeholder="t.ex. 3 rum · 78 m² · 2 495 000 kr"></label><div class="image-field"><div class="field-grid"><label>Bildlänk <span>valfritt</span><input name="image" type="url" placeholder="https://..."></label><label class="file-field">Ladda upp bild <span>valfritt</span><input name="imageFile" type="file" accept="image/*" class="file-input"></label></div><div class="image-preview" hidden><img alt=""><button type="button" class="image-preview-remove" aria-label="Ta bort bild">×</button></div></div><label>Annonslänk <span>valfritt</span><input name="link" type="url" placeholder="https://www.hemnet.se/..."></label><label>Beskrivning <span>valfritt</span><textarea name="details" maxlength="300" placeholder="Beskriv bostaden kort"></textarea></label></div><div class="form-section" data-form-section="buyer" hidden><label>Budget och önskemål<input name="meta" maxlength="120" placeholder="t.ex. Budget upp till 3 000 000 kr · 2–3 rum"></label><div class="image-field"><div class="field-grid"><label>Bildlänk <span>valfritt</span><input name="image" type="url" placeholder="https://..."></label><label class="file-field">Ladda upp bild <span>valfritt</span><input name="imageFile" type="file" accept="image/*" class="file-input"></label></div><div class="image-preview" hidden><img alt=""><button type="button" class="image-preview-remove" aria-label="Ta bort bild">×</button></div></div><label>Mer information<textarea name="details" maxlength="300" placeholder="Vad söker köparen? Berätta om läge, storlek och tidsplan."></textarea></label></div><div class="form-section" data-form-section="exchange" hidden><div class="field-grid"><label>Erbjuder och söker<input name="meta" maxlength="120" placeholder="t.ex. Erbjuder 3 rum · Söker 4+ rum"></label><label>Vill bo i<span class="address-input"><input name="toNote" required maxlength="100" placeholder="t.ex. Uppsala"><button type="button" class="map-pick-button" data-pick-target="toNote" aria-label="Välj plats på kartan" title="Välj plats på kartan">⌖</button></span></label></div><div class="image-field"><div class="field-grid"><label>Bildlänk <span>valfritt</span><input name="image" type="url" placeholder="https://..."></label><label class="file-field">Ladda upp bild <span>valfritt</span><input name="imageFile" type="file" accept="image/*" class="file-input"></label></div><div class="image-preview" hidden><img alt=""><button type="button" class="image-preview-remove" aria-label="Ta bort bild">×</button></div></div><label>Bytesinformation<textarea name="details" maxlength="300" placeholder="Beskriv bostaden som erbjuds och vad personen vill byta till."></textarea></label></div><button class="primary-button form-submit" type="submit">Spara pin</button></form></div>
       <div class="modal-backdrop" id="my-listings-backdrop" hidden><div class="place-modal my-listings-modal"><button type="button" class="modal-close" id="my-listings-close" aria-label="Stäng">×</button><p class="eyebrow">Mitt konto</p><h2>Mina annonser</h2><div class="my-listings-list" id="my-listings-list"></div></div></div>
@@ -230,10 +235,90 @@ export function mountAtlas(root: HTMLElement, options: AtlasOptions = {}): Atlas
   let suggestionRequestId = 0
   const searchPinIcon = L.divIcon({ className: 'search-pin', html: '<span></span>', iconSize: [22, 30], iconAnchor: [11, 28] })
 
+  // --- Phone layout: the listing pane is a drawer over the map ------------------------------------
+  // The stylesheet makes the sidebar a drawer at this width ($map-bp-stacked in
+  // styles/_variables.scss) - keep the number in step with it. It opens from the button in the
+  // map's corner, by a swipe in from the left edge, or by dragging it; it closes on choosing a
+  // listing, on the backdrop or ×, on Escape, or by swiping it back.
+  const phoneQuery = window.matchMedia('(max-width: 700px)')
+  const isPhone = () => phoneQuery.matches
+  const shell = root.querySelector<HTMLElement>('.app-shell')!
+  const sidebar = root.querySelector<HTMLElement>('#atlas-sidebar')!
+  const drawerToggle = root.querySelector<HTMLButtonElement>('#drawer-toggle')!
+  const drawerClose = root.querySelector<HTMLButtonElement>('#drawer-close')!
+  const drawerBackdrop = root.querySelector<HTMLElement>('#drawer-backdrop')!
+  const drawerEdge = root.querySelector<HTMLElement>('#drawer-edge')!
+  const isDrawerOpen = () => shell.classList.contains('drawer-open')
+  function setDrawer(open: boolean) {
+    const wasOpen = isDrawerOpen()
+    const next = open && isPhone()
+    sidebar.removeAttribute('style')
+    drawerBackdrop.removeAttribute('style')
+    shell.classList.toggle('drawer-open', next)
+    drawerToggle.setAttribute('aria-expanded', String(next))
+    if (next && !wasOpen) drawerClose.focus({ preventScroll: true })
+    else if (!next && wasOpen && (sidebar.contains(document.activeElement) || document.activeElement === drawerClose)) drawerToggle.focus({ preventScroll: true })
+  }
+  const closeDrawer = () => setDrawer(false)
+
+  // Follows the finger while it drags, then settles open or closed (a third of the way decides).
+  let drag: { el: HTMLElement; id: number; x: number; y: number; width: number; opening: boolean; moving: boolean; shift: number } | null = null
+  let ignoreClickUntil = 0
+  function attachDrag(el: HTMLElement, opening: boolean) {
+    el.addEventListener('pointerdown', (event) => {
+      if (event.pointerType !== 'touch' || !isPhone() || drag) return
+      drag = { el, id: event.pointerId, x: event.clientX, y: event.clientY, width: sidebar.offsetWidth, opening, moving: false, shift: opening ? -sidebar.offsetWidth : 0 }
+    })
+    el.addEventListener('pointermove', (event) => {
+      if (!drag || drag.el !== el || event.pointerId !== drag.id) return
+      const dx = event.clientX - drag.x
+      const dy = event.clientY - drag.y
+      if (!drag.moving) {
+        if (Math.abs(dx) < 8 && Math.abs(dy) < 8) return
+        // Mostly vertical (the list scrolls) or the wrong way: not a drawer gesture.
+        if (Math.abs(dy) > Math.abs(dx) || (opening ? dx < 0 : dx > 0)) { drag = null; return }
+        drag.moving = true
+        try { el.setPointerCapture(event.pointerId) } catch { /* the pointer is already gone: nothing to capture */ }
+        sidebar.style.transition = 'none'
+        sidebar.style.visibility = 'visible'
+        drawerBackdrop.style.transition = 'none'
+      }
+      drag.shift = Math.max(-drag.width, Math.min(0, (opening ? -drag.width : 0) + dx))
+      sidebar.style.transform = `translateX(${drag.shift}px)`
+      drawerBackdrop.style.opacity = String(1 + drag.shift / drag.width)
+    })
+    const finish = (event: PointerEvent) => {
+      if (!drag || drag.el !== el || event.pointerId !== drag.id) return
+      const { moving, shift, width } = drag
+      drag = null
+      if (!moving) return
+      ignoreClickUntil = Date.now() + 350
+      setDrawer(1 + shift / width > (opening ? 0.3 : 0.7))
+    }
+    el.addEventListener('pointerup', finish)
+    el.addEventListener('pointercancel', finish)
+  }
+  attachDrag(drawerEdge, true)
+  attachDrag(sidebar, false)
+  attachDrag(drawerBackdrop, false)
+  drawerToggle.addEventListener('click', () => setDrawer(!isDrawerOpen()))
+  drawerClose.addEventListener('click', closeDrawer)
+  drawerBackdrop.addEventListener('click', () => { if (Date.now() > ignoreClickUntil) closeDrawer() })
+  phoneQuery.addEventListener('change', closeDrawer)
+
+  // On a phone the detail panel is a sheet over the lower half of the map, so a pin that is
+  // brought into focus goes in the upper half instead of the middle.
+  function flyToPin(location: L.LatLngExpression, zoom: number, duration: number) {
+    if (!isPhone()) { map.flyTo(location, zoom, { duration }); return }
+    const lowered = map.project(L.latLng(location), zoom).add([0, map.getSize().y * 0.24])
+    map.flyTo(map.unproject(lowered, zoom), zoom, { duration })
+  }
+
   function selectPin(pin: SavedPin, kind: 'sale' | 'buyer') {
+    closeDrawer()
     setArcHighlight(null)
     setSelectedMarker(`${kind}-${pin.id}`)
-    map.flyTo([pin.lat, pin.lng], 15, { duration: 0.8 })
+    flyToPin([pin.lat, pin.lng], 15, 0.8)
     const labels: Record<'sale' | 'buyer', string> = { sale: 'Till salu', buyer: 'Köpare söker' }
     const googleMapsLink = `https://www.google.com/maps/search/?api=1&query=${pin.lat},${pin.lng}`
     const contactLink = `mailto:kontakt@kopanalys.se?subject=${encodeURIComponent(`Kontakt om ${pin.title}`)}`
@@ -290,7 +375,15 @@ export function mountAtlas(root: HTMLElement, options: AtlasOptions = {}): Atlas
     const id = key.slice(separatorIndex + 1)
     const container = kind === 'sale' ? list : kind === 'buyer' ? buyerList : exchangeList
     const item = container.querySelector<HTMLElement>(`.pin-item[data-id="${id}"]`)
-    if (item) { item.classList.add('is-selected'); item.scrollIntoView({ block: 'nearest', behavior: 'smooth' }) }
+    if (item) {
+      item.classList.add('is-selected')
+      // Scroll the sidebar itself and nothing else: Element.scrollIntoView would also move the page,
+      // and the workspace clipping the closed drawer, to reach an item that is off screen.
+      const box = sidebar.getBoundingClientRect()
+      const row = item.getBoundingClientRect()
+      if (row.top < box.top) sidebar.scrollBy({ top: row.top - box.top - 8, behavior: 'smooth' })
+      else if (row.bottom > box.bottom) sidebar.scrollBy({ top: row.bottom - box.bottom + 8, behavior: 'smooth' })
+    }
   }
 
   function setArcHighlight(id: number | null) {
@@ -306,18 +399,23 @@ export function mountAtlas(root: HTMLElement, options: AtlasOptions = {}): Atlas
     const location = pin[which]
     setArcHighlight(pin.id)
     const target: L.LatLngExpression = [location.lat, location.lng]
-    if (map.getZoom() === 15) map.panTo(target, { duration: 0.6 })
-    else map.flyTo(target, 15, { duration: 0.6 })
+    if (!isPhone() && map.getZoom() === 15) map.panTo(target, { duration: 0.6 })
+    else flyToPin(target, 15, 0.6)
     const group = exchangeMarkers.get(pin.id)
     ;(which === 'from' ? group?.from : group?.to)?.openTooltip()
     detailPanel.querySelectorAll<HTMLButtonElement>('.exchange-stop').forEach((button) => button.classList.toggle('is-active', button.dataset.nav === which))
   }
 
   function selectExchangePin(pin: ExchangePin) {
+    closeDrawer()
     setArcHighlight(pin.id)
     setSelectedMarker(`exchange-${pin.id}`)
     const bounds = L.latLngBounds([[pin.from.lat, pin.from.lng], [pin.to.lat, pin.to.lng]])
-    map.flyToBounds(bounds, { padding: [90, 90], maxZoom: 13, duration: 0.8 })
+    // Both ends stay in the upper half of the map on a phone, above the detail sheet.
+    const framing: L.FitBoundsOptions = isPhone()
+      ? { paddingTopLeft: [40, 56], paddingBottomRight: [40, Math.round(map.getSize().y * 0.5) + 24] }
+      : { padding: [90, 90] }
+    map.flyToBounds(bounds, { ...framing, maxZoom: 13, duration: 0.8 })
     const fromMapsLink = `https://www.google.com/maps/search/?api=1&query=${pin.from.lat},${pin.from.lng}`
     const toMapsLink = `https://www.google.com/maps/search/?api=1&query=${pin.to.lat},${pin.to.lng}`
     const contactLink = `mailto:kontakt@kopanalys.se?subject=${encodeURIComponent(`Kontakt om ${pin.title}`)}`
@@ -413,6 +511,7 @@ export function mountAtlas(root: HTMLElement, options: AtlasOptions = {}): Atlas
   async function searchMap(query: string) {
     const normalizedQuery = query.trim().toLocaleLowerCase('sv-SE')
     if (!normalizedQuery) return
+    closeDrawer()
     const saleIndex = pins.findIndex((pin) => `${pin.title} ${pin.note} ${pin.details ?? ''}`.toLocaleLowerCase('sv-SE').includes(normalizedQuery))
     if (saleIndex >= 0) { selectPin(pins[saleIndex], 'sale'); return }
     const buyerIndex = buyerPins.findIndex((pin) => `${pin.title} ${pin.note} ${pin.details ?? ''}`.toLocaleLowerCase('sv-SE').includes(normalizedQuery))
@@ -674,7 +773,7 @@ export function mountAtlas(root: HTMLElement, options: AtlasOptions = {}): Atlas
   function logout() { isLoggedIn = false; localStorage.setItem(loginStorageKey, 'false'); applyAuthState(); myListingsBackdrop.hidden = true }
 
   map.on('click', (event) => { if (pickingTarget) { void applyPickedLocation(pickingTarget, event.latlng); return } void openModal(event.latlng) })
-  root.querySelector('#add-button')!.addEventListener('click', () => openModal(map.getCenter()))
+  root.querySelector('#add-button')!.addEventListener('click', () => { closeDrawer(); void openModal(map.getCenter()) })
   form.querySelectorAll<HTMLButtonElement>('.type-option').forEach((option) => option.addEventListener('click', () => setModalPinKind(option.dataset.pinKind as PinKind)))
   root.querySelector('#modal-close')!.addEventListener('click', closeModal)
   modal.addEventListener('click', (event) => { if (event.target === modal) closeModal() })
@@ -682,7 +781,11 @@ export function mountAtlas(root: HTMLElement, options: AtlasOptions = {}): Atlas
   form.querySelectorAll<HTMLButtonElement>('.map-pick-button').forEach((button) => button.addEventListener('click', () => startPicking(button.dataset.pickTarget as 'note' | 'toNote')))
   form.querySelector<HTMLInputElement>('input[name="note"]')!.addEventListener('blur', (event) => void syncFieldToMap('note', event.currentTarget as HTMLInputElement))
   form.querySelector<HTMLInputElement>('input[name="toNote"]')!.addEventListener('blur', (event) => void syncFieldToMap('toNote', event.currentTarget as HTMLInputElement))
-  const onDocumentKeydown = (event: KeyboardEvent) => { if (event.key === 'Escape' && pickingTarget) { modal.hidden = false; stopPicking() } }
+  const onDocumentKeydown = (event: KeyboardEvent) => {
+    if (event.key !== 'Escape') return
+    if (pickingTarget) { modal.hidden = false; stopPicking() }
+    else if (isDrawerOpen()) closeDrawer()
+  }
   document.addEventListener('keydown', onDocumentKeydown)
   form.addEventListener('click', (event) => {
     const removeButton = (event.target as HTMLElement).closest('.image-preview-remove')
@@ -781,6 +884,7 @@ export function mountAtlas(root: HTMLElement, options: AtlasOptions = {}): Atlas
       suggestionRequestId += 1
       document.removeEventListener('keydown', onDocumentKeydown)
       document.removeEventListener('click', onDocumentClick)
+      phoneQuery.removeEventListener('change', closeDrawer)
       map.stopLocate()
       map.remove()
       root.innerHTML = ''
