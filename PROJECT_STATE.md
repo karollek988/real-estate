@@ -67,6 +67,11 @@ centred again, on `styleRedesign`, since merged to `main`) follows below them, t
   page. Stop the server, delete `frontend/.next`, start again; `next dev --webpack` avoids that code.
   The "extension attributes on `<body>`" hydration warning (Grammarly) is silenced with
   `suppressHydrationWarning` in `app/layout.tsx`.
+- **Opening the dev server from a phone** (`http://192.168.x.x:3001`): `next.config.ts` has to list the
+  origin in `allowedDevOrigins` (it has `192.168.*.*`; add a public address or tunnel by name).
+  Otherwise the dev server answers 403 to the hot-reload socket, the page reloads itself in a loop,
+  and `/karta` stays on "Laddar kartan…" because the map's chunk is never requested. Dev only; a
+  production build ignores it. Changing the setting restarts the dev server by itself.
 
 **Thirteenth session — the admin portal no longer has a map.** On `admin.kopanalys.se` a signed-in
 admin now sees the slim session bar ("Köpanalys Admin" · "Logga ut") above an empty page

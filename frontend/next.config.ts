@@ -44,8 +44,14 @@ const ADMIN_HEADERS = [
 ];
 
 const nextConfig: NextConfig = {
-  // Lets the dev server talk to the admin portal opened at http://admin.localhost:3001.
-  allowedDevOrigins: ["admin.localhost"],
+  // Dev server only (ignored by `next build`). By default it refuses every request that comes from
+  // another origin than localhost, including its hot-reload socket, and a page opened that way then
+  // reloads itself in a loop and never gets as far as mounting the map. Allowed here:
+  //  - the admin portal opened at http://admin.localhost:3001;
+  //  - a phone or another computer on the home network, at http://192.168.x.x:3001 (the pattern
+  //    matches any address of the usual home range; each * is one number).
+  // Anything else, such as a public address or a tunnel, has to be added by name.
+  allowedDevOrigins: ["admin.localhost", "192.168.*.*"],
   async headers() {
     return [
       { source: "/:path*", headers: SECURITY_HEADERS },
