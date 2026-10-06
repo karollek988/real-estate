@@ -91,6 +91,8 @@ $admin-bar: #060a08; // session bar
 $admin-base: #0a0f0d; // login page
 $admin-surface: #0f1417; // login card
 $admin-canvas: #111927; // page background
+$admin-raised: #182026; // a box on a surface: the Markov simulator's state boxes
+$admin-raised-hover: #212b32;
 
 // Text, brightest first
 $admin-text-bright: #f4f6f4;
@@ -122,6 +124,11 @@ $admin-chart-pack-1: #b9efd0; // Områdesanalys
 $admin-chart-pack-2: #4cc487; // Trygghetspaketet
 $admin-chart-pack-3: #2a8c58; // Tre bostäder
 $admin-chart-grey: #8a949d; // older or unknown packages
+// The rest of the Okabe-Ito set, for the Markov simulator's nine states (with the sky, orange, teal
+// and grey above). Lines are also told apart by dash pattern, and every state is named in text.
+$admin-chart-yellow: #f0e442; // registered
+$admin-chart-purple: #cc79a7; // reactivated
+$admin-chart-vermillion: #d55e00; // churned
 
 // BankID sign-in button (the demo's mock sign-in, not rendered on the public map)
 $bankid-blue: #1a3c5e;

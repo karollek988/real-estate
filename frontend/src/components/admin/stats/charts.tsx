@@ -121,8 +121,7 @@ function indexAt(event: ReactPointerEvent<SVGElement>, svg: SVGSVGElement | null
   return Math.min(n - 1, Math.max(0, index));
 }
 
-function Tooltip({ g, x, lines }: { g: Geometry; x: number; lines: { text: string; className?: string; strong?: boolean }[] }) {
-  const width = 150;
+function Tooltip({ g, x, lines, width = 150 }: { g: Geometry; x: number; lines: { text: string; className?: string; strong?: boolean }[]; width?: number }) {
   const height = 14 + lines.length * 17;
   const left = Math.min(Math.max(x - width / 2, g.L), g.W - g.R - width);
   return (
@@ -183,6 +182,67 @@ export function AreaChart({
           <line className="chart-cursor" x1={x(hover)} x2={x(hover)} y1={g.T} y2={g.T + g.innerH} />
           <circle className="chart-dot" cx={x(hover)} cy={y(values[hover])} r={4.5} />
           <Tooltip g={g} x={x(hover)} lines={[{ text: labels[hover] }, { text: `${formatInt(values[hover])} ${valueLabel}`, strong: true }]} />
+        </>
+      )}
+    </svg>
+  );
+}
+
+// ── line chart: several series over time ─────────────────────────────────────
+
+export interface LineSeries {
+  key: string;
+  label: string;
+  values: number[];
+  /** an SVG dash pattern, so a line can be told apart by more than its colour */
+  dash?: string;
+  /** a thicker line, for the one that matters most */
+  heavy?: boolean;
+}
+
+/** A series may be shorter than the labels (a comparison run over fewer months); it just stops. */
+export function LineChart({ labels, series, ariaLabel }: { labels: string[]; series: LineSeries[]; ariaLabel: string }) {
+  const [svg, width] = useWidth();
+  const g = geometry(width);
+  const [hover, setHover] = useState<number | null>(null);
+  const n = labels.length;
+  const top = Math.max(0, ...series.map((s) => Math.max(0, ...s.values)));
+  const scale = niceScale(top, top >= 8);
+  const x = (i: number) => (n > 1 ? g.L + (i / (n - 1)) * g.innerW : g.L + g.innerW / 2);
+  const y = (v: number) => g.T + g.innerH - (v / scale.max) * g.innerH;
+  const path = (values: number[]) => values.map((v, i) => `${i === 0 ? "M" : "L"}${x(i).toFixed(1)},${y(v).toFixed(1)}`).join(" ");
+
+  return (
+    <svg
+      ref={svg}
+      className="chart"
+      viewBox={`0 0 ${g.W} ${g.H}`}
+      role="img"
+      aria-label={ariaLabel}
+      onPointerMove={(e) => setHover(indexAt(e, svg.current, g, n, "points"))}
+      onPointerLeave={() => setHover(null)}
+    >
+      <Axes g={g} labels={labels} scale={scale} x={x} />
+      {series.map((s) => (
+        <path key={s.key} className={`chart-line series-${s.key}${s.heavy ? " is-heavy" : ""}`} d={path(s.values)} strokeDasharray={s.dash} />
+      ))}
+      {hover !== null && (
+        <>
+          <line className="chart-cursor" x1={x(hover)} x2={x(hover)} y1={g.T} y2={g.T + g.innerH} />
+          {series
+            .filter((s) => hover < s.values.length)
+            .map((s) => (
+              <circle key={s.key} className={`chart-dot series-${s.key}`} cx={x(hover)} cy={y(s.values[hover])} r={3.5} />
+            ))}
+          <Tooltip
+            g={g}
+            x={x(hover)}
+            width={206}
+            lines={[
+              { text: labels[hover] },
+              ...series.filter((s) => hover < s.values.length).map((s) => ({ text: `${s.label}: ${formatInt(s.values[hover])}`, className: `legend-text series-${s.key}` })),
+            ]}
+          />
         </>
       )}
     </svg>

@@ -1,6 +1,6 @@
 import { useRef, useState, useSyncExternalStore, type KeyboardEvent } from "react";
 import type { AdminStatsResult } from "@/lib/admin/stats";
-import { MarkovPanel } from "./stats/MarkovPanel";
+import { MarkovSimulator } from "./markov/MarkovSimulator";
 import { StatsPanel } from "./stats/StatsPanel";
 
 const TABS = [
@@ -107,12 +107,12 @@ export function AdminShell({ stats }: { stats: AdminStatsResult }) {
 
       <main className="admin-content">
         <div className="admin-page">
-          {/* both pages stay in the document, so the chosen period survives a trip to the other tab */}
+          {/* both pages stay in the document, so the chosen period (and the simulator's edits) survive a trip to the other tab */}
           <div role="tabpanel" id="admin-panel-stats" aria-labelledby="admin-tab-stats" hidden={tab !== "stats"}>
             <StatsPanel result={stats} />
           </div>
           <div role="tabpanel" id="admin-panel-markov" aria-labelledby="admin-tab-markov" hidden={tab !== "markov"}>
-            <MarkovPanel />
+            <MarkovSimulator />
           </div>
         </div>
       </main>

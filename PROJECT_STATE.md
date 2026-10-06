@@ -5,11 +5,62 @@
 > otherwise leave it alone. Detailed research/product docs live in `docs/`;
 > this file is the "what's actually true right now" summary.
 
-Last updated: 2026-10-06 — Fifteenth session (admin statistics and visitor counting; not committed, and
-**the migration is not applied anywhere**). Before it: the fourteenth (the map page on the master
+Last updated: 2026-10-07 — Sixteenth session (the Markov simulator's state model and simulator; **not
+committed**). Before it: the fifteenth (admin statistics and visitor counting; pushed as `d225e80`, whether the
+migration has been applied in Supabase is for the user to confirm), the fourteenth (the map page on the master
 variables) and the thirteenth (admin portal map removed), both on `main`; then the twelfth, eleventh, tenth.
 
+**Sixteenth session — the "Markov-simulator" tab is built (customer state model + simulator).**
+Step one of the user's plan; the two layers above it are *not built* and the simulator is made to be fed by them.
+- **The plan the user gave:** (1) a customer state model, S0 Never visited … S7 Reactivated; (2) a customer
+  acquisition model — Google/SEO, social, ads **and AI search engines** → visitors → engaged → premium; (3) a
+  marketing structure on top: marketing strategy → acquisition model → new potential users → Markov model →
+  revenue/costs → company KPIs. Scope chosen by the user for this round: **state model + simulator only**.
+  The tab shows the six-step chain as a strip with "Byggd" on the Markov step and "Kommer" on the rest.
+- **Decisions the user made:** nine states, not eight — **S8 Bounce** was added because their diagram has it
+  (visited→bounce); churn flow **"hybrid"** (see `EDGES`: engaged→inactive; registered→inactive/churned;
+  premium→inactive/churned; inactive→churned/reactivated; churned→reactivated with a tiny chance; reactivated→
+  engaged/premium/inactive; bounce→visited at 0 until set); time step **one month**. Premium = a **paying
+  customer** (the product sells one-time packages 99/499/999 kr, no subscription) — *how revenue follows from
+  Premium is not decided: ask the user when the revenue layer is built*. S0 is not a population: it is the source,
+  and "Nya besökare per månad" (default 3 000) is what leaves it — that one number is where the acquisition model
+  plugs in later.
+- **Code:** `lib/markov/model.ts` (states, allowed moves, defaults, `buildMatrix`), `engine.ts` (`simulate`:
+  expected populations, deterministic, arrivals added to Visited at the start of each month and then everyone
+  moves; `cohort`: what becomes of 1 000 new visitors, with "ever premium" and mean month to first premium),
+  `fields.ts` (the boxes as text — Swedish decimal comma, `%`, spaces — parsed and checked: per-box errors, a
+  row over 100 % is an error, months only 12/24/36, saved settings versioned and never trusted),
+  `markov.verify.mjs` (59 checks, incl. closed-form chains and that every move has an arrow in the diagram, each
+  arrow starting and ending on the right boxes). UI in `components/admin/markov/`: `MarkovSimulator.tsx`,
+  `StateDiagram.tsx` + `diagramLayout.ts` (hand-placed SVG, pick a state to see its arrows get thicker with the
+  chance and be labelled; also written out in words; keyboard-operable), `store.ts` (settings in this browser's
+  localStorage via `useSyncExternalStore`, so no hydration mismatch). `LineChart` added to `stats/charts.tsx`;
+  tokens `$admin-chart-yellow/-purple/-vermillion`, `$admin-raised(-hover)`; state colours are Okabe-Ito and the
+  lines also differ by dash pattern. The old placeholder `stats/MarkovPanel.tsx` is deleted.
+- **What it does:** every probability is a box (17 of them, grouped per state; "stannar kvar" is what is left);
+  start populations and months; results — premium after N months, premium entries, share of visitors that ever
+  become premium, mean time to first premium; a population-per-state chart (states can be switched on/off;
+  Bounce/Visited are off at first as they dwarf the rest); premium over time; the 1 000-visitor cohort; tables
+  (month by month, the 8×8 matrix); an explanation. **"Spara som utgångsläge"** keeps the current boxes as a
+  baseline: changed boxes are marked (orange, "utgångsläge: …"), results show the change and a second line.
+  Bad input never produces numbers: the results are replaced by a "Resultatet väntar" notice and a sticky bar
+  says how many boxes need fixing. A sticky bar with the headline numbers stays in view while editing.
+- **The default probabilities are placeholders, not measurements** (tuned so a new visitor has ≈3 % chance of
+  ever buying; example run: 795 premium after 24 months, 1 724 premium entries) — the site does not measure
+  registration, engagement or return yet. The page says so in a banner.
+- **Verified:** `tsc`, eslint, `markov.verify.mjs`, the earlier `stats`/`analytics`/`admin` verify scripts, and
+  headless Chrome (42 checks) against scratch copies in **both** `next dev --webpack` and a production
+  `next build --webpack` + `next start` under the real admin CSP: defaults, picking states by mouse and keyboard,
+  editing, invalid box and over-100 % row, baseline compare, month-count mismatch, chart toggles and tooltips,
+  tables, persistence across reload, damaged saved settings, reset, phone (no sideways page scroll, sticky bar,
+  16 px inputs) and tablet — no console errors or warnings. (Turbopack can't build from the scratch copy's
+  `node_modules` junction, so Turbopack itself was not run on this code.)
+- **Next (not started):** the acquisition model (SEO, ads, social, AI search engines → new visitors per month),
+  the marketing-strategy layer, revenue/costs/KPIs (needs the revenue answer above), optionally Monte Carlo runs
+  for ranges, and calibrating the probabilities from real statistics once registration/engagement are measured.
+
 **Fifteenth session — the admin portal's page is now statistics + a placeholder for the Markov simulator.**
+(The placeholder was replaced in the sixteenth session, above.)
 After login on `admin.kopanalys.se`: the session bar, two tabs ("Statistik", "Markov-simulator"; the open tab
 is kept in the address as `#markov`), and the tab's page. Everything is Swedish.
 - **What the statistics page shows** (`components/admin/stats/`, data from `lib/admin/stats*.ts`): visitors,
@@ -45,8 +96,7 @@ is kept in the address as `#markov`), and the tab's page. Everything is Swedish.
 - **Dev preview without data:** `ADMIN_STATS_DEMO=1` (development only; the loader ignores it in production)
   shows deterministic made-up numbers under a "Demodata" banner. Documented in `.env.example` with
   `ANALYTICS_HASH_SECRET`.
-- **Markov simulator tab:** only a placeholder ("Kommer snart"); what it takes as input and how it works is not
-  decided, and the text says so.
+- **Markov simulator tab:** a placeholder in this session ("Kommer snart"); built in the sixteenth.
 - **Verified:** `analytics.verify.mjs` (48: devices, bots, the daily hash, the Swedish day, and the beacon
   route with the outgoing database call intercepted — only day, hash and device leave), `stats.verify.mjs` (45:
   day building, purchases bucketed by Swedish day, revenue, ranges, the loader against a stand-in REST server

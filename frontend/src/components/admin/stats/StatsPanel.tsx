@@ -240,7 +240,7 @@ function Kpi({ label, value, delta, range, note }: { label: string; value: strin
 }
 
 /** The arrow and the words carry the direction; the colour only echoes it. */
-function Delta({ value }: { value: number | null }) {
+export function Delta({ value }: { value: number | null }) {
   if (value === null) return <span className="delta is-none">ingen jämförelse ännu</span>;
   const rounded = Math.round(Math.abs(value) * 100);
   if (rounded === 0) return <span className="delta is-flat">▬ oförändrat</span>;
