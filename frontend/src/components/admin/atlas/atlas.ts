@@ -191,7 +191,7 @@ export function mountAtlas(root: HTMLElement, options: AtlasOptions = {}): Atlas
   const map = L.map(root.querySelector<HTMLElement>('#map')!, { zoomControl: false })
   const swedenBounds = L.latLngBounds([[55.0, 10.5], [69.2, 24.2]])
   map.fitBounds(swedenBounds, { padding: [28, 28] })
-  const streetLayer = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { attribution: '&copy; OpenStreetMap contributors', maxZoom: 19 }).addTo(map)
+  const streetLayer = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { attribution: '&copy; OpenStreetMap contributors', maxZoom: 19, className: 'map-tiles-street' }).addTo(map)
   const satelliteLayer = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', { attribution: 'Tiles &copy; Esri', maxZoom: 19 })
   const transitLayer = L.tileLayer('https://{s}.tiles.openrailwaymap.org/standard/{z}/{x}/{y}.png', { attribution: 'Railway data &copy; <a href="http://www.openrailwaymap.org/">OpenRailwayMap</a> contributors (CC-BY-SA)', maxZoom: 19, opacity: 0.9, zIndex: 650 })
 
@@ -203,7 +203,8 @@ export function mountAtlas(root: HTMLElement, options: AtlasOptions = {}): Atlas
   const pendingToPinIcon = L.divIcon({ className: 'pending-pin pending-pin-to', html: '<span></span>', iconSize: [18, 18], iconAnchor: [9, 9] })
   const markers = new Map<number, L.Marker>()
   const buyerMarkers = new Map<number, L.Marker>()
-  const exchangeMarkers = new Map<number, { from: L.Marker; to: L.Marker; arc: L.Polyline }>()
+  // The arc is the dashed route line; the casing is the wider white line drawn under it (its halo).
+  const exchangeMarkers = new Map<number, { from: L.Marker; to: L.Marker; arc: L.Polyline; casing: L.Polyline }>()
   const list = root.querySelector<HTMLDivElement>('#pin-list')!
   const buyerList = root.querySelector<HTMLDivElement>('#buyer-list')!
   const exchangeList = root.querySelector<HTMLDivElement>('#exchange-list')!
@@ -392,9 +393,12 @@ export function mountAtlas(root: HTMLElement, options: AtlasOptions = {}): Atlas
   function setArcHighlight(id: number | null) {
     exchangeMarkers.forEach((group, groupId) => {
       const active = groupId === id
-      group.arc.setStyle({ weight: active ? 5 : 2, opacity: active ? 1 : id === null ? 0.8 : 0.2 })
+      // The others fade back while one is highlighted; the casing is always a little wider than its line.
+      const faded = id !== null && !active
+      group.casing.setStyle({ weight: active ? 10 : 7, opacity: faded ? 0.2 : 0.9 })
+      group.arc.setStyle({ weight: active ? 6 : 3.5, opacity: faded ? 0.25 : 1 })
       group.arc.getElement()?.classList.toggle('exchange-arc-active', active)
-      if (active) group.arc.bringToFront()
+      if (active) { group.casing.bringToFront(); group.arc.bringToFront() }
     })
   }
 
@@ -571,7 +575,7 @@ export function mountAtlas(root: HTMLElement, options: AtlasOptions = {}): Atlas
     markers.clear()
     buyerMarkers.forEach((marker) => marker.remove())
     buyerMarkers.clear()
-    exchangeMarkers.forEach((group) => { group.from.remove(); group.to.remove(); group.arc.remove() })
+    exchangeMarkers.forEach((group) => { group.from.remove(); group.to.remove(); group.arc.remove(); group.casing.remove() })
     exchangeMarkers.clear()
     root.querySelectorAll<HTMLElement>('.pin-list[data-filter-section]').forEach((section) => { section.hidden = !visibleKinds[section.dataset.filterSection as PinKind] })
     root.querySelectorAll<HTMLButtonElement>('.list-heading[data-filter-section], .legend-item[data-filter-section]').forEach((toggle) => {
@@ -588,10 +592,14 @@ export function mountAtlas(root: HTMLElement, options: AtlasOptions = {}): Atlas
     if (isFilterVisible('sale')) pins.forEach((pin, index) => { const marker = L.marker([pin.lat, pin.lng], { icon: pinIcon }).addTo(map).bindTooltip(`${index + 1}. ${esc(pin.title)}`, { direction: 'top', offset: [0, -28] }).on('click', () => selectPin(pin, 'sale')); markers.set(pin.id, marker) })
     if (isFilterVisible('buyer')) buyerPins.forEach((pin, index) => { const marker = L.marker([pin.lat, pin.lng], { icon: buyerPinIcon }).addTo(map).bindTooltip(`Köpare ${index + 1}. ${esc(pin.title)}`, { direction: 'top', offset: [0, -28] }).on('click', () => selectPin(pin, 'buyer')); buyerMarkers.set(pin.id, marker) })
     if (isFilterVisible('exchange')) exchangePins.forEach((pin, index) => {
-      const arc = L.polyline(buildArc(pin.from.lat, pin.from.lng, pin.to.lat, pin.to.lng), { className: 'exchange-arc', weight: 2, opacity: 0.8, dashArray: '1 10', lineCap: 'round' }).addTo(map)
+      const path = buildArc(pin.from.lat, pin.from.lng, pin.to.lat, pin.to.lng)
+      // Added first, so it lies under the arc. Colours are the stylesheet's (see .exchange-arc in the workspace mixin).
+      const casing = L.polyline(path, { className: 'exchange-arc-casing', weight: 7, opacity: 0.9, lineCap: 'round', lineJoin: 'round', interactive: false }).addTo(map)
+      // dashArray: 9 + 8 = the 17 px period the stylesheet's flow animation loops over
+      const arc = L.polyline(path, { className: 'exchange-arc', weight: 3.5, opacity: 1, dashArray: '9 8', lineCap: 'butt' }).addTo(map)
       const fromMarker = L.marker([pin.from.lat, pin.from.lng], { icon: exchangeFromIcon }).addTo(map).bindTooltip(`Byte ${index + 1}: ${esc(pin.title)}`, { direction: 'top', offset: [0, -28] }).on('click', () => selectExchangePin(pin))
       const toMarker = L.marker([pin.to.lat, pin.to.lng], { icon: exchangeToIcon }).addTo(map).bindTooltip(`Byte ${index + 1}: vill bo i ${esc(pin.to.note)}`, { direction: 'top', offset: [0, -28] }).on('click', () => selectExchangePin(pin))
-      exchangeMarkers.set(pin.id, { from: fromMarker, to: toMarker, arc })
+      exchangeMarkers.set(pin.id, { from: fromMarker, to: toMarker, arc, casing })
     })
     list.querySelectorAll<HTMLButtonElement>('.pin-item').forEach((item) => item.addEventListener('click', () => { const index = pins.findIndex((candidate) => candidate.id === Number(item.dataset.id)); if (index >= 0) selectPin(pins[index], 'sale') }))
     buyerList.querySelectorAll<HTMLButtonElement>('.pin-item').forEach((item) => item.addEventListener('click', () => { const index = buyerPins.findIndex((candidate) => candidate.id === Number(item.dataset.id)); if (index >= 0) selectPin(buyerPins[index], 'buyer') }))

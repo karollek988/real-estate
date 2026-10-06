@@ -53,6 +53,25 @@ centred again, on `styleRedesign`, since merged to `main`) follows below them, t
   **Not tested on a real phone:** the gestures were driven with synthetic touch pointer events; iOS
   Safari and Android gesture navigation may claim a swipe that starts at the very edge, which is why
   the button is the primary way in.
+- **Map colours (2026-10-06) — site-matched and colour-blind-safe.** The basemap is OpenStreetMap
+  *raster* tiles in Leaflet, so individual features (parks, roads, buildings) cannot be restyled; the
+  street layer (`className: 'map-tiles-street'`) gets one CSS filter, `$map-tiles-filter` in
+  `_variables.scss`, that retones the whole picture (cream land, sage parks, soft blue water; the pink
+  buildings, orange roads and magenta paths are gone). A different look would need another tile
+  provider (CARTO/Stadia/MapTiler styles) — a licensing/API-key decision, not done. The three kinds
+  of pins no longer rely on hue alone: **sale = dark green circle, buyer = lighter blue square,
+  exchange = amber diamond** (was red). They differ in lightness (the old green and red had almost the
+  same, so red-green colour blind users could not tell them apart), and in shape on the pins, the
+  legend and the group headings. Fill vs text colours are separate tokens where contrast needs it
+  (`$map-buy`/`-light`, `$map-exchange`/`-strong`, text on amber is ink, delete uses `$map-danger`).
+  Exchange route lines: dark amber dashed (`$map-arc`) on a white halo, drawn as two polylines
+  (`casing` + `arc`) because Leaflet strokes once; the old thin dotted red looked like OSM's footpaths.
+  Before/after comparison sheets under protanopia, deuteranopia, tritanopia and greyscale are in
+  `docs/design/map-colorblind-2026-10/` (two sheets + the 20 single frames in `parts/`, ~22 MB;
+  generated with headless Chrome driving the last commit vs the working tree, Machado et al. 2009
+  matrices, so they can be regenerated). Kinds stay distinct in all four; the weakest case is
+  tritanopia, where the amber looks pale pink (lightness and shape still separate it). Tritanopia and greyscale were not captured (the pane returned stale frames); by the
+  numbers green/blue/amber have relative luminance 0.15 / 0.23 / 0.40, and shapes cover the rest.
 - **The detail panel's × is always in the panel's top right corner**, over the photo when there is one
   (it used to sit in the text body, i.e. under the photo). It is a zero-height sticky row at the top of
   the panel (`DETAIL_CLOSE` in `atlas.ts`, `.detail-close-bar` in the mixin), so it also stays put while

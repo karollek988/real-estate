@@ -433,7 +433,7 @@
   }
 
   .exchange-heading strong {
-    color: $map-exchange;
+    color: $map-exchange-strong;
   }
 
   .heading-dot {
@@ -448,13 +448,13 @@
   }
 
   .buyer-heading .heading-dot {
-    background: $map-buy;
+    background: $map-buy-light;
     border-color: $map-buy;
   }
 
   .exchange-heading .heading-dot {
     background: $map-exchange;
-    border-color: $map-exchange;
+    border-color: $map-exchange-strong;
   }
 
   .list-heading.is-off .heading-dot {
@@ -499,10 +499,10 @@
 
   .exchange-item.is-selected {
     background: rgba($map-exchange, 0.08);
-    box-shadow: inset 3px 0 0 $map-exchange;
+    box-shadow: inset 3px 0 0 $map-exchange-strong;
 
     .item-arrow {
-      color: $map-exchange;
+      color: $map-exchange-strong;
     }
   }
 
@@ -559,7 +559,7 @@
   }
 
   .exchange-item .pin-number {
-    color: $white;
+    color: $map-on-exchange;
     background: rgba($map-exchange, 0.8);
   }
 
@@ -643,8 +643,10 @@
     }
   }
 
-  .leaflet-tile {
-    filter: saturate(.88) brightness(1.02) contrast(1.01);
+  // The street tiles' layer (className in atlas.ts), retoned as one picture; the
+  // satellite and rail layers keep their own colours.
+  .map-tiles-street {
+    filter: $map-tiles-filter;
   }
 
   .leaflet-control-attribution {
@@ -662,7 +664,8 @@
       background: $map-sell;
       border: 3px solid $white;
       border-radius: 50% 50% 50% 2px;
-      box-shadow: 0 1px 3px rgba($map-wash, 0.35);
+      // A thin dark ring under the white edge keeps every pin's outline visible on pale ground
+      box-shadow: 0 0 0 1px rgba($map-wash, 0.38), 0 1px 3px rgba($map-wash, 0.3);
       transform: rotate(-45deg);
       transition: transform .2s $ease-out-back, box-shadow .2s ease;
     }
@@ -673,25 +676,33 @@
 
     span {
       transform: rotate(-45deg) scale(1.4);
-      box-shadow: 0 5px 14px rgba($map-wash, 0.4);
+      box-shadow: 0 0 0 1px rgba($map-wash, 0.45), 0 5px 14px rgba($map-wash, 0.4);
     }
   }
 
+  // The mark inside a pin says the kind in shape, so colour is not the only cue:
+  // sale = circle, buyer = square, exchange = diamond. (The pin is turned -45deg,
+  // so the buyer's square is turned back by 45deg to stand upright, and the
+  // exchange's square is left to become a diamond.)
   .custom-pin span::after {
     content: '';
     display: block;
-    width: 5px;
-    height: 5px;
-    margin: 7px;
+    width: 7px;
+    height: 7px;
+    margin: 6px;
     background: $white;
     border-radius: 50%;
   }
 
   .custom-buyer-pin span {
-    background: $map-buy;
+    background: $map-buy-light;
 
     &::after {
-      background: $white;
+      width: 6px;
+      height: 6px;
+      margin: 6.5px;
+      border-radius: 1px;
+      transform: rotate(45deg);
     }
   }
 
@@ -699,7 +710,11 @@
     background: $map-exchange;
 
     &::after {
-      background: $white;
+      width: 6px;
+      height: 6px;
+      margin: 6.5px;
+      border-radius: 1px;
+      background: $map-on-exchange;
     }
   }
 
@@ -708,7 +723,7 @@
     border-color: $map-exchange;
 
     &::after {
-      background: $map-exchange;
+      background: $map-exchange-strong;
     }
   }
 
@@ -728,7 +743,7 @@
   }
 
   .pending-pin-to span {
-    border-color: $map-amber;
+    border-color: $map-exchange;
   }
 
   @keyframes #{$keyframe-prefix}pending-pulse {
@@ -749,16 +764,24 @@
     }
   }
 
-  // The line's colour lives here, not in atlas.ts: a CSS rule beats the stroke
-  // attribute Leaflet sets, so the arc follows $map-exchange.
+  // The route line between the two ends of an exchange. Its colours live here, not
+  // in atlas.ts: a CSS rule beats the stroke attribute Leaflet sets. A thin dotted
+  // red line is how OpenStreetMap draws footpaths, which is why the old arc blended
+  // into the map; this is a dashed line in dark amber on a white halo (atlas.ts draws
+  // the halo as a wider line underneath, in the same path).
+  .exchange-arc-casing {
+    stroke: $map-arc-halo;
+  }
+
   .exchange-arc {
-    stroke: $map-exchange;
+    stroke: $map-arc;
     animation: #{$keyframe-prefix}exchange-arc-flow 1.4s linear infinite;
   }
 
+  // One dash period (9 + 8, see atlas.ts), so the loop is seamless
   @keyframes #{$keyframe-prefix}exchange-arc-flow {
     to {
-      stroke-dashoffset: -22;
+      stroke-dashoffset: -17;
     }
   }
 
@@ -769,7 +792,7 @@
   }
 
   .exchange-arc-active {
-    filter: drop-shadow(0 0 5px rgba($map-exchange, 0.45));
+    filter: drop-shadow(0 0 4px rgba($map-arc, 0.5));
   }
 
   .search-pin {
@@ -921,17 +944,30 @@
   }
 
   .legend-item[data-filter-section="buyer"] .legend-dot {
-    background: $map-buy;
+    background: $map-buy-light;
     border-color: $map-buy;
   }
 
   .legend-item[data-filter-section="exchange"] .legend-dot {
     background: $map-exchange;
-    border-color: $map-exchange;
+    border-color: $map-exchange-strong;
   }
 
   .legend-item.is-off .legend-dot {
     background: transparent;
+  }
+
+  // The same shapes as the pins, so the legend and the group headings can be read
+  // without telling the colours apart: sale = circle, buyer = square, exchange = diamond.
+  .buyer-heading .heading-dot,
+  .legend-item[data-filter-section="buyer"] .legend-dot {
+    border-radius: 2px;
+  }
+
+  .exchange-heading .heading-dot,
+  .legend-item[data-filter-section="exchange"] .legend-dot {
+    border-radius: 1px;
+    transform: rotate(45deg) scale(0.82);
   }
 
   .modal-backdrop {
@@ -1061,7 +1097,7 @@
   }
 
   .my-listing-tag-exchange {
-    color: $white;
+    color: $map-on-exchange;
     background: $map-exchange;
   }
 
@@ -1086,8 +1122,8 @@
 
   .my-listing-delete:hover {
     color: $white;
-    background: $map-exchange;
-    border-color: $map-exchange;
+    background: $map-danger;
+    border-color: $map-danger;
   }
 
   .address-input {
@@ -1252,7 +1288,7 @@
     box-shadow: 0 2px 6px rgba($black, 0.333);
 
     &:hover {
-      color: $map-exchange;
+      color: $map-danger;
     }
   }
 
@@ -1463,7 +1499,7 @@
   }
 
   .detail-tag-exchange {
-    color: $white;
+    color: $map-on-exchange;
     background: $map-exchange;
   }
 
@@ -1499,7 +1535,7 @@
   }
 
   .exchange-stop:focus-visible {
-    outline: 2px solid $map-exchange;
+    outline: 2px solid $map-exchange-strong;
     outline-offset: -2px;
   }
 
@@ -1536,13 +1572,13 @@
 
   .exchange-dot-to {
     background: transparent;
-    border: 2px solid $map-exchange;
+    border: 2px solid $map-exchange-strong;
   }
 
   .exchange-route-arrow {
     flex: 0 0 auto;
     align-self: center;
-    color: $map-exchange;
+    color: $map-exchange-strong;
     font-size: 15px;
   }
 

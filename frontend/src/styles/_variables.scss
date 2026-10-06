@@ -142,12 +142,29 @@ $map-accent: $ka-green-700; // links, icons, active states, seller pins
 $map-accent-hover: $ka-green-800;
 $map-sell: $ka-green-600; // seller pins, dots and counts: a shade brighter, so a dense cluster of pins stays readable
 
-// Pins: green sells, blue buys, red exchanges, amber is pending. The brand
-// palette has no blue; this one is calm enough to sit with the greens.
-$map-buy: #2f67b1;
+// Pins: green sells, blue buys, amber exchanges. Chosen so they stay apart for
+// people with red-green colour blindness: green, blue and amber differ in
+// lightness as well as hue (a red and a green of the same lightness, the usual
+// map pair, look alike), and the map also gives each kind its own shape - circle,
+// square, diamond - so colour is never the only cue. The brand palette has no
+// blue or amber; these two sit well with the greens and the cream.
+$map-buy: #2f67b1; // text, buttons, bars and rings (5.6:1 on paper)
+$map-buy-light: #4a86d0; // fills of pins and dots: lighter than the seller green, so the two differ in lightness too
 $map-buy-hover: #285a9c;
-$map-exchange: $ka-red-600;
-$map-amber: #c98a1b;
+$map-exchange: #e0a122; // pins and dots
+$map-exchange-strong: #9a5a00; // lines, bars and text on light surfaces (5:1 on paper)
+$map-on-exchange: $ka-ink; // text on the amber (white would not be readable)
+$map-danger: $ka-red-600; // destructive actions: deleting a listing
+
+// The route line between the two ends of an exchange: dark amber with a white halo.
+$map-arc: $map-exchange-strong;
+$map-arc-halo: $white;
+
+// Base map. The OpenStreetMap tiles are raster pictures, so their colours cannot
+// be restyled feature by feature; this filter retones the whole picture toward the
+// site (cream land, sage parks, soft blue water) and takes the noise out of it
+// (pink buildings, orange roads, magenta paths), so the pins and lines carry the colour.
+$map-tiles-filter: saturate(0.5) sepia(0.14) hue-rotate(-4deg) contrast(0.92) brightness(1.04);
 
 // Light chrome floating over the tiles
 $map-tiles-bg: $ka-sage; // shown before the tiles load
