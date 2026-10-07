@@ -2,6 +2,13 @@
 // (frontend/src/app/api/auth/send-email/route.ts) — signup confirmation plus
 // password recovery, magic link, email change, and reauthentication, so none
 // of those silently break once the hook takes over all auth email delivery.
+//
+// The words are in the "emails" messages (src/i18n/messages/<language>/emails.ts); each function takes the
+// language the e-mail is written in.
+
+import { getTranslations } from "next-intl/server";
+import { DEFAULT_LOCALE, LOCALES, type AppLocale } from "@/i18n/locales";
+import type { Translator } from "@/i18n/translator";
 
 const BRAND = {
   darkBg: "#111927",
@@ -22,10 +29,10 @@ function escapeHtml(value: string): string {
     .replace(/'/g, "&#39;");
 }
 
-function renderShell(preheader: string, bodyHtml: string): string {
+function renderShell(locale: AppLocale, t: Translator, preheader: string, bodyHtml: string): string {
   const logoUrl = `${siteUrl()}/kopanalys-bostad-logo.png`;
   return `<!doctype html>
-<html lang="sv">
+<html lang="${LOCALES[locale].htmlLang}">
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
@@ -50,7 +57,7 @@ function renderShell(preheader: string, bodyHtml: string): string {
             <tr>
               <td style="padding:20px 28px; border-top:1px solid #e5e7eb; background-color:#fafafa;">
                 <p style="margin:0; font-size:12px; line-height:1.6; color:${BRAND.textMuted};">
-                  Köpanalys &middot; Frågor? Skriv till
+                  Köpanalys &middot; ${escapeHtml(t("footer"))}
                   <a href="mailto:kontakt@kopanalys.se" style="color:${BRAND.green}; text-decoration:underline;">kontakt@kopanalys.se</a>
                 </p>
               </td>
@@ -75,113 +82,98 @@ function ctaButton(url: string, label: string): string {
   </table>`;
 }
 
-export function renderSignupConfirmationEmail(params: {
+/** The small print under a button: the same address as plain text, for when the button does not work. */
+function fallbackLink(t: Translator, url: string): string {
+  return `<p style="margin:0; font-size:12px; line-height:1.5; color:${BRAND.textMuted};">
+      ${escapeHtml(t("fallbackLink"))}<br />
+      <a href="${url}" style="color:${BRAND.green}; word-break:break-all;">${url}</a>
+    </p>`;
+}
+
+async function emailTexts(locale: AppLocale): Promise<Translator & { has: (key: string) => boolean }> {
+  return (await getTranslations({ locale, namespace: "emails" })) as unknown as Translator & { has: (key: string) => boolean };
+}
+
+export async function renderSignupConfirmationEmail(params: {
   firstName: string | null;
   confirmUrl: string;
-}): { subject: string; html: string } {
+  locale?: AppLocale;
+}): Promise<{ subject: string; html: string }> {
+  const locale = params.locale ?? DEFAULT_LOCALE;
+  const t = await emailTexts(locale);
   const greetingName = params.firstName?.trim() || "";
-  const greeting = greetingName ? `Hej ${escapeHtml(greetingName)}!` : "Hej!";
+  const greeting = greetingName ? escapeHtml(t("signup.greetingNamed", { name: greetingName })) : escapeHtml(t("signup.greeting"));
 
   const body = `
     <h1 style="margin:0 0 12px; font-size:20px; font-weight:700; color:#111927;">${greeting}</h1>
     <p style="margin:0 0 8px; font-size:15px; line-height:1.6; color:#374151;">
-      Tack för att du skapat ett konto hos Köpanalys! Bekräfta din e-postadress för att komma igång.
+      ${escapeHtml(t("signup.body"))}
     </p>
-    ${ctaButton(params.confirmUrl, "Bekräfta mitt konto")}
-    <p style="margin:0; font-size:12px; line-height:1.5; color:${BRAND.textMuted};">
-      Om knappen inte fungerar, kopiera in den här länken i din webbläsare:<br />
-      <a href="${params.confirmUrl}" style="color:${BRAND.green}; word-break:break-all;">${params.confirmUrl}</a>
-    </p>
+    ${ctaButton(params.confirmUrl, t("signup.button"))}
+    ${fallbackLink(t, params.confirmUrl)}
   `;
 
   return {
-    subject: "Bekräfta ditt konto hos Köpanalys",
-    html: renderShell("Bekräfta din e-postadress för att aktivera ditt Köpanalys-konto.", body),
+    subject: t("signup.subject"),
+    html: renderShell(locale, t, t("signup.preheader"), body),
   };
 }
 
-// Supabase's Send Email Hook can carry any of a larger set of
-// email_action_type values (invite, email, and several *_notification
-// types beyond these) — GENERIC_COPY covers every type this app's UI/API
-// can actually trigger today; DEFAULT_COPY is a safe branded fallback for
-// anything else, so an action type we didn't anticipate (or one Supabase
-// adds later) still gets a real email instead of silently being dropped.
-const GENERIC_COPY: Record<string, { subject: string; heading: string; body: string; cta: string }> = {
-  recovery: {
-    subject: "Återställ ditt lösenord — Köpanalys",
-    heading: "Återställ ditt lösenord",
-    body: "Vi har fått en begäran om att återställa lösenordet för ditt Köpanalys-konto. Klicka på knappen nedan för att välja ett nytt lösenord.",
-    cta: "Återställ lösenord",
-  },
-  magiclink: {
-    subject: "Din inloggningslänk — Köpanalys",
-    heading: "Logga in på Köpanalys",
-    body: "Klicka på knappen nedan för att logga in på ditt Köpanalys-konto.",
-    cta: "Logga in",
-  },
-  email_change: {
-    subject: "Bekräfta din nya e-postadress — Köpanalys",
-    heading: "Bekräfta din nya e-postadress",
-    body: "Klicka på knappen nedan för att bekräfta att den här e-postadressen ska kopplas till ditt Köpanalys-konto.",
-    cta: "Bekräfta e-postadress",
-  },
-  reauthentication: {
-    subject: "Bekräfta din identitet — Köpanalys",
-    heading: "Bekräfta din identitet",
-    body: "Vi behöver bekräfta att det är du innan vi fortsätter. Klicka på knappen nedan för att fortsätta.",
-    cta: "Bekräfta",
-  },
-  invite: {
-    subject: "Du har blivit inbjuden till Köpanalys",
-    heading: "Du har blivit inbjuden",
-    body: "Klicka på knappen nedan för att skapa ditt Köpanalys-konto.",
-    cta: "Skapa konto",
-  },
-};
-
-const DEFAULT_COPY = {
-  subject: "Ett meddelande om ditt Köpanalys-konto",
-  heading: "Ett meddelande om ditt konto",
-  body: "Klicka på knappen nedan för att fortsätta.",
-  cta: "Fortsätt",
-};
-
-/** A short branded notification with one call to action — the BRF review emails (lib/brf/notify.ts). */
-export function renderNotificationEmail(params: {
+/**
+ * A short branded notification with one call to action — the BRF review emails (lib/brf/notify.ts).
+ * The paragraphs, the heading and the button are already in the language of the e-mail; `locale` decides the
+ * fixed words around them (the footer, the line under the button). The team's e-mails are in Swedish.
+ */
+export async function renderNotificationEmail(params: {
   preheader: string;
   heading: string;
   paragraphs: string[];
   ctaUrl: string;
   ctaLabel: string;
-}): string {
+  locale?: AppLocale;
+}): Promise<string> {
+  const locale = params.locale ?? DEFAULT_LOCALE;
+  const t = await emailTexts(locale);
   const body = `
     <h1 style="margin:0 0 12px; font-size:20px; font-weight:700; color:#111927;">${escapeHtml(params.heading)}</h1>
     ${params.paragraphs
       .map((p) => `<p style="margin:0 0 10px; font-size:15px; line-height:1.6; color:#374151;">${escapeHtml(p)}</p>`)
       .join("\n")}
     ${ctaButton(params.ctaUrl, params.ctaLabel)}
-    <p style="margin:0; font-size:12px; line-height:1.5; color:${BRAND.textMuted};">
-      Om knappen inte fungerar, kopiera in den här länken i din webbläsare:<br />
-      <a href="${params.ctaUrl}" style="color:${BRAND.green}; word-break:break-all;">${params.ctaUrl}</a>
-    </p>
+    ${fallbackLink(t, params.ctaUrl)}
   `;
-  return renderShell(params.preheader, body);
+  return renderShell(locale, t, params.preheader, body);
 }
 
-export function renderGenericAuthEmail(type: string, confirmUrl: string): { subject: string; html: string } {
-  const copy = GENERIC_COPY[type] ?? DEFAULT_COPY;
+/**
+ * The other account e-mails (password recovery, magic link, email change, reauthentication, invite). Supabase's
+ * Send Email Hook can carry any of a larger set of email_action_type values — the messages cover every type
+ * this app's UI/API can actually trigger today; "other" is a safe branded fallback for anything else, so an
+ * action type we didn't anticipate (or one Supabase adds later) still gets a real email instead of silently
+ * being dropped.
+ */
+export async function renderGenericAuthEmail(
+  type: string,
+  confirmUrl: string,
+  locale: AppLocale = DEFAULT_LOCALE,
+): Promise<{ subject: string; html: string }> {
+  const t = await emailTexts(locale);
+  const kind = t.has(`account.${type}.subject`) ? type : "other";
+  const copy = {
+    subject: t(`account.${kind}.subject`),
+    heading: t(`account.${kind}.heading`),
+    body: t(`account.${kind}.body`),
+    cta: t(`account.${kind}.cta`),
+  };
   const body = `
-    <h1 style="margin:0 0 12px; font-size:20px; font-weight:700; color:#111927;">${copy.heading}</h1>
-    <p style="margin:0 0 8px; font-size:15px; line-height:1.6; color:#374151;">${copy.body}</p>
+    <h1 style="margin:0 0 12px; font-size:20px; font-weight:700; color:#111927;">${escapeHtml(copy.heading)}</h1>
+    <p style="margin:0 0 8px; font-size:15px; line-height:1.6; color:#374151;">${escapeHtml(copy.body)}</p>
     ${ctaButton(confirmUrl, copy.cta)}
-    <p style="margin:0; font-size:12px; line-height:1.5; color:${BRAND.textMuted};">
-      Om knappen inte fungerar, kopiera in den här länken i din webbläsare:<br />
-      <a href="${confirmUrl}" style="color:${BRAND.green}; word-break:break-all;">${confirmUrl}</a>
-    </p>
+    ${fallbackLink(t, confirmUrl)}
     <p style="margin:16px 0 0; font-size:12px; line-height:1.5; color:${BRAND.textMuted};">
-      Bad du inte om det här? Du kan ignorera det här mejlet.
+      ${escapeHtml(t("ignore"))}
     </p>
   `;
 
-  return { subject: copy.subject, html: renderShell(copy.body, body) };
+  return { subject: copy.subject, html: renderShell(locale, t, copy.body, body) };
 }

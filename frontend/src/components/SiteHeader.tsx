@@ -1,10 +1,12 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import Link from "next/link";
-import { usePathname, useRouter } from "next/navigation";
+import { useTranslations } from "next-intl";
+import { Link } from "@/i18n/navigation";
+import { usePathname, useRouter } from "@/i18n/navigation";
 import { AuthModal } from "@/components/AuthModal";
 import { BrandLogo } from "@/components/BrandLogo";
+import { LanguageMenu } from "@/components/LanguageSwitcher";
 import { OnboardingModal } from "@/components/OnboardingModal";
 import { DesktopNav } from "@/components/header/DesktopNav";
 import { HeaderSearch } from "@/components/header/HeaderSearch";
@@ -20,7 +22,7 @@ import { FOCUS_URL_INPUT_EVENT, OPEN_ONBOARDING_MODAL_EVENT } from "@/lib/onboar
 export type { SiteHeaderVariant };
 
 /** Which popover is open; only one at a time. A menu is open under its id ("bostadsanalys", "kunskap"). */
-type OpenPopover = string | "search" | "user" | null;
+type OpenPopover = string | "search" | "language" | "user" | null;
 
 /**
  * The site header, after docs/design/landing-2026-10/New-Header-Design.png:
@@ -29,6 +31,7 @@ type OpenPopover = string | "search" | "user" | null;
  * navigation moves into a full-screen menu (MobileNav).
  */
 export function SiteHeader({ variant = "dark" }: { variant?: SiteHeaderVariant }) {
+  const t = useTranslations("nav");
   const theme = HEADER_THEME[variant];
   const router = useRouter();
   // Typed nullable since src/pages/ (the admin portal) exists; never null in the App Router.
@@ -79,7 +82,7 @@ export function SiteHeader({ variant = "dark" }: { variant?: SiteHeaderVariant }
         href="#main"
         className="sr-only z-[80] rounded-lg bg-ka-green-900 px-4 py-3 text-sm font-semibold text-white focus:not-sr-only focus:fixed focus:left-3 focus:top-3"
       >
-        Hoppa till innehållet
+        {t("skipToContent")}
       </a>
       <header
         className={`sticky top-0 z-50 border-b backdrop-blur-xl transition-shadow duration-300 ${theme.bar} ${
@@ -97,7 +100,7 @@ export function SiteHeader({ variant = "dark" }: { variant?: SiteHeaderVariant }
         <div className={`relative flex h-16 items-center gap-3 lg:h-[76px] xl:gap-4 2xl:h-[84px] ${LANDING_CONTAINER}`}>
           <Link
             href={ROUTES.home}
-            aria-label="Köpanalys – till startsidan"
+            aria-label={t("homeLabel")}
             className={`-ml-1 flex shrink-0 items-center rounded-xl p-1 transition-opacity hover:opacity-85 ${theme.logo} ${theme.focusRing}`}
           >
             <BrandLogo
@@ -110,13 +113,17 @@ export function SiteHeader({ variant = "dark" }: { variant?: SiteHeaderVariant }
           <DesktopNav
             pathname={pathname}
             theme={theme}
-            openMenu={openPopover !== "search" && openPopover !== "user" ? openPopover : null}
+            openMenu={openPopover !== "search" && openPopover !== "language" && openPopover !== "user" ? openPopover : null}
             onOpenMenuChange={(id) => setOpenPopover(id)}
             className="ml-2 hidden h-full xl:flex"
           />
 
           <div className="ml-auto flex items-center gap-1.5 sm:gap-2.5 2xl:gap-3">
             <HeaderSearch theme={theme} open={openPopover === "search"} onOpenChange={popoverSetter("search")} />
+            {/* below xl the language choice is in the full-screen menu */}
+            <div className="hidden xl:block">
+              <LanguageMenu theme={theme} open={openPopover === "language"} onOpenChange={popoverSetter("language")} />
+            </div>
             <span aria-hidden className={`hidden h-8 w-px xl:block ${theme.divider}`} />
             <Link
               href={ROUTES.skapaAnalys}
@@ -129,7 +136,7 @@ export function SiteHeader({ variant = "dark" }: { variant?: SiteHeaderVariant }
               className={`group hidden h-11 items-center gap-2.5 whitespace-nowrap rounded-[11px] px-4 text-[15px] font-semibold transition-all duration-200 hover:-translate-y-px sm:inline-flex 2xl:h-12 2xl:px-5 2xl:text-[16px] ${theme.cta} ${theme.focusRing}`}
             >
               <FilePlusIcon className="h-5 w-5 2xl:h-[22px] 2xl:w-[22px]" />
-              Skapa analys
+              {t("createAnalysis")}
               <ChevronRightIcon
                 className="-mr-1 h-4 w-4 transition-transform duration-200 group-hover:translate-x-0.5"
                 strokeWidth={2.4}
@@ -153,7 +160,7 @@ export function SiteHeader({ variant = "dark" }: { variant?: SiteHeaderVariant }
                 setOpenPopover(null);
                 setDrawerOpen(true);
               }}
-              aria-label="Öppna meny"
+              aria-label={t("openMenu")}
               aria-haspopup="dialog"
               aria-expanded={drawerOpen}
               className={`-mr-1.5 flex h-11 w-11 cursor-pointer items-center justify-center rounded-full transition xl:hidden ${theme.iconButton} ${theme.focusRing}`}

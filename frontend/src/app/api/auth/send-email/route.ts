@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { createResendClient, getEmailFrom } from "@/lib/email/resend";
 import { verifyStandardWebhookSignature } from "@/lib/email/verifyWebhookSignature";
 import { renderSignupConfirmationEmail, renderGenericAuthEmail } from "@/lib/email/confirmationEmail";
+import { DEFAULT_LOCALE, isLocale } from "@/i18n/locales";
 
 export const runtime = "nodejs";
 
@@ -57,6 +58,10 @@ export async function POST(request: Request) {
     return hookError(400, "Missing required hook fields.");
   }
 
+  // the language the account was created in (set at signup, kept up to date when the customer orders in another)
+  const storedLocale = user.user_metadata?.locale;
+  const locale = isLocale(storedLocale) ? storedLocale : DEFAULT_LOCALE;
+
   // emailData.site_url is GoTrue's own API base URL, not the app's domain —
   // using it here would send users to <project>.supabase.co instead of
   // kopanalys.se. NEXT_PUBLIC_SITE_URL is the correct base for this link.
@@ -72,9 +77,9 @@ export async function POST(request: Request) {
 
     if (emailData.email_action_type === "signup") {
       const firstName = typeof user.user_metadata?.first_name === "string" ? user.user_metadata.first_name : null;
-      ({ subject, html } = renderSignupConfirmationEmail({ firstName, confirmUrl }));
+      ({ subject, html } = await renderSignupConfirmationEmail({ firstName, confirmUrl, locale }));
     } else {
-      ({ subject, html } = renderGenericAuthEmail(emailData.email_action_type, confirmUrl));
+      ({ subject, html } = await renderGenericAuthEmail(emailData.email_action_type, confirmUrl, locale));
     }
 
     const resend = createResendClient();

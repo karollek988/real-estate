@@ -1,6 +1,7 @@
 "use client";
 
 import { useRef, useState } from "react";
+import { useTranslations } from "next-intl";
 import { Button } from "./Button";
 import { ManualEntryForm } from "./ManualEntryForm";
 import { ArrowRightIcon, CloseIcon, UploadCloudIcon } from "./icons";
@@ -8,6 +9,7 @@ import type { ManualListingFields } from "@/lib/analysis/listing/manual";
 
 const MAX_FILES = 6;
 const MAX_FILE_BYTES = 8 * 1024 * 1024;
+const MAX_MB = MAX_FILE_BYTES / 1024 / 1024;
 const ACCEPTED_TYPES = new Set(["image/png", "image/jpeg", "image/webp"]);
 
 interface Extraction {
@@ -23,6 +25,7 @@ interface Extraction {
  * (never the images) are kept in state for the review step below.
  */
 export function ScreenshotUploadForm() {
+  const t = useTranslations("forms.screenshot");
   const [files, setFiles] = useState<File[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [uploading, setUploading] = useState(false);
@@ -36,18 +39,18 @@ export function ScreenshotUploadForm() {
     const combined = [...files];
     for (const file of Array.from(newFiles)) {
       if (!ACCEPTED_TYPES.has(file.type)) {
-        setError("Endast PNG-, JPEG- eller WEBP-bilder stöds.");
+        setError(t("errors.fileType"));
         continue;
       }
       if (file.size > MAX_FILE_BYTES) {
-        setError("Varje bild får vara max 8 MB.");
+        setError(t("errors.fileSize", { maxMb: MAX_MB }));
         continue;
       }
       combined.push(file);
     }
 
     if (combined.length > MAX_FILES) {
-      setError(`Max ${MAX_FILES} bilder åt gången.`);
+      setError(t("errors.tooMany", { maxFiles: MAX_FILES }));
       setFiles(combined.slice(0, MAX_FILES));
     } else {
       setFiles(combined);
@@ -71,14 +74,14 @@ export function ScreenshotUploadForm() {
       const data = await res.json().catch(() => null);
 
       if (!res.ok) {
-        setError(data?.error?.message ?? "Något gick fel. Försök igen.");
+        setError(data?.error?.message ?? t("errors.generic"));
         setUploading(false);
         return;
       }
 
       setExtraction({ fields: data.fields ?? {}, foundKeys: data.foundKeys ?? [], texts: data.texts ?? [] });
     } catch {
-      setError("Något gick fel. Försök igen.");
+      setError(t("errors.generic"));
     } finally {
       setUploading(false);
     }
@@ -91,7 +94,7 @@ export function ScreenshotUploadForm() {
         {extraction.texts.length > 0 && (
           <details className="rounded-xl border border-white/10 bg-white/[0.02] px-4 py-3 text-sm text-neutral-400">
             <summary className="cursor-pointer select-none font-medium text-neutral-300">
-              Visa rå OCR-text (tillfälligt, för felsökning)
+              {t("ocrDebug")}
             </summary>
             <pre className="mt-3 max-h-64 overflow-auto whitespace-pre-wrap text-xs text-neutral-400">
               {extraction.texts.join("\n\n---\n\n")}
@@ -101,9 +104,7 @@ export function ScreenshotUploadForm() {
         <ManualEntryForm
           initialValues={extraction.fields}
           sourceNotice={
-            foundCount > 0
-              ? `Vi läste av ${foundCount} fält från dina skärmdumpar — kontrollera att de stämmer och fyll i resten.`
-              : "Vi kunde inte läsa av några uppgifter automatiskt från bilderna — fyll i formuläret nedan."
+            foundCount > 0 ? t("foundNotice", { count: foundCount }) : t("nothingFoundNotice")
           }
         />
       </div>
@@ -120,9 +121,9 @@ export function ScreenshotUploadForm() {
         <span className="flex h-11 w-11 items-center justify-center rounded-full bg-white/5 text-green-400">
           <UploadCloudIcon className="h-5 w-5" />
         </span>
-        <span className="text-[15px] font-semibold text-white">Ladda upp skärmdumpar av annonsen</span>
+        <span className="text-[15px] font-semibold text-white">{t("dropTitle")}</span>
         <span className="max-w-xs text-sm text-neutral-400">
-          PNG, JPEG eller WEBP · upp till {MAX_FILES} bilder · max 8 MB/bild
+          {t("dropHint", { maxFiles: MAX_FILES, maxMb: MAX_MB })}
         </span>
       </button>
       <input
@@ -148,7 +149,7 @@ export function ScreenshotUploadForm() {
               <button
                 type="button"
                 onClick={() => removeFile(i)}
-                aria-label={`Ta bort ${file.name}`}
+                aria-label={t("removeFile", { name: file.name })}
                 className="flex h-5 w-5 items-center justify-center rounded-full text-neutral-400 hover:bg-white/10 hover:text-white"
               >
                 <CloseIcon className="h-3 w-3" />
@@ -162,7 +163,7 @@ export function ScreenshotUploadForm() {
 
       <div className="flex flex-wrap items-center gap-4">
         <Button type="button" onClick={handleExtract} disabled={files.length === 0 || uploading} className="self-start">
-          {uploading ? "Läser av bilder..." : "Läs av bilder"}
+          {uploading ? t("submitting") : t("submit")}
           <ArrowRightIcon className="h-4 w-4" />
         </Button>
         <button
@@ -170,7 +171,7 @@ export function ScreenshotUploadForm() {
           onClick={() => setExtraction({ fields: {}, foundKeys: [], texts: [] })}
           className="text-sm font-medium text-neutral-400 underline-offset-4 hover:text-neutral-200 hover:underline"
         >
-          Fyll i uppgifterna manuellt istället
+          {t("manualInstead")}
         </button>
       </div>
     </div>

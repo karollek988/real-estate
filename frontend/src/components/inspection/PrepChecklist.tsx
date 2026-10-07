@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useTranslations } from "next-intl";
 import { CheckIcon, ChevronDownIcon, QuestionIcon } from "@/components/icons";
 import { PREP_STEPS, type PrepChecklistState } from "@/lib/inspection/types";
 
@@ -11,6 +12,7 @@ export function PrepChecklist({
   state: PrepChecklistState;
   onToggle: (stepId: string, checked: boolean) => void;
 }) {
+  const t = useTranslations("inspection.prep");
   const [expanded, setExpanded] = useState<string | null>(PREP_STEPS[0]?.id ?? null);
 
   return (
@@ -27,7 +29,7 @@ export function PrepChecklist({
               <button
                 type="button"
                 onClick={() => onToggle(step.id, !checked)}
-                aria-label={checked ? "Markera som ej klar" : "Markera som klar"}
+                aria-label={checked ? t("markUndone") : t("markDone")}
                 className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-full border transition ${
                   checked ? "border-green-500 bg-green-500 text-white" : "border-white/20 text-transparent"
                 }`}
@@ -41,9 +43,9 @@ export function PrepChecklist({
               >
                 <div>
                   <p className="text-sm font-medium text-white">
-                    {step.order}. {step.title}
+                    {step.order}. {t(`${step.id}.title`)}
                   </p>
-                  {!open && <p className="mt-0.5 truncate text-xs text-neutral-500">{step.description}</p>}
+                  {!open && <p className="mt-0.5 truncate text-xs text-neutral-500">{t(`${step.id}.description`)}</p>}
                 </div>
                 <ChevronDownIcon
                   className={`h-4 w-4 shrink-0 text-neutral-500 transition-transform ${open ? "rotate-180" : ""}`}
@@ -52,18 +54,20 @@ export function PrepChecklist({
             </div>
             {open && (
               <div className="px-4 pb-4 pl-[52px]">
-                <p className="text-sm text-neutral-400">{step.description}</p>
+                <p className="text-sm text-neutral-400">{t(`${step.id}.description`)}</p>
                 {step.items.length > 0 && (
                   <div className="mt-3 rounded-lg border border-white/10 bg-white/[0.03] p-3">
                     <p className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wide text-green-400">
                       <QuestionIcon className="h-3.5 w-3.5 shrink-0" />
-                      Vad du behöver
+                      {t("needs")}
                     </p>
                     <ul className="mt-2.5 flex flex-col gap-2.5">
                       {step.items.map((item) => (
-                        <li key={item.name} className="text-sm">
-                          <p className="font-medium text-white">{item.name}</p>
-                          <p className="mt-0.5 text-xs leading-relaxed text-neutral-400">{item.whereToFind}</p>
+                        <li key={item.id} className="text-sm">
+                          <p className="font-medium text-white">{t(`${step.id}.items.${item.id}.name` as never)}</p>
+                          <p className="mt-0.5 text-xs leading-relaxed text-neutral-400">
+                            {t(`${step.id}.items.${item.id}.whereToFind` as never)}
+                          </p>
                         </li>
                       ))}
                     </ul>

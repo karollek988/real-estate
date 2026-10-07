@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { listAnalysisRequestsForUser } from "@/lib/analysis/ownership";
 import { requireUser } from "@/lib/auth/requireUser";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { apiError } from "@/i18n/apiText";
 
 /**
  * GET /api/profile/analyses — the signed-in user's own analyses, newest
@@ -45,9 +46,6 @@ export async function GET() {
     });
   } catch (err) {
     console.error("GET /api/profile/analyses failed:", err);
-    return NextResponse.json(
-      { error: { code: "internal_error", message: "Could not load your analyses." } },
-      { status: 500 }
-    );
+    return await apiError(500, "internal_error", "profile.analysesLoadFailed");
   }
 }

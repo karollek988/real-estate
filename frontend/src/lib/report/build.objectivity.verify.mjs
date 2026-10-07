@@ -7,17 +7,35 @@
 //   npx tsx src/lib/report/build.objectivity.verify.mjs            (checks)
 //   npx tsx src/lib/report/build.objectivity.verify.mjs --dump x.txt (also writes a readable sample report)
 import {
-  buildAreaAnalysis,
-  buildExecutiveSummary,
-  buildInvestmentOutlook,
-  buildPropertyOverview,
-  buildRiskCategories,
-  sourcesUsed,
+  buildAreaAnalysis as buildAreaAnalysisWith,
+  buildExecutiveSummary as buildExecutiveSummaryWith,
+  buildInvestmentOutlook as buildInvestmentOutlookWith,
+  buildPropertyOverview as buildPropertyOverviewWith,
+  buildRiskCategories as buildRiskCategoriesWith,
+  sourcesUsed as sourcesUsedWith,
 } from "./build.ts";
-import { brfChapterState, brfIntroParagraphs } from "./brfChapter.ts";
-import { buildQuestions } from "./questions.ts";
+import { brfChapterState as brfChapterStateWith, brfIntroParagraphs as brfIntroParagraphsWith } from "./brfChapter.ts";
+import { buildQuestions as buildQuestionsWith } from "./questions.ts";
 import { EMPTY_BRF_FIGURES } from "../brf/figures.ts";
-import { BRF_BENCHMARK_SOURCES } from "../brf/interpret.ts";
+import { swedishTextKit } from "../../i18n/textKit.ts";
+import brfModule from "../../i18n/messages/sv/brf.ts";
+import reportModule from "../../i18n/messages/sv/report.ts";
+
+// The report code writes its sentences through a text kit; these checks read the Swedish report, as before.
+// (tsx wraps a default export twice when a .mjs file imports a .ts file.)
+const brfSv = brfModule.default ?? brfModule;
+const reportSv = reportModule.default ?? reportModule;
+const KIT = swedishTextKit({ brf: brfSv, report: reportSv });
+const BRF_BENCHMARK_SOURCES = brfSv.sources;
+const buildAreaAnalysis = (report, attributes, dataSources) => buildAreaAnalysisWith(report, attributes, dataSources, KIT);
+const buildExecutiveSummary = (report, brf) => buildExecutiveSummaryWith(report, brf, KIT);
+const buildInvestmentOutlook = (report) => buildInvestmentOutlookWith(report, KIT);
+const buildPropertyOverview = (report, attributes) => buildPropertyOverviewWith(report, attributes, KIT);
+const buildRiskCategories = (report, dataSources, brf) => buildRiskCategoriesWith(report, dataSources, brf, KIT);
+const sourcesUsed = (dataSources, ids) => sourcesUsedWith(dataSources, ids, KIT);
+const brfChapterState = (report, review, now) => brfChapterStateWith(report, review, KIT, now);
+const brfIntroParagraphs = (report) => brfIntroParagraphsWith(report, KIT);
+const buildQuestions = (report, brf) => buildQuestionsWith(report, brf, KIT);
 
 let failures = 0;
 function check(name, pass) {

@@ -1,5 +1,9 @@
 import { NextResponse } from "next/server";
-import { FAQ_ITEMS } from "@/lib/faq";
+import { getTranslations } from "next-intl/server";
+import { LOCALES, type AppLocale } from "@/i18n/locales";
+import { apiError } from "@/i18n/apiText";
+import { localeOfRequest } from "@/i18n/requestLocale";
+import { FAQ_IDS, FAQ_VALUES } from "@/lib/faq";
 import {
   OMRADESANALYS_PRICE_SEK,
   TRE_BOSTADER_COUNT,
@@ -21,7 +25,20 @@ const MAX_MESSAGES = 12;
 const MAX_MESSAGE_LENGTH = 2000;
 const MAX_REPLY_TOKENS = 300;
 
-const SYSTEM_PROMPT = `Du är en kundtjänst-assistent för Köpanalys.se, en svensk tjänst som analyserar bostadsannonser. Du svarar på svenska.
+/**
+ * The instruction to the language model. Written in Swedish for every language; what changes with the
+ * visitor's language is the sentence that says which language to answer in, and the FAQ text it reads
+ * (taken from the same message files as the FAQ on the site, in the visitor's language).
+ */
+async function buildSystemPrompt(locale: AppLocale): Promise<string> {
+  const t = await getTranslations({ locale, namespace: "faq" });
+  const answerLanguage =
+    locale === "sv"
+      ? "Du svarar på svenska."
+      : `Du svarar på ${LOCALES[locale].englishName}. Fakta och FAQ nedan kan vara på ett annat språk, men du svarar alltid på ${LOCALES[locale].englishName}.`;
+  const faqText = FAQ_IDS.map((id) => `F: ${t(`items.${id}.question`)}\nS: ${t(`items.${id}.answer`, FAQ_VALUES)}`).join("\n\n");
+
+  return `Du är en kundtjänst-assistent för Köpanalys.se, en svensk tjänst som analyserar bostadsannonser. ${answerLanguage}
 
 Här är fakta om produkten som du ska använda för att svara:
 
@@ -58,7 +75,8 @@ VIKTIGA BEGRÄNSNINGAR:
 - Håll svaren korta: 2-4 meningar. Detta är en chat-widget, inte en lång text.
 
 FAQ-innehåll som du kan använda som referens:
-${FAQ_ITEMS.map((item) => `F: ${item.question}\nS: ${item.answer}`).join("\n\n")}`;
+${faqText}`;
+}
 
 interface Message {
   role: "user" | "assistant";
@@ -69,30 +87,21 @@ export async function POST(request: Request) {
   const apiKey = process.env.OPENAI_API_KEY;
 
   if (!apiKey) {
-    return NextResponse.json(
-      {
-        error: {
-          code: "chat_unavailable",
-          message:
-            "Chatten är inte tillgänglig just nu – kontakta oss på kontakt@kopanalys.se istället.",
-        },
-      },
-      { status: 503 },
-    );
+    return apiError(503, "chat_unavailable", "chat.unavailable", undefined, { request });
   }
 
   const ip = clientIp(request);
   if (!checkRateLimit(`chat:${ip}`, RATE_LIMIT_PER_MINUTE, 60_000)) {
-    return NextResponse.json(
-      { error: { code: "rate_limited", message: "För många meddelanden – vänta en liten stund och försök igen." } },
-      { status: 429 },
-    );
+    return apiError(429, "rate_limited", "chat.rateLimited", undefined, { request });
   }
 
   let messages: Message[];
+  let locale: AppLocale = localeOfRequest(request);
   try {
     const body = await request.json();
     messages = body.messages;
+    // the language of the page the visitor is on (the chat widget sends it)
+    locale = localeOfRequest(request, body.locale);
     if (!Array.isArray(messages) || messages.length === 0) {
       return NextResponse.json(
         { error: { code: "invalid_request", message: "messages array is required" } },
@@ -138,7 +147,7 @@ export async function POST(request: Request) {
       temperature: 0.3,
       max_tokens: MAX_REPLY_TOKENS,
       messages: [
-        { role: "system" as const, content: SYSTEM_PROMPT },
+        { role: "system" as const, content: await buildSystemPrompt(locale) },
         ...messages,
       ],
     }),
@@ -147,16 +156,7 @@ export async function POST(request: Request) {
   if (!response.ok) {
     const errorBody = await response.text();
     console.error("OpenAI API error:", response.status, errorBody);
-    return NextResponse.json(
-      {
-        error: {
-          code: "chat_unavailable",
-          message:
-            "Chatten är inte tillgänglig just nu – kontakta oss på kontakt@kopanalys.se istället.",
-        },
-      },
-      { status: 503 },
-    );
+    return apiError(503, "chat_unavailable", "chat.unavailable", undefined, { request, explicit: locale });
   }
 
   const data = await response.json();

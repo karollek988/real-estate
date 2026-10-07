@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useLocale, useTranslations } from "next-intl";
 import { Reveal } from "@/components/Reveal";
 import { SectionIntro } from "@/components/SectionIntro";
 import { LANDING_CONTAINER } from "@/components/landing/container";
@@ -10,6 +11,7 @@ import {
   PercentIcon,
   TrendingUpIcon,
 } from "@/components/icons";
+import { LOCALES, type AppLocale } from "@/i18n/locales";
 import type { MarketStats } from "@/lib/marketStats";
 
 const PLOT = { left: 40, right: 428, top: 14, bottom: 112 };
@@ -50,9 +52,19 @@ function yearMarkers(labels: string[]): { label: string; i: number }[] {
   return markers;
 }
 
-function formatSwedishNumber(n: number, decimals = 1): string {
-  return n.toFixed(decimals).replace(".", ",").replace(/^-/, "−");
+/** A number written the way the reader's language writes it (1,5 or 1.5), with a fixed number of decimals. */
+function formatNumber(n: number, locale: AppLocale, decimals = 1): string {
+  return new Intl.NumberFormat(LOCALES[locale].formatLocale, { minimumFractionDigits: decimals, maximumFractionDigits: decimals }).format(n);
 }
+
+/** What the charts need to write labels in the reader's language. */
+type Words = {
+  locale: AppLocale;
+  /** "2024K3" -> the quarter as the language writes it */
+  quarter: (label: string) => string;
+  /** "2025M09" -> "Sep" */
+  month: (label: string) => string;
+};
 
 function GridLine({ y, label }: { y: number; label: string }) {
   return (
@@ -78,16 +90,16 @@ function ChartSkeleton() {
   );
 }
 
-function ChartUnavailable() {
+function ChartUnavailable({ text }: { text: string }) {
   return (
     <div className="mt-4 flex h-[148px] w-full items-center justify-center rounded-lg border border-ka-line text-xs text-ka-muted">
-      Data kunde inte hämtas just nu
+      {text}
     </div>
   );
 }
 
 /* Styrränta — kvartalsvis, stegkurva */
-function InterestRateChart({ values, quarterLabels }: { values: number[]; quarterLabels: string[] }) {
+function InterestRateChart({ values, quarterLabels, words, label }: { values: number[]; quarterLabels: string[]; words: Words; label: string }) {
   const { min, max } = niceBounds(values, 0.5);
   const points = values.map((v, i) => ({ x: xAt(i, values.length), y: yAt(v, min, max) }));
   const d = points
@@ -102,7 +114,7 @@ function InterestRateChart({ values, quarterLabels }: { values: number[]; quarte
       viewBox="0 0 440 148"
       className="mt-4 w-full"
       role="img"
-      aria-label={`Styrräntans utveckling, senaste till ${formatSwedishNumber(values[values.length - 1], 2)} procent`}
+      aria-label={label}
     >
       {gridSteps.map((v) => (
         <GridLine key={v} y={yAt(v, min, max)} label={`${Math.round(v * 10) / 10}%`} />
@@ -121,7 +133,7 @@ function InterestRateChart({ values, quarterLabels }: { values: number[]; quarte
         <g key={p.x}>
           <circle className="chart-fade" cx={p.x} cy={p.y} r="2.2" fill={LINE} />
           <circle cx={p.x} cy={p.y} r="9" fill="transparent">
-            <title>{`${quarterLabels[i]}: ${formatSwedishNumber(values[i], 2)} %`}</title>
+            <title>{`${words.quarter(quarterLabels[i])}: ${formatNumber(values[i], words.locale, 2)} %`}</title>
           </circle>
         </g>
       ))}
@@ -134,7 +146,7 @@ function InterestRateChart({ values, quarterLabels }: { values: number[]; quarte
         fontWeight="600"
         fill={VALUE}
       >
-        {formatSwedishNumber(values[values.length - 1], 2)}%
+        {formatNumber(values[values.length - 1], words.locale, 2)}%
       </text>
       {years.map(({ label, i }) => (
         <text key={label} x={xAt(i, values.length)} y={LABEL_Y} textAnchor="middle" fontSize="8.5" fill={LABEL}>
@@ -146,7 +158,7 @@ function InterestRateChart({ values, quarterLabels }: { values: number[]; quarte
 }
 
 /* Bostadsprisindex — kvartalsvis, ytdiagram */
-function HousePriceChart({ values, quarterLabels }: { values: number[]; quarterLabels: string[] }) {
+function HousePriceChart({ values, quarterLabels, words, label }: { values: number[]; quarterLabels: string[]; words: Words; label: string }) {
   const { min, max } = niceBounds(values, 4);
   const points = values.map((v, i) => ({ x: xAt(i, values.length), y: yAt(v, min, max) }));
   const line = points.map((p, i) => `${i === 0 ? "M" : "L"} ${p.x} ${p.y}`).join(" ");
@@ -158,7 +170,7 @@ function HousePriceChart({ values, quarterLabels }: { values: number[]; quarterL
       viewBox="0 0 440 148"
       className="mt-4 w-full"
       role="img"
-      aria-label={`Bostadsprisindex (småhus), senaste noteringen ${values[values.length - 1]}`}
+      aria-label={label}
     >
       <defs>
         <linearGradient id="hox-area" x1="0" y1="0" x2="0" y2="1">
@@ -182,7 +194,7 @@ function HousePriceChart({ values, quarterLabels }: { values: number[]; quarterL
       />
       {points.map((p, i) => (
         <circle key={p.x} cx={p.x} cy={p.y} r="9" fill="transparent">
-          <title>{`${quarterLabels[i]}: ${values[i]}`}</title>
+          <title>{`${words.quarter(quarterLabels[i])}: ${values[i]}`}</title>
         </circle>
       ))}
       <circle
@@ -203,10 +215,10 @@ function HousePriceChart({ values, quarterLabels }: { values: number[]; quarterL
       >
         {values[values.length - 1]}
       </text>
-      {quarterLabels.map((label, i) =>
+      {quarterLabels.map((quarterLabel, i) =>
         i % 2 === 0 ? (
           <text key={i} x={points[i].x} y={LABEL_Y} textAnchor="middle" fontSize="8.5" fill={LABEL}>
-            {label}
+            {words.quarter(quarterLabel)}
           </text>
         ) : null,
       )}
@@ -215,16 +227,16 @@ function HousePriceChart({ values, quarterLabels }: { values: number[]; quarterL
 }
 
 /* Kvadratmeterpris — horisontella staplar per stad */
-function SqmPriceChart({ areas }: { areas: { name: string; pricePerM2: number }[] }) {
+function SqmPriceChart({ areas, locale, nationalAverage }: { areas: { name: string; pricePerM2: number }[]; locale: AppLocale; nationalAverage: string }) {
   const max = Math.max(...areas.map((a) => a.pricePerM2)) * 1.07;
   return (
     <div className="mt-5 space-y-4">
       {areas.map(({ name, pricePerM2 }, i) => (
         <div key={name}>
           <div className="flex items-baseline justify-between text-xs">
-            <span className="text-ka-muted">{name}</span>
+            <span className="text-ka-muted">{name === SOURCE_NATIONAL_AVERAGE ? nationalAverage : name}</span>
             <span className="font-semibold text-ka-ink">
-              {pricePerM2.toLocaleString("sv-SE")} kr
+              {pricePerM2.toLocaleString(LOCALES[locale].formatLocale)} kr
             </span>
           </div>
           <div className="mt-1.5 h-2 overflow-hidden rounded-full bg-ka-ink/[0.06]">
@@ -245,7 +257,7 @@ function SqmPriceChart({ areas }: { areas: { name: string; pricePerM2: number }[
 }
 
 /* Inflation (KPIF) — månadsvis, linje med målnivå */
-function InflationChart({ values, monthLabels }: { values: number[]; monthLabels: string[] }) {
+function InflationChart({ values, monthLabels, words, label, targetLabel }: { values: number[]; monthLabels: string[]; words: Words; label: string; targetLabel: string }) {
   const { min, max } = niceBounds([...values, 2], 1);
   const points = values.map((v, i) => ({ x: xAt(i, values.length), y: yAt(v, min, max) }));
   const line = points.map((p, i) => `${i === 0 ? "M" : "L"} ${p.x} ${p.y}`).join(" ");
@@ -257,7 +269,7 @@ function InflationChart({ values, monthLabels }: { values: number[]; monthLabels
       viewBox="0 0 440 148"
       className="mt-4 w-full"
       role="img"
-      aria-label={`Inflationen KPIF, senaste ${formatSwedishNumber(values[values.length - 1])} procent`}
+      aria-label={label}
     >
       {gridSteps.map((v) => (
         <GridLine key={v} y={yAt(v, min, max)} label={`${Math.round(v)}%`} />
@@ -274,7 +286,7 @@ function InflationChart({ values, monthLabels }: { values: number[]; monthLabels
         2%
       </text>
       <text x={PLOT.right} y={targetY - 6} textAnchor="end" fontSize="8.5" fill={LABEL}>
-        Inflationsmål
+        {targetLabel}
       </text>
       <path
         d={line}
@@ -290,14 +302,14 @@ function InflationChart({ values, monthLabels }: { values: number[]; monthLabels
         <g key={p.x}>
           <circle className="chart-fade" cx={p.x} cy={p.y} r="2.2" fill={LINE} />
           <circle cx={p.x} cy={p.y} r="9" fill="transparent">
-            <title>{`${monthLabels[i]}: ${formatSwedishNumber(values[i])} %`}</title>
+            <title>{`${words.month(monthLabels[i])}: ${formatNumber(values[i], words.locale)} %`}</title>
           </circle>
         </g>
       ))}
       {monthLabels.map((month, i) =>
         i % 2 === 0 ? (
           <text key={i} x={points[i].x} y={LABEL_Y} textAnchor="middle" fontSize="8.5" fill={LABEL}>
-            {month}
+            {words.month(month)}
           </text>
         ) : null,
       )}
@@ -305,32 +317,48 @@ function InflationChart({ values, monthLabels }: { values: number[]; monthLabels
   );
 }
 
-function trendBadge(changePct: number | null): string {
-  if (changePct === null) return "Okänd trend";
-  if (changePct > 0.5) return "Stigande";
-  if (changePct < -0.5) return "Fallande";
-  return "Stabil";
+/** The name Svensk Mäklarstatistik gives the figure for all of Sweden; the page shows it in the reader's language. */
+const SOURCE_NATIONAL_AVERAGE = "Riksgenomsnitt";
+
+function trendBadge(changePct: number | null): "unknown" | "rising" | "falling" | "stable" {
+  if (changePct === null) return "unknown";
+  if (changePct > 0.5) return "rising";
+  if (changePct < -0.5) return "falling";
+  return "stable";
 }
 
-function inflationBadge(latest: number): string {
+function inflationBadge(latest: number): "near" | "above" | "below" {
   const distance = latest - 2;
-  if (Math.abs(distance) <= 0.3) return "Nära målet";
-  return distance > 0 ? "Över målet" : "Under målet";
+  if (Math.abs(distance) <= 0.3) return "near";
+  return distance > 0 ? "above" : "below";
 }
 
-function formatRateChangeBadge(changePtPct: number | null): string {
+function formatRateChangeBadge(changePtPct: number | null, locale: AppLocale, unit: string): string {
   if (changePtPct === null) return "—";
-  if (changePtPct === 0) return "±0 pp";
+  if (changePtPct === 0) return `±0 ${unit}`;
   const sign = changePtPct > 0 ? "+" : "−";
-  return `${sign}${formatSwedishNumber(Math.abs(changePtPct), 2)} pp`;
+  return `${sign}${formatNumber(Math.abs(changePtPct), locale, 2)} ${unit}`;
 }
 
 function capitalize(s: string): string {
   return s.length > 0 ? s[0].toUpperCase() + s.slice(1) : s;
 }
 
+/**
+ * The date Svensk Mäklarstatistik prints ("8 juli 2026", always Swedish) written with the month names of the
+ * reader's language. A date that does not look like that is shown as it is.
+ */
+function localizeSourceDate(text: string, sourceMonths: string[], monthsLong: string[]): string {
+  const match = text.match(/^(\d{1,2})\s+(\S+)\s+(\d{4})$/);
+  if (!match) return text;
+  const month = sourceMonths.indexOf(match[2].toLowerCase());
+  return month === -1 ? text : `${match[1]} ${monthsLong[month]} ${match[3]}`;
+}
+
 /** Live market statistics (styrränta, bostadspriser, kvm-pris, inflation) via /api/market-stats - the body of /prisutveckling. */
 export function InsightsSection({ intro = true }: { intro?: boolean } = {}) {
+  const t = useTranslations("insights");
+  const locale = useLocale() as AppLocale;
   const [stats, setStats] = useState<MarketStats | null>(null);
   const [loadFailed, setLoadFailed] = useState(false);
 
@@ -356,64 +384,103 @@ export function InsightsSection({ intro = true }: { intro?: boolean } = {}) {
   const sqm = stats?.pricePerSqm ?? null;
   const kpif = stats?.inflation ?? null;
 
+  // the twelve month names are looked up by number, which the typed keys of t() cannot express
+  const monthName = t as unknown as (key: string) => string;
+  const words: Words = {
+    locale,
+    quarter: (label) => {
+      const match = label.match(/^(\d{4})K(\d)$/);
+      return match ? t("quarter", { year: match[1], quarter: match[2] }) : label;
+    },
+    month: (label) => {
+      const match = label.match(/^\d{4}M(\d{2})$/);
+      return match ? (monthName(`months.${match[1]}`) ?? label) : label;
+    },
+  };
+  const sourceMonths = t("sourceMonths").split(",");
+  const monthsLong = t("monthsLong").split(",");
+  const sourceDate = (date: string | null | undefined) => (date ? localizeSourceDate(date, sourceMonths, monthsLong) : undefined);
+
   const cards = [
     {
       icon: PercentIcon,
-      label: "Styrränta",
-      sub: "Riksbanken, kvartalsvis",
-      value: rate ? formatSwedishNumber(rate.latest, 2) : null,
-      unit: "%",
-      badge: rate ? formatRateChangeBadge(rate.change12mPtPct) : null,
-      chart: rate ? <InterestRateChart values={rate.values} quarterLabels={rate.quarterLabels} /> : null,
-      source: "Riksbanken",
+      label: t("cards.policyRate.label"),
+      sub: t("cards.policyRate.sub"),
+      value: rate ? formatNumber(rate.latest, locale, 2) : null,
+      unit: t("cards.policyRate.unit"),
+      badge: rate ? formatRateChangeBadge(rate.change12mPtPct, locale, t("percentagePoints")) : null,
+      chart: rate ? (
+        <InterestRateChart
+          values={rate.values}
+          quarterLabels={rate.quarterLabels}
+          words={words}
+          label={t("chartLabels.policyRate", { value: formatNumber(rate.latest, locale, 2) })}
+        />
+      ) : null,
+      source: t("cards.policyRate.source"),
       updated: rate?.latestDate,
     },
     {
       icon: TrendingUpIcon,
-      label: "Bostadspriser",
-      sub: "Prisindex för småhus, senaste 12 månaderna",
+      label: t("cards.housePrices.label"),
+      sub: t("cards.housePrices.sub"),
       value: hox?.yoyChangePct !== null && hox?.yoyChangePct !== undefined
-        ? `${hox.yoyChangePct > 0 ? "+" : ""}${formatSwedishNumber(hox.yoyChangePct)}`
+        ? `${hox.yoyChangePct > 0 ? "+" : ""}${formatNumber(hox.yoyChangePct, locale)}`
         : null,
-      unit: "% / år",
-      badge: hox ? trendBadge(hox.yoyChangePct) : null,
-      chart: hox ? <HousePriceChart values={hox.values} quarterLabels={hox.quarterLabels} /> : null,
-      source: "SCB Fastighetsprisindex",
-      updated: hox?.asOf,
+      unit: t("cards.housePrices.unit"),
+      badge: hox ? t(`trend.${trendBadge(hox.yoyChangePct)}`) : null,
+      chart: hox ? (
+        <HousePriceChart
+          values={hox.values}
+          quarterLabels={hox.quarterLabels}
+          words={words}
+          label={t("chartLabels.housePrices", { value: hox.values[hox.values.length - 1] })}
+        />
+      ) : null,
+      source: t("cards.housePrices.source"),
+      updated: hox ? words.quarter(hox.asOf) : undefined,
     },
     {
       icon: BuildingIcon,
-      label: "Kvadratmeterpris",
-      sub: "Bostadsrätter, senaste 12 månaderna",
-      value: sqm ? sqm.areas.find((a) => a.name === "Riksgenomsnitt")?.pricePerM2.toLocaleString("sv-SE") ?? null : null,
-      unit: "kr/kvm i riket",
-      badge: sqm?.asOf ? capitalize(sqm.asOf) : null,
-      chart: sqm ? <SqmPriceChart areas={sqm.areas} /> : null,
-      source: "Svensk Mäklarstatistik",
-      updated: sqm?.asOf,
+      label: t("cards.pricePerSqm.label"),
+      sub: t("cards.pricePerSqm.sub"),
+      value: sqm ? sqm.areas.find((a) => a.name === SOURCE_NATIONAL_AVERAGE)?.pricePerM2.toLocaleString(LOCALES[locale].formatLocale) ?? null : null,
+      unit: t("cards.pricePerSqm.unit"),
+      badge: sqm?.asOf ? capitalize(sourceDate(sqm.asOf) ?? sqm.asOf) : null,
+      chart: sqm ? <SqmPriceChart areas={sqm.areas} locale={locale} nationalAverage={t("nationalAverage")} /> : null,
+      source: t("cards.pricePerSqm.source"),
+      updated: sourceDate(sqm?.asOf),
     },
     {
       icon: ChartIcon,
-      label: "Inflation",
-      sub: "KPIF, årstakt",
-      value: kpif ? formatSwedishNumber(kpif.latest) : null,
-      unit: "%",
-      badge: kpif ? inflationBadge(kpif.latest) : null,
-      chart: kpif ? <InflationChart values={kpif.values} monthLabels={kpif.monthLabels} /> : null,
-      source: "SCB (KPIF)",
+      label: t("cards.inflation.label"),
+      sub: t("cards.inflation.sub"),
+      value: kpif ? formatNumber(kpif.latest, locale) : null,
+      unit: t("cards.inflation.unit"),
+      badge: kpif ? t(`inflationBadge.${inflationBadge(kpif.latest)}`) : null,
+      chart: kpif ? (
+        <InflationChart
+          values={kpif.values}
+          monthLabels={kpif.monthLabels}
+          words={words}
+          label={t("chartLabels.inflation", { value: formatNumber(kpif.latest, locale) })}
+          targetLabel={t("inflationTarget")}
+        />
+      ) : null,
+      source: t("cards.inflation.source"),
       updated: kpif?.latestMonth,
     },
   ];
 
   return (
-    <section id="marknadsinsikter" aria-label="Marknadsinsikter" className="relative scroll-mt-24">
+    <section id="marknadsinsikter" aria-label={t("label")} className="relative scroll-mt-24">
       <div className={`${LANDING_CONTAINER} ${intro ? "py-20 lg:py-28" : "py-14 lg:py-20"}`}>
         {intro && (
           <SectionIntro
             icon={ChartIcon}
-            label="Marknadsinsikter"
-            title="Siffrorna som styr marknaden"
-            description="Samma datapunkter som ligger till grund för varje analys – hämtade live från Riksbanken, SCB och Svensk Mäklarstatistik."
+            label={t("eyebrow")}
+            title={t("title")}
+            description={t("description")}
           />
         )}
 
@@ -445,11 +512,10 @@ export function InsightsSection({ intro = true }: { intro?: boolean } = {}) {
                   <span className="text-sm text-ka-muted">{unit}</span>
                 </div>
 
-                {chart ?? (loading ? <ChartSkeleton /> : <ChartUnavailable />)}
+                {chart ?? (loading ? <ChartSkeleton /> : <ChartUnavailable text={t("unavailable")} />)}
 
                 <p className="mt-auto pt-4 text-[11.5px] text-ka-muted">
-                  Källa: {source}
-                  {updated ? ` · Uppdaterad ${updated}` : ""}
+                  {updated ? t("sourceLineUpdated", { source, date: updated }) : t("sourceLine", { source })}
                 </p>
               </div>
             </Reveal>

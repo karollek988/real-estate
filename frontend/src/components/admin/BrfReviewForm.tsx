@@ -9,8 +9,16 @@ import {
   type BrfFieldSpec,
   type BrfFigures,
 } from "@/lib/brf/figures";
+import { NextIntlClientProvider } from "next-intl";
 import { interpretBrf, type BrfApartmentContext } from "@/lib/brf/interpret";
 import { BrfAnalysis } from "@/components/report/BrfAnalysis";
+import { swedishTextKit } from "@/i18n/textKit";
+import brfSv from "@/i18n/messages/sv/brf";
+import reportSv from "@/i18n/messages/sv/report";
+
+/** The review console is Swedish only: it shows the chapter the way a Swedish reader sees it. */
+const SWEDISH_MESSAGES = { brf: brfSv, report: reportSv };
+const SWEDISH_KIT = swedishTextKit(SWEDISH_MESSAGES);
 
 /**
  * The reviewer's form: every figure the BRF analysis is built from, with what
@@ -136,7 +144,7 @@ export function BrfReviewForm({
   const [message, setMessage] = useState<{ kind: "ok" | "error"; text: string; details?: string[] } | null>(null);
 
   const parsed = useMemo(() => parseBrfFigures(toRaw(values)), [values]);
-  const reading = useMemo(() => interpretBrf(parsed.figures, apartment), [parsed.figures, apartment]);
+  const reading = useMemo(() => interpretBrf(parsed.figures, apartment, SWEDISH_KIT), [parsed.figures, apartment]);
 
   function applyPrefill() {
     const merged = { ...values };
@@ -264,10 +272,12 @@ export function BrfReviewForm({
       <div className="xl:sticky xl:top-4 xl:max-h-[calc(100vh-2rem)] xl:overflow-y-auto">
         <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-neutral-500">Förhandsvisning — så ser kunden kapitlet</p>
         <div className="rounded-lg border border-black/10 bg-[#FBF9F4] p-5 sm:p-8">
-          <BrfAnalysis
-            state={{ kind: "published", reading, publishedAt: new Date().toISOString(), update: null }}
-            associationName={associationName}
-          />
+          <NextIntlClientProvider locale="sv" messages={SWEDISH_MESSAGES}>
+            <BrfAnalysis
+              state={{ kind: "published", reading, publishedAt: new Date().toISOString(), update: null }}
+              associationName={associationName}
+            />
+          </NextIntlClientProvider>
         </div>
       </div>
     </div>

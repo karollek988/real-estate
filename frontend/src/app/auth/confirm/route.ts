@@ -1,5 +1,8 @@
 import { NextResponse } from "next/server";
 import type { EmailOtpType } from "@supabase/supabase-js";
+import { isLocale, type AppLocale } from "@/i18n/locales";
+import { chosenLocale } from "@/i18n/chosenLocale";
+import { localizeUrl } from "@/i18n/redirect";
 import { createClient } from "@/lib/supabase/server";
 
 // `next` may be a relative path ("/dashboard") or a full URL
@@ -27,9 +30,13 @@ export async function GET(request: Request) {
     const supabase = await createClient();
     const { error } = await supabase.auth.verifyOtp({ type, token_hash: tokenHash });
     if (!error) {
-      return NextResponse.redirect(resolveNext(next, origin));
+      // the language the person signed up in (stored with the account), else the one they picked in the picker
+      const { data } = await supabase.auth.getUser();
+      const stored = data.user?.user_metadata?.locale;
+      const locale: AppLocale = isLocale(stored) ? stored : await chosenLocale();
+      return NextResponse.redirect(localizeUrl(resolveNext(next, origin), locale));
     }
   }
 
-  return NextResponse.redirect(`${origin}/?auth=error`);
+  return NextResponse.redirect(localizeUrl(new URL("/?auth=error", origin), await chosenLocale()));
 }

@@ -1,3 +1,5 @@
+import { useTranslations } from "next-intl";
+
 type Status = "ready" | "processing" | "expired";
 
 const STATUS_STYLES: Record<Status, string> = {
@@ -6,18 +8,13 @@ const STATUS_STYLES: Record<Status, string> = {
   expired: "bg-white/5 text-neutral-400 border-white/10",
 };
 
-const STATUS_LABELS: Record<Status, string> = {
-  ready: "Ready",
-  processing: "Processing",
-  expired: "Expired",
-};
-
 export function StatusBadge({ status }: { status: Status }) {
+  const t = useTranslations("dashboard.analysis.status");
   return (
     <span
       className={`inline-flex items-center rounded-full border px-2.5 py-1 text-xs font-medium tracking-tight ${STATUS_STYLES[status]}`}
     >
-      {STATUS_LABELS[status]}
+      {t(status)}
     </span>
   );
 }

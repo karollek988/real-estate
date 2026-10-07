@@ -24,7 +24,8 @@ interface SelectFieldProps {
   label: string;
   id: string;
   name?: string;
-  options: string[];
+  /** A choice is its value alone, or a value (what is saved) with a label (what is shown). */
+  options: readonly (string | { value: string; label: string })[];
   placeholder?: string;
   required?: boolean;
   /** Uncontrolled initial value (e.g. pre-filling from screenshot extraction). Ignored if `onChange` is passed. */
@@ -64,11 +65,14 @@ export function SelectField({
         <option value="" disabled>
           {placeholder ?? "Select"}
         </option>
-        {options.map((option) => (
-          <option key={option} value={option}>
-            {option}
-          </option>
-        ))}
+        {options.map((option) => {
+          const { value: optionValue, label: optionLabel } = typeof option === "string" ? { value: option, label: option } : option;
+          return (
+            <option key={optionValue} value={optionValue}>
+              {optionLabel}
+            </option>
+          );
+        })}
       </select>
     </div>
   );

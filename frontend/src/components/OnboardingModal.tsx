@@ -1,35 +1,20 @@
 "use client";
 
 import { useEffect, useRef } from "react";
+import { useTranslations } from "next-intl";
 import { CloseIcon } from "@/components/icons";
 import { FOCUS_URL_INPUT_EVENT } from "@/lib/onboardingModalEvents";
 
+/** The four steps: a picture and the name of the step in the "onboarding" messages (steps.<id>.title / .description). */
 const STEPS = [
-  {
-    emoji: "👤",
-    title: "Skapa ett gratis konto",
-    description: "Registrera dig på några sekunder för att få tillgång till dina analyser.",
-  },
-  {
-    emoji: "📸",
-    title: "Ladda upp skärmdumpar av annonsen",
-    description:
-      "Många bostadssajter blockerar numera automatiserad hämtning av deras sidor, så istället för en länk visar du oss annonsen direkt — en eller flera skärmdumpar fungerar överallt. Du kan även fylla i uppgifterna manuellt.",
-  },
-  {
-    emoji: "✓",
-    title: "Kontrollera uppgifterna",
-    description: "Vi läser av de viktigaste uppgifterna åt dig — du granskar och rättar till innan du går vidare.",
-  },
-  {
-    emoji: "📊",
-    title: "Få ett samlat underlag",
-    description:
-      "Området, riskerna och frågorna inför visningen är klara på några minuter. Föreningens ekonomi granskas av våra experter och läggs till i rapporten inom 24 timmar.",
-  },
-];
+  { id: "account", emoji: "👤" },
+  { id: "upload", emoji: "📸" },
+  { id: "check", emoji: "✓" },
+  { id: "report", emoji: "📊" },
+] as const;
 
 export function OnboardingModal({ open, onClose }: { open: boolean; onClose: () => void }) {
+  const t = useTranslations("onboarding");
   const dialogRef = useRef<HTMLDivElement>(null);
   const ctaRef = useRef<HTMLButtonElement>(null);
 
@@ -77,7 +62,7 @@ export function OnboardingModal({ open, onClose }: { open: boolean; onClose: () 
   }
 
   return (
-    <div className="fixed inset-0 z-[100] overflow-y-auto" role="dialog" aria-modal="true" aria-label="Så fungerar det">
+    <div className="fixed inset-0 z-[100] overflow-y-auto" role="dialog" aria-modal="true" aria-label={t("title")}>
       <div
         className="fixed inset-0 animate-overlay-fade-in bg-black/70 backdrop-blur-sm"
         aria-hidden="true"
@@ -95,28 +80,28 @@ export function OnboardingModal({ open, onClose }: { open: boolean; onClose: () 
           <button
             type="button"
             onClick={onClose}
-            aria-label="Stäng"
+            aria-label={t("close")}
             className="absolute right-4 top-4 z-10 flex h-9 w-9 items-center justify-center rounded-full text-neutral-400 transition hover:bg-white/10 hover:text-white"
           >
             <CloseIcon className="h-5 w-5" />
           </button>
 
           <div className="px-6 pb-7 pt-8 lg:px-8">
-            <h2 className="text-xl font-semibold tracking-tight text-white">Så fungerar det</h2>
-            <p className="mt-1.5 text-sm text-neutral-400">Fyra steg från skärmdump till färdigt beslutsunderlag.</p>
+            <h2 className="text-xl font-semibold tracking-tight text-white">{t("title")}</h2>
+            <p className="mt-1.5 text-sm text-neutral-400">{t("lead")}</p>
 
             <ol className="mt-6 flex flex-col gap-4">
-              {STEPS.map(({ emoji, title, description }, i) => (
-                <li key={title} className="flex gap-4">
+              {STEPS.map(({ id, emoji }, i) => (
+                <li key={id} className="flex gap-4">
                   <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-white/10 bg-white/5 text-xl">
                     {emoji}
                   </span>
                   <div className="min-w-0 pt-0.5">
                     <p className="text-[15px] font-semibold text-white">
                       <span className="mr-1.5 text-green-400">{i + 1}.</span>
-                      {title}
+                      {t(`steps.${id}.title`)}
                     </p>
-                    <p className="mt-1 text-sm leading-relaxed text-neutral-400">{description}</p>
+                    <p className="mt-1 text-sm leading-relaxed text-neutral-400">{t(`steps.${id}.description`)}</p>
                   </div>
                 </li>
               ))}
@@ -124,7 +109,7 @@ export function OnboardingModal({ open, onClose }: { open: boolean; onClose: () 
 
             <div className="mt-7 flex items-center gap-2 text-sm text-neutral-400">
               <span className="text-green-400">✓</span>
-              Tar vanligtvis mindre än 60 sekunder
+              {t("duration")}
             </div>
 
             <button
@@ -133,7 +118,7 @@ export function OnboardingModal({ open, onClose }: { open: boolean; onClose: () 
               onClick={handleCta}
               className="mt-5 w-full rounded-xl bg-green-600 py-3.5 text-[15px] font-semibold text-white transition hover:bg-green-500 focus:outline-none focus:ring-4 focus:ring-green-500/20"
             >
-              Jag vill testa
+              {t("cta")}
             </button>
           </div>
         </div>

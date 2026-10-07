@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
+import { useLocale, useTranslations } from "next-intl";
 import { QuestionIcon, CloseIcon, ArrowRightIcon, MailIcon } from "@/components/icons";
 
 interface Message {
@@ -8,15 +9,13 @@ interface Message {
   content: string;
 }
 
+const CONTACT_EMAIL = "kontakt@kopanalys.se";
+
 export function ChatWidget() {
+  const t = useTranslations("chat");
+  const locale = useLocale();
   const [open, setOpen] = useState(false);
-  const [messages, setMessages] = useState<Message[]>([
-    {
-      role: "assistant",
-      content:
-        "Hej! Jag är Köpanalys assistent. Hur kan jag hjälpa dig? Fråga gärna om våra analyser, priser eller hur tjänsten fungerar.",
-    },
-  ]);
+  const [messages, setMessages] = useState<Message[]>([{ role: "assistant", content: t("greeting") }]);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
   const [unavailable, setUnavailable] = useState(false);
@@ -44,7 +43,8 @@ export function ChatWidget() {
       const res = await fetch("/api/chat", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ messages: updatedMessages }),
+        // the page's language: the assistant answers in it
+        body: JSON.stringify({ messages: updatedMessages, locale }),
       });
 
       const data = await res.json();
@@ -55,8 +55,7 @@ export function ChatWidget() {
           ...prev,
           {
             role: "assistant",
-            content:
-              "Chatten är inte tillgänglig just nu – kontakta oss på kontakt@kopanalys.se istället.",
+            content: t("unavailable", { email: CONTACT_EMAIL }),
           },
         ]);
       } else if (data?.reply) {
@@ -68,8 +67,7 @@ export function ChatWidget() {
         ...prev,
         {
           role: "assistant",
-          content:
-            "Chatten är inte tillgänglig just nu – kontakta oss på kontakt@kopanalys.se istället.",
+          content: t("unavailable", { email: CONTACT_EMAIL }),
         },
       ]);
     } finally {
@@ -89,14 +87,12 @@ export function ChatWidget() {
       {open && (
         <div className="fixed bottom-20 right-3 z-[90] flex w-[360px] max-w-[calc(100vw-24px)] flex-col rounded-2xl border border-white/10 bg-neutral-900 shadow-2xl">
           <div className="flex items-center justify-between border-b border-white/10 px-4 py-3">
-            <span className="text-sm font-semibold text-white">
-              Köpanalys Chat
-            </span>
+            <span className="text-sm font-semibold text-white">{t("title")}</span>
             <button
               type="button"
               onClick={() => setOpen(false)}
               className="rounded-lg p-1 text-neutral-400 transition hover:text-white"
-              aria-label="Stäng chat"
+              aria-label={t("close")}
             >
               <CloseIcon className="h-5 w-5" />
             </button>
@@ -139,7 +135,7 @@ export function ChatWidget() {
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
                 onKeyDown={handleKeyDown}
-                placeholder="Skriv en fråga..."
+                placeholder={t("placeholder")}
                 disabled={loading}
                 className="min-w-0 flex-1 rounded-xl border border-white/10 bg-white/5 px-3.5 py-2 text-sm text-white placeholder-neutral-500 outline-none transition focus:border-green-500/50 disabled:opacity-50"
               />
@@ -148,7 +144,7 @@ export function ChatWidget() {
                 onClick={sendMessage}
                 disabled={loading || !input.trim()}
                 className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-green-500 text-white transition hover:bg-green-400 disabled:opacity-50"
-                aria-label="Skicka meddelande"
+                aria-label={t("send")}
               >
                 <ArrowRightIcon className="h-4 w-4" />
               </button>
@@ -161,7 +157,7 @@ export function ChatWidget() {
         type="button"
         onClick={() => setOpen((v) => !v)}
         className="fixed bottom-3 right-3 z-[90] flex h-12 w-12 items-center justify-center rounded-full bg-green-500 text-white shadow-lg transition hover:bg-green-400"
-        aria-label="Öppna chat"
+        aria-label={open ? t("close") : t("open")}
       >
         {open ? (
           <CloseIcon className="h-5 w-5" />

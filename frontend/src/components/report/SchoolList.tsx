@@ -1,3 +1,4 @@
+import { useTranslations } from "next-intl";
 import type { SchoolRow } from "@/lib/report/build";
 
 /** Plain list treatment for nearby schools — name, address, distance, and
@@ -6,6 +7,8 @@ import type { SchoolRow } from "@/lib/report/build";
  *  side by side so the reader can compare them directly, not a derived
  *  rating. */
 export function SchoolList({ rows }: { rows: SchoolRow[] }) {
+  const t = useTranslations("report.area.school");
+  const bold = (chunks: React.ReactNode) => <span className="font-medium">{chunks}</span>;
   return (
     <ul className="relative space-y-0">
       {rows.map((row, i) => (
@@ -20,16 +23,16 @@ export function SchoolList({ rows }: { rows: SchoolRow[] }) {
               <p className="mt-1 text-[12px] leading-relaxed text-[#2A2820]">
                 {row.result.godkantAllaAmnenPct !== null && (
                   <>
-                    Godkänt i alla ämnen åk 9: <span className="font-medium">{row.result.godkantAllaAmnenPct}%</span>
+                    {t.rich("passedAll", { value: row.result.godkantAllaAmnenPct, b: bold })}
                     {row.result.gymnasiebehorighetPct !== null ? " · " : " "}
                   </>
                 )}
                 {row.result.gymnasiebehorighetPct !== null && (
                   <>
-                    Behöriga till gymnasiet: <span className="font-medium">{row.result.gymnasiebehorighetPct}%</span>{" "}
+                    {t.rich("eligible", { value: row.result.gymnasiebehorighetPct, b: bold })}{" "}
                   </>
                 )}
-                <span className="text-[#8C8471]">(läsår {row.result.statisticsYear}, Skolverket)</span>
+                <span className="text-[#8C8471]">{t("source", { year: row.result.statisticsYear })}</span>
               </p>
             )}
           </div>

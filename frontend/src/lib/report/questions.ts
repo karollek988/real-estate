@@ -1,14 +1,16 @@
 import type { AnalysisReport } from "@/lib/analysis/types";
 import type { BrfChapterState } from "./brfChapter";
-import { dateSv } from "./format";
+import { createFormat } from "./format";
 import { tenureOf } from "./tenure";
+import type { TextKit } from "../../i18n/textKit";
 // Runtime imports are relative (build.verify.mjs runs this through tsx).
 
 /**
  * The report's last chapter, "Frågor inför visningen": what to ask the
  * broker and the association, built from what the listing and the BRF
  * analysis leave open — plus a plain list of what the report does not cover.
- * Questions only; the report never tells the buyer what to do.
+ * Questions only; the report never tells the buyer what to do. Every question
+ * is a message (messages/<language>/report.ts, under "report.questions").
  */
 export interface QuestionsContent {
   broker: string[];
@@ -19,37 +21,35 @@ export interface QuestionsContent {
   notCovered: string[];
 }
 
-export function buildQuestions(report: AnalysisReport, brf: BrfChapterState): QuestionsContent {
+export function buildQuestions(report: AnalysisReport, brf: BrfChapterState, kit: TextKit): QuestionsContent {
+  const t = kit.t;
+  const fx = createFormat(kit);
   const p = report.property;
   const tenure = tenureOf(p);
   const hasAssociation = brf.kind === "awaiting" || brf.kind === "published";
 
-  const broker: string[] = ["Finns det kända fel eller brister i bostaden som inte framgår av annonsen?"];
+  const broker: string[] = [t("report.questions.brokerList.knownFaults")];
   if (hasAssociation) {
-    broker.push(
-      p.monthlyFeeSek !== null
-        ? "Vad ingår i månadsavgiften — till exempel värme, vatten, el eller bredband?"
-        : "Vad är månadsavgiften, och vad ingår i den?"
-    );
-    broker.push("Vem betalar överlåtelseavgiften och pantsättningsavgiften enligt föreningens stadgar?");
+    broker.push(p.monthlyFeeSek !== null ? t("report.questions.brokerList.feeIncluded") : t("report.questions.brokerList.feeUnknown"));
+    broker.push(t("report.questions.brokerList.transferFees"));
   }
   if (tenure === "freehold") {
-    broker.push("Finns det en överlåtelsebesiktning, och vad visade den?");
-    broker.push("Hur många pantbrev finns redan uttagna i fastigheten, och till vilket belopp?");
+    broker.push(t("report.questions.brokerList.inspectionReport"));
+    broker.push(t("report.questions.brokerList.mortgageDeeds"));
   }
   if (p.operatingCostsSek === null) {
-    broker.push("Vad är driftskostnaden per år för el, värme, vatten och försäkring?");
+    broker.push(t("report.questions.brokerList.operatingCosts"));
   }
   if (p.energyClass === null) {
-    broker.push("Finns det en giltig energideklaration, och vilken energiklass har huset?");
+    broker.push(t("report.questions.brokerList.energyDeclaration"));
   }
   if (p.buildingYear === null) {
-    broker.push("Vilket år byggdes huset, och när gjordes den senaste större renoveringen?");
+    broker.push(t("report.questions.brokerList.buildingYear"));
   }
   if (p.previousSaleDate) {
-    broker.push(`Bostaden såldes senast ${dateSv(p.previousSaleDate)} — vad har gjorts med den sedan dess?`);
+    broker.push(t("report.questions.brokerList.previousSale", { date: fx.date(p.previousSaleDate) }));
   }
-  broker.push("Varför säljs bostaden?");
+  broker.push(t("report.questions.brokerList.whySelling"));
 
   let association: string[] = [];
   let associationNote: string | null = null;
@@ -57,18 +57,18 @@ export function buildQuestions(report: AnalysisReport, brf: BrfChapterState): Qu
     association = brf.reading.questions;
   } else if (brf.kind === "awaiting") {
     association = [
-      "Finns det planerade renoveringar, till exempel stambyte, eller beslutade avgiftshöjningar de kommande åren?",
-      "Hur ser föreningens lån ut — vilken ränta, och när ska lånen omförhandlas?",
-      "Finns det en aktuell underhållsplan?",
+      t("report.questions.associationWaiting.renovations"),
+      t("report.questions.associationWaiting.loans"),
+      t("report.questions.associationWaiting.maintenancePlan"),
     ];
-    associationNote = "Frågor anpassade efter just den här föreningens ekonomi visas här när BRF-analysen är granskad.";
+    associationNote = t("report.questions.associationWaiting.note");
   }
 
   const notCovered = [
-    "Bostadens skick är inte besiktigat — rapporten ersätter inte en besiktning.",
-    "Ditt eget lånelöfte och din privatekonomi ingår inte.",
-    "Rapporten bedömer inte vad bostaden är värd eller vad den kommer att säljas för.",
-    "Boendekalkylen med samtliga kostnader vid köpet lanseras inom kort.",
+    t("report.questions.notCoveredList.survey"),
+    t("report.questions.notCoveredList.finances"),
+    t("report.questions.notCoveredList.value"),
+    t("report.questions.notCoveredList.housingCost"),
   ];
 
   return { broker, association, associationNote, notCovered };

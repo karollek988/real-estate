@@ -1,10 +1,12 @@
 "use client";
 
 import { useEffect, useId, useRef, useState } from "react";
-import Link from "next/link";
+import { useTranslations } from "next-intl";
+import { Link } from "@/i18n/navigation";
 import { BrandLogo } from "@/components/BrandLogo";
-import { ChevronDownIcon, ChevronRightIcon, CloseIcon, FilePlusIcon, LogOutIcon, UserIcon } from "@/components/icons";
-import { MAIN_NAV, ROUTES, isActivePath, isEntryActive } from "@/components/site/navigation";
+import { ChevronDownIcon, ChevronRightIcon, CloseIcon, FilePlusIcon, GlobeIcon, LogOutIcon, UserIcon } from "@/components/icons";
+import { LanguageLinks } from "@/components/LanguageSwitcher";
+import { MAIN_NAV, ROUTES, hrefKey, isActivePath, isEntryActive } from "@/components/site/navigation";
 import { MapSearchForm } from "./HeaderSearch";
 import { ACCOUNT_LINKS, initialsFor } from "./UserMenu";
 import type { HeaderTheme } from "./theme";
@@ -38,10 +40,12 @@ export function MobileNav({
   onSignIn: () => void;
   onSignOut: () => void;
 }) {
+  const t = useTranslations("nav");
+  const tLanguage = useTranslations("common.languageSwitcher");
   const dialogRef = useRef<HTMLDivElement>(null);
   const titleId = useId();
   const [expanded, setExpanded] = useState<string | null>(
-    () => MAIN_NAV.find((entry) => entry.kind === "menu" && isEntryActive(pathname, entry))?.label ?? null,
+    () => MAIN_NAV.find((entry) => entry.kind === "menu" && isEntryActive(pathname, entry))?.id ?? null,
   );
 
   // Read through a ref so the effect below runs only on mount and unmount.
@@ -95,17 +99,17 @@ export function MobileNav({
       className={`animate-drawer-in fixed inset-0 z-[70] flex flex-col xl:hidden ${theme.drawer}`}
     >
       <h2 id={titleId} className="sr-only">
-        Meny
+        {t("menuTitle")}
       </h2>
       <div className={`flex h-16 shrink-0 items-center justify-between border-b px-4 sm:px-6 ${theme.drawerRow}`}>
-        <Link href={ROUTES.home} onClick={onClose} aria-label="Köpanalys – till startsidan" className={`rounded-lg ${theme.focusRing}`}>
+        <Link href={ROUTES.home} onClick={onClose} aria-label={t("homeLabel")} className={`rounded-lg ${theme.focusRing}`}>
           <BrandLogo className={`text-[19px] ${theme.logo}`} markClassName="h-10 w-10" markSizes="40px" />
         </Link>
         <button
           type="button"
           data-autofocus
           onClick={onClose}
-          aria-label="Stäng meny"
+          aria-label={t("closeMenu")}
           className={`-mr-1.5 flex h-11 w-11 cursor-pointer items-center justify-center rounded-full transition ${theme.iconButton} ${theme.focusRing}`}
         >
           <CloseIcon className="h-6 w-6" />
@@ -116,13 +120,13 @@ export function MobileNav({
         <div className="mx-auto w-full max-w-xl">
           <MapSearchForm theme={theme} idPrefix="mobile-nav-search" onSubmitted={onClose} />
 
-          <nav aria-label="Huvudmeny" className="mt-6">
+          <nav aria-label={t("mainMenu")} className="mt-6">
             <ul className={`border-t ${theme.drawerRow}`}>
               {MAIN_NAV.map((entry) => {
                 if (entry.kind === "link") {
                   const current = isActivePath(pathname, entry.href);
                   return (
-                    <li key={entry.href}>
+                    <li key={entry.id}>
                       <Link
                         href={entry.href}
                         onClick={onClose}
@@ -134,14 +138,14 @@ export function MobileNav({
                         ) : (
                           <span aria-hidden className="w-[22px] shrink-0" />
                         )}
-                        <span className="flex-1">{entry.label}</span>
+                        <span className="flex-1">{t(`entries.${entry.id}`)}</span>
                         <ChevronRightIcon className={`h-5 w-5 shrink-0 ${theme.panelText}`} />
                       </Link>
                     </li>
                   );
                 }
 
-                const isOpen = expanded === entry.label;
+                const isOpen = expanded === entry.id;
                 const groupId = `${titleId}-${entry.id}`;
                 return (
                   <li key={entry.id}>
@@ -149,11 +153,11 @@ export function MobileNav({
                       type="button"
                       aria-expanded={isOpen}
                       aria-controls={groupId}
-                      onClick={() => setExpanded(isOpen ? null : entry.label)}
+                      onClick={() => setExpanded(isOpen ? null : entry.id)}
                       className={`${row} cursor-pointer ${isEntryActive(pathname, entry) ? "font-semibold" : ""}`}
                     >
                       <entry.icon className={`h-[22px] w-[22px] shrink-0 ${theme.navIcon}`} />
-                      <span className="flex-1">{entry.label}</span>
+                      <span className="flex-1">{t(`entries.${entry.id}`)}</span>
                       <ChevronDownIcon
                         className={`h-5 w-5 shrink-0 transition-transform duration-200 ${isOpen ? "rotate-180" : ""} ${theme.panelText}`}
                       />
@@ -162,7 +166,7 @@ export function MobileNav({
                       {entry.items.map((item) => {
                         const current = isActivePath(pathname, item.href);
                         return (
-                          <li key={item.href}>
+                          <li key={hrefKey(item.href)}>
                             <Link
                               href={item.href}
                               onClick={onClose}
@@ -173,8 +177,8 @@ export function MobileNav({
                             >
                               <item.icon className={`h-6 w-6 shrink-0 ${theme.panelIcon}`} strokeWidth={1.5} />
                               <span className="min-w-0 flex-1">
-                                <span className={`block text-[15.5px] font-semibold ${theme.panelTitle}`}>{item.label}</span>
-                                <span className={`mt-0.5 block text-[13.5px] ${theme.panelText}`}>{item.description}</span>
+                                <span className={`block text-[15.5px] font-semibold ${theme.panelTitle}`}>{t(`${item.key}.label`)}</span>
+                                <span className={`mt-0.5 block text-[13.5px] ${theme.panelText}`}>{t(`${item.key}.description`)}</span>
                               </span>
                             </Link>
                           </li>
@@ -194,7 +198,7 @@ export function MobileNav({
               className={`flex h-14 items-center justify-center gap-2.5 rounded-xl text-[16px] font-semibold transition ${theme.cta} ${theme.focusRing}`}
             >
               <FilePlusIcon className="h-[22px] w-[22px]" />
-              Skapa analys
+              {t("createAnalysis")}
             </Link>
 
             {signedIn ? (
@@ -206,14 +210,14 @@ export function MobileNav({
                   <span className="min-w-0 truncate font-semibold">{displayName}</span>
                 </p>
                 <ul className={`border-t pt-1 ${theme.panelDivider}`}>
-                  {ACCOUNT_LINKS.map(({ label, href }) => (
+                  {ACCOUNT_LINKS.map(({ key, href }) => (
                     <li key={href}>
                       <Link
                         href={href}
                         onClick={onClose}
                         className={`block rounded-lg px-2 py-3 text-[15px] transition ${theme.panelItem} ${theme.focusRing}`}
                       >
-                        {label}
+                        {t(`account.links.${key}`)}
                       </Link>
                     </li>
                   ))}
@@ -227,7 +231,7 @@ export function MobileNav({
                       className={`flex w-full cursor-pointer items-center gap-2 rounded-lg px-2 py-3 text-left text-[15px] transition ${theme.danger}`}
                     >
                       <LogOutIcon className="h-4 w-4" />
-                      Logga ut
+                      {t("account.signOut")}
                     </button>
                   </li>
                 </ul>
@@ -242,9 +246,21 @@ export function MobileNav({
                 className={`flex h-14 cursor-pointer items-center justify-center gap-2.5 rounded-xl border text-[16px] font-semibold transition ${theme.drawerSecondary} ${theme.focusRing}`}
               >
                 <UserIcon className="h-5 w-5" />
-                Logga in
+                {t("account.signIn")}
               </button>
             )}
+
+            <div className={`mt-3 flex flex-wrap items-center justify-between gap-x-4 gap-y-2 border-t pt-5 ${theme.drawerRow}`}>
+              <span className={`flex items-center gap-2 text-[14px] ${theme.panelText}`}>
+                <GlobeIcon className={`h-5 w-5 ${theme.navIcon}`} />
+                {tLanguage("label")}
+              </span>
+              <LanguageLinks
+                onChosen={onClose}
+                itemClassName={`rounded-lg px-1 py-2 text-[15.5px] underline-offset-4 hover:underline ${theme.focusRing}`}
+                currentClassName={`py-2 text-[15.5px] font-semibold ${theme.drawerActive}`}
+              />
+            </div>
           </div>
         </div>
       </div>

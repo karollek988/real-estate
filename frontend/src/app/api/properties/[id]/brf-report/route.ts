@@ -16,6 +16,7 @@ import { isAdminUser } from "@/lib/auth/admin";
 import { ensureBrfReview } from "@/lib/brf/reviews";
 import { notifyTeamOfBrfReview } from "@/lib/brf/notify";
 import { pythonEngineHeaders } from "@/lib/pythonEngine";
+import { apiError } from "@/i18n/apiText";
 
 function errorResponse(status: number, code: string, message: string) {
   return NextResponse.json({ error: { code, message } }, { status });
@@ -124,7 +125,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
   const upload = classifyBrfMimeType(mimeType);
   if (!upload) {
     console.error(`POST /api/properties/${propertyId}/brf-report rejected: unsupported mimeType="${mimeType}" (filename="${filename}")`);
-    return errorResponse(422, "invalid_file_type", "Ladda upp en PDF, ett Word-dokument (.docx) eller en bild av årsredovisningen.");
+    return await apiError(422, "invalid_file_type", "brfReport.invalidType");
   }
 
   const storage = createAdminClient().storage.from(BRF_REPORTS_BUCKET);
@@ -132,7 +133,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
   const { data: downloaded, error: downloadError } = await storage.download(stagingPath);
   if (downloadError || !downloaded) {
     console.error(`POST /api/properties/${propertyId}/brf-report failed: could not download staged upload "${stagingPath}" (filename="${filename}"):`, downloadError);
-    return errorResponse(422, "upload_not_found", "Kunde inte hitta den uppladdade filen. Försök ladda upp den igen.");
+    return await apiError(422, "upload_not_found", "brfReport.uploadNotFound");
   }
 
   const bytes = Buffer.from(await downloaded.arrayBuffer());
@@ -141,7 +142,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
   try {
     if (bytes.byteLength > MAX_BRF_REPORT_BYTES) {
       console.error(`POST /api/properties/${propertyId}/brf-report rejected: downloaded size exceeds ${MAX_BRF_REPORT_BYTES} (${context})`);
-      return errorResponse(413, "file_too_large", "Filen är för stor (max 20 MB).");
+      return await apiError(413, "file_too_large", "brfReport.tooLarge");
     }
 
     const contentHash = createHash("sha256").update(bytes).digest("hex");
@@ -203,7 +204,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
     });
   } catch (err) {
     console.error(`POST /api/properties/${propertyId}/brf-report failed (${context}):`, err);
-    return errorResponse(500, "internal_error", "Kunde inte ta emot årsredovisningen. Försök igen.");
+    return await apiError(500, "internal_error", "brfReport.receiveFailed");
   } finally {
     // Always clear the staged upload, whether this attempt succeeded or not.
     const { error: cleanupError } = await storage.remove([stagingPath]);

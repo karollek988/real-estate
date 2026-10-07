@@ -1,9 +1,12 @@
+import { useTranslations } from "next-intl";
+
 /** Small badge pills for the "Källor" line every chapter ends with —
  *  the same source names ChapterSources always listed, just read as
  *  provenance tags instead of a bullet list. */
 export function SourceBadges({ names }: { names: string[] }) {
+  const t = useTranslations("report.sources");
   if (names.length === 0) {
-    return <p className="mt-2 text-[12.5px] italic text-[#8C8471]">Inga anslutna källor användes i det här kapitlet ännu.</p>;
+    return <p className="mt-2 text-[12.5px] italic text-[#8C8471]">{t("none")}</p>;
   }
   return (
     <div className="mt-2.5 flex flex-wrap gap-2">

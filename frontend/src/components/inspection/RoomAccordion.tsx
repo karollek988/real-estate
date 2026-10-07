@@ -1,13 +1,15 @@
 "use client";
 
 import { useRef, useState } from "react";
+import { useTranslations } from "next-intl";
 import { CheckIcon, ChevronDownIcon, UploadCloudIcon, WarningIcon } from "@/components/icons";
 import { ROOMS, type ChecklistState, type CheckpointState, type Severity } from "@/lib/inspection/types";
 
-const SEVERITIES: { value: Severity; label: string; className: string }[] = [
-  { value: "ok", label: "OK", className: "border-green-500/40 bg-green-500/10 text-green-400" },
-  { value: "minor", label: "Mindre anmärkning", className: "border-amber-400/40 bg-amber-400/10 text-amber-300" },
-  { value: "major", label: "Allvarlig anmärkning", className: "border-red-500/40 bg-red-500/10 text-red-300" },
+/** How serious a remark is, and how its button looks. The labels: inspection.severities.<value> */
+const SEVERITIES: { value: Severity; className: string }[] = [
+  { value: "ok", className: "border-green-500/40 bg-green-500/10 text-green-400" },
+  { value: "minor", className: "border-amber-400/40 bg-amber-400/10 text-amber-300" },
+  { value: "major", className: "border-red-500/40 bg-red-500/10 text-red-300" },
 ];
 
 const EMPTY_CHECKPOINT: CheckpointState = { checked: false, severity: null, notes: "", photoIds: [] };
@@ -29,6 +31,7 @@ export function RoomAccordion({
   onPhotoUpload: (roomId: string, checkpointId: string, files: FileList) => Promise<void>;
   photoCountFor: (roomId: string, checkpointId: string) => number;
 }) {
+  const t = useTranslations("inspection");
   const [openRoom, setOpenRoom] = useState<string | null>(ROOMS[0]?.id ?? null);
 
   return (
@@ -56,7 +59,7 @@ export function RoomAccordion({
                 >
                   {done}/{total}
                 </span>
-                <p className="text-sm font-medium text-white">{room.label}</p>
+                <p className="text-sm font-medium text-white">{t(`rooms.${room.id}.label`)}</p>
               </div>
               <ChevronDownIcon className={`h-4 w-4 text-neutral-500 transition-transform ${open ? "rotate-180" : ""}`} />
             </button>
@@ -67,7 +70,7 @@ export function RoomAccordion({
                   return (
                     <CheckpointRow
                       key={checkpoint.id}
-                      label={checkpoint.label}
+                      label={(t as unknown as (key: string) => string)(`rooms.${room.id}.checkpoints.${checkpoint.id}`)}
                       state={state}
                       photoCount={photoCountFor(room.id, checkpoint.id)}
                       onChange={(patch) => onCheckpointChange(room.id, checkpoint.id, patch)}
@@ -97,6 +100,7 @@ function CheckpointRow({
   onChange: (patch: Partial<CheckpointState>) => void;
   onPhotos: (files: FileList) => Promise<void>;
 }) {
+  const t = useTranslations("inspection");
   const fileRef = useRef<HTMLInputElement>(null);
   const [uploading, setUploading] = useState(false);
 
@@ -127,7 +131,7 @@ function CheckpointRow({
                   state.severity === s.value ? s.className : "border-white/10 text-neutral-500 hover:border-white/20"
                 }`}
               >
-                {s.label}
+                {t(`severities.${s.value}`)}
               </button>
             ))}
           </div>
@@ -135,7 +139,7 @@ function CheckpointRow({
           <textarea
             value={state.notes}
             onChange={(e) => onChange({ notes: e.target.value })}
-            placeholder="Anteckningar..."
+            placeholder={t("checkpoint.notes")}
             rows={2}
             className="w-full resize-none rounded-lg border border-white/10 bg-black/30 px-3 py-2 text-xs text-white placeholder:text-neutral-500 outline-none transition focus:border-green-500/60"
           />
@@ -148,10 +152,10 @@ function CheckpointRow({
               className="flex items-center gap-1.5 rounded-lg border border-white/10 px-2.5 py-1.5 text-xs font-medium text-neutral-300 transition hover:border-white/20 disabled:opacity-60"
             >
               <UploadCloudIcon className="h-3.5 w-3.5" />
-              {uploading ? "Laddar upp..." : "Lägg till foto"}
+              {uploading ? t("checkpoint.uploading") : t("checkpoint.addPhoto")}
             </button>
             {photoCount > 0 && <CheckIcon className="h-3.5 w-3.5 text-green-400" />}
-            {photoCount > 0 && <span className="text-xs text-neutral-500">{photoCount} foto{photoCount > 1 ? "n" : ""}</span>}
+            {photoCount > 0 && <span className="text-xs text-neutral-500">{t("checkpoint.photos", { count: photoCount })}</span>}
             <input
               ref={fileRef}
               type="file"

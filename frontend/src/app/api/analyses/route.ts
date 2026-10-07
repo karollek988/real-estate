@@ -9,7 +9,6 @@ import { extractFromManualFields, type ManualListingFields } from "@/lib/analysi
 import {
   requestAnalysis,
   missingEssentialFields,
-  ESSENTIAL_FIELD_LABELS,
   type AnalysisRequestInput,
   type AnalysisRequestResult,
 } from "@/lib/analysis/pipeline";
@@ -18,6 +17,9 @@ import { requireUser } from "@/lib/auth/requireUser";
 import { isDevAdmin } from "@/lib/auth/devAdmin";
 import { checkRateLimit, clientIp } from "@/lib/rateLimit";
 import { OMRADESANALYS_PRICE_SEK } from "@/lib/pricing";
+import { apiError, apiTexts } from "@/i18n/apiText";
+import { statedLocaleOfRequest } from "@/i18n/requestLocale";
+import { rememberCustomerLanguage } from "@/lib/auth/rememberLanguage";
 
 export const maxDuration = 300;
 
@@ -67,17 +69,12 @@ function resultResponse(result: AnalysisRequestResult) {
   });
 }
 
-const NO_CREDIT_MESSAGE: Record<AnalysisType, string> = {
-  full: "Du har inget Trygghetspaket kvar. Köp ett för att analysera en bostad.",
-  area: `Du har ingen Områdesanalys kvar. Köp en för ${OMRADESANALYS_PRICE_SEK} kr för att analysera ett område.`,
-};
-
 export async function POST(request: Request) {
   const { user, response: authError } = await requireUser();
   if (authError) return authError;
 
   if (!checkRateLimit(`analyses:${clientIp(request)}`, RATE_LIMIT_PER_HOUR, 60 * 60_000)) {
-    return errorResponse(429, "rate_limited", "För många analysförfrågningar från din uppkoppling – försök igen om en stund.");
+    return await apiError(429, "rate_limited", "analyses.rateLimited");
   }
 
   let body: { url?: unknown; manual?: unknown; address?: unknown; force?: unknown; analysisType?: unknown };
@@ -97,18 +94,14 @@ export async function POST(request: Request) {
   if (analysisType === "area") {
     const address = typeof body.address === "string" ? body.address.trim() : "";
     if (address === "" || address.length > MAX_ADDRESS_LENGTH) {
-      return errorResponse(400, "invalid_request", "Ange adressen du vill analysera området runt.");
+      return await apiError(400, "invalid_request", "analyses.addressRequired");
     }
     // The city has to be part of the address: an area analysis is a report
     // about *where* a place is, and "Storgatan 12" alone matches a street in
     // dozens of municipalities — the customer would pay for the wrong area.
     const { municipality } = extractFromManualFields({ address });
     if (!municipality) {
-      return errorResponse(
-        422,
-        "address_needs_city",
-        "Ange både gatuadress och ort, till exempel Storgatan 12, Stockholm."
-      );
+      return await apiError(422, "address_needs_city", "analyses.addressNeedsCity");
     }
     input = { kind: "manual", fields: { address } };
   } else if (typeof body.url === "string" && body.url.trim() !== "") {
@@ -118,40 +111,21 @@ export async function POST(request: Request) {
         input = { kind: "hemnet", url: classification.url };
         break;
       case "booli":
-        return errorResponse(
-          422,
-          "booli_needs_address",
-          "We recognized that Booli link, but the listing page itself can't be read automatically — enter the property's address manually and we'll pull matching price, fee and area data from Booli for you."
-        );
+        return await apiError(422, "booli_needs_address", "analyses.booliNeedsAddress");
       case "unsupported_provider":
-        return errorResponse(
-          422,
-          "unsupported_provider",
-          `We don't support ${classification.provider} links yet — enter the details manually and we'll analyze the property.`
-        );
+        return await apiError(422, "unsupported_provider", "analyses.unsupportedProvider", { provider: classification.provider });
       case "unknown_url":
-        return errorResponse(
-          422,
-          "not_a_listing",
-          "That doesn't look like a property listing we can read. If you have an address, enter the details manually."
-        );
+        return await apiError(422, "not_a_listing", "analyses.notAListing");
       case "invalid_url":
-        return errorResponse(
-          400,
-          "invalid_url",
-          "We couldn't read that link. Double check it's a full listing URL, or enter the address manually."
-        );
+        return await apiError(400, "invalid_url", "analyses.invalidUrl");
     }
   } else if (isManualFields(body.manual)) {
     const extracted = extractFromManualFields(body.manual);
     const missing = missingEssentialFields(extracted.attributes, extracted);
     if (missing.length > 0) {
-      const labels = missing.map((f) => ESSENTIAL_FIELD_LABELS[f] ?? f).join(", ");
-      return errorResponse(
-        422,
-        "insufficient_manual_data",
-        `Fyll i följande för att kunna analysera bostaden: ${labels}.`
-      );
+      const { loose } = await apiTexts();
+      const labels = missing.map((f) => (loose.has(`essentialFields.${f}`) ? loose(`essentialFields.${f}`) : f)).join(", ");
+      return await apiError(422, "insufficient_manual_data", "analyses.insufficientManualData", { labels });
     }
     input = { kind: "manual", fields: body.manual };
   } else {
@@ -177,7 +151,12 @@ export async function POST(request: Request) {
     if (!isDevAdmin(user.email)) {
       const remaining = await consumeCredit(user.id, analysisType);
       if (remaining === null) {
-        return errorResponse(402, "no_credit", NO_CREDIT_MESSAGE[analysisType]);
+        return await apiError(
+          402,
+          "no_credit",
+          analysisType === "full" ? "analyses.noCredit.full" : "analyses.noCredit.area",
+          { price: OMRADESANALYS_PRICE_SEK }
+        );
       }
       creditTaken = true;
     }
@@ -191,6 +170,9 @@ export async function POST(request: Request) {
       quotaConsumed: creditTaken,
     });
     if (analysisType === "full") await openBrfReview(result.property);
+    // the e-mails about this analysis (the housing association analysis being ready) come in the language it was ordered in
+    const orderedIn = statedLocaleOfRequest(request);
+    if (orderedIn) await rememberCustomerLanguage(user, orderedIn);
     return resultResponse(result);
   } catch (err) {
     if (creditTaken) {
@@ -199,18 +181,10 @@ export async function POST(request: Request) {
       });
     }
     if (err instanceof HemnetUrlError) {
-      return errorResponse(
-        422,
-        "unreadable_listing",
-        "We couldn't read that Hemnet link. Double check it's a listing URL, or enter the address manually."
-      );
+      return await apiError(422, "unreadable_listing", "analyses.unreadableListing");
     }
     console.error("POST /api/analyses failed:", err);
-    return errorResponse(
-      500,
-      "analysis_failed",
-      "Something went wrong while analyzing the property. Please try again."
-    );
+    return await apiError(500, "analysis_failed", "analyses.failed");
   }
 }
 

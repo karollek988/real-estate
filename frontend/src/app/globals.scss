@@ -1,4 +1,4 @@
-// Global stylesheet of the public site (App Router; imported by app/layout.tsx).
+// Global stylesheet of the public site (App Router; imported by app/[locale]/layout.tsx).
 // Sass compiles it first, then Tailwind (PostCSS) processes the result. Colours,
 // fonts, easings and breakpoints come from the master variables file.
 @use "sass:meta";

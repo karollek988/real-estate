@@ -3,7 +3,9 @@
 import "leaflet/dist/leaflet.css";
 import "@/components/admin/atlas/atlas-public.scss";
 import { useEffect, useRef, useState } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useSearchParams } from "next/navigation";
+import { useLocale, useTranslations } from "next-intl";
+import { useRouter } from "@/i18n/navigation";
 import type { AtlasHandle } from "@/components/admin/atlas/atlas";
 import { ROUTES } from "@/components/site/navigation";
 
@@ -19,6 +21,13 @@ import { ROUTES } from "@/components/site/navigation";
  */
 export function PublicMap() {
   const router = useRouter();
+  const t = useTranslations("map");
+  const locale = useLocale();
+  // read when the map mounts; the map is rebuilt for a new language by the page itself (a new address), not by a re-render
+  const textsRef = useRef({ t, locale });
+  useEffect(() => {
+    textsRef.current = { t, locale };
+  });
   const searchParams = useSearchParams();
   const query = (searchParams?.get("q") ?? "").slice(0, 120);
   const rootRef = useRef<HTMLDivElement>(null);
@@ -37,6 +46,9 @@ export function PublicMap() {
           variant: "public",
           initialQuery: searchedRef.current,
           onCreateAnalysis: () => router.push(ROUTES.skapaAnalys),
+          // the map is plain code that asks for its texts by key: the "map" messages, in the language of the page
+          t: (key, values) => textsRef.current.t(key as never, values as never),
+          locale: textsRef.current.locale,
         });
         setStatus("ready");
       })
@@ -61,11 +73,11 @@ export function PublicMap() {
     <div className="relative h-full">
       <div ref={rootRef} className="atlas-root atlas-public" />
       {status === "loading" && (
-        <p className="pointer-events-none absolute inset-0 flex items-center justify-center text-sm text-ka-muted">Laddar kartan…</p>
+        <p className="pointer-events-none absolute inset-0 flex items-center justify-center text-sm text-ka-muted">{t("loading")}</p>
       )}
       {status === "failed" && (
         <p role="alert" className="absolute inset-0 flex items-center justify-center px-6 text-center text-sm text-ka-text">
-          Kartan kunde inte laddas. Ladda om sidan och försök igen.
+          {t("failed")}
         </p>
       )}
     </div>

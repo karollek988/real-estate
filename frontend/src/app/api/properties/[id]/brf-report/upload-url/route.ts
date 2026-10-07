@@ -6,6 +6,7 @@ import { BRF_REPORTS_BUCKET, MAX_BRF_REPORT_BYTES, classifyBrfMimeType } from "@
 import { hasFullEntitlementForProperty } from "@/lib/analysis/ownership";
 import { requireUser } from "@/lib/auth/requireUser";
 import { isAdminUser } from "@/lib/auth/admin";
+import { apiError } from "@/i18n/apiText";
 
 function errorResponse(status: number, code: string, message: string) {
   return NextResponse.json({ error: { code, message } }, { status });
@@ -64,7 +65,7 @@ export async function POST(
       `POST /api/properties/${propertyId}/brf-report/upload-url rejected: ` +
         `declared size ${size} bytes exceeds ${MAX_BRF_REPORT_BYTES} (filename="${filename}", mimeType="${mimeType}")`
     );
-    return errorResponse(413, "file_too_large", "Filen är för stor (max 20 MB).");
+    return await apiError(413, "file_too_large", "brfReport.tooLarge");
   }
 
   const upload = classifyBrfMimeType(mimeType);
@@ -73,11 +74,7 @@ export async function POST(
       `POST /api/properties/${propertyId}/brf-report/upload-url rejected: ` +
         `unsupported mimeType="${mimeType}" (filename="${filename}")`
     );
-    return errorResponse(
-      422,
-      "invalid_file_type",
-      "Ladda upp en PDF, ett Word-dokument (.docx) eller en bild av årsredovisningen."
-    );
+    return await apiError(422, "invalid_file_type", "brfReport.invalidType");
   }
 
   // Staged under the uploading user, not the final content-hash path (that's
@@ -95,7 +92,7 @@ export async function POST(
         `createSignedUploadUrl error for path "${stagingPath}":`,
       error
     );
-    return errorResponse(500, "internal_error", "Could not prepare the upload. Please try again.");
+    return await apiError(500, "internal_error", "brfReport.prepareFailed");
   }
 
   return NextResponse.json({

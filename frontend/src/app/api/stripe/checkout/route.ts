@@ -1,4 +1,8 @@
 import { NextResponse } from "next/server";
+import { apiError } from "@/i18n/apiText";
+import { LOCALES } from "@/i18n/locales";
+import { getPathname } from "@/i18n/navigation";
+import { localeOfRequest } from "@/i18n/requestLocale";
 import { requireUser } from "@/lib/auth/requireUser";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createOneTimeCheckout } from "@/lib/stripe/checkout";
@@ -69,7 +73,7 @@ export async function POST(request: Request) {
   }
 
   if (!checkRateLimit(`checkout:${clientIp(request)}`, RATE_LIMIT_PER_10_MINUTES, 10 * 60_000)) {
-    return errorResponse(429, "rate_limited", "För många försök – vänta en liten stund och försök igen.");
+    return apiError(429, "rate_limited", "stripe.rateLimited", undefined, { request });
   }
 
   console.log("[Stripe Checkout] Starting checkout for user:", user.id);
@@ -80,7 +84,9 @@ export async function POST(request: Request) {
     return errorResponse(400, "invalid_request", "Invalid request body.");
   }
 
-  const { priceKey, discountCode } = body as { priceKey?: unknown; discountCode?: unknown };
+  const { priceKey, discountCode, locale: askedLocale } = body as { priceKey?: unknown; discountCode?: unknown; locale?: unknown };
+  // the language of the page the buyer is on: the payment page opens in it and the buyer returns to it
+  const locale = localeOfRequest(request, askedLocale);
 
   if (typeof priceKey !== "string") {
     console.log("[Stripe Checkout] ✗ Missing or invalid priceKey");
@@ -106,8 +112,9 @@ export async function POST(request: Request) {
   console.log("[Stripe Checkout] Customer ID:", customerId ?? "none (will create guest checkout)");
 
   const origin = request.headers.get("origin") ?? "http://localhost:3001";
-  const successUrl = `${origin}/buy?checkout=success`;
-  const cancelUrl = `${origin}/buy?checkout=cancel`;
+  const returnUrl = (checkout: "success" | "cancel") => `${origin}${getPathname({ locale, href: { pathname: "/buy", query: { checkout } } })}`;
+  const successUrl = returnUrl("success");
+  const cancelUrl = returnUrl("cancel");
 
   let reservedCode: { codeId: string; couponId: string } | null = null;
   if (typeof discountCode === "string" && discountCode.trim()) {
@@ -117,7 +124,7 @@ export async function POST(request: Request) {
       console.log("[Stripe Checkout] ✓ Discount code reserved:", reservedCode.codeId);
     } catch (err) {
       console.log("[Stripe Checkout] ✗ Discount code rejected:", err instanceof Error ? err.message : err);
-      return errorResponse(400, "invalid_discount_code", "Ogiltig eller redan använd rabattkod.");
+      return apiError(400, "invalid_discount_code", "stripe.invalidDiscount", undefined, { request, explicit: locale });
     }
   }
 
@@ -129,7 +136,8 @@ export async function POST(request: Request) {
       user.id,
       successUrl,
       cancelUrl,
-      reservedCode?.couponId
+      reservedCode?.couponId,
+      LOCALES[locale].stripeLocale
     );
 
     if (reservedCode) {
@@ -150,7 +158,7 @@ export async function POST(request: Request) {
     if (reservedCode) await releaseReservedCode(admin, reservedCode.codeId);
     // The detail stays in the server log: it can name a missing environment
     // variable or a Stripe error, neither of which belongs in a response.
-    return errorResponse(500, "checkout_failed", "Kunde inte starta betalningen. Försök igen om en stund.");
+    return apiError(500, "checkout_failed", "stripe.checkoutFailed", undefined, { request, explicit: locale });
   }
 }
 

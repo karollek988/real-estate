@@ -1,3 +1,4 @@
+import type { Translator } from "@/i18n/translator";
 import type { AnalysisReport } from "@/lib/analysis/types";
 import type { DocumentType, InspectionDocument } from "./types";
 
@@ -8,10 +9,12 @@ import type { DocumentType, InspectionDocument } from "./types";
  * so far — never written back to the analysis itself.
  */
 export interface DataGap {
-  id: string;
-  label: string;
-  /** What the analysis already knows, when it knows something. */
+  /** Also names the gap's label: inspection.gaps.<id> */
+  id: "brf_identity" | "annual_report" | "maintenance_history" | "energy_declaration" | "parking" | "bylaws";
+  /** What the analysis already knows, when it knows a value of its own (the association's name, an energy class). */
   knownValue: string | null;
+  /** What it knows when there is no value to show, only that it is so: written out in inspection.gaps.known.<code>. */
+  known: "available" | "uploaded" | "parkingExists" | "garageExists" | "noParking" | null;
   missing: boolean;
   /** Which document upload would close this gap, if any. */
   resolvableByDocType: DocumentType | null;
@@ -36,8 +39,8 @@ export function buildDataGaps(
   const brfName = report.property.housingAssociation;
   gaps.push({
     id: "brf_identity",
-    label: "Bostadsrättsförening",
     knownValue: brfName,
+    known: null,
     missing: brfName === null,
     resolvableByDocType: null,
   });
@@ -47,8 +50,8 @@ export function buildDataGaps(
   const annualReportUploaded = hasAnnualReportAttribute || hasDoc(documents, "annual_report");
   gaps.push({
     id: "annual_report",
-    label: "Årsredovisning",
-    knownValue: annualReportUploaded ? "Tillgänglig" : null,
+    knownValue: null,
+    known: annualReportUploaded ? "available" : null,
     missing: !annualReportUploaded,
     resolvableByDocType: "annual_report",
   });
@@ -59,8 +62,8 @@ export function buildDataGaps(
   const maintenancePlanUploaded = hasDoc(documents, "maintenance_plan");
   gaps.push({
     id: "maintenance_history",
-    label: "Underhållshistorik",
-    knownValue: maintenancePlanUploaded ? "Uppladdad" : null,
+    knownValue: null,
+    known: maintenancePlanUploaded ? "uploaded" : null,
     missing: !maintenancePlanUploaded,
     resolvableByDocType: "maintenance_plan",
   });
@@ -69,8 +72,8 @@ export function buildDataGaps(
   const energyDeclarationUploaded = energyClass !== null || hasDoc(documents, "energy_declaration");
   gaps.push({
     id: "energy_declaration",
-    label: "Energideklaration",
     knownValue: energyClass,
+    known: null,
     missing: !energyDeclarationUploaded,
     resolvableByDocType: "energy_declaration",
   });
@@ -79,14 +82,14 @@ export function buildDataGaps(
   const parkingDocumented = parkingKnown || hasDoc(documents, "other");
   gaps.push({
     id: "parking",
-    label: "Parkering/garage",
-    knownValue:
+    knownValue: null,
+    known:
       report.property.parking === true
-        ? "Parkering finns"
+        ? "parkingExists"
         : report.property.garage === true
-          ? "Garage finns"
+          ? "garageExists"
           : report.property.parking === false && report.property.garage === false
-            ? "Ingen parkering angiven"
+            ? "noParking"
             : null,
     missing: !parkingDocumented && report.property.parking === null && report.property.garage === null,
     resolvableByDocType: null,
@@ -95,8 +98,8 @@ export function buildDataGaps(
   const bylawsUploaded = hasDoc(documents, "bylaws");
   gaps.push({
     id: "bylaws",
-    label: "Stadgar",
-    knownValue: bylawsUploaded ? "Uppladdad" : null,
+    knownValue: null,
+    known: bylawsUploaded ? "uploaded" : null,
     missing: !bylawsUploaded,
     resolvableByDocType: "bylaws",
   });
@@ -104,34 +107,37 @@ export function buildDataGaps(
   return gaps;
 }
 
-/** Broker-facing questions, seeded from whatever gaps/risks the analysis already surfaced. */
-export function buildBrokerQuestions(report: AnalysisReport, gaps: DataGap[]): string[] {
+/**
+ * Broker-facing questions, seeded from whatever gaps/risks the analysis already surfaced. `t` is the translator of
+ * the "inspection" messages: the questions are written in the reader's language.
+ */
+export function buildBrokerQuestions(report: AnalysisReport, gaps: DataGap[], t: Translator): string[] {
   const questions: string[] = [];
   if (gaps.find((g) => g.id === "annual_report")?.missing) {
-    questions.push("Kan du skicka föreningens senaste årsredovisning?");
+    questions.push(t("questions.broker.annualReport"));
   }
   if (gaps.find((g) => g.id === "maintenance_history")?.missing) {
-    questions.push("Finns det en underhållsplan och har den följts historiskt?");
+    questions.push(t("questions.broker.maintenancePlan"));
   }
   if (gaps.find((g) => g.id === "energy_declaration")?.missing) {
-    questions.push("Finns en giltig energideklaration för bostaden?");
+    questions.push(t("questions.broker.energyDeclaration"));
   }
   if (report.property.previousSaleDate) {
-    questions.push(`Varför säljs bostaden nu, och stämmer skicket med föregående försäljning ${report.property.previousSaleDate}?`);
+    questions.push(t("questions.broker.previousSale", { date: report.property.previousSaleDate }));
   }
-  questions.push("Finns kända fel eller anmärkningar som inte framgår av annonsen?");
+  questions.push(t("questions.broker.knownFaults"));
   return questions;
 }
 
-export function buildBrfQuestions(report: AnalysisReport, gaps: DataGap[]): string[] {
+export function buildBrfQuestions(report: AnalysisReport, gaps: DataGap[], t: Translator): string[] {
   const questions: string[] = [];
   if (gaps.find((g) => g.id === "bylaws")?.missing) {
-    questions.push("Kan styrelsen dela föreningens stadgar?");
+    questions.push(t("questions.brf.bylaws"));
   }
-  questions.push("Finns planerade renoveringar eller avgiftshöjningar de kommande åren?");
-  questions.push("Hur ser föreningens lån och räntebindning ut?");
+  questions.push(t("questions.brf.renovations"));
+  questions.push(t("questions.brf.loans"));
   if (report.property.parking === null && report.property.garage === null) {
-    questions.push("Hanterar föreningen parkering/garage, och finns kö?");
+    questions.push(t("questions.brf.parking"));
   }
   return questions;
 }

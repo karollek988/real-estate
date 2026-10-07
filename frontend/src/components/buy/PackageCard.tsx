@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useLocale, useTranslations } from "next-intl";
 import { DiscountCodeInput } from "@/components/buy/DiscountCodeInput";
 import { CheckIcon, ArrowRightIcon } from "@/components/icons";
 
@@ -35,6 +36,9 @@ export function PackageCard({
   acceptsDiscountCode = false,
   onRequireAuth,
 }: PackageCardProps) {
+  const t = useTranslations("buy.card");
+  const tPackages = useTranslations("packages");
+  const locale = useLocale();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [discountCode, setDiscountCode] = useState("");
@@ -46,8 +50,10 @@ export function PackageCard({
       const res = await fetch("/api/stripe/checkout", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
+        // the language of the page: the payment page (Stripe) opens in it and sends the buyer back to it
         body: JSON.stringify({
           priceKey,
+          locale,
           ...(acceptsDiscountCode && discountCode.trim() ? { discountCode: discountCode.trim() } : {}),
         }),
       });
@@ -57,14 +63,14 @@ export function PackageCard({
       }
       const data = await res.json();
       if (!res.ok) {
-        setError(data?.error?.message ?? "Kunde inte skapa betalning.");
+        setError(data?.error?.message ?? t("error"));
         return;
       }
       if (data.url) {
         window.location.href = data.url;
       }
     } catch {
-      setError("Något gick fel. Försök igen.");
+      setError(t("genericError"));
     } finally {
       setLoading(false);
     }
@@ -86,8 +92,8 @@ export function PackageCard({
 
       <h3 className="text-lg font-semibold tracking-tight text-white">{name}</h3>
 
-      <p className="mt-3 text-4xl font-bold tracking-tight text-white">{price} kr</p>
-      <p className="mt-1 text-sm text-neutral-400">{priceNote} · engångsköp</p>
+      <p className="mt-3 text-4xl font-bold tracking-tight text-white">{tPackages("priceInline", { price })}</p>
+      <p className="mt-1 text-sm text-neutral-400">{t("priceNote", { note: priceNote })}</p>
 
       <p className="mt-4 text-sm leading-relaxed text-neutral-300">{summary}</p>
 
@@ -127,7 +133,7 @@ export function PackageCard({
               : "border border-white/15 bg-white/5 text-white hover:bg-white/10"
           }`}
         >
-          {loading ? "Skapar betalning..." : ctaLabel}
+          {loading ? t("creating") : ctaLabel}
           {!loading && <ArrowRightIcon className="h-4 w-4" />}
         </button>
       </div>

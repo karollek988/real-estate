@@ -1,25 +1,33 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { useTranslations } from "next-intl";
 import { Reveal } from "@/components/Reveal";
 import { LANDING_CONTAINER } from "@/components/landing/container";
 import { MailIcon } from "@/components/icons";
 
+const CONTACT_EMAIL = "kontakt@kopanalys.se";
+
+/** What went wrong with sending: the form is not available (the visitor is pointed to e-mail), or the server said why. */
+type SendError = { kind: "unavailable" } | { kind: "message"; text: string };
+
 /** The contact form (POST /api/contact). The landing page's last section and the body of /kontakt. */
 export function ContactSection({
   titleAs: Title = "h2",
-  title = "Har du en fråga?",
+  title,
 }: {
   /** "h1" when the section opens its page (/kontakt). */
   titleAs?: "h1" | "h2";
+  /** Replaces the heading (the "sections" messages have a default). */
   title?: string;
 } = {}) {
+  const t = useTranslations("sections.contact");
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [message, setMessage] = useState("");
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState<SendError | null>(null);
   const successTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
@@ -27,6 +35,12 @@ export function ContactSection({
       if (successTimer.current) clearTimeout(successTimer.current);
     };
   }, []);
+
+  const mailLink = (chunks: React.ReactNode, className: string) => (
+    <a href={`mailto:${CONTACT_EMAIL}`} className={className}>
+      {chunks}
+    </a>
+  );
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -44,10 +58,9 @@ export function ContactSection({
       const data = await res.json();
 
       if (!res.ok) {
-        setError(
-          data.error?.message ??
-            "Kontakt via formulär är inte tillgänglig just nu — mejla oss direkt på kontakt@kopanalys.se istället.",
-        );
+        // "contact_unavailable": the server could not send the e-mail; anything else it explains itself
+        const text = data.error?.code === "contact_unavailable" ? undefined : data.error?.message;
+        setError(text ? { kind: "message", text } : { kind: "unavailable" });
         return;
       }
 
@@ -57,9 +70,7 @@ export function ContactSection({
       setMessage("");
       successTimer.current = setTimeout(() => setSuccess(false), 6000);
     } catch {
-      setError(
-        "Kontakt via formulär är inte tillgänglig just nu — mejla oss direkt på kontakt@kopanalys.se istället.",
-      );
+      setError({ kind: "unavailable" });
     } finally {
       setLoading(false);
     }
@@ -73,24 +84,19 @@ export function ContactSection({
             <div className="lg:sticky lg:top-28">
               <p className="inline-flex items-center gap-2 rounded-full bg-ka-sage/70 px-3.5 py-1.5 text-[12px] font-semibold uppercase tracking-[0.08em] text-ka-green-900">
                 <MailIcon className="h-4 w-4" />
-                Kontakt
+                {t("eyebrow")}
               </p>
               <Title
                 id="kontakt-title"
                 className="mt-5 font-display text-[34px] font-bold leading-[1.08] tracking-[-0.015em] text-ka-ink sm:text-[44px]"
               >
-                {title}
+                {title ?? t("title")}
               </Title>
               <p className="mt-4 max-w-[420px] text-[16px] leading-relaxed text-ka-muted sm:text-[17px]">
-                Har du en fråga, ett förslag eller något annat på hjärtat? Skicka ett meddelande
-                så återkommer vi, eller mejla oss direkt på{" "}
-                <a
-                  href="mailto:kontakt@kopanalys.se"
-                  className="font-semibold text-ka-green-700 underline underline-offset-4 hover:text-ka-green-900"
-                >
-                  kontakt@kopanalys.se
-                </a>
-                .
+                {t.rich("text", {
+                  email: CONTACT_EMAIL,
+                  mail: (chunks) => mailLink(chunks, "font-semibold text-ka-green-700 underline underline-offset-4 hover:text-ka-green-900"),
+                })}
               </p>
             </div>
           </Reveal>
@@ -102,16 +108,14 @@ export function ContactSection({
                   <div className="flex h-14 w-14 items-center justify-center rounded-full bg-ka-sage/70">
                     <MailIcon className="h-7 w-7 text-ka-green-800" />
                   </div>
-                  <p className="text-lg font-bold text-ka-ink">Meddelande skickat!</p>
-                  <p className="text-sm text-ka-muted">
-                    Tack för ditt meddelande. Vi återkommer så snart vi kan.
-                  </p>
+                  <p className="text-lg font-bold text-ka-ink">{t("success.title")}</p>
+                  <p className="text-sm text-ka-muted">{t("success.text")}</p>
                   <button
                     type="button"
                     onClick={() => setSuccess(false)}
                     className="mt-2 text-sm font-semibold text-ka-green-700 underline underline-offset-4 transition hover:text-ka-green-900"
                   >
-                    Skicka ett till meddelande
+                    {t("success.again")}
                   </button>
                 </div>
               ) : (
@@ -119,13 +123,13 @@ export function ContactSection({
                   <div className="grid gap-5 sm:grid-cols-2">
                     <div>
                       <label htmlFor="contact-name" className="text-sm font-semibold text-ka-ink">
-                        Namn
+                        {t("fields.name")}
                       </label>
                       <div className="relative mt-2">
                         <input
                           id="contact-name"
                           type="text"
-                          placeholder="Ditt namn"
+                          placeholder={t("fields.namePlaceholder")}
                           autoComplete="name"
                           value={name}
                           onChange={(e) => setName(e.target.value)}
@@ -137,13 +141,13 @@ export function ContactSection({
 
                     <div>
                       <label htmlFor="contact-email" className="text-sm font-semibold text-ka-ink">
-                        E-post
+                        {t("fields.email")}
                       </label>
                       <div className="relative mt-2">
                         <input
                           id="contact-email"
                           type="email"
-                          placeholder="namn@exempel.se"
+                          placeholder={t("fields.emailPlaceholder")}
                           autoComplete="email"
                           value={email}
                           onChange={(e) => setEmail(e.target.value)}
@@ -156,12 +160,12 @@ export function ContactSection({
 
                   <div>
                     <label htmlFor="contact-message" className="text-sm font-semibold text-ka-ink">
-                      Meddelande
+                      {t("fields.message")}
                     </label>
                     <div className="relative mt-2">
                       <textarea
                         id="contact-message"
-                        placeholder="Ditt meddelande..."
+                        placeholder={t("fields.messagePlaceholder")}
                         rows={4}
                         value={message}
                         onChange={(e) => setMessage(e.target.value)}
@@ -173,20 +177,12 @@ export function ContactSection({
 
                   {error && (
                     <p className="rounded-xl border border-ka-red-600/25 bg-ka-red-600/[0.06] px-4 py-2.5 text-sm text-ka-red-600">
-                      {error.includes("mejla oss") ? (
-                        <>
-                          {error.split("istället")[0]}
-                          istället
-                          <a
-                            href="mailto:kontakt@kopanalys.se"
-                            className="ml-1 font-semibold text-ka-green-700 underline underline-offset-4 hover:text-ka-green-900"
-                          >
-                            kontakt@kopanalys.se
-                          </a>
-                        </>
-                      ) : (
-                        error
-                      )}
+                      {error.kind === "unavailable"
+                        ? t.rich("unavailable", {
+                            email: CONTACT_EMAIL,
+                            mail: (chunks) => mailLink(chunks, "font-semibold text-ka-green-700 underline underline-offset-4 hover:text-ka-green-900"),
+                          })
+                        : error.text}
                     </p>
                   )}
 
@@ -196,7 +192,7 @@ export function ContactSection({
                     className="mt-1 flex w-full cursor-pointer items-center justify-center gap-2.5 rounded-[12px] bg-ka-green-900 py-3.5 text-[15px] font-semibold text-white shadow-[0_14px_30px_-16px_rgba(12,42,31,0.9)] transition-all duration-200 hover:-translate-y-0.5 hover:bg-ka-green-800 disabled:cursor-not-allowed disabled:opacity-60 disabled:hover:translate-y-0 sm:w-auto sm:px-10"
                   >
                     <MailIcon className="h-5 w-5" />
-                    {loading ? "Skickar..." : "Skicka meddelande"}
+                    {loading ? t("sending") : t("submit")}
                   </button>
                 </form>
               )}

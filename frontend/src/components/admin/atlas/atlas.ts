@@ -40,7 +40,7 @@ function safeImage(value: string | undefined): string | undefined {
 }
 // The detail panel's close button. First in the panel, in a row with no height of its own, so the
 // stylesheet can put it in the panel's top right corner - over the photo when there is one.
-const DETAIL_CLOSE = '<div class="detail-close-bar"><button class="detail-close" id="detail-close" aria-label="Stäng">×</button></div>'
+const detailClose = (label: string) => `<div class="detail-close-bar"><button class="detail-close" id="detail-close" aria-label="${esc(label)}">×</button></div>`
 const DEFAULT_LISTING_PHOTO = 'https://images.unsplash.com/photo-1600607687920-4e2a09cf159d?auto=format&fit=crop&w=900&q=80'
 function readStoredPins(key: string, fallback: SavedPin[]): SavedPin[] {
   try { const parsed: unknown = JSON.parse(localStorage.getItem(key) ?? 'null'); return Array.isArray(parsed) ? (parsed as SavedPin[]) : structuredClone(fallback) } catch { return structuredClone(fallback) }
@@ -54,56 +54,58 @@ type ExchangePin = { id: number; title: string; from: ExchangeLocation; to: Exch
 const storageKey = 'kopanalys-map-pins'
 const buyerStorageKey = 'kopanalys-map-buyers'
 const exchangeStorageKey = 'kopanalys-map-exchanges'
-const defaultPins: SavedPin[] = [
-  { id: 1, title: 'Kanalgatan 41C', note: 'Eslövs kommun', details: 'Ljus 3:a nära centrum med balkong och låg månadsavgift.', meta: '3 rum · 78 m² · 2 495 000 kr', image: 'https://images.unsplash.com/photo-1600607687939-ce8a6c25118c?auto=format&fit=crop&w=900&q=80', link: 'https://www.hemnet.se/', lat: 55.83626936841034, lng: 13.301669377943158 },
-  { id: 2, title: 'Hörngatan 11', note: 'Trollhättans kommun', details: 'Renoverad bostad med centralt läge och närhet till resecentrum.', meta: '2 rum · 64 m² · 1 895 000 kr', image: 'https://images.unsplash.com/photo-1600566753086-00f18fb6b3ea?auto=format&fit=crop&w=900&q=80', link: 'https://www.hemnet.se/', lat: 58.27749450906411, lng: 12.285267106116207 },
-  { id: 3, title: 'Timmermansgatan 22', note: 'Södermalm, Stockholm', details: 'Sekelskifteslägenhet med högt i tak och stuckatur, gångavstånd till Slussen.', meta: '3 rum · 72 m² · 5 250 000 kr', image: 'https://images.unsplash.com/photo-1600585154340-be6161a56a0c?auto=format&fit=crop&w=900&q=80', link: 'https://www.hemnet.se/', lat: 59.3151, lng: 18.0710 },
-  { id: 4, title: 'Sveavägen 98', note: 'Vasastan, Stockholm', details: 'Ljus tvåa i klassisk fastighet med nära till Vasaparken och tunnelbana.', meta: '2 rum · 58 m² · 4 100 000 kr', image: 'https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?auto=format&fit=crop&w=900&q=80', link: 'https://www.hemnet.se/', lat: 59.3428, lng: 18.0448 },
-  { id: 5, title: 'Strandvägen 7', note: 'Östermalm, Stockholm', details: 'Exklusiv våning med sjöutsikt, öppen spis och privat loftgång.', meta: '4 rum · 135 m² · 12 900 000 kr', image: 'https://images.unsplash.com/photo-1512917774080-9991f1c4c750?auto=format&fit=crop&w=900&q=80', link: 'https://www.hemnet.se/', lat: 59.3358, lng: 18.0894 },
-  { id: 6, title: 'Fleminggatan 45', note: 'Kungsholmen, Stockholm', details: 'Genomgående trea med balkong i två väderstreck och renoverat kök.', meta: '3 rum · 81 m² · 6 450 000 kr', image: 'https://images.unsplash.com/photo-1502672260266-1c1ef2d93688?auto=format&fit=crop&w=900&q=80', link: 'https://www.hemnet.se/', lat: 59.3325, lng: 18.0326 },
-  { id: 7, title: 'Västerlånggatan 15', note: 'Gamla Stan, Stockholm', details: 'Charmig tvåa i medeltida kvarter med synliga takbjälkar.', meta: '2 rum · 55 m² · 4 950 000 kr', image: 'https://images.unsplash.com/photo-1493809842364-78817add7ffb?auto=format&fit=crop&w=900&q=80', link: 'https://www.hemnet.se/', lat: 59.3251, lng: 18.0711 },
-  { id: 8, title: 'Ulvsundavägen 106', note: 'Bromma, Stockholm', details: 'Rymlig villa med stor trädgård, dubbelgarage och nära till skola.', meta: '5 rum · 140 m² · 8 900 000 kr', image: 'https://images.unsplash.com/photo-1560185127-6ed189bf02f4?auto=format&fit=crop&w=900&q=80', link: 'https://www.hemnet.se/', lat: 59.3400, lng: 17.9294 },
-  { id: 9, title: 'Råsundavägen 12', note: 'Solna, Stockholm', details: 'Modern trea nära Friends Arena med gemensam takterrass.', meta: '3 rum · 76 m² · 4 700 000 kr', image: 'https://images.unsplash.com/photo-1512915922686-57c11dde9b6b?auto=format&fit=crop&w=900&q=80', link: 'https://www.hemnet.se/', lat: 59.3601, lng: 17.9956 },
-  { id: 10, title: 'Sicklastråket 3', note: 'Nacka, Stockholm', details: 'Nyproducerad tvåa med havsutsikt och nära till Sickla köpkvarter.', meta: '2 rum · 64 m² · 3 950 000 kr', image: 'https://images.unsplash.com/photo-1524758631624-e2822e304c36?auto=format&fit=crop&w=900&q=80', link: 'https://www.hemnet.se/', lat: 59.3053, lng: 18.1109 },
-  { id: 11, title: 'Täby Torg 5', note: 'Täby, Stockholm', details: 'Fyra rum med generös planlösning nära Täby Centrum och grönområden.', meta: '4 rum · 102 m² · 6 200 000 kr', image: 'https://images.unsplash.com/photo-1568605114967-8130f3a36994?auto=format&fit=crop&w=900&q=80', link: 'https://www.hemnet.se/', lat: 59.4439, lng: 18.0687 },
-  { id: 12, title: 'Larsviksvägen 9', note: 'Lidingö, Stockholm', details: 'Havsnära villa med brygga, orangeri och stor uteplats.', meta: '6 rum · 165 m² · 11 500 000 kr', image: 'https://images.unsplash.com/photo-1580587771525-78b9dba3b914?auto=format&fit=crop&w=900&q=80', link: 'https://www.hemnet.se/', lat: 59.3656, lng: 18.1353 },
-  { id: 13, title: 'Enskedevägen 88', note: 'Enskede, Stockholm', details: 'Mysig trea i lugnt kvarter med nära till Globen och tunnelbana.', meta: '3 rum · 79 m² · 4 800 000 kr', image: 'https://images.unsplash.com/photo-1523217582562-09d0def993a6?auto=format&fit=crop&w=900&q=80', link: 'https://www.hemnet.se/', lat: 59.2809, lng: 18.0810 },
-  { id: 14, title: 'Maltesholmsvägen 41', note: 'Hässelby, Stockholm', details: 'Rymlig fyra med utsikt över Mälaren och nyrenoverat badrum.', meta: '4 rum · 95 m² · 3 750 000 kr', image: 'https://images.unsplash.com/photo-1600047509807-ba8f99d2cdde?auto=format&fit=crop&w=900&q=80', link: 'https://www.hemnet.se/', lat: 59.3623, lng: 17.8371 },
-  { id: 15, title: 'Årsta Torg 6', note: 'Årsta, Stockholm', details: 'Instegsvänlig tvåa nära pendeltåg och Årsta torg.', meta: '2 rum · 61 m² · 3 400 000 kr', image: 'https://images.unsplash.com/photo-1613977257363-707ba9348227?auto=format&fit=crop&w=900&q=80', link: 'https://www.hemnet.se/', lat: 59.2934, lng: 18.0553 },
+// The example listings: where they are, their pictures and links. Their words (note, description, price line)
+// are in the messages (map.samples.*), so each visitor reads them in their own language.
+const sampleSale: Array<Pick<SavedPin, 'id' | 'title' | 'image' | 'link' | 'lat' | 'lng'>> = [
+  { id: 1, title: 'Kanalgatan 41C', image: 'https://images.unsplash.com/photo-1600607687939-ce8a6c25118c?auto=format&fit=crop&w=900&q=80', link: 'https://www.hemnet.se/', lat: 55.83626936841034, lng: 13.301669377943158 },
+  { id: 2, title: 'Hörngatan 11', image: 'https://images.unsplash.com/photo-1600566753086-00f18fb6b3ea?auto=format&fit=crop&w=900&q=80', link: 'https://www.hemnet.se/', lat: 58.27749450906411, lng: 12.285267106116207 },
+  { id: 3, title: 'Timmermansgatan 22', image: 'https://images.unsplash.com/photo-1600585154340-be6161a56a0c?auto=format&fit=crop&w=900&q=80', link: 'https://www.hemnet.se/', lat: 59.3151, lng: 18.071 },
+  { id: 4, title: 'Sveavägen 98', image: 'https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?auto=format&fit=crop&w=900&q=80', link: 'https://www.hemnet.se/', lat: 59.3428, lng: 18.0448 },
+  { id: 5, title: 'Strandvägen 7', image: 'https://images.unsplash.com/photo-1512917774080-9991f1c4c750?auto=format&fit=crop&w=900&q=80', link: 'https://www.hemnet.se/', lat: 59.3358, lng: 18.0894 },
+  { id: 6, title: 'Fleminggatan 45', image: 'https://images.unsplash.com/photo-1502672260266-1c1ef2d93688?auto=format&fit=crop&w=900&q=80', link: 'https://www.hemnet.se/', lat: 59.3325, lng: 18.0326 },
+  { id: 7, title: 'Västerlånggatan 15', image: 'https://images.unsplash.com/photo-1493809842364-78817add7ffb?auto=format&fit=crop&w=900&q=80', link: 'https://www.hemnet.se/', lat: 59.3251, lng: 18.0711 },
+  { id: 8, title: 'Ulvsundavägen 106', image: 'https://images.unsplash.com/photo-1560185127-6ed189bf02f4?auto=format&fit=crop&w=900&q=80', link: 'https://www.hemnet.se/', lat: 59.34, lng: 17.9294 },
+  { id: 9, title: 'Råsundavägen 12', image: 'https://images.unsplash.com/photo-1512915922686-57c11dde9b6b?auto=format&fit=crop&w=900&q=80', link: 'https://www.hemnet.se/', lat: 59.3601, lng: 17.9956 },
+  { id: 10, title: 'Sicklastråket 3', image: 'https://images.unsplash.com/photo-1524758631624-e2822e304c36?auto=format&fit=crop&w=900&q=80', link: 'https://www.hemnet.se/', lat: 59.3053, lng: 18.1109 },
+  { id: 11, title: 'Täby Torg 5', image: 'https://images.unsplash.com/photo-1568605114967-8130f3a36994?auto=format&fit=crop&w=900&q=80', link: 'https://www.hemnet.se/', lat: 59.4439, lng: 18.0687 },
+  { id: 12, title: 'Larsviksvägen 9', image: 'https://images.unsplash.com/photo-1580587771525-78b9dba3b914?auto=format&fit=crop&w=900&q=80', link: 'https://www.hemnet.se/', lat: 59.3656, lng: 18.1353 },
+  { id: 13, title: 'Enskedevägen 88', image: 'https://images.unsplash.com/photo-1523217582562-09d0def993a6?auto=format&fit=crop&w=900&q=80', link: 'https://www.hemnet.se/', lat: 59.2809, lng: 18.081 },
+  { id: 14, title: 'Maltesholmsvägen 41', image: 'https://images.unsplash.com/photo-1600047509807-ba8f99d2cdde?auto=format&fit=crop&w=900&q=80', link: 'https://www.hemnet.se/', lat: 59.3623, lng: 17.8371 },
+  { id: 15, title: 'Årsta Torg 6', image: 'https://images.unsplash.com/photo-1613977257363-707ba9348227?auto=format&fit=crop&w=900&q=80', link: 'https://www.hemnet.se/', lat: 59.2934, lng: 18.0553 },
 ]
-const defaultBuyerPins: SavedPin[] = [
-  { id: 101, title: 'Familj söker villa', note: 'Södermalm', details: 'Två vuxna och ett barn söker ett långsiktigt boende nära grönområden och skolor.', meta: 'Budget upp till 8 000 000 kr · 4+ rum', lat: 59.312612847910174, lng: 18.06196320281545 },
-  { id: 102, title: 'Köpare söker 2:a', note: 'Centrala Kista', details: 'Förstaboende med önskemål om goda kommunikationer och inflyttning under hösten.', meta: 'Budget upp till 2 600 000 kr · 50–70 m²', lat: 59.40263434990332, lng: 17.943175200850128 },
-  { id: 103, title: 'Par söker första bostaden', note: 'Vasastan', details: 'Ungt par söker en ombonad etta eller tvåa med närhet till tunnelbana och caféer.', meta: 'Budget upp till 3 200 000 kr · 1–2 rum', lat: 59.3448, lng: 18.0480 },
-  { id: 104, title: 'Köpare söker exklusiv trea', note: 'Östermalm', details: 'Söker en representativ bostad med högt i tak, gärna med balkong mot innergård.', meta: 'Budget upp till 9 500 000 kr · 3–4 rum', lat: 59.3372, lng: 18.0920 },
-  { id: 105, title: 'Barnfamilj söker radhus', note: 'Hägersten', details: 'Familj med två barn önskar radhus eller parhus med nära till förskola.', meta: 'Budget upp till 6 500 000 kr · 4–5 rum', lat: 59.3040, lng: 17.9720 },
-  { id: 106, title: 'Söker villa med trädgård', note: 'Bromma', details: 'Söker en villa med gott om utrymme för odling och lek, gärna med garage.', meta: 'Budget upp till 9 000 000 kr · 5+ rum', lat: 59.3430, lng: 17.9260 },
-  { id: 107, title: 'Söker nyproducerad lägenhet', note: 'Solna', details: 'Söker modern nyproduktion med balkong och närhet till pendeltåg.', meta: 'Budget upp till 5 200 000 kr · 2–3 rum', lat: 59.3590, lng: 18.0000 },
-  { id: 108, title: 'Söker fyra med sjöutsikt', note: 'Nacka', details: 'Familj söker rymlig bostad med vattennära läge och balkong i söderläge.', meta: 'Budget upp till 7 800 000 kr · 4 rum', lat: 59.3095, lng: 18.1580 },
-  { id: 109, title: 'Familj söker villa nära skola', note: 'Täby', details: 'Söker villa i barnvänligt område med gångavstånd till skola och natur.', meta: 'Budget upp till 8 500 000 kr · 5+ rum', lat: 59.4470, lng: 18.0700 },
-  { id: 110, title: 'Söker tvåa med balkong', note: 'Liljeholmen', details: 'Söker en ljus tvåa med balkong och närhet till vattnet och tunnelbana.', meta: 'Budget upp till 3 800 000 kr · 2 rum', lat: 59.3105, lng: 18.0190 },
-  { id: 111, title: 'Förstagångsköpare söker etta', note: 'Årsta', details: 'Förstagångsköpare söker en mindre lägenhet med rimlig månadsavgift.', meta: 'Budget upp till 2 800 000 kr · 1–2 rum', lat: 59.2915, lng: 18.0610 },
-  { id: 112, title: 'Söker radhus eller parhus', note: 'Enskede', details: 'Söker radhus med liten trädgård och nära till grönområden.', meta: 'Budget upp till 6 000 000 kr · 4 rum', lat: 59.2845, lng: 18.0780 },
-  { id: 113, title: 'Söker nyproducerad tvåa', note: 'Sundbyberg', details: 'Söker modern lägenhet i nyproduktion med gemensamma ytor.', meta: 'Budget upp till 4 400 000 kr · 2–3 rum', lat: 59.3615, lng: 17.9700 },
-  { id: 114, title: 'Söker större villa', note: 'Danderyd', details: 'Söker en rymlig villa med stor tomt i lugnt och barnvänligt område.', meta: 'Budget upp till 14 000 000 kr · 6+ rum', lat: 59.4020, lng: 18.0400 },
-  { id: 115, title: 'Student söker etta', note: 'Uppsala', details: 'Student söker en billig etta nära universitetet med inflyttning till hösten.', meta: 'Budget upp till 1 800 000 kr · 1 rum', lat: 59.8580, lng: 17.6350 },
+const sampleBuyers: Array<Pick<SavedPin, 'id' | 'lat' | 'lng'>> = [
+  { id: 101, lat: 59.312612847910174, lng: 18.06196320281545 },
+  { id: 102, lat: 59.40263434990332, lng: 17.943175200850128 },
+  { id: 103, lat: 59.3448, lng: 18.048 },
+  { id: 104, lat: 59.3372, lng: 18.092 },
+  { id: 105, lat: 59.304, lng: 17.972 },
+  { id: 106, lat: 59.343, lng: 17.926 },
+  { id: 107, lat: 59.359, lng: 18 },
+  { id: 108, lat: 59.3095, lng: 18.158 },
+  { id: 109, lat: 59.447, lng: 18.07 },
+  { id: 110, lat: 59.3105, lng: 18.019 },
+  { id: 111, lat: 59.2915, lng: 18.061 },
+  { id: 112, lat: 59.2845, lng: 18.078 },
+  { id: 113, lat: 59.3615, lng: 17.97 },
+  { id: 114, lat: 59.402, lng: 18.04 },
+  { id: 115, lat: 59.858, lng: 17.635 },
 ]
-const defaultExchangePins: ExchangePin[] = [
-  { id: 201, title: 'Byter 3:a mot större', details: 'Erbjuder en välplanerad 3:a och söker en större bostad med hiss och balkong.', meta: 'Erbjuder 3 rum · Söker 4+ rum · Flexibelt tillträde', from: { note: 'Södermalm, Stockholm', lat: 59.3151, lng: 18.0710 }, to: { note: 'Kungsholmen, Stockholm', lat: 59.3325, lng: 18.0326 } },
-  { id: 202, title: 'Önskar byta villa', details: 'Familj vill byta från villa i Stockholm till ett lugnare läge i Uppsalaområdet.', meta: 'Erbjuder villa · Söker 4–6 rum', from: { note: 'Bromma, Stockholm', lat: 59.3400, lng: 17.9294 }, to: { note: 'Uppsala', lat: 59.8586, lng: 17.6389 } },
-  { id: 203, title: 'Byter 2:a mot 3:a', details: 'Erbjuder en fräsch tvåa och söker en trea med plats för hemmakontor.', meta: 'Erbjuder 2 rum · Söker 3 rum', from: { note: 'Vasastan, Stockholm', lat: 59.3450, lng: 18.0500 }, to: { note: 'Liljeholmen, Stockholm', lat: 59.3070, lng: 18.0140 } },
-  { id: 204, title: 'Byter lägenhet mot villa', details: 'Erbjuder en välskött lägenhet och söker villa med trädgård för familjen.', meta: 'Erbjuder 3 rum · Söker 5+ rum', from: { note: 'Östermalm, Stockholm', lat: 59.3380, lng: 18.0850 }, to: { note: 'Bromma, Stockholm', lat: 59.3450, lng: 17.9350 } },
-  { id: 205, title: 'Byter mot hus med sjöutsikt', details: 'Erbjuder en central lägenhet och söker hus med närhet till vatten.', meta: 'Erbjuder 3 rum · Söker 4+ rum', from: { note: 'Kungsholmen, Stockholm', lat: 59.3300, lng: 18.0280 }, to: { note: 'Nacka, Stockholm', lat: 59.3080, lng: 18.1600 } },
-  { id: 206, title: 'Barnfamilj byter till förort', details: 'Familj erbjuder lägenhet i city och söker lugnare läge med bra skolor.', meta: 'Erbjuder 3 rum · Söker 4–5 rum', from: { note: 'Hägersten, Stockholm', lat: 59.3030, lng: 17.9700 }, to: { note: 'Täby, Stockholm', lat: 59.4400, lng: 18.0650 } },
-  { id: 207, title: 'Byter till mer centralt läge', details: 'Erbjuder en lugn förortslägenhet och söker något mer centralt.', meta: 'Erbjuder 2 rum · Söker 2–3 rum', from: { note: 'Årsta, Stockholm', lat: 59.2950, lng: 18.0500 }, to: { note: 'Södermalm, Stockholm', lat: 59.3180, lng: 18.0650 } },
-  { id: 208, title: 'Byter till lugnare läge', details: 'Erbjuder en trea nära Solna centrum och söker något lugnare.', meta: 'Erbjuder 3 rum · Söker 2–3 rum', from: { note: 'Solna, Stockholm', lat: 59.3620, lng: 17.9900 }, to: { note: 'Sundbyberg, Stockholm', lat: 59.3630, lng: 17.9680 } },
-  { id: 209, title: 'Byter till radhus', details: 'Erbjuder en lägenhet i Farsta och söker radhus med egen trädgård.', meta: 'Erbjuder 3 rum · Söker 4 rum', from: { note: 'Farsta, Stockholm', lat: 59.2478, lng: 18.0972 }, to: { note: 'Enskede, Stockholm', lat: 59.2830, lng: 18.0850 } },
-  { id: 210, title: 'Byter mot större bostad', details: 'Erbjuder en kompakt tvåa och söker något större för växande familj.', meta: 'Erbjuder 2 rum · Söker 3–4 rum', from: { note: 'Skarpnäck, Stockholm', lat: 59.2701, lng: 18.1183 }, to: { note: 'Vällingby, Stockholm', lat: 59.3617, lng: 17.8697 } },
-  { id: 211, title: 'Byter villa mot mindre villa', details: 'Erbjuder en stor villa och söker något mindre nu när barnen flyttat hemifrån.', meta: 'Erbjuder 7 rum · Söker 4–5 rum', from: { note: 'Danderyd, Stockholm', lat: 59.4014, lng: 18.0378 }, to: { note: 'Djursholm, Stockholm', lat: 59.3956, lng: 18.0817 } },
-  { id: 212, title: 'Flyttar till Västkusten', details: 'Erbjuder en lägenhet på Söder och söker nytt liv i Göteborg.', meta: 'Erbjuder 3 rum · Söker 3–4 rum', from: { note: 'Södermalm, Stockholm', lat: 59.3200, lng: 18.0750 }, to: { note: 'Göteborg', lat: 57.7072, lng: 11.9668 } },
-  { id: 213, title: 'Flyttar söderut', details: 'Erbjuder en lägenhet i Vasastan och söker nytt hem i Malmö.', meta: 'Erbjuder 2 rum · Söker 2–3 rum', from: { note: 'Vasastan, Stockholm', lat: 59.3470, lng: 18.0400 }, to: { note: 'Malmö', lat: 55.6050, lng: 13.0038 } },
-  { id: 214, title: 'Flyttar från storstan', details: 'Erbjuder en lägenhet på Kungsholmen och söker lugnare tillvaro i Västerås.', meta: 'Erbjuder 3 rum · Söker 3–4 rum', from: { note: 'Kungsholmen, Stockholm', lat: 59.3350, lng: 18.0350 }, to: { note: 'Västerås', lat: 59.6099, lng: 16.5448 } },
-  { id: 215, title: 'Flyttar till huvudstaden', details: 'Erbjuder en lägenhet i Uppsala och söker nytt hem i Stockholm.', meta: 'Erbjuder 2 rum · Söker 2–3 rum', from: { note: 'Uppsala', lat: 59.8586, lng: 17.6389 }, to: { note: 'Kungsholmen, Stockholm', lat: 59.3310, lng: 18.0300 } },
+const sampleExchanges: Array<Pick<ExchangePin, 'id'> & { from: { lat: number; lng: number }; to: { lat: number; lng: number } }> = [
+  { id: 201, from: { lat: 59.3151, lng: 18.071 }, to: { lat: 59.3325, lng: 18.0326 } },
+  { id: 202, from: { lat: 59.34, lng: 17.9294 }, to: { lat: 59.8586, lng: 17.6389 } },
+  { id: 203, from: { lat: 59.345, lng: 18.05 }, to: { lat: 59.307, lng: 18.014 } },
+  { id: 204, from: { lat: 59.338, lng: 18.085 }, to: { lat: 59.345, lng: 17.935 } },
+  { id: 205, from: { lat: 59.33, lng: 18.028 }, to: { lat: 59.308, lng: 18.16 } },
+  { id: 206, from: { lat: 59.303, lng: 17.97 }, to: { lat: 59.44, lng: 18.065 } },
+  { id: 207, from: { lat: 59.295, lng: 18.05 }, to: { lat: 59.318, lng: 18.065 } },
+  { id: 208, from: { lat: 59.362, lng: 17.99 }, to: { lat: 59.363, lng: 17.968 } },
+  { id: 209, from: { lat: 59.2478, lng: 18.0972 }, to: { lat: 59.283, lng: 18.085 } },
+  { id: 210, from: { lat: 59.2701, lng: 18.1183 }, to: { lat: 59.3617, lng: 17.8697 } },
+  { id: 211, from: { lat: 59.4014, lng: 18.0378 }, to: { lat: 59.3956, lng: 18.0817 } },
+  { id: 212, from: { lat: 59.32, lng: 18.075 }, to: { lat: 57.7072, lng: 11.9668 } },
+  { id: 213, from: { lat: 59.347, lng: 18.04 }, to: { lat: 55.605, lng: 13.0038 } },
+  { id: 214, from: { lat: 59.335, lng: 18.035 }, to: { lat: 59.6099, lng: 16.5448 } },
+  { id: 215, from: { lat: 59.8586, lng: 17.6389 }, to: { lat: 59.331, lng: 18.03 } },
 ]
 
 export interface AtlasOptions {
@@ -113,6 +115,10 @@ export interface AtlasOptions {
   initialQuery?: string
   /** The "Skapa analys" button in a listing's detail panel. */
   onCreateAnalysis?: () => void
+  /** The map's texts: the "map" messages by key, t('form.save'), in the language of the page. */
+  t: (key: string, values?: Record<string, string | number>) => string
+  /** The page's language code ("sv", "en"): the place-name search answers in it. */
+  locale: string
 }
 
 export interface AtlasHandle {
@@ -121,18 +127,39 @@ export interface AtlasHandle {
   unmount: () => void
 }
 
-export function mountAtlas(root: HTMLElement, options: AtlasOptions = {}): AtlasHandle {
+export function mountAtlas(root: HTMLElement, options: AtlasOptions): AtlasHandle {
   const isPublic = options.variant === 'public'
-  let pins: SavedPin[] = readStoredPins(storageKey, defaultPins)
-  let buyerPins: SavedPin[] = readStoredPins(buyerStorageKey, defaultBuyerPins)
+  const { t } = options
+  /** A text of the map, ready to go inside markup. */
+  const e = (key: string, values?: Record<string, string | number>) => esc(t(key, values))
+
+  // The example listings in the visitor's language. A listing the visitor saved keeps their own words; the
+  // example listings among the saved ones are shown in the language of the page.
+  const saleDefaults = (): SavedPin[] => sampleSale.map((s) => ({ ...s, note: t(`samples.sale.${s.id}.note`), details: t(`samples.sale.${s.id}.details`), meta: t(`samples.sale.${s.id}.meta`) }))
+  const buyerDefaults = (): SavedPin[] => sampleBuyers.map((s) => ({ ...s, title: t(`samples.buyer.${s.id}.title`), note: t(`samples.buyer.${s.id}.note`), details: t(`samples.buyer.${s.id}.details`), meta: t(`samples.buyer.${s.id}.meta`) }))
+  const exchangeDefaults = (): ExchangePin[] => sampleExchanges.map((s) => ({
+    id: s.id,
+    title: t(`samples.exchange.${s.id}.title`),
+    details: t(`samples.exchange.${s.id}.details`),
+    meta: t(`samples.exchange.${s.id}.meta`),
+    from: { ...s.from, note: t(`samples.exchange.${s.id}.fromNote`) },
+    to: { ...s.to, note: t(`samples.exchange.${s.id}.toNote`) },
+  }))
+  function inLanguage<T extends { id: number; isMine?: boolean }>(stored: T[], defaults: T[]): T[] {
+    const byId = new Map(defaults.map((item) => [item.id, item]))
+    return stored.map((item) => (!item.isMine && byId.has(item.id) ? { ...item, ...byId.get(item.id)! } : item))
+  }
+
+  let pins: SavedPin[] = inLanguage(readStoredPins(storageKey, saleDefaults()), saleDefaults())
+  let buyerPins: SavedPin[] = inLanguage(readStoredPins(buyerStorageKey, buyerDefaults()), buyerDefaults())
   function loadExchangePins(): ExchangePin[] {
     try {
       const raw = localStorage.getItem(exchangeStorageKey)
-      if (!raw) return structuredClone(defaultExchangePins)
+      if (!raw) return exchangeDefaults()
       const parsed = JSON.parse(raw)
-      if (Array.isArray(parsed) && parsed.every((item) => item && typeof item === 'object' && 'from' in item && 'to' in item)) return parsed as ExchangePin[]
-      return structuredClone(defaultExchangePins)
-    } catch { return structuredClone(defaultExchangePins) }
+      if (Array.isArray(parsed) && parsed.every((item) => item && typeof item === 'object' && 'from' in item && 'to' in item)) return inLanguage(parsed as ExchangePin[], exchangeDefaults())
+      return exchangeDefaults()
+    } catch { return exchangeDefaults() }
   }
   let exchangePins: ExchangePin[] = loadExchangePins()
   const visibleKinds: Record<PinKind, boolean> = { sale: true, buyer: true, exchange: true }
@@ -143,10 +170,10 @@ export function mountAtlas(root: HTMLElement, options: AtlasOptions = {}): Atlas
     <${shellTag} class="app-shell">
       <header class="topbar">
         ${isPublic ? '' : '<a class="brand" href="/" aria-label="Köpanalys Karta"><img class="brand-mark" src="/_next/image?url=%2Fkopanalys-bostad-logo.png&w=64&q=75" alt="Köpanalys"><span>Köpanalys Karta</span></a>'}
-        <form class="search-form" id="search-form" role="search"><span class="search-icon">⌕</span><input id="search-input" list="search-suggestions" type="search" placeholder="Sök plats eller pin..." autocomplete="off" aria-label="Sök plats eller pin"><datalist id="search-suggestions"></datalist><button type="submit">Sök</button></form>
-        ${isPublic ? '<div class="map-notice"><strong class="map-notice-title">Karta</strong><span class="map-notice-badge">Förhandsversion</span><p>Kartan visar exempelannonser. Annonser du lägger till sparas bara i din webbläsare.</p></div>' : ''}
+        <form class="search-form" id="search-form" role="search"><span class="search-icon">⌕</span><input id="search-input" list="search-suggestions" type="search" placeholder="${e('search.placeholder')}" autocomplete="off" aria-label="${e('search.label')}"><datalist id="search-suggestions"></datalist><button type="submit">${e('search.button')}</button></form>
+        ${isPublic ? `<div class="map-notice"><strong class="map-notice-title">${e('notice.title')}</strong><span class="map-notice-badge">${e('notice.badge')}</span><p>${e('notice.text')}</p></div>` : ''}
         <div class="topbar-actions">
-          ${isPublic ? '<div class="auth-actions" id="auth-actions"><button class="icon-button" id="my-listings-button" type="button" aria-label="Mina annonser" title="Mina annonser"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="3" width="16" height="18" rx="2"></rect><line x1="8" y1="8" x2="16" y2="8"></line><line x1="8" y1="12" x2="16" y2="12"></line><line x1="8" y1="16" x2="12" y2="16"></line></svg></button></div>' : `
+          ${isPublic ? `<div class="auth-actions" id="auth-actions"><button class="icon-button" id="my-listings-button" type="button" aria-label="${e('myListings')}" title="${e('myListings')}"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="3" width="16" height="18" rx="2"></rect><line x1="8" y1="8" x2="16" y2="8"></line><line x1="8" y1="12" x2="16" y2="12"></line><line x1="8" y1="16" x2="12" y2="16"></line></svg></button></div>` : `
           <button class="bankid-button" id="bankid-button" type="button"><span class="bankid-mark">ID</span><span class="bankid-label">Logga in med BankID</span></button>
           <div class="auth-actions" id="auth-actions" hidden>
             <div class="inbox-wrap">
@@ -158,33 +185,33 @@ export function mountAtlas(root: HTMLElement, options: AtlasOptions = {}): Atlas
                 <div class="inbox-message"><strong>Köpanalys</strong><span class="inbox-time">Måndag</span><p>Din bytesannons har fått ett nytt intresseanmälan.</p></div>
               </div>
             </div>
-            <button class="icon-button" id="my-listings-button" type="button" aria-label="Mina annonser" title="Mina annonser"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="3" width="16" height="18" rx="2"></rect><line x1="8" y1="8" x2="16" y2="8"></line><line x1="8" y1="12" x2="16" y2="12"></line><line x1="8" y1="16" x2="12" y2="16"></line></svg></button>
+            <button class="icon-button" id="my-listings-button" type="button" aria-label="${e('myListings')}" title="${e('myListings')}"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="3" width="16" height="18" rx="2"></rect><line x1="8" y1="8" x2="16" y2="8"></line><line x1="8" y1="12" x2="16" y2="12"></line><line x1="8" y1="16" x2="12" y2="16"></line></svg></button>
             <button class="logout-button" id="logout-button" type="button">Logga ut</button>
           </div>
           `}
-          <button class="icon-button" id="locate-button" title="Visa min position" aria-label="Visa min position">⌖</button>
+          <button class="icon-button" id="locate-button" title="${e('locate')}" aria-label="${e('locate')}">⌖</button>
         </div>
       </header>
       <section class="workspace">
-        <button type="button" class="drawer-close" id="drawer-close" aria-label="Stäng listan">×</button>
+        <button type="button" class="drawer-close" id="drawer-close" aria-label="${e('closeList')}">×</button>
         <aside class="sidebar" id="atlas-sidebar">
-          <div class="sidebar-header"><div><p class="eyebrow">Karta</p>${isPublic ? '<h2>Bostadsmarknaden</h2>' : '<h1>Bostadsmarknaden</h1>'}</div></div>
-          <p class="intro">Översikt över Sveriges bostadsmarknad. Här kan du se bostäder till salu och köpförfrågan.</p>
-          <div class="action-row"><button class="primary-button" id="add-button"><span>＋</span> Skapa annons</button></div>
-          <button type="button" class="list-heading" data-filter-section="sale" aria-pressed="true"><span class="heading-dot"></span><span>Till salu</span><strong id="pin-count">${pins.length}</strong></button>
+          <div class="sidebar-header"><div><p class="eyebrow">${e('eyebrow')}</p>${isPublic ? `<h2>${e('heading')}</h2>` : `<h1>${e('heading')}</h1>`}</div></div>
+          <p class="intro">${e('intro')}</p>
+          <div class="action-row"><button class="primary-button" id="add-button"><span>＋</span> ${e('create')}</button></div>
+          <button type="button" class="list-heading" data-filter-section="sale" aria-pressed="true"><span class="heading-dot"></span><span>${e('kinds.sale')}</span><strong id="pin-count">${pins.length}</strong></button>
           <div class="pin-list" id="pin-list" data-filter-section="sale"></div>
-          <button type="button" class="list-heading buyer-heading" data-filter-section="buyer" aria-pressed="true"><span class="heading-dot"></span><span>Köpare söker</span><strong id="buyer-count">${buyerPins.length}</strong></button>
+          <button type="button" class="list-heading buyer-heading" data-filter-section="buyer" aria-pressed="true"><span class="heading-dot"></span><span>${e('kinds.buyer')}</span><strong id="buyer-count">${buyerPins.length}</strong></button>
           <div class="pin-list" id="buyer-list" data-filter-section="buyer"></div>
-          <button type="button" class="list-heading exchange-heading" data-filter-section="exchange" aria-pressed="true"><span class="heading-dot"></span><span>Byter bostad</span><strong id="exchange-count">${exchangePins.length}</strong></button>
+          <button type="button" class="list-heading exchange-heading" data-filter-section="exchange" aria-pressed="true"><span class="heading-dot"></span><span>${e('kinds.exchange')}</span><strong id="exchange-count">${exchangePins.length}</strong></button>
           <div class="pin-list" id="exchange-list" data-filter-section="exchange"></div>
-          <div class="sidebar-footer"><div class="source-row"><span class="map-badge">●</span><span>OpenStreetMap data</span><a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noreferrer">Om</a></div>${isPublic ? '' : '<small class="copyright">© 2026 Köpanalys. Org.nr 9811048793</small>'}</div>
+          <div class="sidebar-footer"><div class="source-row"><span class="map-badge">●</span><span>${e('osmData')}</span><a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noreferrer">${e('about')}</a></div>${isPublic ? '' : '<small class="copyright">© 2026 Köpanalys. Org.nr 9811048793</small>'}</div>
         </aside>
         <div class="drawer-backdrop" id="drawer-backdrop"></div>
         <div class="drawer-edge" id="drawer-edge"></div>
-        <div class="map-wrap"><div id="map"></div><button type="button" class="list-toggle" id="drawer-toggle" aria-label="Visa annonslistan" aria-expanded="false" aria-controls="atlas-sidebar"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="9" y1="6" x2="20" y2="6"></line><line x1="9" y1="12" x2="20" y2="12"></line><line x1="9" y1="18" x2="20" y2="18"></line><circle cx="4.5" cy="6" r="1"></circle><circle cx="4.5" cy="12" r="1"></circle><circle cx="4.5" cy="18" r="1"></circle></svg></button><div class="map-hint" id="map-hint"><span>＋</span> Klicka för att lägga till ett pin.</div><div class="zoom-control" id="zoom-control"><button id="zoom-in" aria-label="Zooma in">＋</button><button id="zoom-out" aria-label="Zooma ut">−</button><button id="map-style-toggle" class="map-style-toggle" aria-label="Byt till satellitkarta" title="Satellit"><svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><g transform="rotate(-45 12 12)"><rect x="2.5" y="9.5" width="6" height="5" rx="1.2"></rect><rect x="15.5" y="9.5" width="6" height="5" rx="1.2"></rect><rect x="9.5" y="9" width="5" height="6" rx="1.2"></rect><line x1="8.5" y1="12" x2="9.5" y2="12"></line><line x1="14.5" y1="12" x2="15.5" y2="12"></line></g></svg></button><button id="transit-toggle" class="transit-toggle" aria-label="Visa tåg- och tunnelbanelinjer" title="Tåg- och tunnelbanelinjer"><svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="3" width="12" height="13" rx="4"></rect><line x1="6" y1="10" x2="18" y2="10"></line><circle cx="9.5" cy="13.2" r="0.6" fill="currentColor" stroke="none"></circle><circle cx="14.5" cy="13.2" r="0.6" fill="currentColor" stroke="none"></circle><line x1="8" y1="17" x2="6" y2="20"></line><line x1="16" y1="17" x2="18" y2="20"></line></svg></button></div><div class="map-legend" id="map-legend" role="group" aria-label="Filtrera kartan"><button type="button" class="legend-item" data-filter-section="sale" aria-pressed="true"><span class="legend-dot"></span>Till salu</button><button type="button" class="legend-item" data-filter-section="buyer" aria-pressed="true"><span class="legend-dot"></span>Köpare söker</button><button type="button" class="legend-item" data-filter-section="exchange" aria-pressed="true"><span class="legend-dot"></span>Byter bostad</button></div><aside class="detail-panel" id="detail-panel" hidden></aside></div>
+        <div class="map-wrap"><div id="map"></div><button type="button" class="list-toggle" id="drawer-toggle" aria-label="${e('showList')}" aria-expanded="false" aria-controls="atlas-sidebar"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="9" y1="6" x2="20" y2="6"></line><line x1="9" y1="12" x2="20" y2="12"></line><line x1="9" y1="18" x2="20" y2="18"></line><circle cx="4.5" cy="6" r="1"></circle><circle cx="4.5" cy="12" r="1"></circle><circle cx="4.5" cy="18" r="1"></circle></svg></button><div class="map-hint" id="map-hint"><span>＋</span> ${e('hint')}</div><div class="zoom-control" id="zoom-control"><button id="zoom-in" aria-label="${e('zoomIn')}">＋</button><button id="zoom-out" aria-label="${e('zoomOut')}">−</button><button id="map-style-toggle" class="map-style-toggle" aria-label="${e('style.toSatellite')}" title="${e('style.satellite')}"><svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><g transform="rotate(-45 12 12)"><rect x="2.5" y="9.5" width="6" height="5" rx="1.2"></rect><rect x="15.5" y="9.5" width="6" height="5" rx="1.2"></rect><rect x="9.5" y="9" width="5" height="6" rx="1.2"></rect><line x1="8.5" y1="12" x2="9.5" y2="12"></line><line x1="14.5" y1="12" x2="15.5" y2="12"></line></g></svg></button><button id="transit-toggle" class="transit-toggle" aria-label="${e('transit.show')}" title="${e('transit.title')}"><svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="3" width="12" height="13" rx="4"></rect><line x1="6" y1="10" x2="18" y2="10"></line><circle cx="9.5" cy="13.2" r="0.6" fill="currentColor" stroke="none"></circle><circle cx="14.5" cy="13.2" r="0.6" fill="currentColor" stroke="none"></circle><line x1="8" y1="17" x2="6" y2="20"></line><line x1="16" y1="17" x2="18" y2="20"></line></svg></button></div><div class="map-legend" id="map-legend" role="group" aria-label="${e('filter')}"><button type="button" class="legend-item" data-filter-section="sale" aria-pressed="true"><span class="legend-dot"></span>${e('kinds.sale')}</button><button type="button" class="legend-item" data-filter-section="buyer" aria-pressed="true"><span class="legend-dot"></span>${e('kinds.buyer')}</button><button type="button" class="legend-item" data-filter-section="exchange" aria-pressed="true"><span class="legend-dot"></span>${e('kinds.exchange')}</button></div><aside class="detail-panel" id="detail-panel" hidden></aside></div>
       </section>
-      <div class="modal-backdrop" id="modal-backdrop" hidden><form class="place-modal" id="place-form"><button type="button" class="modal-close" id="modal-close" aria-label="Stäng">×</button><p class="eyebrow">Ny kartmarkering</p><h2 id="form-title">Lägg till bostad till salu</h2><div class="pin-type-switch" role="tablist" aria-label="Typ av pin"><button type="button" class="type-option is-active" data-pin-kind="sale" role="tab" aria-selected="true">Till salu</button><button type="button" class="type-option" data-pin-kind="buyer" role="tab" aria-selected="false">Köpare söker</button><button type="button" class="type-option" data-pin-kind="exchange" role="tab" aria-selected="false">Byter bostad</button></div><div class="field-grid"><label>Rubrik<input name="title" required maxlength="60" placeholder="t.ex. Villa nära centrum"></label><label id="note-label">Plats eller område<span class="address-input"><input name="note" required maxlength="100" placeholder="t.ex. Eslövs kommun"><button type="button" class="map-pick-button" data-pick-target="note" aria-label="Välj plats på kartan" title="Välj plats på kartan">⌖</button></span></label></div><div class="form-section" data-form-section="sale"><label>Pris, storlek och rum<input name="meta" maxlength="100" placeholder="t.ex. 3 rum · 78 m² · 2 495 000 kr"></label><div class="image-field"><div class="field-grid"><label>Bildlänk <span>valfritt</span><input name="image" type="url" placeholder="https://..."></label><label class="file-field">Ladda upp bild <span>valfritt</span><input name="imageFile" type="file" accept="image/*" class="file-input"></label></div><div class="image-preview" hidden><img alt=""><button type="button" class="image-preview-remove" aria-label="Ta bort bild">×</button></div></div><label>Annonslänk <span>valfritt</span><input name="link" type="url" placeholder="https://www.hemnet.se/..."></label><label>Beskrivning <span>valfritt</span><textarea name="details" maxlength="300" placeholder="Beskriv bostaden kort"></textarea></label></div><div class="form-section" data-form-section="buyer" hidden><label>Budget och önskemål<input name="meta" maxlength="120" placeholder="t.ex. Budget upp till 3 000 000 kr · 2–3 rum"></label><div class="image-field"><div class="field-grid"><label>Bildlänk <span>valfritt</span><input name="image" type="url" placeholder="https://..."></label><label class="file-field">Ladda upp bild <span>valfritt</span><input name="imageFile" type="file" accept="image/*" class="file-input"></label></div><div class="image-preview" hidden><img alt=""><button type="button" class="image-preview-remove" aria-label="Ta bort bild">×</button></div></div><label>Mer information<textarea name="details" maxlength="300" placeholder="Vad söker köparen? Berätta om läge, storlek och tidsplan."></textarea></label></div><div class="form-section" data-form-section="exchange" hidden><div class="field-grid"><label>Erbjuder och söker<input name="meta" maxlength="120" placeholder="t.ex. Erbjuder 3 rum · Söker 4+ rum"></label><label>Vill bo i<span class="address-input"><input name="toNote" required maxlength="100" placeholder="t.ex. Uppsala"><button type="button" class="map-pick-button" data-pick-target="toNote" aria-label="Välj plats på kartan" title="Välj plats på kartan">⌖</button></span></label></div><div class="image-field"><div class="field-grid"><label>Bildlänk <span>valfritt</span><input name="image" type="url" placeholder="https://..."></label><label class="file-field">Ladda upp bild <span>valfritt</span><input name="imageFile" type="file" accept="image/*" class="file-input"></label></div><div class="image-preview" hidden><img alt=""><button type="button" class="image-preview-remove" aria-label="Ta bort bild">×</button></div></div><label>Bytesinformation<textarea name="details" maxlength="300" placeholder="Beskriv bostaden som erbjuds och vad personen vill byta till."></textarea></label></div><button class="primary-button form-submit" type="submit">Spara pin</button></form></div>
-      <div class="modal-backdrop" id="my-listings-backdrop" hidden><div class="place-modal my-listings-modal"><button type="button" class="modal-close" id="my-listings-close" aria-label="Stäng">×</button><p class="eyebrow">Mitt konto</p><h2>Mina annonser</h2><div class="my-listings-list" id="my-listings-list"></div></div></div>
+      <div class="modal-backdrop" id="modal-backdrop" hidden><form class="place-modal" id="place-form"><button type="button" class="modal-close" id="modal-close" aria-label="${e('close')}">×</button><p class="eyebrow">${e('form.eyebrow')}</p><h2 id="form-title">${e('form.titles.sale')}</h2><div class="pin-type-switch" role="tablist" aria-label="${e('form.pinType')}"><button type="button" class="type-option is-active" data-pin-kind="sale" role="tab" aria-selected="true">${e('kinds.sale')}</button><button type="button" class="type-option" data-pin-kind="buyer" role="tab" aria-selected="false">${e('kinds.buyer')}</button><button type="button" class="type-option" data-pin-kind="exchange" role="tab" aria-selected="false">${e('kinds.exchange')}</button></div><div class="field-grid"><label>${e('form.heading')}<input name="title" required maxlength="60" placeholder="${e('form.headingPlaceholder')}"></label><label id="note-label">${e('form.place.sale')}<span class="address-input"><input name="note" required maxlength="100" placeholder="${e('form.placePlaceholder')}"><button type="button" class="map-pick-button" data-pick-target="note" aria-label="${e('form.pickOnMap')}" title="${e('form.pickOnMap')}">⌖</button></span></label></div><div class="form-section" data-form-section="sale"><label>${e('form.saleMeta')}<input name="meta" maxlength="100" placeholder="${e('form.saleMetaPlaceholder')}"></label><div class="image-field"><div class="field-grid"><label>${e('form.imageLink')} <span>${e('form.optional')}</span><input name="image" type="url" placeholder="https://..."></label><label class="file-field">${e('form.imageUpload')} <span>${e('form.optional')}</span><input name="imageFile" type="file" accept="image/*" class="file-input"></label></div><div class="image-preview" hidden><img alt=""><button type="button" class="image-preview-remove" aria-label="${e('form.removeImage')}">×</button></div></div><label>${e('form.saleLink')} <span>${e('form.optional')}</span><input name="link" type="url" placeholder="https://www.hemnet.se/..."></label><label>${e('form.saleDescription')} <span>${e('form.optional')}</span><textarea name="details" maxlength="300" placeholder="${e('form.saleDescriptionPlaceholder')}"></textarea></label></div><div class="form-section" data-form-section="buyer" hidden><label>${e('form.buyerMeta')}<input name="meta" maxlength="120" placeholder="${e('form.buyerMetaPlaceholder')}"></label><div class="image-field"><div class="field-grid"><label>${e('form.imageLink')} <span>${e('form.optional')}</span><input name="image" type="url" placeholder="https://..."></label><label class="file-field">${e('form.imageUpload')} <span>${e('form.optional')}</span><input name="imageFile" type="file" accept="image/*" class="file-input"></label></div><div class="image-preview" hidden><img alt=""><button type="button" class="image-preview-remove" aria-label="${e('form.removeImage')}">×</button></div></div><label>${e('form.buyerMore')}<textarea name="details" maxlength="300" placeholder="${e('form.buyerMorePlaceholder')}"></textarea></label></div><div class="form-section" data-form-section="exchange" hidden><div class="field-grid"><label>${e('form.exchangeMeta')}<input name="meta" maxlength="120" placeholder="${e('form.exchangeMetaPlaceholder')}"></label><label>${e('form.exchangeWantsToLive')}<span class="address-input"><input name="toNote" required maxlength="100" placeholder="${e('form.exchangeWantsPlaceholder')}"><button type="button" class="map-pick-button" data-pick-target="toNote" aria-label="${e('form.pickOnMap')}" title="${e('form.pickOnMap')}">⌖</button></span></label></div><div class="image-field"><div class="field-grid"><label>${e('form.imageLink')} <span>${e('form.optional')}</span><input name="image" type="url" placeholder="https://..."></label><label class="file-field">${e('form.imageUpload')} <span>${e('form.optional')}</span><input name="imageFile" type="file" accept="image/*" class="file-input"></label></div><div class="image-preview" hidden><img alt=""><button type="button" class="image-preview-remove" aria-label="${e('form.removeImage')}">×</button></div></div><label>${e('form.exchangeInfo')}<textarea name="details" maxlength="300" placeholder="${e('form.exchangeInfoPlaceholder')}"></textarea></label></div><button class="primary-button form-submit" type="submit">${e('form.save')}</button></form></div>
+      <div class="modal-backdrop" id="my-listings-backdrop" hidden><div class="place-modal my-listings-modal"><button type="button" class="modal-close" id="my-listings-close" aria-label="${e('close')}">×</button><p class="eyebrow">${e('mine.eyebrow')}</p><h2>${e('mine.heading')}</h2><div class="my-listings-list" id="my-listings-list"></div></div></div>
     </${shellTag}>
   `
 
@@ -323,19 +350,19 @@ export function mountAtlas(root: HTMLElement, options: AtlasOptions = {}): Atlas
     setArcHighlight(null)
     setSelectedMarker(`${kind}-${pin.id}`)
     flyToPin([pin.lat, pin.lng], 15, 0.8)
-    const labels: Record<'sale' | 'buyer', string> = { sale: 'Till salu', buyer: 'Köpare söker' }
+    const labels: Record<'sale' | 'buyer', string> = { sale: t('kinds.sale'), buyer: t('kinds.buyer') }
     const googleMapsLink = `https://www.google.com/maps/search/?api=1&query=${pin.lat},${pin.lng}`
-    const contactLink = `mailto:kontakt@kopanalys.se?subject=${encodeURIComponent(`Kontakt om ${pin.title}`)}`
+    const contactLink = `mailto:kontakt@kopanalys.se?subject=${encodeURIComponent(t('detail.contactSubject', { title: pin.title }))}`
     const hasPhoto = kind === 'sale' || Boolean(pin.image)
     const tag = `<span class="detail-tag${kind === 'buyer' ? ' detail-tag-buyer' : ''}">${labels[kind]}</span>`
-    const photoBlock = hasPhoto ? `<div class="detail-photo-wrap"><img class="detail-photo" src="${esc(safeImage(pin.image) ?? DEFAULT_LISTING_PHOTO)}" alt="Foto av ${esc(pin.title)}">${tag}</div>` : ''
+    const photoBlock = hasPhoto ? `<div class="detail-photo-wrap"><img class="detail-photo" src="${esc(safeImage(pin.image) ?? DEFAULT_LISTING_PHOTO)}" alt="${e('detail.photoOf', { title: pin.title })}">${tag}</div>` : ''
     const bodyOpen = hasPhoto ? '<div class="detail-body">' : '<div class="detail-body detail-body-compact">'
     const inlineTag = hasPhoto ? '' : tag
     const actionBlock = kind === 'sale'
-      ? `<a class="detail-link" href="${esc(safeHref(pin.link) ?? 'https://www.hemnet.se/')}" target="_blank" rel="noreferrer">Se annonsen <span>↗</span></a>`
-      : `<div class="detail-contact"><span class="contact-dot"></span><span>Förfrågan aktiv</span></div><a class="detail-contact-link" href="${contactLink}">Kontakt <span>↗</span></a>`
-    const createAnalysisBlock = kind === 'sale' ? '<button type="button" class="detail-create-analysis">Skapa analys</button>' : ''
-    const panelContent = `${DETAIL_CLOSE}${photoBlock}${bodyOpen}${inlineTag}<h2>${esc(pin.title)}</h2><p class="detail-note">${esc(pin.note)}</p><p class="detail-meta">${esc(pin.meta ?? (kind === 'sale' ? 'Kontakta säljaren för fler uppgifter' : 'Detaljerad förfrågan'))}</p><p class="detail-description">${esc(pin.details ?? (kind === 'sale' ? 'Se annonsen för fullständig information om bostaden.' : 'Kontakta personen för mer information om önskemål och tidsplan.'))}</p>${actionBlock}<a class="detail-map-link" href="${googleMapsLink}" target="_blank" rel="noreferrer">Öppna i Google Maps <span>↗</span></a>${createAnalysisBlock}</div>`
+      ? `<a class="detail-link" href="${esc(safeHref(pin.link) ?? 'https://www.hemnet.se/')}" target="_blank" rel="noreferrer">${e('detail.viewListing')} <span>↗</span></a>`
+      : `<div class="detail-contact"><span class="contact-dot"></span><span>${e('detail.requestActive')}</span></div><a class="detail-contact-link" href="${contactLink}">${e('detail.contact')} <span>↗</span></a>`
+    const createAnalysisBlock = kind === 'sale' ? `<button type="button" class="detail-create-analysis">${e('detail.createAnalysis')}</button>` : ''
+    const panelContent = `${detailClose(t('close'))}${photoBlock}${bodyOpen}${inlineTag}<h2>${esc(pin.title)}</h2><p class="detail-note">${esc(pin.note)}</p><p class="detail-meta">${esc(pin.meta ?? (kind === 'sale' ? t('detail.saleMeta') : t('detail.requestMeta')))}</p><p class="detail-description">${esc(pin.details ?? (kind === 'sale' ? t('detail.saleDetails') : t('detail.requestDetails')))}</p>${actionBlock}<a class="detail-map-link" href="${googleMapsLink}" target="_blank" rel="noreferrer">${e('detail.openInGoogleMaps')} <span>↗</span></a>${createAnalysisBlock}</div>`
     detailPanel.innerHTML = panelContent
     detailPanel.hidden = false
     detailPanel.querySelector('#detail-close')?.addEventListener('click', closeDetail)
@@ -425,12 +452,12 @@ export function mountAtlas(root: HTMLElement, options: AtlasOptions = {}): Atlas
     map.flyToBounds(bounds, { ...framing, maxZoom: 13, duration: 0.8 })
     const fromMapsLink = `https://www.google.com/maps/search/?api=1&query=${pin.from.lat},${pin.from.lng}`
     const toMapsLink = `https://www.google.com/maps/search/?api=1&query=${pin.to.lat},${pin.to.lng}`
-    const contactLink = `mailto:kontakt@kopanalys.se?subject=${encodeURIComponent(`Kontakt om ${pin.title}`)}`
-    const tag = `<span class="detail-tag detail-tag-exchange">Byter bostad</span>`
-    const photoBlock = pin.image ? `<div class="detail-photo-wrap"><img class="detail-photo" src="${esc(safeImage(pin.image))}" alt="Foto av ${esc(pin.title)}">${tag}</div>` : ''
+    const contactLink = `mailto:kontakt@kopanalys.se?subject=${encodeURIComponent(t('detail.contactSubject', { title: pin.title }))}`
+    const tag = `<span class="detail-tag detail-tag-exchange">${e('kinds.exchange')}</span>`
+    const photoBlock = pin.image ? `<div class="detail-photo-wrap"><img class="detail-photo" src="${esc(safeImage(pin.image))}" alt="${e('detail.photoOf', { title: pin.title })}">${tag}</div>` : ''
     const bodyOpen = pin.image ? '<div class="detail-body">' : '<div class="detail-body detail-body-compact">'
     const inlineTag = pin.image ? '' : tag
-    detailPanel.innerHTML = `${DETAIL_CLOSE}${photoBlock}${bodyOpen}${inlineTag}<h2>${esc(pin.title)}</h2><div class="exchange-route"><button type="button" class="exchange-stop" data-nav="from"><span class="exchange-dot exchange-dot-from"></span><div><small>Bor nu</small><strong>${esc(pin.from.note)}</strong></div></button><div class="exchange-route-arrow">→</div><button type="button" class="exchange-stop" data-nav="to"><span class="exchange-dot exchange-dot-to"></span><div><small>Vill bo</small><strong>${esc(pin.to.note)}</strong></div></button></div><p class="detail-meta">${esc(pin.meta)}</p><p class="detail-description">${esc(pin.details ?? 'Kontakta personen för mer information om önskemål och tidsplan.')}</p><div class="detail-contact"><span class="contact-dot"></span><span>Förfrågan aktiv</span></div><a class="detail-contact-link" href="${contactLink}">Kontakt <span>↗</span></a><a class="detail-map-link" href="${fromMapsLink}" target="_blank" rel="noreferrer">Nuvarande plats <span>↗</span></a><a class="detail-map-link" href="${toMapsLink}" target="_blank" rel="noreferrer">Önskad plats <span>↗</span></a></div>`
+    detailPanel.innerHTML = `${detailClose(t('close'))}${photoBlock}${bodyOpen}${inlineTag}<h2>${esc(pin.title)}</h2><div class="exchange-route"><button type="button" class="exchange-stop" data-nav="from"><span class="exchange-dot exchange-dot-from"></span><div><small>${e('detail.livesNow')}</small><strong>${esc(pin.from.note)}</strong></div></button><div class="exchange-route-arrow">→</div><button type="button" class="exchange-stop" data-nav="to"><span class="exchange-dot exchange-dot-to"></span><div><small>${e('detail.wantsToLive')}</small><strong>${esc(pin.to.note)}</strong></div></button></div><p class="detail-meta">${esc(pin.meta)}</p><p class="detail-description">${esc(pin.details ?? t('detail.requestDetails'))}</p><div class="detail-contact"><span class="contact-dot"></span><span>${e('detail.requestActive')}</span></div><a class="detail-contact-link" href="${contactLink}">${e('detail.contact')} <span>↗</span></a><a class="detail-map-link" href="${fromMapsLink}" target="_blank" rel="noreferrer">${e('detail.currentPlace')} <span>↗</span></a><a class="detail-map-link" href="${toMapsLink}" target="_blank" rel="noreferrer">${e('detail.wantedPlace')} <span>↗</span></a></div>`
     detailPanel.hidden = false
     detailPanel.querySelector('#detail-close')?.addEventListener('click', closeDetail)
     detailPanel.querySelector('[data-nav="from"]')?.addEventListener('click', () => focusExchangeStop(pin, 'from'))
@@ -491,7 +518,7 @@ export function mountAtlas(root: HTMLElement, options: AtlasOptions = {}): Atlas
 
   async function geocodeInSweden(query: string): Promise<{ lat: number; lng: number } | null> {
     try {
-      const response = await fetch(`https://nominatim.openstreetmap.org/search?format=jsonv2&limit=1&countrycodes=se&q=${encodeURIComponent(query)}`, { headers: { 'Accept-Language': 'sv' } })
+      const response = await fetch(`https://nominatim.openstreetmap.org/search?format=jsonv2&limit=1&countrycodes=se&q=${encodeURIComponent(query)}`, { headers: { 'Accept-Language': options.locale } })
       if (!response.ok) return null
       const results = await response.json() as Array<{ lat: string; lon: string }>
       const result = results[0]
@@ -501,7 +528,7 @@ export function mountAtlas(root: HTMLElement, options: AtlasOptions = {}): Atlas
 
   async function reverseGeocodeInSweden(lat: number, lng: number): Promise<string | null> {
     try {
-      const response = await fetch(`https://nominatim.openstreetmap.org/reverse?format=jsonv2&addressdetails=1&lat=${lat}&lon=${lng}`, { headers: { 'Accept-Language': 'sv' } })
+      const response = await fetch(`https://nominatim.openstreetmap.org/reverse?format=jsonv2&addressdetails=1&lat=${lat}&lon=${lng}`, { headers: { 'Accept-Language': options.locale } })
       if (!response.ok) return null
       const result = await response.json() as { display_name?: string; address?: Record<string, string> }
       const address = result.address
@@ -526,7 +553,7 @@ export function mountAtlas(root: HTMLElement, options: AtlasOptions = {}): Atlas
     const exchangeMatch = exchangePins.find((pin) => `${pin.title} ${pin.from.note} ${pin.to.note} ${pin.details ?? ''}`.toLocaleLowerCase('sv-SE').includes(normalizedQuery))
     if (exchangeMatch) { selectExchangePin(exchangeMatch); return }
     try {
-      const response = await fetch(`https://nominatim.openstreetmap.org/search?format=jsonv2&limit=1&countrycodes=se&q=${encodeURIComponent(query)}`, { headers: { 'Accept-Language': 'sv' } })
+      const response = await fetch(`https://nominatim.openstreetmap.org/search?format=jsonv2&limit=1&countrycodes=se&q=${encodeURIComponent(query)}`, { headers: { 'Accept-Language': options.locale } })
       if (!response.ok) throw new Error('Geocoding request failed')
       const results = await response.json() as Array<{ lat: string; lon: string; display_name: string }>
       const result = results[0]
@@ -555,7 +582,7 @@ export function mountAtlas(root: HTMLElement, options: AtlasOptions = {}): Atlas
     const requestId = ++suggestionRequestId
     suggestionTimer = setTimeout(async () => {
       try {
-        const response = await fetch(`https://nominatim.openstreetmap.org/search?format=jsonv2&limit=5&countrycodes=se&q=${encodeURIComponent(trimmedQuery)}`, { headers: { 'Accept-Language': 'sv' } })
+        const response = await fetch(`https://nominatim.openstreetmap.org/search?format=jsonv2&limit=5&countrycodes=se&q=${encodeURIComponent(trimmedQuery)}`, { headers: { 'Accept-Language': options.locale } })
         if (!response.ok || requestId !== suggestionRequestId) return
         const results = await response.json() as Array<{ display_name: string }>
         const existingLabels = new Set(Array.from(searchSuggestions.options).map((option) => option.value))
@@ -583,22 +610,22 @@ export function mountAtlas(root: HTMLElement, options: AtlasOptions = {}): Atlas
       toggle.classList.toggle('is-off', !active)
       toggle.setAttribute('aria-pressed', String(active))
     })
-    list.innerHTML = pins.length ? pins.map((pin, index) => `<button class="pin-item" data-id="${pin.id}">${thumbMarkup(pin.image, index + 1)}<span class="pin-item-text"><strong>${esc(pin.title)}</strong><small>${esc(pin.note || `${pin.lat.toFixed(4)}, ${pin.lng.toFixed(4)}`)}</small></span><span class="item-arrow">›</span></button>`).join('') : '<div class="empty-state">Inga bostäder ännu.<br>Klicka på kartan för att lägga till en.</div>'
-    buyerList.innerHTML = buyerPins.length ? buyerPins.map((pin, index) => `<button class="pin-item buyer-item" data-id="${pin.id}">${thumbMarkup(pin.image, index + 1)}<span class="pin-item-text"><strong>${esc(pin.title)}</strong><small>${esc(pin.note || `${pin.lat.toFixed(4)}, ${pin.lng.toFixed(4)}`)}</small></span><span class="item-arrow">›</span></button>`).join('') : '<div class="empty-state">Inga köpare ännu.</div>'
-    exchangeList.innerHTML = exchangePins.length ? exchangePins.map((pin, index) => `<button class="pin-item exchange-item" data-id="${pin.id}">${thumbMarkup(pin.image, index + 1)}<span class="pin-item-text"><strong>${esc(pin.title)}</strong><small>${esc(pin.from.note)} → ${esc(pin.to.note)}</small></span><span class="item-arrow">›</span></button>`).join('') : '<div class="empty-state">Inga bytesförfrågningar ännu.</div>'
+    list.innerHTML = pins.length ? pins.map((pin, index) => `<button class="pin-item" data-id="${pin.id}">${thumbMarkup(pin.image, index + 1)}<span class="pin-item-text"><strong>${esc(pin.title)}</strong><small>${esc(pin.note || `${pin.lat.toFixed(4)}, ${pin.lng.toFixed(4)}`)}</small></span><span class="item-arrow">›</span></button>`).join('') : `<div class="empty-state">${e('empty.sale')}<br>${e('empty.saleHint')}</div>`
+    buyerList.innerHTML = buyerPins.length ? buyerPins.map((pin, index) => `<button class="pin-item buyer-item" data-id="${pin.id}">${thumbMarkup(pin.image, index + 1)}<span class="pin-item-text"><strong>${esc(pin.title)}</strong><small>${esc(pin.note || `${pin.lat.toFixed(4)}, ${pin.lng.toFixed(4)}`)}</small></span><span class="item-arrow">›</span></button>`).join('') : `<div class="empty-state">${e('empty.buyer')}</div>`
+    exchangeList.innerHTML = exchangePins.length ? exchangePins.map((pin, index) => `<button class="pin-item exchange-item" data-id="${pin.id}">${thumbMarkup(pin.image, index + 1)}<span class="pin-item-text"><strong>${esc(pin.title)}</strong><small>${esc(pin.from.note)} → ${esc(pin.to.note)}</small></span><span class="item-arrow">›</span></button>`).join('') : `<div class="empty-state">${e('empty.exchange')}</div>`
     root.querySelector('#pin-count')!.textContent = String(pins.length)
     root.querySelector('#buyer-count')!.textContent = String(buyerPins.length)
     root.querySelector('#exchange-count')!.textContent = String(exchangePins.length)
     if (isFilterVisible('sale')) pins.forEach((pin, index) => { const marker = L.marker([pin.lat, pin.lng], { icon: pinIcon }).addTo(map).bindTooltip(`${index + 1}. ${esc(pin.title)}`, { direction: 'top', offset: [0, -28] }).on('click', () => selectPin(pin, 'sale')); markers.set(pin.id, marker) })
-    if (isFilterVisible('buyer')) buyerPins.forEach((pin, index) => { const marker = L.marker([pin.lat, pin.lng], { icon: buyerPinIcon }).addTo(map).bindTooltip(`Köpare ${index + 1}. ${esc(pin.title)}`, { direction: 'top', offset: [0, -28] }).on('click', () => selectPin(pin, 'buyer')); buyerMarkers.set(pin.id, marker) })
+    if (isFilterVisible('buyer')) buyerPins.forEach((pin, index) => { const marker = L.marker([pin.lat, pin.lng], { icon: buyerPinIcon }).addTo(map).bindTooltip(e('tooltips.buyer', { n: index + 1, title: pin.title }), { direction: 'top', offset: [0, -28] }).on('click', () => selectPin(pin, 'buyer')); buyerMarkers.set(pin.id, marker) })
     if (isFilterVisible('exchange')) exchangePins.forEach((pin, index) => {
       const path = buildArc(pin.from.lat, pin.from.lng, pin.to.lat, pin.to.lng)
       // Added first, so it lies under the arc. Colours are the stylesheet's (see .exchange-arc in the workspace mixin).
       const casing = L.polyline(path, { className: 'exchange-arc-casing', weight: 7, opacity: 0.9, lineCap: 'round', lineJoin: 'round', interactive: false }).addTo(map)
       // dashArray: 9 + 8 = the 17 px period the stylesheet's flow animation loops over
       const arc = L.polyline(path, { className: 'exchange-arc', weight: 3.5, opacity: 1, dashArray: '9 8', lineCap: 'butt' }).addTo(map)
-      const fromMarker = L.marker([pin.from.lat, pin.from.lng], { icon: exchangeFromIcon }).addTo(map).bindTooltip(`Byte ${index + 1}: ${esc(pin.title)}`, { direction: 'top', offset: [0, -28] }).on('click', () => selectExchangePin(pin))
-      const toMarker = L.marker([pin.to.lat, pin.to.lng], { icon: exchangeToIcon }).addTo(map).bindTooltip(`Byte ${index + 1}: vill bo i ${esc(pin.to.note)}`, { direction: 'top', offset: [0, -28] }).on('click', () => selectExchangePin(pin))
+      const fromMarker = L.marker([pin.from.lat, pin.from.lng], { icon: exchangeFromIcon }).addTo(map).bindTooltip(e('tooltips.exchange', { n: index + 1, title: pin.title }), { direction: 'top', offset: [0, -28] }).on('click', () => selectExchangePin(pin))
+      const toMarker = L.marker([pin.to.lat, pin.to.lng], { icon: exchangeToIcon }).addTo(map).bindTooltip(e('tooltips.exchangeTo', { n: index + 1, place: pin.to.note }), { direction: 'top', offset: [0, -28] }).on('click', () => selectExchangePin(pin))
       exchangeMarkers.set(pin.id, { from: fromMarker, to: toMarker, arc, casing })
     })
     list.querySelectorAll<HTMLButtonElement>('.pin-item').forEach((item) => item.addEventListener('click', () => { const index = pins.findIndex((candidate) => candidate.id === Number(item.dataset.id)); if (index >= 0) selectPin(pins[index], 'sale') }))
@@ -608,12 +635,12 @@ export function mountAtlas(root: HTMLElement, options: AtlasOptions = {}): Atlas
   }
   function setModalPinKind(kind: PinKind) {
     modalPinKind = kind
-    const titles: Record<PinKind, string> = { sale: 'Lägg till bostad till salu', buyer: 'Lägg till köpare', exchange: 'Lägg till bytesförfrågan' }
+    const titles: Record<PinKind, string> = { sale: t('form.titles.sale'), buyer: t('form.titles.buyer'), exchange: t('form.titles.exchange') }
     root.querySelector('#form-title')!.textContent = titles[kind]
     form.querySelectorAll<HTMLButtonElement>('.type-option').forEach((option) => { const active = option.dataset.pinKind === kind; option.classList.toggle('is-active', active); option.setAttribute('aria-selected', String(active)) })
     form.querySelectorAll<HTMLElement>('[data-form-section]').forEach((section) => { const active = section.dataset.formSection === kind; section.hidden = !active; section.querySelectorAll<HTMLInputElement | HTMLTextAreaElement>('input, textarea').forEach((control) => { control.disabled = !active }) })
     const noteLabel = root.querySelector('#note-label')!
-    noteLabel.firstChild!.textContent = kind === 'sale' ? 'Plats eller område' : kind === 'buyer' ? 'Önskat område' : 'Bor nu (plats)'
+    noteLabel.firstChild!.textContent = kind === 'sale' ? t('form.place.sale') : kind === 'buyer' ? t('form.place.buyer') : t('form.place.exchange')
   }
   function setPendingMarker(which: 'note' | 'toNote', latlng: L.LatLng) {
     if (which === 'note') {
@@ -633,7 +660,7 @@ export function mountAtlas(root: HTMLElement, options: AtlasOptions = {}): Atlas
   function startPicking(target: 'note' | 'toNote') {
     pickingTarget = target
     modal.hidden = true
-    mapHint.innerHTML = '<span>⌖</span> Klicka på kartan för att välja plats.'
+    mapHint.innerHTML = `<span>⌖</span> ${e('hintPick')}`
     form.querySelectorAll<HTMLButtonElement>('.map-pick-button').forEach((btn) => btn.classList.toggle('is-picking', btn.dataset.pickTarget === target))
   }
   function stopPicking() {
@@ -651,7 +678,7 @@ export function mountAtlas(root: HTMLElement, options: AtlasOptions = {}): Atlas
     if (!input) return
     const originalPlaceholder = input.placeholder
     input.value = ''
-    input.placeholder = 'Hämtar adress...'
+    input.placeholder = t('form.fetchingAddress')
     const address = await reverseGeocodeInSweden(latlng.lat, latlng.lng)
     input.value = address ?? ''
     input.placeholder = originalPlaceholder
@@ -678,7 +705,7 @@ export function mountAtlas(root: HTMLElement, options: AtlasOptions = {}): Atlas
     const noteInput = form.elements.namedItem('note') as HTMLInputElement
     noteInput.focus()
     const originalPlaceholder = noteInput.placeholder
-    noteInput.placeholder = 'Hämtar adress...'
+    noteInput.placeholder = t('form.fetchingAddress')
     const address = await reverseGeocodeInSweden(location.lat, location.lng)
     if (pendingLocation === location) {
       noteInput.value = address ?? ''
@@ -695,7 +722,7 @@ export function mountAtlas(root: HTMLElement, options: AtlasOptions = {}): Atlas
     stopPicking()
     editingPin = null
     form.querySelectorAll<HTMLButtonElement>('.type-option').forEach((option) => { option.disabled = false })
-    form.querySelector<HTMLButtonElement>('.form-submit')!.textContent = 'Spara pin'
+    form.querySelector<HTMLButtonElement>('.form-submit')!.textContent = t('form.save')
     if (cameFromMyListings) { cameFromMyListings = false; renderMyListingsDialog(); myListingsBackdrop.hidden = false }
   }
 
@@ -712,14 +739,14 @@ export function mountAtlas(root: HTMLElement, options: AtlasOptions = {}): Atlas
   }
 
   function myListingRow(kind: PinKind, id: number, image: string | undefined, title: string, note: string, tagClass: string, tagLabel: string): string {
-    return `<div class="my-listing-row">${myListingThumb(image)}<span class="pin-item-text"><strong>${esc(title)}</strong><small>${esc(note)}</small></span><span class="my-listing-actions"><span class="my-listing-tag${tagClass}">${tagLabel}</span><button type="button" class="my-listing-edit" data-kind="${kind}" data-id="${id}">Redigera</button><button type="button" class="my-listing-delete" data-kind="${kind}" data-id="${id}">Ta bort</button></span></div>`
+    return `<div class="my-listing-row">${myListingThumb(image)}<span class="pin-item-text"><strong>${esc(title)}</strong><small>${esc(note)}</small></span><span class="my-listing-actions"><span class="my-listing-tag${tagClass}">${tagLabel}</span><button type="button" class="my-listing-edit" data-kind="${kind}" data-id="${id}">${e('mine.edit')}</button><button type="button" class="my-listing-delete" data-kind="${kind}" data-id="${id}">${e('mine.remove')}</button></span></div>`
   }
   function renderMyListingsDialog() {
     const rows: string[] = []
-    pins.filter((pin) => pin.isMine).forEach((pin) => rows.push(myListingRow('sale', pin.id, pin.image, pin.title, pin.note, '', 'Till salu')))
-    buyerPins.filter((pin) => pin.isMine).forEach((pin) => rows.push(myListingRow('buyer', pin.id, pin.image, pin.title, pin.note, ' my-listing-tag-buyer', 'Köpare söker')))
-    exchangePins.filter((pin) => pin.isMine).forEach((pin) => rows.push(myListingRow('exchange', pin.id, pin.image, pin.title, `${pin.from.note} → ${pin.to.note}`, ' my-listing-tag-exchange', 'Byter bostad')))
-    myListingsList.innerHTML = rows.length ? rows.join('') : '<div class="empty-state">Du har inte lagt till några annonser ännu.<br>Klicka på "Skapa annons" för att komma igång.</div>'
+    pins.filter((pin) => pin.isMine).forEach((pin) => rows.push(myListingRow('sale', pin.id, pin.image, pin.title, pin.note, '', e('kinds.sale'))))
+    buyerPins.filter((pin) => pin.isMine).forEach((pin) => rows.push(myListingRow('buyer', pin.id, pin.image, pin.title, pin.note, ' my-listing-tag-buyer', e('kinds.buyer'))))
+    exchangePins.filter((pin) => pin.isMine).forEach((pin) => rows.push(myListingRow('exchange', pin.id, pin.image, pin.title, `${pin.from.note} → ${pin.to.note}`, ' my-listing-tag-exchange', e('kinds.exchange'))))
+    myListingsList.innerHTML = rows.length ? rows.join('') : `<div class="empty-state">${e('mine.empty')}<br>${e('mine.emptyHint')}</div>`
   }
 
   function openEditModal(kind: PinKind, id: number) {
@@ -733,8 +760,8 @@ export function mountAtlas(root: HTMLElement, options: AtlasOptions = {}): Atlas
     setModalPinKind(kind)
     modal.hidden = false
     form.querySelectorAll<HTMLButtonElement>('.type-option').forEach((option) => { option.disabled = true })
-    root.querySelector('#form-title')!.textContent = 'Redigera annons'
-    form.querySelector<HTMLButtonElement>('.form-submit')!.textContent = 'Spara ändringar'
+    root.querySelector('#form-title')!.textContent = t('form.titles.edit')
+    form.querySelector<HTMLButtonElement>('.form-submit')!.textContent = t('form.saveChanges')
     const activeSection = form.querySelector<HTMLElement>(`[data-form-section="${kind}"]`)!
     ;(form.elements.namedItem('title') as HTMLInputElement).value = pin.title
     activeSection.querySelector<HTMLInputElement>('input[name="meta"]')!.value = pin.meta ?? ''
@@ -765,7 +792,7 @@ export function mountAtlas(root: HTMLElement, options: AtlasOptions = {}): Atlas
   }
 
   function deleteMyPin(kind: PinKind, id: number) {
-    if (!confirm('Vill du ta bort den här annonsen?')) return
+    if (!confirm(t('mine.confirmRemove'))) return
     if (kind === 'sale') { pins = pins.filter((p) => p.id !== id); savePins() }
     else if (kind === 'buyer') { buyerPins = buyerPins.filter((p) => p.id !== id); saveBuyerPins() }
     else { exchangePins = exchangePins.filter((p) => p.id !== id); saveExchangePins() }
@@ -836,12 +863,12 @@ export function mountAtlas(root: HTMLElement, options: AtlasOptions = {}): Atlas
         const submitButton = form.querySelector<HTMLButtonElement>('.form-submit')!
         const originalLabel = submitButton.textContent
         submitButton.disabled = true
-        submitButton.textContent = 'Söker plats...'
+        submitButton.textContent = t('form.searching')
         toLocation = await geocodeInSweden(toNote)
         submitButton.disabled = false
         submitButton.textContent = originalLabel
       }
-      if (!toLocation) { alert(`Kunde inte hitta platsen "${toNote}". Försök med en annan sökning.`); return }
+      if (!toLocation) { alert(t('form.placeNotFound', { place: toNote })); return }
       const isEditing = editingPin?.kind === 'exchange'
       const id = isEditing ? editingPin!.id : Date.now()
       upsertInto(exchangePins, id, { id, title, meta, details, image, from: { note, lat: pendingLocation.lat, lng: pendingLocation.lng }, to: { note: toNote, lat: toLocation.lat, lng: toLocation.lng }, isMine: true }, isEditing)
@@ -852,8 +879,8 @@ export function mountAtlas(root: HTMLElement, options: AtlasOptions = {}): Atlas
   })
   root.querySelector('#zoom-in')!.addEventListener('click', () => map.zoomIn())
   root.querySelector('#zoom-out')!.addEventListener('click', () => map.zoomOut())
-  root.querySelector<HTMLButtonElement>('#map-style-toggle')!.addEventListener('click', (event) => { const button = event.currentTarget as HTMLButtonElement; const showingSatellite = map.hasLayer(satelliteLayer); if (showingSatellite) { map.removeLayer(satelliteLayer); streetLayer.addTo(map); button.title = 'Satellit'; button.setAttribute('aria-label', 'Byt till satellitkarta'); button.classList.remove('is-active') } else { map.removeLayer(streetLayer); satelliteLayer.addTo(map); button.title = 'Karta'; button.setAttribute('aria-label', 'Byt till vanlig karta'); button.classList.add('is-active') } })
-  root.querySelector<HTMLButtonElement>('#transit-toggle')!.addEventListener('click', (event) => { const button = event.currentTarget as HTMLButtonElement; const showingTransit = map.hasLayer(transitLayer); if (showingTransit) { map.removeLayer(transitLayer); button.classList.remove('is-active'); button.setAttribute('aria-label', 'Visa tåg- och tunnelbanelinjer') } else { transitLayer.addTo(map); button.classList.add('is-active'); button.setAttribute('aria-label', 'Dölj tåg- och tunnelbanelinjer') } })
+  root.querySelector<HTMLButtonElement>('#map-style-toggle')!.addEventListener('click', (event) => { const button = event.currentTarget as HTMLButtonElement; const showingSatellite = map.hasLayer(satelliteLayer); if (showingSatellite) { map.removeLayer(satelliteLayer); streetLayer.addTo(map); button.title = t('style.satellite'); button.setAttribute('aria-label', t('style.toSatellite')); button.classList.remove('is-active') } else { map.removeLayer(streetLayer); satelliteLayer.addTo(map); button.title = t('style.map'); button.setAttribute('aria-label', t('style.toMap')); button.classList.add('is-active') } })
+  root.querySelector<HTMLButtonElement>('#transit-toggle')!.addEventListener('click', (event) => { const button = event.currentTarget as HTMLButtonElement; const showingTransit = map.hasLayer(transitLayer); if (showingTransit) { map.removeLayer(transitLayer); button.classList.remove('is-active'); button.setAttribute('aria-label', t('transit.show')) } else { transitLayer.addTo(map); button.classList.add('is-active'); button.setAttribute('aria-label', t('transit.hide')) } })
   root.querySelector('#locate-button')!.addEventListener('click', () => map.locate({ setView: true, maxZoom: 16 }))
   searchForm.addEventListener('submit', (event) => { event.preventDefault(); void searchMap(searchInput.value) })
   searchInput.addEventListener('input', () => { updatePinSuggestions(searchInput.value); if (!isPublic) updateLocationSuggestions(searchInput.value) })

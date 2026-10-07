@@ -1,27 +1,34 @@
 import type { BrfFigures } from "./figures";
 import { MANDATORY_KEY_FIGURES } from "./figures";
+import type { TextKit } from "../../i18n/textKit";
+// Runtime imports in this file are relative, not "@/..." - the verify scripts run it directly with tsx.
 
 /**
  * Turns the figures a Köpanalys reviewer recorded from an annual report
  * (figures.ts) into the BRF analysis the buyer reads: each key figure in plain
- * Swedish, what it means, how it compares with what is usually considered low
+ * language, what it means, how it compares with what is usually considered low
  * or high, and what it means in kronor for this particular home.
  *
  * The benchmarks are the levels Swedish banks and the large housing
  * organisations publish for buyers, and the national averages come from Nabo's
  * analysis of 2 250 associations' annual reports for 2023 (the first year the
  * key figures were mandatory). Sources and the date they were checked are in
- * BRF_BENCHMARK_SOURCES; docs/48 has the full table. A tone is a reading of one
+ * the "brf.sources" text; docs/48 has the full table. A tone is a reading of one
  * figure against those levels — there is no overall score or verdict.
  *
- * Pure and dependency-free (the verify scripts run it with tsx, and the review
- * console runs it in the browser for its live preview).
+ * Every sentence is a message (src/i18n/messages/<language>/brf.ts): this module
+ * decides WHICH sentence applies and fills in the numbers, a language only has
+ * to translate the sentences. It takes a text kit (src/i18n/textKit.ts) so it runs
+ * the same on the server, in the browser (the review console's live preview and the
+ * example report) and under tsx (the verify scripts).
  */
 
 export type Tone = "good" | "neutral" | "watch" | "alert";
 
 export interface BrfSignal {
   id: string;
+  /** A fixed code for the few signals the report logic looks at ("leasehold"); null for the rest. */
+  code?: string;
   label: string;
   value: string;
   /** Short reading of the value, e.g. "Normal skuldsättning". */
@@ -68,240 +75,217 @@ export interface BrfApartmentContext {
   buildingYear: number | null;
 }
 
-export const BRF_BENCHMARK_SOURCES =
-  "Riktvärden: SBAB, HSB och Handelsbanken. Snittvärden: Nabos analys av 2 250 föreningars årsredovisningar för 2023. " +
-  "Definitioner: Bokföringsnämnden (BFNAR 2023:1). Uppgifterna kontrollerades i oktober 2026.";
+/* ── Formatting ──────────────────────────────────────────────────────── */
 
-const KEY_FIGURE_LABELS: Record<string, string> = {
-  annualFeePerSqm: "årsavgift per kvm",
-  debtPerSqmBr: "skuldsättning per kvm upplåten med bostadsrätt",
-  debtPerSqmTotal: "skuldsättning per kvm",
-  savingsPerSqm: "sparande per kvm",
-  interestSensitivityPct: "räntekänslighet",
-  energyCostPerSqm: "energikostnad per kvm",
-  feeShareOfRevenuePct: "årsavgifternas andel av rörelseintäkterna",
-};
-
-/* ── Formatting (kept local so this module has no runtime imports) ───── */
-
-const NBSP = " ";
-
-function grouped(value: number, decimals = 0): string {
-  return new Intl.NumberFormat("sv-SE", { minimumFractionDigits: decimals, maximumFractionDigits: decimals }).format(value);
+/** The number-and-unit helpers, bound to one language. Amounts are written with the language's own currency text ("12 000 kr", "SEK 12,000"). */
+function formatters(kit: TextKit) {
+  const grouped = (value: number, decimals = 0) =>
+    new Intl.NumberFormat(kit.formatLocale, { minimumFractionDigits: decimals, maximumFractionDigits: decimals }).format(value);
+  const kr = (value: number) => kit.t("brf.format.kr", { value: grouped(Math.round(value)) }) as string;
+  const krPerSqm = (value: number) => kit.t("brf.format.krPerSqm", { value: grouped(Math.round(value)) }) as string;
+  const percent = (value: number) => kit.t("brf.format.percent", { value: grouped(value, Number.isInteger(value) ? 0 : 1) }) as string;
+  const signedKr = (value: number) => {
+    const rounded = Math.round(value);
+    const sign = rounded > 0 ? "+" : rounded < 0 ? "−" : "";
+    return kit.t("brf.format.signedKr", { sign, value: grouped(Math.abs(rounded)) }) as string;
+  };
+  /** Rounds a large amount for prose ("cirka 520 000 kr") — never more precise than the inputs. */
+  const roughKr = (value: number) => {
+    const magnitude = Math.abs(value) >= 100_000 ? 10_000 : Math.abs(value) >= 10_000 ? 1_000 : 100;
+    return kr(Math.round(value / magnitude) * magnitude);
+  };
+  return { grouped, kr, krPerSqm, percent, signedKr, roughKr };
 }
 
-function kr(value: number): string {
-  return `${grouped(Math.round(value))}${NBSP}kr`;
-}
-
-function krPerSqm(value: number): string {
-  return `${grouped(Math.round(value))}${NBSP}kr/kvm`;
-}
-
-function percent(value: number): string {
-  const decimals = Number.isInteger(value) ? 0 : 1;
-  return `${grouped(value, decimals)}${NBSP}%`;
-}
-
-function signedKr(value: number): string {
-  const rounded = Math.round(value);
-  return `${rounded > 0 ? "+" : rounded < 0 ? "−" : ""}${grouped(Math.abs(rounded))}${NBSP}kr`;
-}
-
-/** Rounds a large amount for prose ("cirka 520 000 kr") — never more precise than the inputs. */
-function roughKr(value: number): string {
-  const magnitude = Math.abs(value) >= 100_000 ? 10_000 : Math.abs(value) >= 10_000 ? 1_000 : 100;
-  return kr(Math.round(value / magnitude) * magnitude);
-}
+type Format = ReturnType<typeof formatters>;
 
 /* ── Key figures ─────────────────────────────────────────────────────── */
 
-function debtSignal(f: BrfFigures, apartment: BrfApartmentContext, thisYear: number): Draft | null {
+type Draft = Omit<BrfSignal, "summary"> & { summary?: string };
+
+function debtSignal(f: BrfFigures, apartment: BrfApartmentContext, thisYear: number, kit: TextKit, fx: Format): Draft | null {
+  const t = kit.t;
   const value = f.debtPerSqmBr ?? f.debtPerSqmTotal;
   if (value === null) return null;
   const perBr = f.debtPerSqmBr !== null;
   const [tone, verdict]: [Tone, string] =
     value < 5000
-      ? ["good", "Låg skuldsättning"]
+      ? ["good", t("brf.signals.debt.low")]
       : value < 10000
-        ? ["neutral", "Normal skuldsättning"]
+        ? ["neutral", t("brf.signals.debt.normal")]
         : value < 15000
-          ? ["watch", "Hög skuldsättning"]
-          : ["alert", "Mycket hög skuldsättning"];
+          ? ["watch", t("brf.signals.debt.high")]
+          : ["alert", t("brf.signals.debt.veryHigh")];
   const newBuilding = apartment.buildingYear !== null && thisYear - apartment.buildingYear <= 15;
   return {
     id: "debt",
-    label: perBr ? "Skuldsättning per kvm" : "Skuldsättning per kvm (total yta)",
-    value: krPerSqm(value),
+    label: perBr ? t("brf.signals.debt.label") : t("brf.signals.debt.labelTotal"),
+    value: fx.krPerSqm(value),
     verdict,
     tone,
-    meaning:
-      "Föreningens lån fördelade per kvadratmeter. Lånen betalas i praktiken av medlemmarna genom avgiften, så ju högre skuld, desto mer påverkas avgiften av räntan." +
-      (newBuilding
-        ? " I nyare föreningar är en högre skuld vanlig eftersom fastigheten nyss har finansierats — läs den tillsammans med sparandet och avgiften."
-        : ""),
-    benchmark:
-      "Under 5 000 kr/kvm brukar räknas som lågt, över 10 000 kr/kvm som högt och över 15 000 kr/kvm som mycket högt. Snittet var 7 117 kr/kvm år 2023.",
+    meaning: t("brf.signals.debt.meaning") + (newBuilding ? ` ${t("brf.signals.debt.meaningNewBuilding")}` : ""),
+    benchmark: t("brf.signals.debt.benchmark"),
   };
 }
 
-function savingsSignal(f: BrfFigures): Draft | null {
+function savingsSignal(f: BrfFigures, kit: TextKit, fx: Format): Draft | null {
+  const t = kit.t;
   const value = f.savingsPerSqm;
   if (value === null) return null;
   const [tone, verdict]: [Tone, string] =
     value < 0
-      ? ["alert", "Negativt sparande"]
+      ? ["alert", t("brf.signals.savings.negative")]
       : value < 130
-        ? ["watch", "Lågt sparande"]
+        ? ["watch", t("brf.signals.savings.low")]
         : value < 200
-          ? ["neutral", "Måttligt sparande"]
-          : ["good", "Gott sparande"];
+          ? ["neutral", t("brf.signals.savings.moderate")]
+          : ["good", t("brf.signals.savings.good")];
   return {
     id: "savings",
-    label: "Sparande per kvm",
-    value: krPerSqm(value),
+    label: t("brf.signals.savings.label"),
+    value: fx.krPerSqm(value),
     verdict,
     tone,
-    meaning:
-      "Hur mycket pengar föreningen får över per kvadratmeter och år till underhåll och amortering — årets resultat justerat för avskrivningar och planerat underhåll. " +
-      "Ett lågt sparande kan betyda att framtida underhåll behöver betalas med nya lån eller höjd avgift.",
-    benchmark:
-      "Över 200 kr/kvm brukar räknas som ett gott sparande och under 120–130 kr/kvm som lågt. Snittet var 123 kr/kvm år 2023, och knappt var femte förening hade negativt sparande.",
+    meaning: t("brf.signals.savings.meaning"),
+    benchmark: t("brf.signals.savings.benchmark"),
   };
 }
 
-function interestSensitivitySignal(f: BrfFigures): Draft | null {
+function interestSensitivitySignal(f: BrfFigures, kit: TextKit, fx: Format): Draft | null {
+  const t = kit.t;
   const value = f.interestSensitivityPct;
   if (value === null) return null;
   const [tone, verdict]: [Tone, string] =
     value < 5
-      ? ["good", "Låg räntekänslighet"]
+      ? ["good", t("brf.signals.interestSensitivity.low")]
       : value < 10
-        ? ["neutral", "Normal räntekänslighet"]
+        ? ["neutral", t("brf.signals.interestSensitivity.normal")]
         : value < 15
-          ? ["watch", "Hög räntekänslighet"]
-          : ["alert", "Mycket hög räntekänslighet"];
+          ? ["watch", t("brf.signals.interestSensitivity.high")]
+          : ["alert", t("brf.signals.interestSensitivity.veryHigh")];
   return {
     id: "interestSensitivity",
-    label: "Räntekänslighet",
-    value: percent(value),
+    label: t("brf.signals.interestSensitivity.label"),
+    value: fx.percent(value),
     verdict,
     tone,
-    meaning: `Om räntan på föreningens lån stiger med en procentenhet kan årsavgifterna behöva höjas med omkring ${percent(value)}.`,
-    benchmark: "Under 5–6 % brukar räknas som lågt och över 10 % som högt. Snittet var omkring 10 % år 2023.",
+    meaning: t("brf.signals.interestSensitivity.meaning", { value: fx.percent(value) }),
+    benchmark: t("brf.signals.interestSensitivity.benchmark"),
   };
 }
 
-function feeSignal(f: BrfFigures): Draft | null {
+function feeSignal(f: BrfFigures, kit: TextKit, fx: Format): Draft | null {
+  const t = kit.t;
   const value = f.annualFeePerSqm;
   if (value === null) return null;
   const [tone, verdict]: [Tone, string] =
     value < 500
-      ? ["neutral", "Låg avgiftsnivå"]
+      ? ["neutral", t("brf.signals.fee.low")]
       : value < 850
-        ? ["good", "Normal avgiftsnivå"]
+        ? ["good", t("brf.signals.fee.normal")]
         : value < 1000
-          ? ["watch", "Hög avgiftsnivå"]
-          : ["alert", "Mycket hög avgiftsnivå"];
+          ? ["watch", t("brf.signals.fee.high")]
+          : ["alert", t("brf.signals.fee.veryHigh")];
   return {
     id: "fee",
-    label: "Årsavgift per kvm",
-    value: krPerSqm(value),
+    label: t("brf.signals.fee.label"),
+    value: fx.krPerSqm(value),
     verdict,
     tone,
-    meaning:
-      "Medlemmarnas sammanlagda årsavgifter per kvadratmeter bostadsrättsyta. Nivån beror på vad som ingår i avgiften, till exempel värme, vatten, el och bredband." +
-      (value < 500
-        ? " En låg avgift är bra för plånboken men kan också betyda att föreningen sparar för lite — jämför med sparandet."
-        : ""),
-    benchmark: "Vanligt är 500–850 kr/kvm och år; över 1 000 kr/kvm brukar räknas som högt. Snittet var 690 kr/kvm år 2023.",
+    meaning: t("brf.signals.fee.meaning") + (value < 500 ? ` ${t("brf.signals.fee.meaningLow")}` : ""),
+    benchmark: t("brf.signals.fee.benchmark"),
   };
 }
 
-function energySignal(f: BrfFigures): Draft | null {
+function energySignal(f: BrfFigures, kit: TextKit, fx: Format): Draft | null {
+  const t = kit.t;
   const value = f.energyCostPerSqm;
   if (value === null) return null;
   const [tone, verdict]: [Tone, string] =
     value < 150
-      ? ["good", "Låg energikostnad"]
+      ? ["good", t("brf.signals.energy.low")]
       : value < 250
-        ? ["neutral", "Normal energikostnad"]
+        ? ["neutral", t("brf.signals.energy.normal")]
         : value < 300
-          ? ["watch", "Hög energikostnad"]
-          : ["alert", "Mycket hög energikostnad"];
+          ? ["watch", t("brf.signals.energy.high")]
+          : ["alert", t("brf.signals.energy.veryHigh")];
   return {
     id: "energy",
-    label: "Energikostnad per kvm",
-    value: krPerSqm(value),
+    label: t("brf.signals.energy.label"),
+    value: fx.krPerSqm(value),
     verdict,
     tone,
-    meaning: "Föreningens kostnader för värme, el och vatten per kvadratmeter. Höga energikostnader slår igenom på avgiften när energipriserna stiger.",
-    benchmark: "Omkring 200 kr/kvm är normalt i ett flerbostadshus; över 250 kr/kvm brukar räknas som högt. Snittet var 203 kr/kvm år 2023.",
+    meaning: t("brf.signals.energy.meaning"),
+    benchmark: t("brf.signals.energy.benchmark"),
   };
 }
 
-function feeShareSignal(f: BrfFigures): Draft | null {
+function feeShareSignal(f: BrfFigures, kit: TextKit, fx: Format): Draft | null {
+  const t = kit.t;
   const value = f.feeShareOfRevenuePct;
   if (value === null) return null;
   const [tone, verdict]: [Tone, string] =
     value >= 85
-      ? ["neutral", "Finansieras främst av avgifterna"]
+      ? ["neutral", t("brf.signals.feeShare.mostly")]
       : value >= 60
-        ? ["neutral", "Har även andra intäkter"]
-        : ["watch", "Stort beroende av andra intäkter"];
+        ? ["neutral", t("brf.signals.feeShare.other")]
+        : ["watch", t("brf.signals.feeShare.dependent")];
   return {
     id: "feeShare",
-    label: "Avgifternas andel av intäkterna",
-    value: percent(value),
+    label: t("brf.signals.feeShare.label"),
+    value: fx.percent(value),
     verdict,
     tone,
-    meaning:
-      "Hur stor del av föreningens intäkter som kommer från medlemmarnas årsavgifter. Resten kommer från till exempel hyror för lokaler, hyreslägenheter och parkering — " +
-      "sådana intäkter håller nere avgiften men kan minska om en hyresgäst flyttar.",
-    benchmark: "I snitt kom 77 % av föreningarnas intäkter från årsavgifter år 2023.",
+    meaning: t("brf.signals.feeShare.meaning"),
+    benchmark: t("brf.signals.feeShare.benchmark"),
   };
 }
 
-function equitySignal(f: BrfFigures): Draft | null {
+function equitySignal(f: BrfFigures, kit: TextKit, fx: Format): Draft | null {
+  const t = kit.t;
   const value = f.equityRatioPct;
   if (value === null) return null;
   const [tone, verdict]: [Tone, string] =
-    value < 10 ? ["watch", "Låg soliditet"] : value < 50 ? ["neutral", "Måttlig soliditet"] : ["neutral", "Hög soliditet"];
+    value < 10
+      ? ["watch", t("brf.signals.equity.low")]
+      : value < 50
+        ? ["neutral", t("brf.signals.equity.moderate")]
+        : ["neutral", t("brf.signals.equity.high")];
   return {
     id: "equity",
-    label: "Soliditet",
-    value: percent(value),
+    label: t("brf.signals.equity.label"),
+    value: fx.percent(value),
     verdict,
     tone,
-    meaning:
-      "Hur stor del av föreningens tillgångar som finansieras med eget kapital. Soliditeten säger mindre om en bostadsrättsförening än om ett företag, eftersom den påverkas av hur fastigheten köptes och skrivs av — läs den tillsammans med skuldsättning och sparande.",
+    meaning: t("brf.signals.equity.meaning"),
     benchmark: null,
   };
 }
 
 /* ── Loans ───────────────────────────────────────────────────────────── */
 
-function loanSignals(f: BrfFigures): Draft[] {
+function loanSignals(f: BrfFigures, kit: TextKit, fx: Format): Draft[] {
+  const t = kit.t;
   const signals: Draft[] = [];
   if (f.interestBearingDebtSek !== null) {
     signals.push({
       id: "totalDebt",
-      label: "Föreningens lån",
-      value: kr(f.interestBearingDebtSek),
-      verdict: "Räntebärande skulder",
+      label: t("brf.signals.totalDebt.label"),
+      value: fx.kr(f.interestBearingDebtSek),
+      verdict: t("brf.signals.totalDebt.verdict"),
       tone: "neutral",
-      meaning: "Föreningens samlade lån hos banker och andra kreditinstitut vid bokslutet.",
+      meaning: t("brf.signals.totalDebt.meaning"),
       benchmark: null,
     });
   }
   if (f.averageInterestRatePct !== null) {
     signals.push({
       id: "averageRate",
-      label: "Genomsnittlig ränta",
-      value: percent(f.averageInterestRatePct),
-      verdict: "Snittränta på lånen",
+      label: t("brf.signals.averageRate.label"),
+      value: fx.percent(f.averageInterestRatePct),
+      verdict: t("brf.signals.averageRate.verdict"),
       tone: "neutral",
-      meaning: "Den genomsnittliga räntan på föreningens lån vid bokslutet. När lån med lägre ränta omförhandlas till en högre ränta ökar föreningens kostnader.",
+      meaning: t("brf.signals.averageRate.meaning"),
       benchmark: null,
     });
   }
@@ -309,13 +293,12 @@ function loanSignals(f: BrfFigures): Draft[] {
     const value = f.debtRenegotiatedWithin12mPct;
     signals.push({
       id: "renegotiation",
-      label: "Lån som omförhandlas inom ett år",
-      value: percent(value),
-      verdict: value >= 50 ? "Stor del omförhandlas snart" : "Andel med kort bindning",
-      summary: `${percent(value)} av lånen omförhandlas inom ett år`,
+      label: t("brf.signals.renegotiation.label"),
+      value: fx.percent(value),
+      verdict: value >= 50 ? t("brf.signals.renegotiation.soon") : t("brf.signals.renegotiation.share"),
+      summary: t("brf.signals.renegotiation.summary", { value: fx.percent(value) }),
       tone: value >= 50 ? "watch" : "neutral",
-      meaning:
-        "Den del av lånen vars ränta sätts om eller som förfaller inom tolv månader. Ju större andel, desto snabbare slår en ändrad ränta igenom på föreningens kostnader och avgiften.",
+      meaning: t("brf.signals.renegotiation.meaning"),
       benchmark: null,
     });
   }
@@ -328,7 +311,7 @@ const MONTHS_SV = ["januari", "februari", "mars", "april", "maj", "juni", "juli"
 
 /**
  * When a decided fee change applies: "2025-01-01", "20250101" or
- * "1 januari 2027". Anything else is read as upcoming, as the reviewer wrote it.
+ * "1 januari 2027" (the reviewer writes it by hand, in Swedish). Anything else is read as upcoming, as the reviewer wrote it.
  */
 export function parseEffectiveDate(text: string | null): Date | null {
   if (!text) return null;
@@ -343,13 +326,25 @@ export function parseEffectiveDate(text: string | null): Date | null {
   return null;
 }
 
+/**
+ * The date a fee change takes effect, as it is shown. The reviewer wrote it in Swedish; for a Swedish reader it is
+ * shown as written, for a reader of another language a date that can be read is written out in their language.
+ */
+function effectiveLabel(text: string | null, kit: TextKit): string | null {
+  if (!text) return null;
+  if (kit.locale === "sv") return text;
+  const date = parseEffectiveDate(text);
+  return date ? date.toLocaleDateString(kit.formatLocale, { day: "numeric", month: "long", year: "numeric", timeZone: "UTC" }) : text;
+}
+
 /** A change an older annual report announced that has already taken effect — most likely already in the listing's fee. */
 function feeChangeAlreadyApplied(f: BrfFigures, now: Date): boolean {
   const date = parseEffectiveDate(f.feeChangeEffective);
   return date !== null && date.getTime() <= now.getTime();
 }
 
-function associationSignals(f: BrfFigures, apartment: BrfApartmentContext, thisYear: number, now: Date): Draft[] {
+function associationSignals(f: BrfFigures, apartment: BrfApartmentContext, thisYear: number, now: Date, kit: TextKit, fx: Format): Draft[] {
+  const t = kit.t;
   const signals: Draft[] = [];
 
   if (f.isGenuine !== null) {
@@ -357,23 +352,22 @@ function associationSignals(f: BrfFigures, apartment: BrfApartmentContext, thisY
       f.isGenuine
         ? {
             id: "genuine",
-            label: "Äkta förening",
-            value: "Ja",
-            verdict: "Privatbostadsföretag",
-            summary: "Äkta förening (privatbostadsföretag)",
+            label: t("brf.signals.genuine.label"),
+            value: t("brf.signals.genuine.yes"),
+            verdict: t("brf.signals.genuine.yesVerdict"),
+            summary: t("brf.signals.genuine.yesSummary"),
             tone: "good",
-            meaning: "Föreningen är ett privatbostadsföretag (en äkta förening). Vinsten vid en framtida försäljning beskattas med 22 %.",
+            meaning: t("brf.signals.genuine.yesMeaning"),
             benchmark: null,
           }
         : {
             id: "genuine",
-            label: "Äkta förening",
-            value: "Nej",
-            verdict: "Oäkta förening",
-            summary: "Oäkta förening — högre skatt vid försäljning",
+            label: t("brf.signals.genuine.label"),
+            value: t("brf.signals.genuine.no"),
+            verdict: t("brf.signals.genuine.noVerdict"),
+            summary: t("brf.signals.genuine.noSummary"),
             tone: "alert",
-            meaning:
-              "Föreningen är inte ett privatbostadsföretag (en oäkta förening). Vinsten vid en framtida försäljning beskattas då med 25 % i stället för 22 %, och möjligheten till uppskov med skatten är begränsad.",
+            meaning: t("brf.signals.genuine.noMeaning"),
             benchmark: null,
           }
     );
@@ -382,12 +376,13 @@ function associationSignals(f: BrfFigures, apartment: BrfApartmentContext, thisY
   if (f.landTenure === "owned") {
     signals.push({
       id: "land",
-      label: "Marken",
-      value: "Äganderätt",
-      verdict: "Föreningen äger marken",
-      summary: "Föreningen äger marken",
+      code: "owned",
+      label: t("brf.signals.land.label"),
+      value: t("brf.signals.land.owned"),
+      verdict: t("brf.signals.land.ownedVerdict"),
+      summary: t("brf.signals.land.ownedSummary"),
       tone: "good",
-      meaning: "Föreningen äger marken fastigheten står på och betalar ingen tomträttsavgäld.",
+      meaning: t("brf.signals.land.ownedMeaning"),
       benchmark: null,
     });
   } else if (f.landTenure === "leasehold") {
@@ -395,14 +390,13 @@ function associationSignals(f: BrfFigures, apartment: BrfApartmentContext, thisY
     const soon = year !== null && year - thisYear <= 5;
     signals.push({
       id: "land",
-      label: "Marken",
-      value: "Tomträtt",
-      verdict: year !== null ? `Avgälden omförhandlas ${year}` : "Föreningen hyr marken",
-      summary: year !== null ? `Tomträtt — avgälden omförhandlas ${year}` : "Tomträtt — föreningen hyr marken",
+      code: "leasehold",
+      label: t("brf.signals.land.label"),
+      value: t("brf.signals.land.leasehold"),
+      verdict: year !== null ? t("brf.signals.land.leaseholdVerdictYear", { year }) : t("brf.signals.land.leaseholdVerdict"),
+      summary: year !== null ? t("brf.signals.land.leaseholdSummaryYear", { year }) : t("brf.signals.land.leaseholdSummary"),
       tone: soon ? "alert" : "watch",
-      meaning:
-        "Föreningen äger inte marken utan betalar tomträttsavgäld till kommunen. Avgälden omförhandlas med jämna mellanrum och kan då höjas kraftigt, vilket slår igenom på avgiften." +
-        (year !== null ? ` Nästa omförhandling sker ${year}.` : ""),
+      meaning: t("brf.signals.land.leaseholdMeaning") + (year !== null ? ` ${t("brf.signals.land.leaseholdMeaningYear", { year })}` : ""),
       benchmark: null,
     });
   }
@@ -412,22 +406,22 @@ function associationSignals(f: BrfFigures, apartment: BrfApartmentContext, thisY
       f.hasMaintenancePlan
         ? {
             id: "maintenancePlan",
-            label: "Underhållsplan",
-            value: "Finns",
-            verdict: "Aktuell underhållsplan",
-            summary: "Aktuell underhållsplan finns",
+            label: t("brf.signals.maintenancePlan.label"),
+            value: t("brf.signals.maintenancePlan.yes"),
+            verdict: t("brf.signals.maintenancePlan.yesVerdict"),
+            summary: t("brf.signals.maintenancePlan.yesSummary"),
             tone: "good",
-            meaning: "Föreningen har en aktuell plan för när de större åtgärderna i fastigheten behöver göras och vad de beräknas kosta.",
+            meaning: t("brf.signals.maintenancePlan.yesMeaning"),
             benchmark: null,
           }
         : {
             id: "maintenancePlan",
-            label: "Underhållsplan",
-            value: "Saknas",
-            verdict: "Ingen aktuell underhållsplan",
-            summary: "Ingen aktuell underhållsplan",
+            label: t("brf.signals.maintenancePlan.label"),
+            value: t("brf.signals.maintenancePlan.no"),
+            verdict: t("brf.signals.maintenancePlan.noVerdict"),
+            summary: t("brf.signals.maintenancePlan.noSummary"),
             tone: "watch",
-            meaning: "Föreningen anger att den inte har en aktuell underhållsplan, så det är svårare att veta när större åtgärder kommer och vad de kostar.",
+            meaning: t("brf.signals.maintenancePlan.noMeaning"),
             benchmark: null,
           }
     );
@@ -436,35 +430,34 @@ function associationSignals(f: BrfFigures, apartment: BrfApartmentContext, thisY
   if (f.pipesPlannedYear !== null) {
     signals.push({
       id: "pipes",
-      label: "Stambyte",
-      value: `Planerat ${f.pipesPlannedYear}`,
-      verdict: "Stambyte planerat",
-      summary: `Stambyte planerat ${f.pipesPlannedYear}`,
+      label: t("brf.signals.pipes.label"),
+      value: t("brf.signals.pipes.planned", { year: f.pipesPlannedYear }),
+      verdict: t("brf.signals.pipes.plannedVerdict"),
+      summary: t("brf.signals.pipes.plannedSummary", { year: f.pipesPlannedYear }),
       tone: "watch",
-      meaning:
-        "Ett stambyte är en av de största åtgärderna i ett flerbostadshus. Det kan innebära höjd avgift eller nya lån, och att badrum och kök inte går att använda under en period.",
+      meaning: t("brf.signals.pipes.plannedMeaning"),
       benchmark: null,
     });
   } else if (f.pipesReplacedYear !== null) {
     signals.push({
       id: "pipes",
-      label: "Stambyte",
-      value: `Genomfört ${f.pipesReplacedYear}`,
-      verdict: "Stambyte gjort",
-      summary: `Stambyte genomfört ${f.pipesReplacedYear}`,
+      label: t("brf.signals.pipes.label"),
+      value: t("brf.signals.pipes.done", { year: f.pipesReplacedYear }),
+      verdict: t("brf.signals.pipes.doneVerdict"),
+      summary: t("brf.signals.pipes.doneSummary", { year: f.pipesReplacedYear }),
       tone: "good",
-      meaning: "Rören i fastigheten är bytta, vilket är en av de största och dyraste åtgärderna i ett flerbostadshus.",
+      meaning: t("brf.signals.pipes.doneMeaning"),
       benchmark: null,
     });
   } else if (apartment.buildingYear !== null && thisYear - apartment.buildingYear >= 45) {
     signals.push({
       id: "pipes",
-      label: "Stambyte",
-      value: "Framgår inte",
-      verdict: "Inget stambyte angivet",
-      summary: `Inget stambyte angivet i ett hus från ${apartment.buildingYear}`,
+      label: t("brf.signals.pipes.label"),
+      value: t("brf.signals.pipes.unknown"),
+      verdict: t("brf.signals.pipes.unknownVerdict"),
+      summary: t("brf.signals.pipes.unknownSummary", { year: apartment.buildingYear }),
       tone: "watch",
-      meaning: `Huset är från ${apartment.buildingYear}. Rör brukar behöva bytas efter ungefär 50 år, och årsredovisningen visar inte att stambyte är gjort eller planerat.`,
+      meaning: t("brf.signals.pipes.unknownMeaning", { year: apartment.buildingYear }),
       benchmark: null,
     });
   }
@@ -472,44 +465,49 @@ function associationSignals(f: BrfFigures, apartment: BrfApartmentContext, thisY
   if (f.plannedRenovations !== null) {
     signals.push({
       id: "plannedRenovations",
-      label: "Planerat underhåll",
-      value: "Se beskrivning",
-      verdict: "Större åtgärder planeras",
-      summary: "Större underhållsåtgärder planeras",
+      label: t("brf.signals.plannedRenovations.label"),
+      value: t("brf.signals.plannedRenovations.value"),
+      verdict: t("brf.signals.plannedRenovations.verdict"),
+      summary: t("brf.signals.plannedRenovations.summary"),
       tone: "watch",
+      // what the reviewer wrote, as written
       meaning: f.plannedRenovations,
       benchmark: null,
     });
   }
 
-  if (f.feeChangePct !== null && f.feeChangePct !== 0 && feeChangeAlreadyApplied(f, now)) {
-    const increase = f.feeChangePct > 0;
-    signals.push({
-      id: "feeChange",
-      label: "Genomförd avgiftsförändring",
-      value: `${increase ? "+" : "−"}${percent(Math.abs(f.feeChangePct))}`,
-      verdict: increase ? "Avgiften har höjts" : "Avgiften har sänkts",
-      summary: `Avgiften ${increase ? "höjdes" : "sänktes"} med ${percent(Math.abs(f.feeChangePct))} från ${f.feeChangeEffective}`,
-      tone: "neutral",
-      meaning:
-        `Enligt årsredovisningen ${increase ? "höjdes" : "sänktes"} avgiften med ${percent(Math.abs(f.feeChangePct))} från ${f.feeChangeEffective}. ` +
-        "Förändringen ingår troligen redan i avgiften i annonsen.",
-      benchmark: null,
-    });
-  } else if (f.feeChangePct !== null && f.feeChangePct !== 0) {
-    const increase = f.feeChangePct > 0;
-    signals.push({
-      id: "feeChange",
-      label: "Beslutad avgiftsförändring",
-      value: `${increase ? "+" : "−"}${percent(Math.abs(f.feeChangePct))}`,
-      verdict: increase ? "Avgiften höjs" : "Avgiften sänks",
-      summary: `Beslutad avgifts${increase ? "höjning" : "sänkning"} på ${percent(Math.abs(f.feeChangePct))}${f.feeChangeEffective ? ` från ${f.feeChangeEffective}` : ""}`,
-      tone: increase ? "watch" : "good",
-      meaning:
-        `Föreningen har beslutat att ${increase ? "höja" : "sänka"} avgiften med ${percent(Math.abs(f.feeChangePct))}` +
-        (f.feeChangeEffective ? ` från ${f.feeChangeEffective}.` : "."),
-      benchmark: null,
-    });
+  if (f.feeChangePct !== null && f.feeChangePct !== 0) {
+    const direction = f.feeChangePct > 0 ? "up" : "down";
+    const value = `${f.feeChangePct > 0 ? "+" : "−"}${fx.percent(Math.abs(f.feeChangePct))}`;
+    const size = fx.percent(Math.abs(f.feeChangePct));
+    const from = effectiveLabel(f.feeChangeEffective, kit);
+    if (feeChangeAlreadyApplied(f, now)) {
+      signals.push({
+        id: "feeChange",
+        label: t("brf.signals.feeChange.appliedLabel"),
+        value,
+        verdict: direction === "up" ? t("brf.signals.feeChange.appliedUp") : t("brf.signals.feeChange.appliedDown"),
+        summary: t("brf.signals.feeChange.appliedSummary", { direction, value: size, from }),
+        tone: "neutral",
+        meaning: t("brf.signals.feeChange.appliedMeaning", { direction, value: size, from }),
+        benchmark: null,
+      });
+    } else {
+      signals.push({
+        id: "feeChange",
+        label: t("brf.signals.feeChange.decidedLabel"),
+        value,
+        verdict: direction === "up" ? t("brf.signals.feeChange.decidedUp") : t("brf.signals.feeChange.decidedDown"),
+        summary: from
+          ? t("brf.signals.feeChange.decidedSummaryFrom", { direction, value: size, from })
+          : t("brf.signals.feeChange.decidedSummary", { direction, value: size }),
+        tone: direction === "up" ? "watch" : "good",
+        meaning: from
+          ? t("brf.signals.feeChange.decidedMeaningFrom", { direction, value: size, from })
+          : t("brf.signals.feeChange.decidedMeaning", { direction, value: size }),
+        benchmark: null,
+      });
+    }
   }
 
   if (f.auditRemark !== null) {
@@ -517,22 +515,22 @@ function associationSignals(f: BrfFigures, apartment: BrfApartmentContext, thisY
       f.auditRemark
         ? {
             id: "audit",
-            label: "Revisionsberättelsen",
-            value: "Anmärkning",
-            verdict: "Revisorn har anmärkt",
-            summary: "Anmärkning i revisionsberättelsen",
+            label: t("brf.signals.audit.label"),
+            value: t("brf.signals.audit.remark"),
+            verdict: t("brf.signals.audit.remarkVerdict"),
+            summary: t("brf.signals.audit.remarkSummary"),
             tone: "alert",
-            meaning: "Revisorn har lämnat en anmärkning eller avstyrkt något i revisionsberättelsen. Det är ovanligt och betyder att något i förvaltningen eller redovisningen behöver förklaras.",
+            meaning: t("brf.signals.audit.remarkMeaning"),
             benchmark: null,
           }
         : {
             id: "audit",
-            label: "Revisionsberättelsen",
-            value: "Utan anmärkning",
-            verdict: "Ren revisionsberättelse",
-            summary: "Ren revisionsberättelse",
+            label: t("brf.signals.audit.label"),
+            value: t("brf.signals.audit.clean"),
+            verdict: t("brf.signals.audit.cleanVerdict"),
+            summary: t("brf.signals.audit.cleanSummary"),
             tone: "good",
-            meaning: "Revisorn har granskat räkenskaperna och styrelsens förvaltning utan att lämna någon anmärkning.",
+            meaning: t("brf.signals.audit.cleanMeaning"),
             benchmark: null,
           }
     );
@@ -540,20 +538,18 @@ function associationSignals(f: BrfFigures, apartment: BrfApartmentContext, thisY
 
   if (f.numberOfApartments !== null) {
     const small = f.numberOfApartments < 10;
-    const parts = [`${f.numberOfApartments} bostadsrätter`];
-    if (f.numberOfRentalApartments) parts.push(`${f.numberOfRentalApartments} hyresrätter`);
-    if (f.numberOfCommercialUnits) parts.push(`${f.numberOfCommercialUnits} lokaler`);
+    const parts = [t("brf.signals.size.apartments", { count: f.numberOfApartments }) as string];
+    if (f.numberOfRentalApartments) parts.push(t("brf.signals.size.rentals", { count: f.numberOfRentalApartments }));
+    if (f.numberOfCommercialUnits) parts.push(t("brf.signals.size.commercial", { count: f.numberOfCommercialUnits }));
     signals.push({
       id: "size",
-      label: "Föreningens storlek",
+      label: t("brf.signals.size.label"),
       value: parts.join(", "),
-      verdict: small ? "Liten förening" : "Föreningens storlek",
-      summary: small ? `Liten förening (${f.numberOfApartments} bostadsrätter)` : parts.join(", "),
+      verdict: small ? t("brf.signals.size.smallVerdict") : t("brf.signals.size.verdict"),
+      summary: small ? t("brf.signals.size.smallSummary", { count: f.numberOfApartments }) : parts.join(", "),
       tone: small ? "watch" : "neutral",
-      meaning: small
-        ? "I en liten förening delas kostnaderna för underhåll och oväntade utgifter på färre hushåll, så en enskild större kostnad märks mer på avgiften."
-        : "Antalet lägenheter och lokaler i föreningen. Ju fler hushåll, desto fler delar på kostnaderna för underhåll och oväntade utgifter.",
-      benchmark: small ? "Föreningar med färre än tio lägenheter brukar räknas som små." : null,
+      meaning: small ? t("brf.signals.size.smallMeaning") : t("brf.signals.size.meaning"),
+      benchmark: small ? t("brf.signals.size.smallBenchmark") : null,
     });
   }
 
@@ -562,7 +558,8 @@ function associationSignals(f: BrfFigures, apartment: BrfApartmentContext, thisY
 
 /* ── What it means for this home ─────────────────────────────────────── */
 
-function impactsForYou(f: BrfFigures, apartment: BrfApartmentContext, debt: Draft | null, now: Date): BrfImpact[] {
+function impactsForYou(f: BrfFigures, apartment: BrfApartmentContext, debt: Draft | null, now: Date, kit: TextKit, fx: Format): BrfImpact[] {
+  const t = kit.t;
   const impacts: BrfImpact[] = [];
   const area = apartment.livingAreaM2 !== null && apartment.livingAreaM2 > 0 ? apartment.livingAreaM2 : null;
   const fee = apartment.monthlyFeeSek !== null && apartment.monthlyFeeSek > 0 ? apartment.monthlyFeeSek : null;
@@ -571,11 +568,9 @@ function impactsForYou(f: BrfFigures, apartment: BrfApartmentContext, debt: Draf
   if (debtPerSqm !== null && area !== null) {
     impacts.push({
       id: "shareOfDebt",
-      label: "Din del av föreningens lån",
-      value: `cirka ${roughKr(debtPerSqm * area)}`,
-      explanation:
-        `Föreningens lån betalas av medlemmarna genom avgiften. Räknat på lägenhetens boarea (${grouped(area)} kvm) motsvarar din del ungefär ${roughKr(debtPerSqm * area)} — ` +
-        "utöver ditt eget bolån. Den exakta andelen beror på lägenhetens andelstal.",
+      label: t("brf.impacts.shareOfDebt.label"),
+      value: t("brf.impacts.shareOfDebt.value", { amount: fx.roughKr(debtPerSqm * area) }),
+      explanation: t("brf.impacts.shareOfDebt.explanation", { area: fx.grouped(area), amount: fx.roughKr(debtPerSqm * area) }),
       tone: debt?.tone ?? "neutral",
     });
   }
@@ -584,24 +579,31 @@ function impactsForYou(f: BrfFigures, apartment: BrfApartmentContext, debt: Draf
     const increase = (fee * f.interestSensitivityPct) / 100;
     impacts.push({
       id: "rateRise",
-      label: "Om räntan stiger 1 procentenhet",
-      value: `${signedKr(increase)}/mån`,
-      explanation:
-        `Med föreningens räntekänslighet på ${percent(f.interestSensitivityPct)} kan avgiften behöva höjas med omkring ${kr(increase)} i månaden ` +
-        `(från ${kr(fee)} till cirka ${kr(fee + increase)}) om räntan på föreningens lån stiger med en procentenhet.`,
+      label: t("brf.impacts.rateRise.label"),
+      value: t("brf.impacts.rateRise.value", { amount: fx.signedKr(increase) }),
+      explanation: t("brf.impacts.rateRise.explanation", {
+        sensitivity: fx.percent(f.interestSensitivityPct),
+        increase: fx.kr(increase),
+        fee: fx.kr(fee),
+        newFee: fx.kr(fee + increase),
+      }),
       tone: f.interestSensitivityPct >= 10 ? "watch" : "neutral",
     });
   }
 
   if (f.feeChangePct !== null && f.feeChangePct !== 0 && fee !== null && !feeChangeAlreadyApplied(f, now)) {
     const change = (fee * f.feeChangePct) / 100;
+    const from = effectiveLabel(f.feeChangeEffective, kit);
     impacts.push({
       id: "feeChange",
-      label: "Beslutad avgiftsförändring",
-      value: `${signedKr(change)}/mån`,
-      explanation:
-        `Den beslutade förändringen på ${f.feeChangePct > 0 ? "+" : "−"}${percent(Math.abs(f.feeChangePct))}${f.feeChangeEffective ? ` från ${f.feeChangeEffective}` : ""} ` +
-        `ger en avgift på cirka ${kr(fee + change)} i månaden, jämfört med ${kr(fee)} i annonsen.`,
+      label: t("brf.impacts.feeChange.label"),
+      value: t("brf.impacts.feeChange.value", { amount: fx.signedKr(change) }),
+      explanation: t("brf.impacts.feeChange.explanation", {
+        value: `${f.feeChangePct > 0 ? "+" : "−"}${fx.percent(Math.abs(f.feeChangePct))}`,
+        from: from ? t("brf.impacts.feeChange.from", { date: from }) : "",
+        newFee: fx.kr(fee + change),
+        fee: fx.kr(fee),
+      }),
       tone: change > 0 ? "watch" : "good",
     });
   }
@@ -611,13 +613,11 @@ function impactsForYou(f: BrfFigures, apartment: BrfApartmentContext, debt: Draf
     const higher = own > f.annualFeePerSqm * 1.2;
     impacts.push({
       id: "ownFeeLevel",
-      label: "Lägenhetens avgift per kvm",
-      value: `${krPerSqm(own)} och år`,
+      label: t("brf.impacts.ownFeeLevel.label"),
+      value: t("brf.impacts.ownFeeLevel.value", { amount: fx.krPerSqm(own) }),
       explanation:
-        `Lägenhetens avgift motsvarar ${krPerSqm(own)} och år, jämfört med föreningens genomsnitt på ${krPerSqm(f.annualFeePerSqm)}.` +
-        (higher
-          ? " Det är tydligt högre än snittet, vilket kan bero på lägenhetens andelstal eller på att avgiften inkluderar mer, till exempel el eller bredband."
-          : ""),
+        t("brf.impacts.ownFeeLevel.explanation", { own: fx.krPerSqm(own), average: fx.krPerSqm(f.annualFeePerSqm) }) +
+        (higher ? ` ${t("brf.impacts.ownFeeLevel.higher")}` : ""),
       tone: higher ? "watch" : "neutral",
     });
   }
@@ -627,77 +627,78 @@ function impactsForYou(f: BrfFigures, apartment: BrfApartmentContext, debt: Draf
 
 /* ── Questions ───────────────────────────────────────────────────────── */
 
-function questionsFor(f: BrfFigures, signals: BrfSignal[], missing: string[], thisYear: number): string[] {
+function questionsFor(f: BrfFigures, signals: BrfSignal[], missing: string[], thisYear: number, kit: TextKit, fx: Format): string[] {
+  const t = kit.t;
   const questions: string[] = [];
   const toneOf = (id: string) => signals.find((s) => s.id === id)?.tone;
 
   if (f.fiscalYear !== null && f.fiscalYear < thisYear - 1) {
-    questions.push(`Finns det en nyare årsredovisning än den för ${f.fiscalYear}?`);
+    questions.push(t("brf.questions.newerReport", { year: f.fiscalYear }));
   }
   if (toneOf("pipes") === "watch") {
-    questions.push("När är stambytet planerat, och hur ska det finansieras — med sparade medel, nya lån eller höjd avgift?");
+    questions.push(t("brf.questions.pipes"));
   }
   if (f.landTenure === "leasehold") {
-    questions.push("När omförhandlas tomträttsavgälden nästa gång, och vad räknar föreningen med att den hamnar på?");
+    questions.push(t("brf.questions.leasehold"));
   }
   if (f.hasMaintenancePlan !== true) {
-    questions.push("Finns det en aktuell underhållsplan, och vilka större åtgärder planeras de närmaste fem åren?");
+    questions.push(t("brf.questions.maintenancePlan"));
   }
   if (toneOf("savings") === "watch" || toneOf("savings") === "alert") {
-    questions.push("Hur ska föreningen betala framtida underhåll när sparandet är lågt?");
+    questions.push(t("brf.questions.savings"));
   }
   if (
     toneOf("interestSensitivity") === "watch" ||
     toneOf("interestSensitivity") === "alert" ||
     toneOf("renegotiation") === "watch"
   ) {
-    questions.push("Hur stor del av föreningens lån ska omförhandlas det närmaste året, och vilken ränta räknar styrelsen med?");
+    questions.push(t("brf.questions.loans"));
   }
   if (f.isGenuine === null) {
-    questions.push("Är föreningen ett privatbostadsföretag (en äkta förening)?");
+    questions.push(t("brf.questions.genuine"));
   }
   if (f.auditRemark === true) {
-    questions.push("Vad gällde revisorns anmärkning, och är frågan åtgärdad?");
+    questions.push(t("brf.questions.audit"));
   }
   if (missing.length > 0) {
-    questions.push(`Årsredovisningen anger inte ${missing.join(", ")} — kan föreningen ta fram uppgifterna?`);
+    questions.push(t("brf.questions.missing", { list: missing.join(", ") }));
   }
-  questions.push("Finns det beslut eller planer på avgiftshöjningar som inte syns i årsredovisningen?");
+  questions.push(t("brf.questions.feeIncrease"));
+  void fx;
   return questions;
 }
 
 /* ── Entry point ─────────────────────────────────────────────────────── */
-
-type Draft = Omit<BrfSignal, "summary"> & { summary?: string };
 
 /** Key figures read "Verdict (value)"; a qualitative signal states its own summary. */
 function withSummary(signal: Draft): BrfSignal {
   return { ...signal, summary: signal.summary ?? `${signal.verdict} (${signal.value})` };
 }
 
-export function interpretBrf(f: BrfFigures, apartment: BrfApartmentContext, now: Date = new Date()): BrfReading {
+export function interpretBrf(f: BrfFigures, apartment: BrfApartmentContext, kit: TextKit, now: Date = new Date()): BrfReading {
+  const fx = formatters(kit);
   const thisYear = now.getFullYear();
-  const debt = debtSignal(f, apartment, thisYear);
+  const debt = debtSignal(f, apartment, thisYear, kit, fx);
   const keyFigures = [
     debt,
-    savingsSignal(f),
-    interestSensitivitySignal(f),
-    feeSignal(f),
-    energySignal(f),
-    feeShareSignal(f),
-    equitySignal(f),
+    savingsSignal(f, kit, fx),
+    interestSensitivitySignal(f, kit, fx),
+    feeSignal(f, kit, fx),
+    energySignal(f, kit, fx),
+    feeShareSignal(f, kit, fx),
+    equitySignal(f, kit, fx),
   ]
     .filter((s): s is Draft => s !== null)
     .map(withSummary);
-  const loans = loanSignals(f).map(withSummary);
-  const association = associationSignals(f, apartment, thisYear, now).map(withSummary);
+  const loans = loanSignals(f, kit, fx).map(withSummary);
+  const association = associationSignals(f, apartment, thisYear, now, kit, fx).map(withSummary);
   const all = [...keyFigures, ...loans, ...association];
 
   // debtPerSqmTotal is not missing when the per-bostadsrätt figure is there (and vice versa) — one debt figure is enough to read the debt.
   const missingKeyFigures = MANDATORY_KEY_FIGURES.filter((key) => {
     if (key === "debtPerSqmTotal" || key === "debtPerSqmBr") return f.debtPerSqmBr === null && f.debtPerSqmTotal === null && key === "debtPerSqmBr";
     return f[key] === null;
-  }).map((key) => KEY_FIGURE_LABELS[key]);
+  }).map((key) => kit.t(`brf.keyFigureNames.${key}`) as string);
 
   const line = (s: BrfSignal) => s.summary;
 
@@ -706,11 +707,11 @@ export function interpretBrf(f: BrfFigures, apartment: BrfApartmentContext, now:
     keyFigures,
     loans,
     association,
-    forYou: impactsForYou(f, apartment, debt, now),
+    forYou: impactsForYou(f, apartment, debt, now, kit, fx),
     strengths: all.filter((s) => s.tone === "good").map(line),
     concerns: all.filter((s) => s.tone === "watch" || s.tone === "alert").map(line),
     missingKeyFigures,
-    questions: questionsFor(f, all, missingKeyFigures, thisYear),
+    questions: questionsFor(f, all, missingKeyFigures, thisYear, kit, fx),
     expertComment: f.expertComment,
   };
 }

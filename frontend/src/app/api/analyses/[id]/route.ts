@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { getReportForViewer } from "@/lib/analysis/access";
 import { requireUser } from "@/lib/auth/requireUser";
 import { isAdminUser } from "@/lib/auth/admin";
+import { apiError } from "@/i18n/apiText";
 
 /**
  * GET /api/analyses/:id — one analysis (any version) with its property,
@@ -20,10 +21,7 @@ export async function GET(
   try {
     const found = await getReportForViewer(id, user.id, { isReviewer: isAdminUser(user) });
     if (!found) {
-      return NextResponse.json(
-        { error: { code: "not_found", message: "No analysis with that id." } },
-        { status: 404 }
-      );
+      return await apiError(404, "not_found", "analyses.notFound");
     }
 
     // error/failureReason are for internal review only (see report/page.tsx's
@@ -38,9 +36,6 @@ export async function GET(
     });
   } catch (err) {
     console.error(`GET /api/analyses/${id} failed:`, err);
-    return NextResponse.json(
-      { error: { code: "internal_error", message: "Could not load the analysis." } },
-      { status: 500 }
-    );
+    return await apiError(500, "internal_error", "analyses.loadFailed");
   }
 }

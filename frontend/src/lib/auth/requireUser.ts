@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import type { User } from "@supabase/supabase-js";
+import { apiError } from "@/i18n/apiText";
 import { createClient } from "@/lib/supabase/server";
 
 type RequireUserResult =
@@ -20,13 +21,7 @@ export async function requireUser(): Promise<RequireUserResult> {
   } = await supabase.auth.getUser();
 
   if (!user) {
-    return {
-      user: null,
-      response: NextResponse.json(
-        { error: { code: "unauthorized", message: "Sign in to continue." } },
-        { status: 401 }
-      ),
-    };
+    return { user: null, response: await apiError(401, "unauthorized", "signIn") };
   }
 
   return { user, response: null };

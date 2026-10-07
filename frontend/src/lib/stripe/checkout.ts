@@ -1,3 +1,4 @@
+import type Stripe from "stripe";
 import { createStripeClient } from "./admin";
 import { getPriceId, type OneTimePriceKey } from "./prices";
 
@@ -14,7 +15,9 @@ export async function createOneTimeCheckout(
   userId: string,
   successUrl: string,
   cancelUrl: string,
-  couponId?: string
+  couponId?: string,
+  /** Stripe's code for the language of the payment page ("sv", "en", "auto" to let Stripe decide). */
+  locale: string = "auto"
 ): Promise<CreateCheckoutResult> {
   const stripe = createStripeClient();
   console.log("[Stripe] Getting price ID for:", priceKey);
@@ -34,6 +37,7 @@ export async function createOneTimeCheckout(
     metadata: { userId, priceKey },
     success_url: successUrl,
     cancel_url: cancelUrl,
+    locale: locale as Stripe.Checkout.SessionCreateParams.Locale,
   });
   console.log("[Stripe] ✓ Session Created:", session.id);
 

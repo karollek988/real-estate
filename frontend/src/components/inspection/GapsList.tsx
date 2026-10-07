@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslations } from "next-intl";
 import { CheckIcon, WarningIcon } from "@/components/icons";
 import type { DocumentType } from "@/lib/inspection/types";
 import type { DataGap } from "@/lib/inspection/gaps";
@@ -28,6 +29,7 @@ function GapRow({
   gap: DataGap;
   onUpload: (file: File, docType: DocumentType) => Promise<string | null>;
 }) {
+  const t = useTranslations("inspection.gaps");
   async function handleFile(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
     e.target.value = "";
@@ -50,15 +52,15 @@ function GapRow({
           {gap.missing ? <WarningIcon className="h-4 w-4" /> : <CheckIcon className="h-4 w-4" />}
         </span>
         <div>
-          <p className="text-sm font-medium text-white">{gap.label}</p>
+          <p className="text-sm font-medium text-white">{t(gap.id)}</p>
           <p className="text-xs text-neutral-400">
-            {gap.missing ? "Saknas — ladda upp underlag för att stärka analysen." : gap.knownValue}
+            {gap.missing ? t("missing") : gap.known ? t(`known.${gap.known}`) : gap.knownValue}
           </p>
         </div>
       </div>
       {gap.missing && gap.resolvableByDocType && (
         <label className="shrink-0 cursor-pointer rounded-lg border border-amber-400/30 px-3 py-1.5 text-xs font-semibold text-amber-300 transition hover:bg-amber-400/10">
-          Ladda upp
+          {t("upload")}
           <input type="file" accept="application/pdf,image/*" className="hidden" onChange={handleFile} />
         </label>
       )}

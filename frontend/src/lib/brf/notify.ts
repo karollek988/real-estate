@@ -1,6 +1,9 @@
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createResendClient, getEmailFrom } from "@/lib/email/resend";
 import { renderNotificationEmail } from "@/lib/email/confirmationEmail";
+import { getTranslations } from "next-intl/server";
+import { DEFAULT_LOCALE, isLocale, type AppLocale } from "@/i18n/locales";
+import { getPathname } from "@/i18n/navigation";
 import { latestCompleteAnalysis } from "@/lib/analysis/store";
 import { dueSv } from "@/lib/report/brfChapter";
 import type { BrfReviewRecord, EnsureReviewReason } from "./reviews";
@@ -61,7 +64,7 @@ export async function notifyTeamOfBrfReview(review: BrfReviewRecord, reason: Ens
   await send(
     teamRecipients(),
     `BRF-granskning: ${address} — klar senast ${due}`,
-    renderNotificationEmail({
+    await renderNotificationEmail({
       preheader: `Ny BRF-granskning för ${address}`,
       heading: "Ny BRF-granskning",
       paragraphs: [
@@ -92,26 +95,29 @@ export async function notifyCustomersOfPublishedBrf(propertyId: string): Promise
   if (userIds.length === 0) return 0;
 
   const analysis = await latestCompleteAnalysis(propertyId);
-  const url = analysis ? `${siteUrl()}/report?id=${analysis.id}` : `${siteUrl()}/dashboard`;
   const { address } = await propertyLabel(propertyId);
+  // the link and the words are in each customer's own language
+  const link = (locale: AppLocale) =>
+    `${siteUrl()}${getPathname({ locale, href: analysis ? { pathname: "/report", query: { id: analysis.id } } : "/dashboard" })}`;
 
   let sent = 0;
   for (const userId of userIds) {
     const { data, error: userError } = await client.auth.admin.getUserById(userId);
     const email = data?.user?.email;
     if (userError || !email) continue;
+    const stored = data?.user?.user_metadata?.locale;
+    const locale: AppLocale = isLocale(stored) ? stored : DEFAULT_LOCALE;
+    const t = await getTranslations({ locale, namespace: "emails.brfReady" });
     await send(
       [email],
-      `Din BRF-analys för ${address} är klar`,
-      renderNotificationEmail({
-        preheader: "Föreningens ekonomi är granskad och finns nu i din rapport.",
-        heading: "Din BRF-analys är klar",
-        paragraphs: [
-          `Våra experter har granskat föreningens årsredovisning för ${address}.`,
-          "I rapportens kapitel Bostadsrättsförening ser du nu föreningens nyckeltal förklarade i klartext, vad de betyder för dig i kronor och vilka frågor som är bra att ställa inför visningen.",
-        ],
-        ctaUrl: url,
-        ctaLabel: "Öppna rapporten",
+      t("subject", { address }),
+      await renderNotificationEmail({
+        preheader: t("preheader"),
+        heading: t("heading"),
+        paragraphs: [t("intro", { address }), t("body")],
+        ctaUrl: link(locale),
+        ctaLabel: t("cta"),
+        locale,
       })
     );
     sent += 1;

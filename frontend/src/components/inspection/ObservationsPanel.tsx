@@ -1,10 +1,12 @@
 "use client";
 
 import { useState } from "react";
+import { useTranslations } from "next-intl";
 import { CloseIcon } from "@/components/icons";
 import type { Observation } from "@/lib/inspection/types";
 
-const EXAMPLES = ["Fuktlukt", "Sprickor", "Vattenskada", "Ojämnt golv", "Färgskada", "Elfel"];
+/** Short examples that fill the field when clicked. Their words: inspection.observations.examples.<id> */
+const EXAMPLES = ["damp", "cracks", "waterDamage", "uneven", "paint", "electrical"] as const;
 
 export function ObservationsPanel({
   observations,
@@ -15,6 +17,7 @@ export function ObservationsPanel({
   onAdd: (text: string) => void;
   onRemove: (id: string) => void;
 }) {
+  const t = useTranslations("inspection.observations");
   const [text, setText] = useState("");
 
   function submit() {
@@ -37,7 +40,7 @@ export function ObservationsPanel({
               submit();
             }
           }}
-          placeholder="Skriv en egen observation, t.ex. fuktlukt i badrummet..."
+          placeholder={t("placeholder")}
           className="flex-1 rounded-xl border border-white/10 bg-black/30 px-4 py-2.5 text-sm text-white placeholder:text-neutral-500 outline-none transition focus:border-green-500/60 focus:ring-4 focus:ring-green-500/10"
         />
         <button
@@ -45,19 +48,19 @@ export function ObservationsPanel({
           onClick={submit}
           className="rounded-xl bg-green-600 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-green-500"
         >
-          Lägg till
+          {t("add")}
         </button>
       </div>
 
       <div className="flex flex-wrap gap-1.5">
-        {EXAMPLES.map((ex) => (
+        {EXAMPLES.map((example) => (
           <button
-            key={ex}
+            key={example}
             type="button"
-            onClick={() => setText(ex)}
+            onClick={() => setText(t(`examples.${example}`))}
             className="rounded-full border border-white/10 px-2.5 py-1 text-[11px] text-neutral-500 transition hover:border-white/20 hover:text-neutral-300"
           >
-            {ex}
+            {t(`examples.${example}`)}
           </button>
         ))}
       </div>
@@ -73,7 +76,7 @@ export function ObservationsPanel({
               <button
                 type="button"
                 onClick={() => onRemove(o.id)}
-                aria-label="Ta bort observation"
+                aria-label={t("remove")}
                 className="shrink-0 text-neutral-500 transition hover:text-red-400"
               >
                 <CloseIcon className="h-3.5 w-3.5" />

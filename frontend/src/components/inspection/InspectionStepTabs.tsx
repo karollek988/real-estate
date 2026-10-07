@@ -1,7 +1,12 @@
+"use client";
+
+import { useTranslations } from "next-intl";
+
+/** The three steps. Their words: inspection.steps.<id>.title / .subtitle */
 const STEPS = [
-  { step: 1, title: "Inför visningen", subtitle: "Förberedelser & info" },
-  { step: 2, title: "Under visningen", subtitle: "Steg för steg" },
-  { step: 3, title: "Efter visningen", subtitle: "Uppföljning & analys" },
+  { step: 1, id: "before" },
+  { step: 2, id: "during" },
+  { step: 3, id: "after" },
 ] as const;
 
 export function InspectionStepTabs({
@@ -13,9 +18,10 @@ export function InspectionStepTabs({
   furthestUnlocked: number;
   onSelect: (step: 1 | 2 | 3) => void;
 }) {
+  const t = useTranslations("inspection.steps");
   return (
     <div className="flex items-center">
-      {STEPS.map(({ step, title, subtitle }, i) => {
+      {STEPS.map(({ step, id }, i) => {
         const active = step === current;
         const done = step < current;
         const unlocked = step <= furthestUnlocked;
@@ -42,9 +48,9 @@ export function InspectionStepTabs({
               </span>
               <span className="text-center">
                 <span className={`block text-sm font-semibold ${active || done ? "text-white" : "text-neutral-500"}`}>
-                  {title}
+                  {t(`${id}.title`)}
                 </span>
-                <span className="block text-xs text-neutral-500">{subtitle}</span>
+                <span className="block text-xs text-neutral-500">{t(`${id}.subtitle`)}</span>
               </span>
             </button>
             {i < STEPS.length - 1 && (

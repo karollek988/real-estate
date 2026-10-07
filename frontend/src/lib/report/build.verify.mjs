@@ -5,11 +5,24 @@
 // build.objectivity.verify.mjs. No test framework in this project (see the
 // other *.verify.mjs). Run with:
 //   npx tsx src/lib/report/build.verify.mjs
-import { buildPropertyOverview } from "./build.ts";
-import { brfChapterState, brfStatusSentence, dueSv } from "./brfChapter.ts";
-import { buildQuestions } from "./questions.ts";
+import { buildPropertyOverview as buildPropertyOverviewWith } from "./build.ts";
+import { brfChapterState as brfChapterStateWith, brfStatusSentence as brfStatusSentenceWith, dueSv } from "./brfChapter.ts";
+import { buildQuestions as buildQuestionsWith } from "./questions.ts";
+import { swedishTextKit } from "../../i18n/textKit.ts";
+import brfModule from "../../i18n/messages/sv/brf.ts";
+import reportModule from "../../i18n/messages/sv/report.ts";
 import { tenureOf, tenureOfProperty } from "./tenure.ts";
 import { EMPTY_BRF_FIGURES } from "../brf/figures.ts";
+
+// The report code writes its sentences through a text kit; these checks read the Swedish report, as before.
+// (tsx wraps a default export twice when a .mjs file imports a .ts file.)
+const brfSv = brfModule.default ?? brfModule;
+const reportSv = reportModule.default ?? reportModule;
+const KIT = swedishTextKit({ brf: brfSv, report: reportSv });
+const buildPropertyOverview = (report, attributes) => buildPropertyOverviewWith(report, attributes, KIT);
+const brfChapterState = (report, review, now) => brfChapterStateWith(report, review, KIT, now);
+const brfStatusSentence = (state) => brfStatusSentenceWith(state, KIT);
+const buildQuestions = (report, brf) => buildQuestionsWith(report, brf, KIT);
 
 let failures = 0;
 function check(name, actual, expected) {

@@ -1,10 +1,12 @@
 "use client";
 
-import { useRouter } from "next/navigation";
+import { useTranslations } from "next-intl";
+import { useRouter } from "@/i18n/navigation";
 import { Button } from "@/components/Button";
 import { ShieldIcon, ArrowRightIcon } from "@/components/icons";
 
 export function InspectionHelpBanner() {
+  const t = useTranslations("dashboard.inspectionBanner");
   const router = useRouter();
   return (
     <div className="card-lift flex flex-col items-start gap-5 rounded-2xl border border-green-400/15 bg-gradient-to-r from-green-400/[0.06] to-transparent p-6 hover:border-green-400/30 sm:flex-row sm:items-center sm:justify-between">
@@ -13,11 +15,8 @@ export function InspectionHelpBanner() {
           <ShieldIcon className="h-6 w-6" />
         </span>
         <div>
-          <h3 className="text-base font-semibold text-white">Behöver du hjälp inför din visning?</h3>
-          <p className="mt-1.5 max-w-md text-sm leading-relaxed text-neutral-400">
-            Visningsguiden, som ingår i Trygghetspaketet, hjälper dig att förstå bostadens skick innan du
-            lägger bud. Få en grundlig genomgång av risker och dolda fel.
-          </p>
+          <h3 className="text-base font-semibold text-white">{t("title")}</h3>
+          <p className="mt-1.5 max-w-md text-sm leading-relaxed text-neutral-400">{t("text")}</p>
         </div>
       </div>
       <Button
@@ -25,7 +24,7 @@ export function InspectionHelpBanner() {
         className="flex shrink-0 items-center gap-2 whitespace-nowrap"
         onClick={() => router.push("/dashboard/inspection")}
       >
-        Till visningsguiden
+        {t("cta")}
         <ArrowRightIcon className="h-4 w-4" />
       </Button>
     </div>

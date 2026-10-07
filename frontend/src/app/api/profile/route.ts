@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { createClient as createSupabaseClient } from "@supabase/supabase-js";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { requireUser } from "@/lib/auth/requireUser";
+import { apiError } from "@/i18n/apiText";
 
 function errorResponse(status: number, code: string, message: string) {
   return NextResponse.json({ error: { code, message } }, { status });
@@ -40,13 +41,13 @@ export async function PATCH(request: Request) {
   };
 
   if (typeof currentPassword !== "string" || currentPassword.length === 0) {
-    return errorResponse(400, "invalid_request", "Ange ditt nuvarande lösenord.");
+    return await apiError(400, "invalid_request", "profile.currentPasswordRequired");
   }
   if (name !== undefined && typeof name !== "string") {
-    return errorResponse(400, "invalid_request", "Ogiltigt namn.");
+    return await apiError(400, "invalid_request", "profile.invalidName");
   }
   if (email !== undefined && typeof email !== "string") {
-    return errorResponse(400, "invalid_request", "Ogiltig e-postadress.");
+    return await apiError(400, "invalid_request", "profile.invalidEmail");
   }
 
   const trimmedName = typeof name === "string" ? name.trim() : undefined;
@@ -55,20 +56,20 @@ export async function PATCH(request: Request) {
   if (trimmedEmail !== undefined) {
     const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!EMAIL_RE.test(trimmedEmail)) {
-      return errorResponse(422, "invalid_email", "Ange en giltig e-postadress.");
+      return await apiError(422, "invalid_email", "profile.enterValidEmail");
     }
   }
   if (trimmedName !== undefined && trimmedName.length === 0) {
-    return errorResponse(422, "invalid_name", "Namnet får inte vara tomt.");
+    return await apiError(422, "invalid_name", "profile.nameEmpty");
   }
 
   if (!user.email) {
-    return errorResponse(500, "internal_error", "Kontot saknar en registrerad e-postadress.");
+    return await apiError(500, "internal_error", "profile.noEmailOnAccount");
   }
 
   const passwordOk = await verifyCurrentPassword(user.email, currentPassword);
   if (!passwordOk) {
-    return errorResponse(401, "wrong_password", "Fel lösenord. Försök igen.");
+    return await apiError(401, "wrong_password", "profile.wrongPassword");
   }
 
   const update: { email?: string; user_metadata?: Record<string, unknown> } = {};
@@ -95,7 +96,7 @@ export async function PATCH(request: Request) {
     });
   } catch (err) {
     console.error("PATCH /api/profile failed:", err);
-    return errorResponse(500, "internal_error", "Något gick fel. Försök igen.");
+    return await apiError(500, "internal_error", "profile.failed");
   }
 }
 
@@ -119,9 +120,6 @@ export async function DELETE() {
     return NextResponse.json({ success: true });
   } catch (err) {
     console.error("DELETE /api/profile failed:", err);
-    return NextResponse.json(
-      { error: { code: "internal_error", message: "Could not delete your account. Please try again." } },
-      { status: 500 }
-    );
+    return await apiError(500, "internal_error", "profile.deleteFailed");
   }
 }

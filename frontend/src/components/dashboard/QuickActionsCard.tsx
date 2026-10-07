@@ -1,6 +1,7 @@
 "use client";
 
-import { useRouter } from "next/navigation";
+import { useTranslations } from "next-intl";
+import { useRouter } from "@/i18n/navigation";
 import { ChevronRightIcon, TrendingUpIcon } from "@/components/icons";
 import { ROUTES } from "@/components/site/navigation";
 
@@ -8,10 +9,11 @@ import { ROUTES } from "@/components/site/navigation";
 // "Spara bostad" and "Hjälpcenter" had no destination (dead links) and were
 // removed rather than pointed at placeholder pages.
 export function QuickActionsCard() {
+  const t = useTranslations("dashboard.quickActions");
   const router = useRouter();
   return (
     <div className="card-interactive rounded-2xl border border-white/10 bg-[#0F1417]/85 p-5 backdrop-blur-xl">
-      <h3 className="text-sm font-semibold text-white">Snabbåtkomst</h3>
+      <h3 className="text-sm font-semibold text-white">{t("title")}</h3>
       <div className="mt-3 flex flex-col gap-1">
         <button
           type="button"
@@ -20,7 +22,7 @@ export function QuickActionsCard() {
         >
           <span className="flex items-center gap-2.5">
             <TrendingUpIcon className="h-4 w-4 text-neutral-500" />
-            Skapa ny analys
+            {t("newAnalysis")}
           </span>
           <ChevronRightIcon className="h-4 w-4 text-neutral-600" />
         </button>

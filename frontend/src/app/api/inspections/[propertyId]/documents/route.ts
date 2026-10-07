@@ -13,6 +13,7 @@ import {
 } from "@/lib/inspection/store";
 import { createAdminClient } from "@/lib/supabase/admin";
 import type { DocumentType } from "@/lib/inspection/types";
+import { apiError } from "@/i18n/apiText";
 
 const DOC_TYPES: DocumentType[] = [
   "annual_report",
@@ -38,7 +39,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ pro
   if (!property) return errorResponse(404, "not_found", "No property with that id.");
 
   if (!(await hasFullEntitlementForProperty(user.id, propertyId))) {
-    return errorResponse(403, "analysis_required", "Kräver Trygghetspaketet för den här bostaden.");
+    return await apiError(403, "analysis_required", "inspections.packageRequired");
   }
 
   let form: FormData;
@@ -55,7 +56,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ pro
     return errorResponse(400, "invalid_request", "Provide a valid \"docType\".");
   }
   if (file.type && file.type !== "application/pdf" && !file.type.startsWith("image/")) {
-    return errorResponse(422, "invalid_file_type", "Only PDF or image files are supported.");
+    return await apiError(422, "invalid_file_type", "inspections.documentTypeInvalid");
   }
 
   let inspection = await findInspection(user.id, propertyId);
@@ -69,7 +70,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ pro
     .upload(storagePath, bytes, { contentType: file.type || "application/octet-stream", upsert: false });
   if (uploadError) {
     console.error(`POST /api/inspections/${propertyId}/documents upload failed:`, uploadError);
-    return errorResponse(500, "internal_error", "Kunde inte spara dokumentet. Försök igen.");
+    return await apiError(500, "internal_error", "inspections.documentSaveFailed");
   }
 
   const document = await insertDocument({

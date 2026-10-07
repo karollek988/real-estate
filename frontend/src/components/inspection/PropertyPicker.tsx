@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslations } from "next-intl";
 import { ArrowRightIcon, HouseIcon } from "@/components/icons";
 
 interface Candidate {
@@ -14,9 +15,10 @@ export function PropertyPicker({
   candidates: Candidate[];
   onSelect: (propertyId: string) => void;
 }) {
+  const t = useTranslations("inspection");
   return (
     <div className="flex flex-col gap-3">
-      <p className="text-sm text-neutral-400">Välj vilken bostad du vill starta eller fortsätta visningsguiden för.</p>
+      <p className="text-sm text-neutral-400">{t("picker")}</p>
       {candidates.map((c) => (
         <button
           key={c.propertyId}

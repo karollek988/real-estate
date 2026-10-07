@@ -1,9 +1,10 @@
 "use client";
 
 import { useId, useRef } from "react";
-import Link from "next/link";
+import { useTranslations } from "next-intl";
+import { Link } from "@/i18n/navigation";
 import { ChevronDownIcon, ChevronRightIcon } from "@/components/icons";
-import { MAIN_NAV, isActivePath, isEntryActive, type NavEntry } from "@/components/site/navigation";
+import { MAIN_NAV, hrefKey, isActivePath, isEntryActive, type NavEntry } from "@/components/site/navigation";
 import { POPOVER_CLOSED, POPOVER_OPEN, type HeaderTheme } from "./theme";
 import { useDismiss } from "./useDismiss";
 
@@ -37,8 +38,9 @@ export function DesktopNav({
   onOpenMenuChange: (id: string | null) => void;
   className?: string;
 }) {
+  const t = useTranslations("nav");
   return (
-    <nav aria-label="Huvudmeny" className={`h-full items-center gap-0.5 ${className}`}>
+    <nav aria-label={t("mainMenu")} className={`h-full items-center gap-0.5 ${className}`}>
       {MAIN_NAV.map((entry) =>
         entry.kind === "menu" ? (
           <NavMenu
@@ -51,13 +53,13 @@ export function DesktopNav({
           />
         ) : (
           <Link
-            key={entry.href}
+            key={entry.id}
             href={entry.href}
             aria-current={isActivePath(pathname, entry.href) ? "page" : undefined}
             className={`${ITEM_BASE} ${theme.focusRing} ${isEntryActive(pathname, entry) ? theme.navActive : theme.nav}`}
           >
             {entry.icon && <entry.icon className={`${NAV_ICON} ${theme.navIcon}`} />}
-            {entry.label}
+            {t(`entries.${entry.id}`)}
           </Link>
         ),
       )}
@@ -78,6 +80,7 @@ function NavMenu({
   open: boolean;
   onOpenChange: (open: boolean) => void;
 }) {
+  const t = useTranslations("nav");
   const panelId = useId();
   const rootRef = useRef<HTMLDivElement>(null);
   const buttonRef = useRef<HTMLButtonElement>(null);
@@ -148,7 +151,7 @@ function NavMenu({
         className={`${ITEM_BASE} ${theme.focusRing} ${open ? theme.navOpen : active ? theme.navActive : theme.nav}`}
       >
         <entry.icon className={`${NAV_ICON} ${theme.navIcon}`} />
-        {entry.label}
+        {t(`entries.${entry.id}`)}
         <ChevronDownIcon
           className={`-ml-0.5 h-4 w-4 shrink-0 transition-transform duration-200 ${open ? "rotate-180" : ""}`}
           strokeWidth={2.2}
@@ -182,7 +185,7 @@ function NavMenu({
           {entry.items.map((item, i) => {
             const current = isActivePath(pathname, item.href);
             return (
-              <li key={item.href} className={i > 0 ? `border-t ${theme.panelDivider}` : undefined}>
+              <li key={hrefKey(item.href)} className={i > 0 ? `border-t ${theme.panelDivider}` : undefined}>
                 <Link
                   href={item.href}
                   data-menu-link
@@ -194,8 +197,8 @@ function NavMenu({
                 >
                   <item.icon className={`h-7 w-7 shrink-0 ${theme.panelIcon}`} strokeWidth={1.5} />
                   <span className="min-w-0 flex-1">
-                    <span className={`block text-[15.5px] font-semibold leading-tight ${theme.panelTitle}`}>{item.label}</span>
-                    <span className={`mt-1 block text-[13.5px] leading-snug ${theme.panelText}`}>{item.description}</span>
+                    <span className={`block text-[15.5px] font-semibold leading-tight ${theme.panelTitle}`}>{t(`${item.key}.label`)}</span>
+                    <span className={`mt-1 block text-[13.5px] leading-snug ${theme.panelText}`}>{t(`${item.key}.description`)}</span>
                   </span>
                   <ChevronRightIcon
                     className={`h-[18px] w-[18px] shrink-0 transition-transform duration-200 group-hover:translate-x-0.5 ${theme.panelText}`}

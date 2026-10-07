@@ -12,7 +12,7 @@
 //
 // Built on it:
 //   app/globals.scss                    public site (App Router) + Tailwind
-//   app/analyzing/ldbar.scss            progress ring label on /analyzing
+//   app/[locale]/analyzing/ldbar.scss            progress ring label on /analyzing
 //   components/admin/atlas/atlas.scss   admin portal: page resets
 //   components/admin/admin.scss         admin portal: login + session bar
 //   components/admin/atlas/atlas-public.scss  public map /karta (the $map-* roles)
@@ -222,7 +222,7 @@ $map-panel-divider: $ka-line;
 // -----------------------------------------------------------------------------
 // Typography
 // -----------------------------------------------------------------------------
-// Inter, set as --font-sans by next/font in app/layout.tsx
+// Inter, set as --font-sans by next/font in app/[locale]/layout.tsx
 $font-sans: var(--font-sans, ui-sans-serif, system-ui, sans-serif);
 // Display serif for headlines (Tailwind font-display); --font-serif-display is
 // set by next/font (lib/fonts.ts) on the landing page wrapper

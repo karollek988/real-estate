@@ -4,7 +4,17 @@
 // *.verify.mjs). Run with:
 //   npx tsx src/lib/brf/interpret.verify.mjs
 import { EMPTY_BRF_FIGURES, parseBrfFigures, hasAnyBrfFigure } from "./figures.ts";
-import { interpretBrf } from "./interpret.ts";
+import { interpretBrf as interpretBrfWith } from "./interpret.ts";
+import { swedishTextKit } from "../../i18n/textKit.ts";
+import brfModule from "../../i18n/messages/sv/brf.ts";
+import reportModule from "../../i18n/messages/sv/report.ts";
+
+// The report code writes its sentences through a text kit; these checks read the Swedish report, as before.
+// (tsx wraps a default export twice when a .mjs file imports a .ts file.)
+const brfSv = brfModule.default ?? brfModule;
+const reportSv = reportModule.default ?? reportModule;
+const KIT = swedishTextKit({ brf: brfSv, report: reportSv });
+const interpretBrf = (f, apartment, now) => interpretBrfWith(f, apartment, KIT, now);
 
 let failures = 0;
 function check(name, actual, expected) {

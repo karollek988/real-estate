@@ -18,6 +18,8 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { rerunAnalysisForProperty } from "./pipeline";
 import { getAnalysisWithProperty } from "./store";
 import { buildPropertyOverview } from "@/lib/report/build";
+import { swedishTextKit } from "@/i18n/textKit";
+import reportSv from "@/i18n/messages/sv/report";
 
 const LIMIT = Number(process.env.VERIFY_LIMIT ?? 10);
 // Optional: verify specific properties by id (comma-separated) instead of
@@ -27,7 +29,8 @@ const PROPERTY_IDS = (process.env.PROPERTY_IDS ?? "")
   .map((s) => s.trim())
   .filter(Boolean);
 const DELAY_MS = Number(process.env.PROPERTY_DELAY_MS ?? 20000);
-const NA = "Uppgift saknas";
+const KIT = swedishTextKit({ report: reportSv });
+const NA = reportSv.format.na;
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
 // Parse.bot's endpoints measured live at 7-42s each (it's a live scraper,
@@ -47,7 +50,7 @@ async function waitForCompletion(analysisId: string, timeoutMs = 180000) {
 }
 
 function coverage(report: unknown, attributes: Record<string, unknown>) {
-  const rows = buildPropertyOverview(report as Parameters<typeof buildPropertyOverview>[0], attributes);
+  const rows = buildPropertyOverview(report as Parameters<typeof buildPropertyOverview>[0], attributes, KIT);
   const missing = rows.filter((r) => r.value === NA).map((r) => r.label);
   return { populated: rows.length - missing.length, total: rows.length, missing };
 }

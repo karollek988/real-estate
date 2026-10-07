@@ -2,7 +2,8 @@
 
 import { useEffect, useState } from "react";
 import Image from "next/image";
-import { useRouter } from "next/navigation";
+import { useLocale, useTranslations } from "next-intl";
+import { Link, useRouter } from "@/i18n/navigation";
 import { useAuth } from "@/lib/auth/AuthProvider";
 import {
   CheckIcon,
@@ -19,6 +20,7 @@ import {
 type AuthMode = "login" | "register";
 
 function GoogleButton() {
+  const t = useTranslations("auth");
   const { signInWithGoogle } = useAuth();
   const [error, setError] = useState<string | null>(null);
 
@@ -34,7 +36,7 @@ function GoogleButton() {
         className="flex w-full items-center justify-center gap-3 rounded-xl border border-white/10 bg-white/5 py-3 text-sm font-semibold text-neutral-100 transition hover:border-white/20 hover:bg-white/10"
       >
         <GoogleIcon className="h-[18px] w-[18px]" />
-        Fortsätt med Google
+        {t("google")}
       </button>
       {error && <p className="text-xs text-red-400">{error}</p>}
     </div>
@@ -42,10 +44,11 @@ function GoogleButton() {
 }
 
 function OrDivider() {
+  const t = useTranslations("auth");
   return (
     <div className="my-5 flex items-center gap-4" aria-hidden="true">
       <span className="h-px flex-1 bg-white/10" />
-      <span className="text-xs font-medium text-neutral-500">eller</span>
+      <span className="text-xs font-medium text-neutral-500">{t("or")}</span>
       <span className="h-px flex-1 bg-white/10" />
     </div>
   );
@@ -113,6 +116,7 @@ function PasswordField({
   onChange: (value: string) => void;
   required?: boolean;
 }) {
+  const t = useTranslations("auth.fields");
   const [visible, setVisible] = useState(false);
   return (
     <div>
@@ -135,7 +139,7 @@ function PasswordField({
         <button
           type="button"
           onClick={() => setVisible((v) => !v)}
-          aria-label={visible ? "Dölj lösenord" : "Visa lösenord"}
+          aria-label={visible ? t("hidePassword") : t("showPassword")}
           className="absolute right-1.5 top-1/2 flex h-9 w-9 -translate-y-1/2 items-center justify-center rounded-lg text-neutral-500 transition hover:text-neutral-300"
         >
           {visible ? (
@@ -214,6 +218,8 @@ function isEmailNotConfirmedError(error: { code?: string; message: string }): bo
 }
 
 function LoginForm({ onSuccess }: { onSuccess: () => void }) {
+  const t = useTranslations("auth.login");
+  const tFields = useTranslations("auth.fields");
   const { signIn, resendSignupConfirmation } = useAuth();
   const [remember, setRemember] = useState(true);
   const [email, setEmail] = useState("");
@@ -253,9 +259,9 @@ function LoginForm({ onSuccess }: { onSuccess: () => void }) {
       <div className="flex flex-col gap-4">
         <TextField
           id="auth-email"
-          label="E-postadress"
+          label={tFields("email")}
           type="email"
-          placeholder="namn@exempel.se"
+          placeholder={tFields("emailPlaceholder")}
           autoComplete="email"
           icon={MailIcon}
           value={email}
@@ -264,7 +270,7 @@ function LoginForm({ onSuccess }: { onSuccess: () => void }) {
         />
         <PasswordField
           id="auth-password"
-          label="Lösenord"
+          label={tFields("password")}
           autoComplete="current-password"
           value={password}
           onChange={setPassword}
@@ -273,13 +279,13 @@ function LoginForm({ onSuccess }: { onSuccess: () => void }) {
       </div>
       <div className="mt-4 flex items-center justify-between gap-3">
         <Checkbox id="auth-remember" checked={remember} onChange={setRemember}>
-          Kom ihåg mig
+          {t("remember")}
         </Checkbox>
         <button
           type="button"
           className="text-sm font-medium text-green-400 underline underline-offset-4 transition hover:text-green-300"
         >
-          Glömt lösenord?
+          {t("forgotPassword")}
         </button>
       </div>
       <ErrorMessage message={error} />
@@ -288,7 +294,7 @@ function LoginForm({ onSuccess }: { onSuccess: () => void }) {
           {resendState === "sent" ? (
             <p className="flex items-center gap-1.5 text-sm text-green-400">
               <CheckIcon className="h-4 w-4" />
-              Ny bekräftelselänk skickad! Kolla din inkorg.
+              {t("resent")}
             </p>
           ) : (
             <button
@@ -297,20 +303,23 @@ function LoginForm({ onSuccess }: { onSuccess: () => void }) {
               disabled={resendState === "sending"}
               className="cursor-pointer text-sm font-medium text-green-400 underline underline-offset-4 transition hover:text-green-300 disabled:cursor-not-allowed disabled:opacity-60"
             >
-              {resendState === "sending" ? "Skickar..." : "Skicka bekräftelselänk igen"}
+              {resendState === "sending" ? t("resending") : t("resend")}
             </button>
           )}
         </div>
       )}
       <SubmitButton disabled={loading}>
         <LockIcon className="h-5 w-5" />
-        {loading ? "Loggar in..." : "Logga in"}
+        {loading ? t("submitting") : t("submit")}
       </SubmitButton>
     </form>
   );
 }
 
 function RegisterForm({ onSuccess }: { onSuccess: () => void }) {
+  const t = useTranslations("auth.register");
+  const tFields = useTranslations("auth.fields");
+  const locale = useLocale();
   const { signUp } = useAuth();
   const [agree, setAgree] = useState(false);
   const [firstName, setFirstName] = useState("");
@@ -327,16 +336,16 @@ function RegisterForm({ onSuccess }: { onSuccess: () => void }) {
     setError(null);
 
     if (!agree) {
-      setError("Du måste godkänna villkoren för att skapa ett konto.");
+      setError(t("errors.mustAgree"));
       return;
     }
     if (password !== confirmPassword) {
-      setError("Lösenorden matchar inte.");
+      setError(t("errors.passwordMismatch"));
       return;
     }
 
     setLoading(true);
-    const { data, error } = await signUp(email, password, `${firstName} ${lastName}`.trim(), firstName.trim());
+    const { data, error } = await signUp(email, password, `${firstName} ${lastName}`.trim(), firstName.trim(), locale);
     setLoading(false);
     if (error) {
       setError(error.message);
@@ -360,11 +369,12 @@ function RegisterForm({ onSuccess }: { onSuccess: () => void }) {
         <div className="flex h-14 w-14 items-center justify-center rounded-full bg-green-600/20">
           <MailIcon className="h-7 w-7 text-green-400" />
         </div>
-        <p className="text-lg font-semibold text-white">Kolla din inkorg!</p>
+        <p className="text-lg font-semibold text-white">{t("checkInbox.title")}</p>
         <p className="text-sm text-neutral-400">
-          Vi har skickat ett bekräftelsemail till{" "}
-          <span className="font-medium text-neutral-200">{pendingConfirmationEmail}</span>. Klicka på länken i
-          mejlet för att aktivera ditt konto.
+          {t.rich("checkInbox.text", {
+            email: pendingConfirmationEmail,
+            b: (chunks) => <span className="font-medium text-neutral-200">{chunks}</span>,
+          })}
         </p>
       </div>
     );
@@ -376,8 +386,8 @@ function RegisterForm({ onSuccess }: { onSuccess: () => void }) {
         <div className="grid grid-cols-2 gap-3">
           <TextField
             id="auth-first-name"
-            label="Förnamn"
-            placeholder="Anna"
+            label={tFields("firstName")}
+            placeholder={tFields("firstNamePlaceholder")}
             autoComplete="given-name"
             value={firstName}
             onChange={setFirstName}
@@ -385,8 +395,8 @@ function RegisterForm({ onSuccess }: { onSuccess: () => void }) {
           />
           <TextField
             id="auth-last-name"
-            label="Efternamn"
-            placeholder="Svensson"
+            label={tFields("lastName")}
+            placeholder={tFields("lastNamePlaceholder")}
             autoComplete="family-name"
             value={lastName}
             onChange={setLastName}
@@ -395,9 +405,9 @@ function RegisterForm({ onSuccess }: { onSuccess: () => void }) {
         </div>
         <TextField
           id="auth-register-email"
-          label="E-postadress"
+          label={tFields("email")}
           type="email"
-          placeholder="namn@exempel.se"
+          placeholder={tFields("emailPlaceholder")}
           autoComplete="email"
           icon={MailIcon}
           value={email}
@@ -406,7 +416,7 @@ function RegisterForm({ onSuccess }: { onSuccess: () => void }) {
         />
         <PasswordField
           id="auth-new-password"
-          label="Lösenord"
+          label={tFields("password")}
           autoComplete="new-password"
           value={password}
           onChange={setPassword}
@@ -414,7 +424,7 @@ function RegisterForm({ onSuccess }: { onSuccess: () => void }) {
         />
         <PasswordField
           id="auth-confirm-password"
-          label="Bekräfta lösenord"
+          label={tFields("confirmPassword")}
           autoComplete="new-password"
           value={confirmPassword}
           onChange={setConfirmPassword}
@@ -423,29 +433,34 @@ function RegisterForm({ onSuccess }: { onSuccess: () => void }) {
       </div>
       <div className="mt-4">
         <Checkbox id="auth-terms" checked={agree} onChange={setAgree}>
-          Jag godkänner{" "}
-          <a
-            href="/terms"
-            className="font-medium text-green-400 underline underline-offset-4 transition hover:text-green-300"
-          >
-            villkoren
-          </a>{" "}
-          och{" "}
-          <a
-            href="/privacy"
-            className="font-medium text-green-400 underline underline-offset-4 transition hover:text-green-300"
-          >
-            integritetspolicyn
-          </a>
+          {t.rich("agree", {
+            terms: (chunks) => (
+              <Link
+                href="/terms"
+                className="font-medium text-green-400 underline underline-offset-4 transition hover:text-green-300"
+              >
+                {chunks}
+              </Link>
+            ),
+            privacy: (chunks) => (
+              <Link
+                href="/privacy"
+                className="font-medium text-green-400 underline underline-offset-4 transition hover:text-green-300"
+              >
+                {chunks}
+              </Link>
+            ),
+          })}
         </Checkbox>
       </div>
       <ErrorMessage message={error} />
-      <SubmitButton disabled={loading}>{loading ? "Skapar konto..." : "Skapa konto"}</SubmitButton>
+      <SubmitButton disabled={loading}>{loading ? t("submitting") : t("submit")}</SubmitButton>
     </form>
   );
 }
 
 export function AuthModal({ open, onClose }: { open: boolean; onClose: () => void }) {
+  const t = useTranslations("auth");
   const [mode, setMode] = useState<AuthMode>("login");
   const router = useRouter();
 
@@ -478,7 +493,7 @@ export function AuthModal({ open, onClose }: { open: boolean; onClose: () => voi
       className="fixed inset-0 z-[100] overflow-y-auto"
       role="dialog"
       aria-modal="true"
-      aria-label={login ? "Logga in" : "Skapa konto"}
+      aria-label={login ? t("login.dialogLabel") : t("register.dialogLabel")}
     >
       <div
         className="fixed inset-0 animate-overlay-fade-in bg-black/60 backdrop-blur-sm"
@@ -506,7 +521,7 @@ export function AuthModal({ open, onClose }: { open: boolean; onClose: () => voi
           <button
             type="button"
             onClick={onClose}
-            aria-label="Stäng"
+            aria-label={t("close")}
             className="absolute right-4 top-4 z-20 flex h-10 w-10 cursor-pointer items-center justify-center rounded-full text-neutral-400 transition hover:bg-white/5 hover:text-white"
           >
             <CloseIcon className="h-5 w-5" />
@@ -525,36 +540,24 @@ export function AuthModal({ open, onClose }: { open: boolean; onClose: () => voi
               {/* Mobile headline */}
               <div className="mt-10 text-center lg:hidden">
                 <h2 className="text-[28px] font-bold leading-[1.3] tracking-tight text-white">
-                  {login ? (
-                    <>
-                      Välkommen tillbaka!
-                      <br />
-                      Logga in för att <span className="text-green-400">fortsätta.</span>
-                    </>
-                  ) : (
-                    <>
-                      Skapa ditt konto
-                      <br />
-                      och kom igång <span className="text-green-400">direkt.</span>
-                    </>
-                  )}
+                  {t(login ? "login.mobileLine1" : "register.mobileLine1")}
+                  <br />
+                  {t.rich(login ? "login.mobileLine2" : "register.mobileLine2", {
+                    accent: (chunks) => <span className="text-green-400">{chunks}</span>,
+                  })}
                 </h2>
                 <p className="mx-auto mt-4 max-w-[300px] text-[15px] leading-relaxed text-neutral-300">
-                  {login
-                    ? "Få tillgång till analyser, bevakningar och personliga insikter."
-                    : "Det tar mindre än en minut och du kan börja analysera direkt."}
+                  {t(login ? "login.mobileLead" : "register.mobileLead")}
                 </p>
               </div>
 
               {/* Desktop headline */}
               <div className="hidden lg:block lg:pr-10">
                 <h2 className="text-2xl font-bold tracking-tight text-white">
-                  {login ? "Välkommen tillbaka!" : "Skapa ditt konto"}
+                  {t(login ? "login.headline" : "register.headline")}
                 </h2>
                 <p className="mt-1.5 text-sm text-neutral-400">
-                  {login
-                    ? "Logga in för att fortsätta till dina analyser."
-                    : "Det tar mindre än en minut att komma igång."}
+                  {t(login ? "login.lead" : "register.lead")}
                 </p>
               </div>
 
@@ -567,13 +570,13 @@ export function AuthModal({ open, onClose }: { open: boolean; onClose: () => voi
               </div>
 
               <p className="mt-7 text-center text-[15px] text-neutral-300 lg:mt-6 lg:text-sm lg:text-neutral-400">
-                {login ? "Har du inget konto? " : "Har du redan ett konto? "}
+                {t(login ? "login.switchPrompt" : "register.switchPrompt")}{" "}
                 <button
                   type="button"
                   onClick={() => setMode(login ? "register" : "login")}
                   className="cursor-pointer font-semibold text-green-400 transition hover:text-green-300"
                 >
-                  {login ? "Skapa konto" : "Logga in"}
+                  {t(login ? "login.switchAction" : "register.switchAction")}
                 </button>
               </p>
             </div>
@@ -582,10 +585,10 @@ export function AuthModal({ open, onClose }: { open: boolean; onClose: () => voi
             <div className="mt-12 text-center lg:hidden">
               <p className="flex items-center justify-center gap-2 text-[15px] font-medium text-white">
                 <ShieldIcon className="h-5 w-5 text-green-400" />
-                Säker och trygg inloggning
+                {t("trust.title")}
               </p>
               <p className="mt-2 text-sm text-neutral-500">
-                Vi skyddar dina uppgifter med högsta säkerhet.
+                {t("trust.text")}
               </p>
             </div>
           </div>

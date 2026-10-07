@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { Resend } from "resend";
+import { apiError } from "@/i18n/apiText";
 import { checkRateLimit, clientIp } from "@/lib/rateLimit";
 
 export const runtime = "nodejs";
@@ -17,23 +18,11 @@ export async function POST(request: Request) {
   const apiKey = process.env.RESEND_API_KEY;
 
   if (!apiKey) {
-    return NextResponse.json(
-      {
-        error: {
-          code: "contact_unavailable",
-          message:
-            "Kontakt via formulär är inte tillgänglig just nu — mejla oss direkt på kontakt@kopanalys.se istället.",
-        },
-      },
-      { status: 503 },
-    );
+    return apiError(503, "contact_unavailable", "contact.unavailable", undefined, { request });
   }
 
   if (!checkRateLimit(`contact:${clientIp(request)}`, RATE_LIMIT_PER_HOUR, 60 * 60_000)) {
-    return NextResponse.json(
-      { error: { code: "rate_limited", message: "För många meddelanden skickade – försök igen senare eller mejla kontakt@kopanalys.se." } },
-      { status: 429 },
-    );
+    return apiError(429, "rate_limited", "contact.rateLimited", undefined, { request });
   }
 
   let body: ContactBody;
@@ -80,15 +69,6 @@ export async function POST(request: Request) {
     return NextResponse.json({ success: true });
   } catch (err) {
     console.error("Resend API error:", err);
-    return NextResponse.json(
-      {
-        error: {
-          code: "contact_unavailable",
-          message:
-            "Kontakt via formulär är inte tillgänglig just nu — mejla oss direkt på kontakt@kopanalys.se istället.",
-        },
-      },
-      { status: 503 },
-    );
+    return apiError(503, "contact_unavailable", "contact.unavailable", undefined, { request });
   }
 }

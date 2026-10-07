@@ -3,6 +3,7 @@ import { rerunAnalysisForProperty } from "@/lib/analysis/pipeline";
 import { listAnalysesForProperty } from "@/lib/analysis/store";
 import { getBestEntitlementForProperty } from "@/lib/analysis/ownership";
 import { requireUser } from "@/lib/auth/requireUser";
+import { apiError } from "@/i18n/apiText";
 
 /**
  * GET  /api/properties/:id/analyses — full analysis version history for a
@@ -47,10 +48,7 @@ export async function GET(
     });
   } catch (err) {
     console.error(`GET /api/properties/${id}/analyses failed:`, err);
-    return NextResponse.json(
-      { error: { code: "internal_error", message: "Could not load the analysis history." } },
-      { status: 500 }
-    );
+    return await apiError(500, "internal_error", "analyses.loadHistoryFailed");
   }
 }
 
@@ -80,14 +78,6 @@ export async function POST(
     });
   } catch (err) {
     console.error(`POST /api/properties/${id}/analyses failed:`, err);
-    return NextResponse.json(
-      {
-        error: {
-          code: "analysis_failed",
-          message: "Something went wrong while updating the analysis. Please try again.",
-        },
-      },
-      { status: 500 }
-    );
+    return await apiError(500, "analysis_failed", "analyses.updateFailed");
   }
 }

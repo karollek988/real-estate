@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { deleteAnalysisRequest } from "@/lib/analysis/ownership";
 import { requireUser } from "@/lib/auth/requireUser";
+import { apiError } from "@/i18n/apiText";
 
 /**
  * DELETE /api/profile/analyses/:id — removes one analysis from the
@@ -21,17 +22,11 @@ export async function DELETE(
   try {
     const deleted = await deleteAnalysisRequest(user.id, id);
     if (!deleted) {
-      return NextResponse.json(
-        { error: { code: "not_found", message: "No analysis with that id in your profile." } },
-        { status: 404 }
-      );
+      return await apiError(404, "not_found", "profile.analysisNotFound");
     }
     return NextResponse.json({ success: true });
   } catch (err) {
     console.error(`DELETE /api/profile/analyses/${id} failed:`, err);
-    return NextResponse.json(
-      { error: { code: "internal_error", message: "Could not delete the analysis." } },
-      { status: 500 }
-    );
+    return await apiError(500, "internal_error", "profile.analysisDeleteFailed");
   }
 }

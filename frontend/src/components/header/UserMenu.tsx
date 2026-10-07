@@ -1,18 +1,20 @@
 "use client";
 
 import { useId, useRef } from "react";
-import Link from "next/link";
+import { useTranslations } from "next-intl";
+import { Link } from "@/i18n/navigation";
 import { LogOutIcon, UserIcon } from "@/components/icons";
 import { POPOVER_CLOSED, POPOVER_OPEN, type HeaderTheme } from "./theme";
 import { useDismiss } from "./useDismiss";
 
+/** The account pages. The words are in the "nav" area under account.links.<key>. */
 export const ACCOUNT_LINKS = [
-  { label: "Mina analyser", href: "/dashboard" },
-  { label: "Visningsguide", href: "/dashboard/inspection" },
-  { label: "Köp & saldo", href: "/dashboard/subscriptions" },
-  { label: "Inställningar", href: "/dashboard/settings" },
-  { label: "Sekretess", href: "/dashboard/privacy" },
-];
+  { key: "analyses", href: "/dashboard" },
+  { key: "inspection", href: "/dashboard/inspection" },
+  { key: "purchases", href: "/dashboard/subscriptions" },
+  { key: "settings", href: "/dashboard/settings" },
+  { key: "privacy", href: "/dashboard/privacy" },
+] as const;
 
 export function initialsFor(name: string) {
   return name
@@ -44,6 +46,7 @@ export function UserMenu({
   onSignIn: () => void;
   onSignOut: () => void;
 }) {
+  const t = useTranslations("nav");
   const panelId = useId();
   const rootRef = useRef<HTMLDivElement>(null);
   const buttonRef = useRef<HTMLButtonElement>(null);
@@ -57,7 +60,7 @@ export function UserMenu({
 
   if (!signedIn) {
     return (
-      <button type="button" onClick={onSignIn} aria-label="Logga in" title="Logga in" className={circle}>
+      <button type="button" onClick={onSignIn} aria-label={t("account.signIn")} title={t("account.signIn")} className={circle}>
         <UserIcon className="h-[22px] w-[22px]" strokeWidth={1.8} />
       </button>
     );
@@ -69,7 +72,7 @@ export function UserMenu({
         ref={buttonRef}
         type="button"
         onClick={() => onOpenChange(!open)}
-        aria-label={`Konto: ${displayName}`}
+        aria-label={t("account.accountOf", { name: displayName })}
         aria-expanded={open}
         aria-controls={panelId}
         className={`${circle} text-[15px] font-bold`}
@@ -83,17 +86,17 @@ export function UserMenu({
         }`}
       >
         <p className={`truncate px-3 pb-2 pt-2.5 text-[13px] ${theme.panelText}`}>
-          Inloggad som <span className={`font-semibold ${theme.panelTitle}`}>{displayName}</span>
+          {t.rich("account.signedInAs", { name: displayName, b: (chunks) => <span className={`font-semibold ${theme.panelTitle}`}>{chunks}</span> })}
         </p>
         <ul className={`border-t pt-1.5 ${theme.panelDivider}`}>
-          {ACCOUNT_LINKS.map(({ label, href }) => (
+          {ACCOUNT_LINKS.map(({ key, href }) => (
             <li key={href}>
               <Link
                 href={href}
                 onClick={() => onOpenChange(false)}
                 className={`block rounded-lg px-3 py-2.5 text-[14.5px] outline-none transition ${theme.panelTitle} ${theme.panelItem}`}
               >
-                {label}
+                {t(`account.links.${key}`)}
               </Link>
             </li>
           ))}
@@ -108,7 +111,7 @@ export function UserMenu({
             className={`flex w-full cursor-pointer items-center gap-2.5 rounded-lg px-3 py-2.5 text-left text-[14.5px] outline-none transition ${theme.danger}`}
           >
             <LogOutIcon className="h-4 w-4" />
-            Logga ut
+            {t("account.signOut")}
           </button>
         </div>
       </div>

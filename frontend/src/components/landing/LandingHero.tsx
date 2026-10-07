@@ -1,5 +1,6 @@
 import Image from "next/image";
-import Link from "next/link";
+import { getTranslations } from "next-intl/server";
+import { Link, type Href } from "@/i18n/navigation";
 import { ScrollLink, type AnalysisMethod } from "@/components/landing/ScrollLink";
 import { LANDING_CONTAINER } from "@/components/landing/container";
 import { ROUTES } from "@/components/site/navigation";
@@ -18,12 +19,12 @@ import { ArrowRightIcon, FileTextIcon, MapFoldIcon } from "@/components/icons";
 
 type Step = {
   number: string;
-  title: string;
-  subtitle: string;
+  /** Names the step's two lines in the "landing" messages: hero.steps.<id>.title and .subtitle */
+  id: "find" | "analyse" | "decide";
   /** 3D icon cut from the design reference (scripts/make-brand-assets.py) */
   icon: { src: string; width: number; height: number };
   /** Where the step leads: a page, or a section of this page */
-  href?: string;
+  href?: Href;
   scrollTo?: { target: string; analysisMethod: AnalysisMethod };
   /** The deep green card of the last step */
   highlighted?: boolean;
@@ -38,22 +39,19 @@ type Step = {
 const STEPS: Step[] = [
   {
     number: "01",
-    title: "Hitta",
-    subtitle: "bostaden",
+    id: "find",
     icon: { src: "/images/steg-hitta.png", width: 274, height: 229 },
     href: ROUTES.karta,
   },
   {
     number: "02",
-    title: "Analysera",
-    subtitle: "bostaden",
+    id: "analyse",
     icon: { src: "/images/steg-analysera.png", width: 260, height: 212 },
     scrollTo: { target: "analyze", analysisMethod: "screenshot" },
   },
   {
     number: "03",
-    title: "Besluta",
-    subtitle: "tryggare",
+    id: "decide",
     icon: { src: "/images/steg-besluta.png", width: 201, height: 210 },
     highlighted: true,
   },
@@ -92,7 +90,7 @@ function CityPhoto({ className, sizes, loading }: { className: string; sizes: st
 }
 
 /** Inside a step card: number, icon, divider, the two words and the arrow. */
-function StepContent({ step }: { step: Step }) {
+function StepContent({ step, title, subtitle }: { step: Step; title: string; subtitle: string }) {
   const dark = step.highlighted;
   return (
     <>
@@ -116,9 +114,9 @@ function StepContent({ step }: { step: Step }) {
       <span aria-hidden className={`mx-2 h-[56%] w-px shrink-0 xl:mx-2.5 ${dark ? "bg-white/15" : "bg-ka-mint/60"}`} />
       <span className="min-w-0 flex-1 leading-[1.2]">
         <span className={`block text-[16px] font-bold tracking-[-0.02em] lg:text-[17px] xl:text-[18px] 2xl:text-[19px] ${dark ? "text-white" : "text-ka-ink"}`}>
-          {step.title}
+          {title}
         </span>{" "}
-        <span className={`block text-[14px] xl:text-[15px] 2xl:text-[16px] ${dark ? "text-white/90" : "text-ka-ink"}`}>{step.subtitle}</span>
+        <span className={`block text-[14px] xl:text-[15px] 2xl:text-[16px] ${dark ? "text-white/90" : "text-ka-ink"}`}>{subtitle}</span>
       </span>
       <span
         aria-hidden
@@ -132,7 +130,8 @@ function StepContent({ step }: { step: Step }) {
   );
 }
 
-export function LandingHero() {
+export async function LandingHero() {
+  const t = await getTranslations("landing.hero");
   return (
     <section aria-labelledby="hero-title" className="relative isolate overflow-hidden bg-ka-cream">
       <div
@@ -140,11 +139,11 @@ export function LandingHero() {
       >
         <div className="mx-auto flex w-full max-w-[880px] flex-col items-center text-center">
           <p className="animate-fade-in-up rounded-2xl bg-ka-sage/90 px-4 py-1.5 text-[11px] font-medium uppercase leading-5 tracking-[0.04em] text-ka-ink sm:rounded-full sm:px-[17px] sm:py-[6px] sm:text-[12.5px] sm:tracking-[0.035em] xl:text-[13.5px] short:text-[12.5px] 2xl:text-[14px]">
-            Oberoende{" "}
+            {t("badge.independent")}{" "}
             <span aria-hidden className="mx-1">
               ·
             </span>{" "}
-            Faktabaserad
+            {t("badge.factBased")}
             <span className="hidden sm:inline">
               {" "}
               <span aria-hidden className="mx-1">
@@ -152,20 +151,21 @@ export function LandingHero() {
               </span>{" "}
             </span>
             <br className="sm:hidden" />
-            För en tryggare bostadsaffär
+            {t("badge.safer")}
           </p>
 
           <h1
             id="hero-title"
             className="animate-fade-in-up delay-1 mt-5 font-display text-[40px] font-bold leading-[1.04] tracking-[-0.022em] text-ka-ink sm:text-[54px] lg:mt-4 lg:text-[clamp(54px,4.2vw,74px)] lg:leading-[0.95] short:mt-3 short:text-[clamp(46px,3.6vw,60px)]"
           >
-            Din oberoende partner <br className="hidden sm:block" />
-            för <span className="text-ka-green-700">bostadsanalyser</span>
+            {t.rich("title", {
+              br: () => <br className="hidden sm:block" />,
+              accent: (chunks) => <span className="text-ka-green-700">{chunks}</span>,
+            })}
           </h1>
 
           <p className="animate-fade-in-up delay-2 mt-5 max-w-[740px] text-[17px] leading-[1.55] text-ka-text sm:text-[18px] lg:mt-[14px] xl:text-[20px] xl:leading-[1.45] short:mt-2.5 short:text-[17.5px] 2xl:text-[21px]">
-            Vi samlar och analyserar data från flera källor för att ge dig en tydlig bild av bostäder, områden och
-            föreningar – så att du kan fatta tryggare beslut.
+            {t("lead")}
           </p>
 
           <div className="animate-fade-in-up delay-3 mt-7 flex w-full flex-col gap-3 sm:w-auto sm:flex-row sm:gap-[15px] lg:mt-[18px] short:mt-4">
@@ -174,7 +174,7 @@ export function LandingHero() {
               className={`${BUTTON_BASE} bg-ka-green-900 text-white shadow-[0_14px_30px_-16px_rgba(12,42,31,0.9)] hover:bg-ka-green-800 hover:shadow-[0_18px_34px_-16px_rgba(12,42,31,0.95)] sm:min-w-[260px] xl:min-w-[305px]`}
             >
               <MapFoldIcon className="h-6 w-6 xl:h-7 xl:w-7" />
-              Visa karta
+              {t("showMap")}
               <ArrowRightIcon className="h-5 w-5 transition-transform duration-200 group-hover:translate-x-1" />
             </Link>
             <ScrollLink
@@ -182,7 +182,7 @@ export function LandingHero() {
               className={`${BUTTON_BASE} border-[1.5px] border-ka-green-900/55 bg-ka-paper/95 text-ka-ink hover:border-ka-green-900 hover:bg-white sm:min-w-[250px] xl:min-w-[289px]`}
             >
               <FileTextIcon className="h-6 w-6 xl:h-7 xl:w-7" />
-              Se exempelrapport
+              {t("exampleReport")}
             </ScrollLink>
           </div>
         </div>
@@ -199,7 +199,7 @@ export function LandingHero() {
               <div className="hero-float [perspective:1800px]">
                 <Image
                   src="/images/hero-laptop.png"
-                  alt="Köpanalys-kartan med bostäder till salu i Stockholm, visad på en laptop"
+                  alt={t("laptopAlt")}
                   width={1515}
                   height={930}
                   preload
@@ -217,7 +217,7 @@ export function LandingHero() {
               <li key={step.number} className={STEP_ITEM} style={{ animationDelay: `${0.45 + i * 0.08}s` }}>
                 {step.href ? (
                   <Link href={step.href} className={`${STEP_CARD} ${STEP_CARD_LIGHT}`}>
-                    <StepContent step={step} />
+                    <StepContent step={step} title={t(`steps.${step.id}.title`)} subtitle={t(`steps.${step.id}.subtitle`)} />
                   </Link>
                 ) : step.scrollTo ? (
                   <ScrollLink
@@ -225,11 +225,11 @@ export function LandingHero() {
                     analysisMethod={step.scrollTo.analysisMethod}
                     className={`${STEP_CARD} ${STEP_CARD_LIGHT}`}
                   >
-                    <StepContent step={step} />
+                    <StepContent step={step} title={t(`steps.${step.id}.title`)} subtitle={t(`steps.${step.id}.subtitle`)} />
                   </ScrollLink>
                 ) : (
                   <div className={`${STEP_CARD} ${step.highlighted ? STEP_CARD_HIGHLIGHTED : STEP_CARD_LIGHT}`}>
-                    <StepContent step={step} />
+                    <StepContent step={step} title={t(`steps.${step.id}.title`)} subtitle={t(`steps.${step.id}.subtitle`)} />
                   </div>
                 )}
               </li>

@@ -1,7 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { useTranslations } from "next-intl";
+import { useRouter } from "@/i18n/navigation";
 import { Field, SelectField } from "./Field";
 import { Button } from "./Button";
 import { AnalysisSubmitError } from "./AnalysisSubmitError";
@@ -9,9 +10,21 @@ import { ArrowRightIcon } from "./icons";
 import { reportPathFor, submitAnalysis } from "@/lib/analysis/submit";
 import type { ManualListingFields } from "@/lib/analysis/listing/manual";
 
-const CONDITIONS = ["Utmärkt", "Bra", "Okej", "Behöver renovering"];
+// The choices of the drop-down lists. `value` is what is saved and what the analysis understands (always
+// Swedish); `id` names the choice's label in the messages (forms.manual.conditions / .propertyTypes).
+const CONDITIONS = [
+  { value: "Utmärkt", id: "excellent" },
+  { value: "Bra", id: "good" },
+  { value: "Okej", id: "okay" },
+  { value: "Behöver renovering", id: "needsRenovation" },
+] as const;
 const ENERGY_CLASSES = ["A+", "A", "B", "C", "D", "E", "F", "G"];
-const PROPERTY_TYPES = ["Bostadsrätt", "Äganderätt", "Arrende", "Bostadsrätt (nyproduktion)"];
+const PROPERTY_TYPES = [
+  { value: "Bostadsrätt", id: "bostadsratt" },
+  { value: "Äganderätt", id: "aganderatt" },
+  { value: "Arrende", id: "arrende" },
+  { value: "Bostadsrätt (nyproduktion)", id: "bostadsrattNyproduktion" },
+] as const;
 
 // Mirrors requiresMonthlyFee() in lib/analysis/pipeline.ts — a monthly fee
 // only applies to co-op apartments, not freehold houses.
@@ -35,6 +48,8 @@ export interface ManualEntryFormProps {
 }
 
 export function ManualEntryForm({ initialValues, sourceNotice }: ManualEntryFormProps = {}) {
+  const t = useTranslations("forms.manual");
+  const tSubmit = useTranslations("forms.submit");
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<{ code: string; message: string } | null>(null);
   const [propertyType, setPropertyType] = useState(initialValues?.propertyType ?? "");
@@ -68,19 +83,19 @@ export function ManualEntryForm({ initialValues, sourceNotice }: ManualEntryForm
 
     const invalid = (message: string) => setError({ code: "invalid_request", message });
     if (manual.address === "") {
-      invalid("Ange en adress för att analysera bostaden.");
+      invalid(t("errors.address"));
       return;
     }
     if (manual.askingPrice === null) {
-      invalid("Ange ett utgångspris för att analysera bostaden.");
+      invalid(t("errors.askingPrice"));
       return;
     }
     if (manual.livingArea === null) {
-      invalid("Ange boarean för att analysera bostaden.");
+      invalid(t("errors.livingArea"));
       return;
     }
     if (feeRequired && manual.monthlyFee === null) {
-      invalid("Ange månadsavgiften för att analysera bostaden.");
+      invalid(t("errors.monthlyFee"));
       return;
     }
 
@@ -88,7 +103,7 @@ export function ManualEntryForm({ initialValues, sourceNotice }: ManualEntryForm
     setError(null);
 
     // The Trygghetspaket: the complete analysis of this property.
-    const result = await submitAnalysis({ manual, analysisType: "full" });
+    const result = await submitAnalysis({ manual, analysisType: "full" }, { fallback: tSubmit("fallback"), unauthorized: tSubmit("unauthorized") });
     if (!result.ok) {
       setError({ code: result.code, message: result.message });
       setSubmitting(false);
@@ -96,6 +111,11 @@ export function ManualEntryForm({ initialValues, sourceNotice }: ManualEntryForm
     }
     router.push(reportPathFor(result));
   }
+
+  const yesNo = [
+    { value: "Ja", label: t("yes") },
+    { value: "Nej", label: t("no") },
+  ];
 
   return (
     <form className="flex flex-col gap-6" onSubmit={handleSubmit}>
@@ -109,7 +129,7 @@ export function ManualEntryForm({ initialValues, sourceNotice }: ManualEntryForm
           <Field
             id="address"
             name="address"
-            label="Adress"
+            label={t("fields.address")}
             type="text"
             defaultValue={initialValues?.address ?? undefined}
             required
@@ -118,16 +138,16 @@ export function ManualEntryForm({ initialValues, sourceNotice }: ManualEntryForm
         <SelectField
           id="property-type"
           name="propertyType"
-          label="Typ av bostad"
-          options={PROPERTY_TYPES}
-          placeholder="Välj typ"
+          label={t("fields.propertyType")}
+          options={PROPERTY_TYPES.map(({ value, id }) => ({ value, label: t(`propertyTypes.${id}`) }))}
+          placeholder={t("fields.propertyTypePlaceholder")}
           value={propertyType}
           onChange={setPropertyType}
         />
         <Field
           id="living-area"
           name="livingArea"
-          label="Boarea (m²)"
+          label={t("fields.livingArea")}
           type="number"
           min={0}
           defaultValue={initialValues?.livingArea ?? undefined}
@@ -136,7 +156,7 @@ export function ManualEntryForm({ initialValues, sourceNotice }: ManualEntryForm
         <Field
           id="rooms"
           name="rooms"
-          label="Antal rum"
+          label={t("fields.rooms")}
           type="number"
           min={0}
           step={0.5}
@@ -145,9 +165,9 @@ export function ManualEntryForm({ initialValues, sourceNotice }: ManualEntryForm
         <Field
           id="asking-price"
           name="askingPrice"
-          label="Utgångspris (kr)"
+          label={t("fields.askingPrice")}
           type="number"
-          hint="Bostadens totala pris, inte pris per kvadratmeter."
+          hint={t("fields.askingPriceHint")}
           min={0}
           defaultValue={initialValues?.askingPrice ?? undefined}
           required
@@ -155,7 +175,7 @@ export function ManualEntryForm({ initialValues, sourceNotice }: ManualEntryForm
         <Field
           id="monthly-fee"
           name="monthlyFee"
-          label="Månadsavgift (kr)"
+          label={t("fields.monthlyFee")}
           type="number"
           min={0}
           defaultValue={initialValues?.monthlyFee ?? undefined}
@@ -164,7 +184,7 @@ export function ManualEntryForm({ initialValues, sourceNotice }: ManualEntryForm
         <Field
           id="operating-costs"
           name="operatingCosts"
-          label="Driftskostnader (kr/mån)"
+          label={t("fields.operatingCosts")}
           type="number"
           min={0}
           defaultValue={initialValues?.operatingCosts ?? undefined}
@@ -172,14 +192,14 @@ export function ManualEntryForm({ initialValues, sourceNotice }: ManualEntryForm
         <Field
           id="floor"
           name="floor"
-          label="Våning"
+          label={t("fields.floor")}
           type="number"
           defaultValue={initialValues?.floor ?? undefined}
         />
         <Field
           id="building-year"
           name="buildingYear"
-          label="Byggår"
+          label={t("fields.buildingYear")}
           type="number"
           min={1800}
           defaultValue={initialValues?.buildingYear ?? undefined}
@@ -187,48 +207,48 @@ export function ManualEntryForm({ initialValues, sourceNotice }: ManualEntryForm
         <SelectField
           id="energy-class"
           name="energyClass"
-          label="Energiklass"
+          label={t("fields.energyClass")}
           options={ENERGY_CLASSES}
-          placeholder="Välj klass"
+          placeholder={t("fields.energyClassPlaceholder")}
           defaultValue={initialValues?.energyClass}
         />
         <SelectField
           id="condition"
           name="condition"
-          label="Skick"
-          options={CONDITIONS}
-          placeholder="Välj skick"
+          label={t("fields.condition")}
+          options={CONDITIONS.map(({ value, id }) => ({ value, label: t(`conditions.${id}`) }))}
+          placeholder={t("fields.conditionPlaceholder")}
           defaultValue={initialValues?.condition}
         />
         <SelectField
           id="balcony"
           name="balcony"
-          label="Balkong"
-          options={["Ja", "Nej"]}
-          placeholder="Välj"
+          label={t("fields.balcony")}
+          options={yesNo}
+          placeholder={t("fields.choose")}
           defaultValue={initialValues?.balcony}
         />
         <SelectField
           id="elevator"
           name="elevator"
-          label="Hiss"
-          options={["Ja", "Nej"]}
-          placeholder="Välj"
+          label={t("fields.elevator")}
+          options={yesNo}
+          placeholder={t("fields.choose")}
           defaultValue={initialValues?.elevator}
         />
         <SelectField
           id="parking"
           name="parking"
-          label="Parkering"
-          options={["Ja", "Nej"]}
-          placeholder="Välj"
+          label={t("fields.parking")}
+          options={yesNo}
+          placeholder={t("fields.choose")}
           defaultValue={initialValues?.parking}
         />
         <div className="sm:col-span-2">
           <Field
             id="broker"
             name="broker"
-            label="Mäklare"
+            label={t("fields.broker")}
             type="text"
             defaultValue={initialValues?.broker ?? undefined}
           />
@@ -237,14 +257,14 @@ export function ManualEntryForm({ initialValues, sourceNotice }: ManualEntryForm
           <Field
             id="agency"
             name="agency"
-            label="Mäklarbyrå"
+            label={t("fields.agency")}
             type="text"
             defaultValue={initialValues?.agency ?? undefined}
           />
         </div>
         <div className="sm:col-span-2">
           <label htmlFor="description" className="text-sm font-medium text-neutral-200">
-            Beskrivning
+            {t("fields.description")}
           </label>
           <textarea
             id="description"
@@ -257,13 +277,13 @@ export function ManualEntryForm({ initialValues, sourceNotice }: ManualEntryForm
       </div>
 
       <p className="text-sm text-neutral-400">
-        Drar ett Trygghetspaket: BRF-analys, områdesanalys och dolda kostnader för den här bostaden.
+        {t("includes")}
       </p>
 
       <AnalysisSubmitError error={error} />
 
       <Button type="submit" className="w-full sm:w-auto sm:self-start" disabled={submitting}>
-        {submitting ? "Analyserar..." : "Analysera bostad"}
+        {submitting ? t("submitting") : t("submit")}
         <ArrowRightIcon className="h-4 w-4" />
       </Button>
     </form>

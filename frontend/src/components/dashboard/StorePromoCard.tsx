@@ -1,7 +1,9 @@
-import Link from "next/link";
+import { useTranslations } from "next-intl";
+import { Link } from "@/i18n/navigation";
 import { ShoppingBagIcon, ArrowRightIcon } from "@/components/icons";
 
 export function StorePromoCard() {
+  const t = useTranslations("dashboard.storePromo");
   return (
     <div className="card-interactive rounded-2xl border border-white/10 bg-[#0F1417]/85 p-5 backdrop-blur-xl">
       <div className="flex items-start gap-3">
@@ -9,17 +11,15 @@ export function StorePromoCard() {
           <ShoppingBagIcon className="h-5 w-5" />
         </span>
         <div>
-          <h3 className="text-sm font-semibold text-white">Behöver du fler analyser?</h3>
-          <p className="mt-1.5 text-sm leading-relaxed text-neutral-400">
-            Köp en Områdesanalys, Trygghetspaketet för en bostad eller ett paket för tre.
-          </p>
+          <h3 className="text-sm font-semibold text-white">{t("title")}</h3>
+          <p className="mt-1.5 text-sm leading-relaxed text-neutral-400">{t("text")}</p>
         </div>
       </div>
       <Link
         href="/buy"
         className="mt-4 flex w-full items-center justify-center gap-2 rounded-xl bg-green-600 px-6 py-2.5 text-sm font-semibold tracking-tight text-white transition-all duration-200 hover:bg-green-500 hover:shadow-[0_6px_24px_-6px_rgba(74,222,128,0.5)] active:scale-[0.98] active:shadow-none"
       >
-        Se paketen
+        {t("cta")}
         <ArrowRightIcon className="h-4 w-4" />
       </Link>
     </div>

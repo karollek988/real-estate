@@ -2,6 +2,7 @@ import type { AnalysisReport } from "@/lib/analysis/types";
 import type { BrfFigures } from "../brf/figures";
 import { interpretBrf, type BrfReading } from "../brf/interpret";
 import { tenureOf } from "./tenure";
+import type { TextKit } from "../../i18n/textKit";
 // Runtime imports are relative (build.verify.mjs runs this through tsx, which
 // does not resolve the "@/" alias); type-only "@/..." imports are erased.
 
@@ -39,7 +40,7 @@ export type BrfChapterState =
       update: { dueAt: string | null; overdue: boolean } | null;
     };
 
-export function brfChapterState(report: AnalysisReport, review: BrfReviewView | null, now: Date = new Date()): BrfChapterState {
+export function brfChapterState(report: AnalysisReport, review: BrfReviewView | null, kit: TextKit, now: Date = new Date()): BrfChapterState {
   if (tenureOf(report.property) === "freehold" && review?.status !== "published") return { kind: "freehold" };
   if (review?.status === "not_applicable") return { kind: "not_applicable" };
 
@@ -53,6 +54,7 @@ export function brfChapterState(report: AnalysisReport, review: BrfReviewView | 
         monthlyFeeSek: report.property.monthlyFeeSek,
         buildingYear: report.property.buildingYear,
       },
+      kit,
       now
     );
     return {
@@ -71,9 +73,32 @@ export function brfChapterState(report: AnalysisReport, review: BrfReviewView | 
   };
 }
 
-const DATE_SV = new Intl.DateTimeFormat("sv-SE", { timeZone: "Europe/Stockholm", weekday: "long", day: "numeric", month: "long" });
-const TIME_SV = new Intl.DateTimeFormat("sv-SE", { timeZone: "Europe/Stockholm", hour: "2-digit", minute: "2-digit" });
-const DAY_SV = new Intl.DateTimeFormat("sv-SE", { timeZone: "Europe/Stockholm", day: "numeric", month: "long", year: "numeric" });
+/** Swedish time of day: the report promises times in Swedish time whatever the reader's language. */
+const TIME_ZONE = "Europe/Stockholm";
+
+/** "fredag 3 oktober kl. 14:30" (Swedish time, in the reader's language) — when the review is promised. */
+export function formatDue(iso: string | null, kit: TextKit): string | null {
+  if (!iso) return null;
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return null;
+  const date = new Intl.DateTimeFormat(kit.formatLocale, { timeZone: TIME_ZONE, weekday: "long", day: "numeric", month: "long" }).format(d);
+  const time = new Intl.DateTimeFormat(kit.formatLocale, { timeZone: TIME_ZONE, hour: "2-digit", minute: "2-digit" }).format(d);
+  return kit.t("brf.dueTime", { date, time });
+}
+
+/** "3 oktober 2026" (Swedish time, in the reader's language) — when the review was published. */
+export function formatDay(iso: string | null, kit: TextKit): string | null {
+  if (!iso) return null;
+  const d = new Date(iso);
+  return Number.isNaN(d.getTime())
+    ? null
+    : new Intl.DateTimeFormat(kit.formatLocale, { timeZone: TIME_ZONE, day: "numeric", month: "long", year: "numeric" }).format(d);
+}
+
+/** The same two in Swedish, for Swedish-only code (the review console, the team's e-mails). */
+const DATE_SV = new Intl.DateTimeFormat("sv-SE", { timeZone: TIME_ZONE, weekday: "long", day: "numeric", month: "long" });
+const TIME_SV = new Intl.DateTimeFormat("sv-SE", { timeZone: TIME_ZONE, hour: "2-digit", minute: "2-digit" });
+const DAY_SV = new Intl.DateTimeFormat("sv-SE", { timeZone: TIME_ZONE, day: "numeric", month: "long", year: "numeric" });
 
 /** "fredag 3 oktober kl. 14:30" (Swedish time) — when the review is promised. */
 export function dueSv(iso: string | null): string | null {
@@ -91,52 +116,48 @@ export function daySv(iso: string | null): string | null {
 }
 
 /** The chapter's opening lines: which association, and a disagreement between sources about its name. */
-export function brfIntroParagraphs(report: AnalysisReport): string[] {
+export function brfIntroParagraphs(report: AnalysisReport, kit: TextKit): string[] {
+  const t = kit.t;
   const paragraphs: string[] = [];
   const name = report.property.housingAssociation;
-  paragraphs.push(
-    name ? `Bostaden tillhör ${name}.` : "Föreningens namn framgår inte av annonsen; det kontrolleras i granskningen av årsredovisningen."
-  );
+  paragraphs.push(name ? t("brf.intro.named", { name }) : t("brf.intro.unnamed"));
   const conflict = report.property.housingAssociationConflict;
   if (conflict) {
     paragraphs.push(
-      `Observera: datakällorna är oense om föreningens namn. Vi har använt "${conflict.keptValue}", ` +
-        `medan en annan källa (${conflict.rejectedSource}) angav "${conflict.rejectedValue}" — kontrollera namnet mot föreningens stadgar.`
+      t("brf.intro.conflict", { kept: conflict.keptValue, source: conflict.rejectedSource, rejected: conflict.rejectedValue })
     );
   }
   return paragraphs;
 }
 
 /** One sentence for the executive summary and the risk chapter. */
-export function brfStatusSentence(state: BrfChapterState): string | null {
+export function brfStatusSentence(state: BrfChapterState, kit: TextKit): string | null {
+  const t = kit.t;
   switch (state.kind) {
     case "freehold":
       return null;
     case "not_applicable":
-      return "Bostaden ingår inte i någon bostadsrättsförening, så det finns ingen föreningsekonomi att granska.";
+      return t("brf.status.notApplicable");
     case "awaiting": {
-      const due = dueSv(state.dueAt);
-      if (state.overdue) {
-        return "BRF-analysen granskas av Köpanalys experter. Granskningen tar lite längre tid än utlovat — analysen publiceras i kapitlet Bostadsrättsförening så snart den är klar.";
-      }
-      return (
-        "BRF-analysen granskas av Köpanalys experter innan den visas" +
-        (due ? ` och publiceras i kapitlet Bostadsrättsförening senast ${due}.` : ", och publiceras i kapitlet Bostadsrättsförening inom 24 timmar.")
-      );
+      const due = formatDue(state.dueAt, kit);
+      if (state.overdue) return t("brf.status.overdue");
+      return due ? t("brf.status.dueBy", { due }) : t("brf.status.within24");
     }
     case "published": {
       const { strengths, concerns } = state.reading;
-      const day = daySv(state.publishedAt);
+      const day = formatDay(state.publishedAt, kit);
       const counts =
         concerns.length === 0
           ? strengths.length > 0
-            ? "Inget av nyckeltalen ligger utanför de nivåer som brukar räknas som normala."
-            : "Årsredovisningen innehåller få av de nyckeltal som går att jämföra."
-          : `${concerns.length} ${concerns.length === 1 ? "punkt är värd" : "punkter är värda"} en närmare titt, bland annat ${concerns
-              .slice(0, 2)
-              .map((c) => c.charAt(0).toLowerCase() + c.slice(1))
-              .join(" och ")}.`;
-      return `BRF-analysen är granskad av Köpanalys${day ? ` (${day})` : ""}. ${counts}`;
+            ? t("brf.status.countsNone")
+            : t("brf.status.countsFew")
+          : t("brf.status.countsSome", {
+              count: concerns.length,
+              list: new Intl.ListFormat(kit.formatLocale, { style: "long", type: "conjunction" }).format(
+                concerns.slice(0, 2).map((c) => c.charAt(0).toLowerCase() + c.slice(1))
+              ),
+            });
+      return t("brf.status.published", { day: day ? t("brf.status.publishedDay", { day }) : "", counts });
     }
   }
 }

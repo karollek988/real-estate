@@ -28,19 +28,11 @@ interface PxWebDataResponse {
 
 export interface InflationSeries {
   values: number[];
+  /** The months as SCB writes them ("2025M09"); the page turns them into names in the reader's language. */
   monthLabels: string[];
   latest: number;
   latestMonth: string;
   asOf: string;
-}
-
-const SWEDISH_MONTHS = [
-  "Jan", "Feb", "Mar", "Apr", "Maj", "Jun", "Jul", "Aug", "Sep", "Okt", "Nov", "Dec",
-];
-
-function toDisplayMonth(pxWebMonth: string): string {
-  const m = Number.parseInt(pxWebMonth.slice(5, 7), 10);
-  return SWEDISH_MONTHS[m - 1] ?? pxWebMonth;
 }
 
 async function queryPxWeb(
@@ -84,7 +76,7 @@ export async function getInflationSeries(): Promise<InflationSeries | null> {
   for (const month of months) {
     const value = byMonth.get(month);
     if (value === undefined) continue;
-    monthLabels.push(toDisplayMonth(month));
+    monthLabels.push(month);
     values.push(value);
   }
   if (values.length === 0) return null;

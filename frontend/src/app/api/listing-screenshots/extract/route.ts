@@ -3,6 +3,7 @@ import { requireUser } from "@/lib/auth/requireUser";
 import { checkRateLimit, clientIp } from "@/lib/rateLimit";
 import { extractFromScreenshotText } from "@/lib/analysis/listing/screenshotExtract";
 import { pythonEngineHeaders } from "@/lib/pythonEngine";
+import { apiError } from "@/i18n/apiText";
 
 function errorResponse(status: number, code: string, message: string) {
   return NextResponse.json({ error: { code, message } }, { status });
@@ -30,11 +31,7 @@ export async function POST(request: Request) {
   if (authError) return authError;
 
   if (!checkRateLimit(`listing-screenshots:${clientIp(request)}`, RATE_LIMIT_PER_HOUR, 60 * 60_000)) {
-    return errorResponse(
-      429,
-      "rate_limited",
-      "För många uppladdningar från din uppkoppling – försök igen om en stund."
-    );
+    return await apiError(429, "rate_limited", "screenshots.rateLimited");
   }
 
   let form: FormData;
@@ -46,27 +43,23 @@ export async function POST(request: Request) {
 
   const files = form.getAll("files").filter((f): f is File => f instanceof File);
   if (files.length === 0) {
-    return errorResponse(400, "invalid_request", "Ladda upp minst en skärmdump.");
+    return await apiError(400, "invalid_request", "screenshots.atLeastOne");
   }
   if (files.length > MAX_IMAGES) {
     return errorResponse(422, "too_many_files", `Max ${MAX_IMAGES} bilder åt gången.`);
   }
   for (const file of files) {
     if (!ALLOWED_TYPES.has(file.type)) {
-      return errorResponse(422, "invalid_file_type", "Endast PNG-, JPEG- eller WEBP-bilder stöds.");
+      return await apiError(422, "invalid_file_type", "screenshots.invalidType");
     }
     if (file.size > MAX_IMAGE_BYTES) {
-      return errorResponse(413, "file_too_large", "Varje bild får vara max 8 MB.");
+      return await apiError(413, "file_too_large", "screenshots.tooLarge");
     }
   }
 
   const apiBase = process.env.PYTHON_ENGINE_API_URL;
   if (!apiBase) {
-    return errorResponse(
-      503,
-      "not_connected",
-      "Bildläsning är inte tillgänglig just nu — fyll i uppgifterna manuellt istället."
-    );
+    return await apiError(503, "not_connected", "screenshots.notConnected");
   }
 
   const imagesBase64 = await Promise.all(
@@ -84,27 +77,15 @@ export async function POST(request: Request) {
     });
     const body = await ocrRes.json().catch(() => null);
     if (!ocrRes.ok || !body?.success) {
-      return errorResponse(
-        502,
-        "ocr_failed",
-        "Kunde inte läsa bilderna just nu. Försök igen eller fyll i uppgifterna manuellt."
-      );
+      return await apiError(502, "ocr_failed", "screenshots.readFailed");
     }
     texts = body.texts as string[];
   } catch {
-    return errorResponse(
-      502,
-      "ocr_failed",
-      "Kunde inte läsa bilderna just nu. Försök igen eller fyll i uppgifterna manuellt."
-    );
+    return await apiError(502, "ocr_failed", "screenshots.readFailed");
   }
 
   if (texts.every((t) => !t || t.trim().length === 0)) {
-    return errorResponse(
-      422,
-      "no_text_found",
-      "Kunde inte hitta någon text i bilderna. Prova en tydligare skärmdump eller fyll i uppgifterna manuellt."
-    );
+    return await apiError(422, "no_text_found", "screenshots.noText");
   }
 
   const { fields, foundKeys } = extractFromScreenshotText(texts);

@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { requireUser } from "@/lib/auth/requireUser";
+import { apiError } from "@/i18n/apiText";
 
 interface DiscountCodeRow {
   code: string;
@@ -32,7 +33,7 @@ export async function GET() {
 
   if (error) {
     console.error("GET /api/discount-codes failed:", error);
-    return NextResponse.json({ error: { code: "internal_error", message: "Kunde inte hämta dina rabattkoder." } }, { status: 500 });
+    return await apiError(500, "internal_error", "profile.discountCodesLoadFailed");
   }
 
   return NextResponse.json({ codes: (codes ?? []) as DiscountCodeRow[] });

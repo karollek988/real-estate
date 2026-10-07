@@ -1,9 +1,12 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useTranslations } from "next-intl";
+import { Link } from "@/i18n/navigation";
 import { getCookieConsent, setCookieConsent, REOPEN_CONSENT_EVENT } from "@/lib/consent";
 
 export function CookieConsentBanner() {
+  const t = useTranslations("consent");
   const [visible, setVisible] = useState(false);
 
   useEffect(() => {
@@ -35,17 +38,16 @@ export function CookieConsentBanner() {
     <div className="fixed bottom-0 left-0 right-0 z-[90] p-4 sm:p-6">
       <div className="mx-auto max-w-2xl rounded-2xl border border-white/10 bg-[#0A0F0D] p-5 shadow-[0_8px_30px_rgba(0,0,0,0.45)] backdrop-blur-xl sm:p-6 sm:shadow-[0_16px_48px_rgba(0,0,0,0.5)]">
         <p className="text-sm leading-relaxed text-neutral-300">
-          Vi använder nödvändiga cookies för att webbplatsen ska fungera. Vill du även
-          godkänna en cookie för analys och marknadsföring? Den kommer ihåg var du först
-          hittade oss (till exempel en sökmotor), så att vi kan se vilka kanaler som
-          fungerar. Läs mer i vår{" "}
-          <a
-            href="/privacy"
-            className="font-medium text-green-400 underline underline-offset-4 transition hover:text-green-300"
-          >
-            integritetspolicyn
-          </a>
-          .
+          {t.rich("text", {
+            link: (chunks) => (
+              <Link
+                href="/privacy"
+                className="font-medium text-green-400 underline underline-offset-4 transition hover:text-green-300"
+              >
+                {chunks}
+              </Link>
+            ),
+          })}
         </p>
         <div className="mt-4 flex flex-col gap-2 sm:flex-row sm:justify-end">
           <button
@@ -53,14 +55,14 @@ export function CookieConsentBanner() {
             onClick={declineAll}
             className="cursor-pointer rounded-xl border border-white/10 bg-white/5 px-5 py-2.5 text-sm font-semibold text-neutral-200 transition hover:border-white/20 hover:bg-white/10"
           >
-            Neka alla
+            {t("decline")}
           </button>
           <button
             type="button"
             onClick={acceptAll}
             className="cursor-pointer rounded-xl bg-green-600 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-green-500"
           >
-            Acceptera alla
+            {t("accept")}
           </button>
         </div>
       </div>

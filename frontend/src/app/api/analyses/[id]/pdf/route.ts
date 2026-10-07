@@ -1,10 +1,13 @@
 import { NextResponse } from "next/server";
+import { getPathname } from "@/i18n/navigation";
+import { localeOfRequest } from "@/i18n/requestLocale";
 import puppeteer from "puppeteer-core";
 import chromium from "@sparticuz/chromium";
 import { getReportForViewer } from "@/lib/analysis/access";
 import { requireUser } from "@/lib/auth/requireUser";
 import { isAdminUser } from "@/lib/auth/admin";
 import { checkRateLimit, clientIp } from "@/lib/rateLimit";
+import { apiError } from "@/i18n/apiText";
 
 export const runtime = "nodejs";
 export const maxDuration = 60;
@@ -33,10 +36,7 @@ export async function GET(
   if (authError) return authError;
 
   if (!checkRateLimit(`pdf:${clientIp(request)}`, RATE_LIMIT_PER_MINUTE, 60_000)) {
-    return NextResponse.json(
-      { error: { code: "rate_limited", message: "Vänta en liten stund innan du laddar ner fler PDF:er." } },
-      { status: 429 }
-    );
+    return await apiError(429, "rate_limited", "analyses.pdfRateLimited");
   }
 
   let found: Awaited<ReturnType<typeof getReportForViewer>>;
@@ -44,20 +44,16 @@ export async function GET(
     found = await getReportForViewer(id, user.id, { isReviewer: isAdminUser(user) });
   } catch (err) {
     console.error(`GET /api/analyses/${id}/pdf failed:`, err);
-    return NextResponse.json(
-      { error: { code: "internal_error", message: "Could not load the analysis." } },
-      { status: 500 }
-    );
+    return await apiError(500, "internal_error", "analyses.loadFailed");
   }
 
   if (!found || found.analysis.status !== "complete" || !found.analysis.report) {
-    return NextResponse.json(
-      { error: { code: "not_found", message: "No completed analysis with that id." } },
-      { status: 404 }
-    );
+    return await apiError(404, "not_found", "analyses.notFoundCompleted");
   }
 
-  const reportUrl = new URL(`/report?id=${id}`, request.url).toString();
+  // The PDF is the report page printed, so it is asked for in the language the report was opened in.
+  const locale = localeOfRequest(request, new URL(request.url).searchParams.get("locale"));
+  const reportUrl = new URL(getPathname({ locale, href: { pathname: "/report", query: { id } } }), request.url).toString();
   // /report is behind the same auth gate as this route (PROTECTED_PREFIXES
   // in lib/supabase/middleware.ts) — Puppeteer's headless browser has no
   // session of its own, so forward this request's cookies or it gets
@@ -100,10 +96,7 @@ export async function GET(
     });
   } catch (err) {
     console.error(`GET /api/analyses/${id}/pdf failed:`, err);
-    return NextResponse.json(
-      { error: { code: "pdf_failed", message: "Could not generate the PDF report." } },
-      { status: 500 }
-    );
+    return await apiError(500, "pdf_failed", "analyses.pdfFailed");
   } finally {
     await browser?.close();
   }

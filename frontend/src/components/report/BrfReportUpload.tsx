@@ -1,7 +1,8 @@
 "use client";
 
 import { useRef, useState } from "react";
-import { useRouter } from "next/navigation";
+import { useTranslations } from "next-intl";
+import { useRouter } from "@/i18n/navigation";
 import { uploadBrfAnnualReport } from "@/lib/brf/uploadClient";
 import { BRF_REPORT_ACCEPT } from "@/lib/brf/uploadLimits";
 
@@ -15,7 +16,7 @@ export function BrfReportUpload({
   propertyId,
   label,
   description,
-  successMessage = "Tack! Årsredovisningen är mottagen och granskas av Köpanalys.",
+  successMessage,
   tone = "report",
 }: {
   propertyId: string;
@@ -24,6 +25,7 @@ export function BrfReportUpload({
   successMessage?: string;
   tone?: "report" | "admin";
 }) {
+  const t = useTranslations("brf.analysis.upload");
   const router = useRouter();
   const inputRef = useRef<HTMLInputElement>(null);
   const [uploading, setUploading] = useState(false);
@@ -62,7 +64,7 @@ export function BrfReportUpload({
           disabled={uploading}
           className="shrink-0 rounded-sm border border-[#12271D]/20 bg-white px-3.5 py-1.5 text-xs font-semibold text-[#12271D] transition hover:bg-[#12271D]/5 disabled:cursor-not-allowed disabled:opacity-50"
         >
-          {uploading ? "Laddar upp…" : "Ladda upp årsredovisning"}
+          {uploading ? t("uploading") : t("button")}
         </button>
       </div>
       <input
@@ -77,9 +79,9 @@ export function BrfReportUpload({
         }}
       />
       {uploading && (
-        <p className="mt-2 text-xs text-[#5B5648]">Vi läser in dokumentet — det kan ta upp till en minut för en inskannad rapport.</p>
+        <p className="mt-2 text-xs text-[#5B5648]">{t("reading")}</p>
       )}
-      {done && <p className="mt-2 text-xs font-medium text-[#3D6A49]">{successMessage}</p>}
+      {done && <p className="mt-2 text-xs font-medium text-[#3D6A49]">{successMessage ?? t("success")}</p>}
       {error && <p className="mt-2 text-xs text-[#A2432F]">{error}</p>}
     </div>
   );

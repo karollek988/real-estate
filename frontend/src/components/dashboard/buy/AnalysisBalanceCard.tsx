@@ -1,7 +1,8 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import Link from "next/link";
+import { useTranslations } from "next-intl";
+import { Link } from "@/i18n/navigation";
 import { ArrowRightIcon, BuildingIcon, MapPinIcon, WalletIcon } from "@/components/icons";
 import { useAuth } from "@/lib/auth/AuthProvider";
 import { isDevAdmin } from "@/lib/auth/devAdmin";
@@ -44,6 +45,7 @@ function Row({
 }
 
 export function AnalysisBalanceCard({ showBuyLink = true }: { showBuyLink?: boolean }) {
+  const t = useTranslations("balance");
   const { user, loading: authLoading } = useAuth();
   const devAdmin = isDevAdmin(user?.email);
   const [summary, setSummary] = useState<Summary | null>(null);
@@ -70,34 +72,34 @@ export function AnalysisBalanceCard({ showBuyLink = true }: { showBuyLink?: bool
   return (
     <div className="rounded-2xl border border-white/10 bg-[#0F1417]/85 p-5 backdrop-blur-xl">
       <div className="flex items-center justify-between">
-        <span className="text-sm font-semibold text-white">Ditt saldo</span>
+        <span className="text-sm font-semibold text-white">{t("title")}</span>
         <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-green-400/10 text-green-400">
           <WalletIcon className="h-[18px] w-[18px]" />
         </span>
       </div>
 
       {signedOut ? (
-        <p className="mt-4 text-sm text-neutral-400">Logga in för att se ditt saldo.</p>
+        <p className="mt-4 text-sm text-neutral-400">{t("signedOut")}</p>
       ) : (
         <>
-          {devAdmin && <p className="mt-2 text-xs font-medium text-amber-300">Obegränsat · Dev account</p>}
+          {devAdmin && <p className="mt-2 text-xs font-medium text-amber-300">{t("unlimited")}</p>}
 
-          <p className="mt-4 text-xs font-semibold uppercase tracking-wide text-neutral-500">Kvar att använda</p>
+          <p className="mt-4 text-xs font-semibold uppercase tracking-wide text-neutral-500">{t("remaining")}</p>
           <div className="divide-y divide-white/5">
             <Row
               icon={<BuildingIcon />}
-              label="Trygghetspaket"
-              hint="BRF, område och dolda kostnader för en bostad"
+              label={t("full.label")}
+              hint={t("full.hint")}
               value={num(summary?.credits.full)}
             />
-            <Row icon={<MapPinIcon />} label="Områdesanalyser" value={num(summary?.credits.area)} />
+            <Row icon={<MapPinIcon />} label={t("areaCredits")} value={num(summary?.credits.area)} />
           </div>
 
-          <p className="mt-4 text-xs font-semibold uppercase tracking-wide text-neutral-500">Dina analyser</p>
+          <p className="mt-4 text-xs font-semibold uppercase tracking-wide text-neutral-500">{t("yours")}</p>
           <div className="divide-y divide-white/5">
-            <Row icon={<BuildingIcon />} label="BRF-analyser" value={String(summary?.analyses.brf ?? "—")} />
-            <Row icon={<MapPinIcon />} label="Områdesanalyser" value={String(summary?.analyses.area ?? "—")} />
-            <Row icon={<WalletIcon />} label="Dolda kostnader" value={String(summary?.analyses.hiddenCosts ?? "—")} />
+            <Row icon={<BuildingIcon />} label={t("brf")} value={String(summary?.analyses.brf ?? "—")} />
+            <Row icon={<MapPinIcon />} label={t("area")} value={String(summary?.analyses.area ?? "—")} />
+            <Row icon={<WalletIcon />} label={t("hiddenCosts")} value={String(summary?.analyses.hiddenCosts ?? "—")} />
           </div>
 
           {showBuyLink && (
@@ -105,7 +107,7 @@ export function AnalysisBalanceCard({ showBuyLink = true }: { showBuyLink?: bool
               href="/buy"
               className="mt-4 flex items-center gap-1 text-sm font-medium text-green-400 transition hover:text-green-300"
             >
-              Köp fler analyser
+              {t("buyMore")}
               <ArrowRightIcon className="h-3.5 w-3.5" />
             </Link>
           )}
