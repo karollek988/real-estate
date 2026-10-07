@@ -1,10 +1,11 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { CONTENT_IMAGES, findContentImage } from "@/lib/content/images";
+import type { UploadedImage } from "@/lib/content/imageUpload";
 import {
   CONTENT_CATEGORIES,
   CONTENT_TYPE_LABELS,
@@ -73,8 +74,9 @@ function Counter({ value, max }: { value: string | null; max: number }) {
 /**
  * The content editor (/admin/content/new, /admin/content/:id): one form for a
  * guide, insight or news item. Text is Markdown (the subset in
- * lib/content/markdown.ts); pictures come from lib/content/images.ts. Saving
- * keeps a draft private; publishing puts it on the site within seconds.
+ * lib/content/markdown.ts); pictures are the site's own (lib/content/images.ts)
+ * or uploaded here (lib/content/imageUpload.ts). Saving keeps a draft private;
+ * publishing puts it on the site within seconds; a draft can be deleted.
  */
 export function ContentEditor({ item }: { item?: ContentItem }) {
   const router = useRouter();
@@ -84,6 +86,24 @@ export function ContentEditor({ item }: { item?: ContentItem }) {
   const [busy, setBusy] = useState<Action | null>(null);
   const [errors, setErrors] = useState<string[]>([]);
   const [notice, setNotice] = useState<string | null>(null);
+  const [uploaded, setUploaded] = useState<UploadedImage[]>([]);
+  const [uploading, setUploading] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+  const altRef = useRef<HTMLInputElement>(null);
+
+  // The pictures uploaded earlier, for the picker.
+  useEffect(() => {
+    let cancelled = false;
+    fetch("/api/admin/content/images")
+      .then((res) => (res.ok ? res.json() : { images: [] }))
+      .then((data) => {
+        if (!cancelled && Array.isArray(data.images)) setUploaded(data.images);
+      })
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   const estimate = useMemo(() => readingMinutesFor(input.body), [input.body]);
   const published = saved?.status === "published";
@@ -127,7 +147,54 @@ export function ContentEditor({ item }: { item?: ContentItem }) {
     }
   }
 
-  const coverImage = findContentImage(input.coverImage);
+  async function upload(file: File) {
+    setUploading(true);
+    setErrors([]);
+    setNotice(null);
+    try {
+      const form = new FormData();
+      form.append("file", file);
+      const res = await fetch("/api/admin/content/images", { method: "POST", body: form });
+      const data = await res.json().catch(() => null);
+      if (!res.ok) {
+        setErrors([data?.error?.message ?? "Bilden kunde inte laddas upp."]);
+        return;
+      }
+      const image: UploadedImage = data.image;
+      setUploaded((current) => [image, ...current]);
+      // A new picture needs its own description: clear the old one and ask for it.
+      setInput((current) => ({ ...current, coverImage: image.src, coverImageAlt: "" }));
+      setNotice("Bilden är uppladdad. Skriv en bildbeskrivning (alt-text) för den.");
+      requestAnimationFrame(() => altRef.current?.focus());
+    } catch {
+      setErrors(["Kunde inte nå servern. Kontrollera anslutningen och försök igen."]);
+    } finally {
+      setUploading(false);
+    }
+  }
+
+  async function removeDraft() {
+    if (!saved || !window.confirm(`Ta bort utkastet "${saved.title}" för gott? Det går inte att ångra.`)) return;
+    setDeleting(true);
+    setErrors([]);
+    try {
+      const res = await fetch(`/api/admin/content/${saved.id}`, { method: "DELETE" });
+      if (!res.ok) {
+        const data = await res.json().catch(() => null);
+        setErrors([data?.error?.message ?? "Utkastet kunde inte tas bort."]);
+        return;
+      }
+      router.replace("/admin/content");
+      router.refresh();
+    } catch {
+      setErrors(["Kunde inte nå servern. Kontrollera anslutningen och försök igen."]);
+    } finally {
+      setDeleting(false);
+    }
+  }
+
+  const pickable = [...uploaded.map((image) => ({ ...image, alt: "" })), ...CONTENT_IMAGES];
+  const coverImage = pickable.find((image) => image.src === input.coverImage);
 
   return (
     <form
@@ -169,6 +236,16 @@ export function ContentEditor({ item }: { item?: ContentItem }) {
           >
             {busy === "save" ? "Sparar…" : published ? "Spara ändringar" : "Spara utkast"}
           </button>
+          {saved && !published && (
+            <button
+              type="button"
+              disabled={busy !== null || deleting}
+              onClick={() => void removeDraft()}
+              className="rounded-lg px-3 py-2 text-sm font-semibold text-red-800 hover:bg-red-50 disabled:opacity-60"
+            >
+              {deleting ? "Tar bort…" : "Ta bort utkast"}
+            </button>
+          )}
           {published ? (
             <button
               type="button"
@@ -362,7 +439,7 @@ export function ContentEditor({ item }: { item?: ContentItem }) {
               >
                 Ingen bild
               </button>
-              {CONTENT_IMAGES.map((image) => (
+              {pickable.map((image) => (
                 <button
                   key={image.src}
                   type="button"
@@ -383,7 +460,26 @@ export function ContentEditor({ item }: { item?: ContentItem }) {
                 </button>
               ))}
             </div>
-            {coverImage && <p className="text-xs text-neutral-500">{coverImage.label}</p>}
+            <label
+              className={`flex cursor-pointer items-center justify-center gap-2 rounded-md border border-dashed border-[#12271D]/40 px-3 py-2.5 text-sm font-semibold text-[#12271D] hover:bg-[#12271D]/[0.04] focus-within:ring-2 focus-within:ring-[#12271D]/30 ${
+                uploading ? "pointer-events-none opacity-60" : ""
+              }`}
+            >
+              {uploading ? "Laddar upp…" : "Ladda upp bild"}
+              <input
+                type="file"
+                accept="image/jpeg,image/png,image/webp,image/avif"
+                className="sr-only"
+                disabled={uploading}
+                onChange={(e) => {
+                  const file = e.target.files?.[0];
+                  e.target.value = "";
+                  if (file) void upload(file);
+                }}
+              />
+            </label>
+            <p className="text-xs text-neutral-500">JPEG, PNG, WebP eller AVIF, högst 12 MB. Bilden förminskas och platsdata (EXIF) tas bort.</p>
+            {coverImage && <p className="text-xs text-neutral-500">Vald: {coverImage.label}</p>}
             <div>
               <div className="flex items-baseline justify-between">
                 <label htmlFor="ce-alt" className={LABEL}>
@@ -391,7 +487,7 @@ export function ContentEditor({ item }: { item?: ContentItem }) {
                 </label>
                 <Counter value={input.coverImageAlt} max={LIMITS.coverImageAlt} />
               </div>
-              <input id="ce-alt" className={`${FIELD} mt-1.5`} value={input.coverImageAlt} onChange={(e) => set("coverImageAlt", e.target.value)} />
+              <input id="ce-alt" ref={altRef} className={`${FIELD} mt-1.5`} value={input.coverImageAlt} onChange={(e) => set("coverImageAlt", e.target.value)} />
               <p className={HINT}>Vad bilden visar, för den som inte ser den.</p>
             </div>
           </fieldset>
@@ -448,7 +544,7 @@ export function ContentEditor({ item }: { item?: ContentItem }) {
               </label>
               <select id="ce-social" className={`${FIELD} mt-1.5`} value={input.socialImage ?? ""} onChange={(e) => set("socialImage", e.target.value || null)}>
                 <option value="">Samma som bilden</option>
-                {CONTENT_IMAGES.map((image) => (
+                {pickable.map((image) => (
                   <option key={image.src} value={image.src}>
                     {image.label}
                   </option>

@@ -1,12 +1,17 @@
 // Standalone verification for the Kunskap content system (lib/content): the
 // Markdown subset (no HTML or unsafe links can get through), slugs, reading
-// time, the editor's validation, row mapping and the demo-content switch that
-// must never turn on in production. No test framework in this project (see the
+// time, which pictures an item may use, the upload pipeline (type sniffing,
+// EXIF removal, scaling, bombs), the editor's validation, row mapping and the
+// demo-content switch that must never turn on in production. No test framework in this project (see the
 // other *.verify.mjs). Run with:
 //   npx tsx src/lib/content/content.verify.mjs
 import { inlineText, isSafeHref, parseInline, parseMarkdown, tableOfContents } from "./markdown.ts";
 import { formatContentDate, readingMinutesFor, slugify } from "./model.ts";
-import { isLocalImagePath } from "./images.ts";
+// The uploaded-picture prefix is read from this variable; a made-up project for the checks.
+process.env.NEXT_PUBLIC_SUPABASE_URL = "https://abcdefgh.supabase.co";
+import sharp from "sharp";
+import { absoluteImageUrl, isAllowedImage, isLocalImagePath, isUploadedImageUrl } from "./images.ts";
+import { ImageUploadError, prepareImage, sniffImageType, storedImageName } from "./imageUpload.ts";
 import { validateContentInput } from "./validate.ts";
 import { rowToItem, inputToColumns } from "./rows.ts";
 import { contentDemoEnabled, demoContent } from "./demo.ts";
@@ -95,6 +100,58 @@ for (const bad of ["https://evil.example/x.jpg", "//evil.example/x.jpg", "/image
   check(`image path "${bad}" is refused`, !isLocalImagePath(bad));
 }
 
+const BUCKET = "https://abcdefgh.supabase.co/storage/v1/object/public/content-images/";
+check("an upload in our own bucket is allowed", isAllowedImage(`${BUCKET}2026-10-07-strandvagen-3f9a1c2b.webp`));
+for (const bad of [
+  "https://otherproject.supabase.co/storage/v1/object/public/content-images/x.webp",
+  `${BUCKET}folder/x.webp`,
+  `${BUCKET}../x.webp`,
+  `${BUCKET}x.svg`,
+  "https://abcdefgh.supabase.co/storage/v1/object/public/inspection-files/x.webp",
+]) {
+  check(`upload address "${bad.replace(BUCKET, "<bucket>/")}" is refused`, !isUploadedImageUrl(bad) && !isAllowedImage(bad));
+}
+check("absolute image URLs: uploads stay, site files get the site", absoluteImageUrl(`${BUCKET}a.webp`, "https://kopanalys.se") === `${BUCKET}a.webp` && absoluteImageUrl("/images/a.jpg", "https://kopanalys.se") === "https://kopanalys.se/images/a.jpg");
+
+// --- Upload pipeline -------------------------------------------------------
+
+const jpeg = await sharp({ create: { width: 3200, height: 2000, channels: 3, background: "#2a7854" } })
+  .jpeg()
+  .withExif({ IFD0: { Artist: "Hemlig fotograf" }, GPS: { GPSLatitudeRef: "N", GPSLatitude: "59/1 19/1 0/1" } })
+  .toBuffer();
+check("test JPEG really carries EXIF", Boolean((await sharp(jpeg).metadata()).exif));
+check("sniff: JPEG", sniffImageType(jpeg) === "jpeg");
+check("sniff: PNG", sniffImageType(await sharp({ create: { width: 2, height: 2, channels: 3, background: "#fff" } }).png().toBuffer()) === "png");
+check("sniff: WebP", sniffImageType(await sharp({ create: { width: 2, height: 2, channels: 3, background: "#fff" } }).webp().toBuffer()) === "webp");
+check("sniff: SVG/HTML/PDF are not pictures", ["<svg xmlns='http://www.w3.org/2000/svg'/>", "<html><script>alert(1)</script>", "%PDF-1.7"].every((t) => sniffImageType(new TextEncoder().encode(t)) === null));
+
+const prepared = await prepareImage(jpeg);
+const meta = await sharp(prepared.data).metadata();
+check("upload becomes WebP", meta.format === "webp", meta.format);
+check("upload is scaled to at most 2400 px wide", prepared.width === 2400 && meta.width === 2400, prepared.width);
+check("EXIF (camera, GPS) is removed", !meta.exif && !meta.icc && !meta.xmp, { exif: Boolean(meta.exif) });
+const small = await prepareImage(await sharp({ create: { width: 800, height: 600, channels: 3, background: "#fff" } }).png().toBuffer());
+check("small pictures are not enlarged", small.width === 800);
+
+async function rejects(bytes, code) {
+  try {
+    await prepareImage(bytes);
+    return false;
+  } catch (err) {
+    return err instanceof ImageUploadError && err.code === code;
+  }
+}
+check("a text file renamed .jpg is refused", await rejects(new TextEncoder().encode("hello, not a picture"), "unsupported_type"));
+check("a broken JPEG is refused", await rejects(Uint8Array.from([0xff, 0xd8, 0xff, 0xe0, 1, 2, 3, 4, 5]), "unreadable"));
+check("more than 12 MB is refused", await rejects(new Uint8Array(12 * 1024 * 1024 + 1).fill(0xff), "too_large"));
+const bomb = await sharp({ create: { width: 10000, height: 10000, channels: 3, background: "#000" } }).png({ compressionLevel: 9 }).toBuffer();
+check("a decompression bomb (100 megapixels in a small file) is refused", bomb.length < 12 * 1024 * 1024 && (await rejects(bomb, "unreadable")), bomb.length);
+
+const stored = storedImageName("Strandvägen i solsken.JPG", new Date("2026-10-07T10:00:00Z"));
+check("stored name: date, slug of the original name, random part, .webp", /^2026-10-07-strandvagen-i-solsken-[0-9a-f]{8}\.webp$/.test(stored) && isUploadedImageUrl(`${BUCKET}${stored}`), stored);
+check("stored names never collide", storedImageName("a.jpg") !== storedImageName("a.jpg"));
+check("a name of only symbols becomes 'bild'", /^\d{4}-\d{2}-\d{2}-bild-[0-9a-f]{8}\.webp$/.test(storedImageName("???.png")));
+
 // --- Validation ---------------------------------------------------------
 
 const good = {
@@ -114,6 +171,7 @@ const good = {
   canonicalUrl: "",
   socialImage: "",
 };
+check("an uploaded cover picture validates", validateContentInput({ ...good, coverImage: `${BUCKET}2026-10-07-x-3f9a1c2b.webp` }, { publishing: true }).ok);
 const ok = validateContentInput(good, { publishing: true });
 check("a complete guide validates for publishing", ok.ok, ok);
 check("empty optional fields become null, author defaults to Köpanalys", ok.ok && ok.value.seoTitle === null && ok.value.readingMinutes === null && ok.value.authorName === "Köpanalys", ok);
@@ -130,6 +188,7 @@ const bad = [
   [{ title: "x" }, "too short title"],
   [{ category: "okand" }, "unknown category"],
   [{ coverImage: "https://evil.example/x.jpg" }, "remote cover image"],
+  [{ coverImage: "https://otherproject.supabase.co/storage/v1/object/public/content-images/x.webp" }, "another project's bucket"],
   [{ socialImage: "javascript:x" }, "bad social image"],
   [{ canonicalUrl: "http://kopanalys.se/x" }, "non-https canonical"],
   [{ canonicalUrl: "javascript:alert(1)" }, "script canonical"],

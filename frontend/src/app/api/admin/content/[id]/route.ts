@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
+import { isSameOriginRequest } from "@/lib/admin/requestGuards";
 import { requireAdmin } from "@/lib/auth/admin";
-import { getContentById, updateContent } from "@/lib/content/adminStore";
+import { deleteDraft, getContentById, updateContent } from "@/lib/content/adminStore";
 import { errorResponse, readEditorRequest, storeErrorResponse } from "@/lib/content/editorRequest";
 import { validateContentInput } from "@/lib/content/validate";
 
@@ -36,6 +37,23 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
 
     const item = await updateContent(existing, result.value, status, user.id);
     return NextResponse.json({ item, warnings: result.warnings });
+  } catch (err) {
+    return storeErrorResponse(err);
+  }
+}
+
+/** DELETE /api/admin/content/:id - removes a draft for good (admins only). A published item must be unpublished first. */
+export async function DELETE(request: Request, { params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params;
+  const { response } = await requireAdmin();
+  if (response) return response;
+  if (!isSameOriginRequest(request)) return errorResponse(403, "forbidden", "Begäran måste komma från sajten själv.");
+
+  try {
+    const existing = await getContentById(id);
+    if (!existing) return errorResponse(404, "not_found", "Innehållet finns inte.");
+    await deleteDraft(existing);
+    return NextResponse.json({ deleted: true });
   } catch (err) {
     return storeErrorResponse(err);
   }

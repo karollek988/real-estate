@@ -13,7 +13,7 @@ import { inputToColumns, LIST_COLUMNS, PAGE_COLUMNS, rowToItem, type ContentRow 
 
 export class ContentStoreError extends Error {
   constructor(
-    readonly code: "not_found" | "slug_taken" | "missing_table" | "database",
+    readonly code: "not_found" | "not_draft" | "slug_taken" | "missing_table" | "database",
     message: string,
   ) {
     super(message);
@@ -101,4 +101,12 @@ function revalidateContent(item: ContentItem, before?: ContentItem) {
     revalidatePath(contentHref(before));
   }
   revalidatePath("/sitemap.xml");
+}
+
+/** Deletes a draft for good. Published items are taken off the site first (unpublish), so nothing live disappears by mistake. */
+export async function deleteDraft(existing: ContentItem): Promise<void> {
+  if (existing.status !== "draft") throw new ContentStoreError("not_draft", "Avpublicera innan du tar bort.");
+  const { error } = await createAdminClient().from("content_items").delete().eq("id", existing.id).eq("status", "draft");
+  if (error) throw toStoreError(error);
+  revalidateContent(existing);
 }

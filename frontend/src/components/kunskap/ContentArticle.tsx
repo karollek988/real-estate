@@ -5,6 +5,7 @@ import { LANDING_CONTAINER } from "@/components/landing/container";
 import { Breadcrumbs, type Crumb } from "@/components/site/Breadcrumbs";
 import { ROUTES } from "@/components/site/navigation";
 import { handwriting } from "@/lib/fonts";
+import { absoluteImageUrl } from "@/lib/content/images";
 import { parseMarkdown, tableOfContents } from "@/lib/content/markdown";
 import { CONTENT_TYPE_LABELS, findCategory, formatContentDate, type ContentItem } from "@/lib/content/model";
 import { CONTENT_BASE_PATHS, categoryHref, contentHref, siteUrl } from "@/lib/content/paths";
@@ -210,7 +211,7 @@ function ArticleJsonLd({ item, crumbs }: { item: ContentItem; crumbs: Crumb[] })
         "@type": item.type === "news" ? "NewsArticle" : "Article",
         headline: item.title,
         description: item.seoDescription ?? item.excerpt,
-        ...(image ? { image: [`${site}${image}`] } : {}),
+        ...(image ? { image: [absoluteImageUrl(image, site)] } : {}),
         datePublished: item.publishedAt,
         dateModified: item.updatedAt,
         inLanguage: "sv-SE",

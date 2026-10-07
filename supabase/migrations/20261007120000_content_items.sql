@@ -15,7 +15,14 @@
 --   * Nobody but the service role may WRITE. The editor's API routes use the
 --     service role after checking that the signed-in user is a Köpanalys admin
 --     (frontend/src/lib/auth/admin.ts, KOPANALYS_ADMIN_EMAILS) - the same model
---     as the BRF review console.
+--     as the BRF review console. Only drafts are ever deleted (the editor asks
+--     for an item to be unpublished first).
+--
+-- Pictures: an item's picture is either one of the site's own files ("/images/...")
+-- or a picture uploaded from the editor into the public Storage bucket
+-- "content-images" (created below). Uploads are re-encoded on the server and
+-- written with the service role; there are no Storage policies for anyone else,
+-- so the public can read a picture by its address but not list or write the bucket.
 --
 -- Nothing is deleted here, and no existing table changes.
 
@@ -28,8 +35,10 @@ create table if not exists public.content_items (
   body text not null default '' check (char_length(body) <= 100000),
   -- One of the Bostadsguiden subjects (frontend/src/lib/content/model.ts).
   category text check (category in ('kopa-bostad', 'brf-ekonomi', 'omraden', 'risker', 'kostnader')),
-  -- A picture served by the site itself ("/images/..."), never another host.
-  cover_image text check (cover_image ~ '^/[A-Za-z0-9/_.-]+\.(jpe?g|png|webp|avif)$' and cover_image !~ '\.\.'),
+  -- A picture served by the site itself ("/images/...") or uploaded to a
+  -- Supabase bucket "content-images" (hosted, or the local stack in development) -
+  -- the site checks it is this project's own bucket.
+  cover_image text check ((cover_image ~ '^/[A-Za-z0-9/_.-]+\.(jpe?g|png|webp|avif)$' or cover_image ~ '^(https://[a-z0-9-]+\.supabase\.co|http://(127\.0\.0\.1|localhost):[0-9]+)/storage/v1/object/public/content-images/[A-Za-z0-9_.-]+\.(jpe?g|png|webp|avif)$') and cover_image !~ '\.\.'),
   cover_image_alt text not null default '' check (char_length(cover_image_alt) <= 200),
   author_name text not null default 'Köpanalys' check (char_length(author_name) between 1 and 80),
   reading_minutes integer check (reading_minutes between 1 and 120),
@@ -41,7 +50,7 @@ create table if not exists public.content_items (
   seo_title text check (char_length(seo_title) <= 70),
   seo_description text check (char_length(seo_description) <= 170),
   canonical_url text check (canonical_url ~ '^https://' and char_length(canonical_url) <= 300),
-  social_image text check (social_image ~ '^/[A-Za-z0-9/_.-]+\.(jpe?g|png|webp|avif)$' and social_image !~ '\.\.'),
+  social_image text check ((social_image ~ '^/[A-Za-z0-9/_.-]+\.(jpe?g|png|webp|avif)$' or social_image ~ '^(https://[a-z0-9-]+\.supabase\.co|http://(127\.0\.0\.1|localhost):[0-9]+)/storage/v1/object/public/content-images/[A-Za-z0-9_.-]+\.(jpe?g|png|webp|avif)$') and social_image !~ '\.\.'),
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now(),
   created_by uuid references auth.users (id) on delete set null,
@@ -70,10 +79,16 @@ grant select (
   reading_minutes, status, featured, published_at, updated_at, seo_title, seo_description,
   canonical_url, social_image
 ) on public.content_items to anon, authenticated;
-grant select, insert, update on public.content_items to service_role;
+grant select, insert, update, delete on public.content_items to service_role;
 
 drop policy if exists "Published content is readable by everyone" on public.content_items;
 create policy "Published content is readable by everyone"
   on public.content_items for select
   to anon, authenticated
   using (status = 'published' and published_at <= now());
+
+-- Uploaded pictures: public read by address, at most 5 MB, WebP only (the server
+-- re-encodes every upload to WebP before storing it).
+insert into storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
+values ('content-images', 'content-images', true, 5242880, array['image/webp'])
+on conflict (id) do nothing;

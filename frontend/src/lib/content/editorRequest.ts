@@ -28,7 +28,7 @@ export async function readEditorRequest(request: Request): Promise<{ action: unk
 
 export function storeErrorResponse(err: unknown) {
   if (err instanceof ContentStoreError) {
-    const status = err.code === "not_found" ? 404 : err.code === "slug_taken" ? 409 : err.code === "missing_table" ? 503 : 500;
+    const status = { not_found: 404, not_draft: 409, slug_taken: 409, missing_table: 503, database: 500 }[err.code];
     return errorResponse(status, err.code, err.message);
   }
   console.error("Content editor request failed:", err);

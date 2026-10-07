@@ -1,4 +1,4 @@
-import { isLocalImagePath } from "./images";
+import { isAllowedImage } from "./images";
 import { CONTENT_TYPES, isCategorySlug, type ContentInput, type ContentType } from "./model";
 
 /**
@@ -68,7 +68,7 @@ export function validateContentInput(input: unknown, { publishing }: { publishin
   if (publishing && type === "guide" && !category) errors.push("Välj en kategori innan du publicerar guiden.");
 
   const coverImage = optionalText(raw, "coverImage");
-  if (coverImage && !isLocalImagePath(coverImage)) errors.push("Bilden måste ligga på sajten (en sökväg som börjar med /images/).");
+  if (coverImage && !isAllowedImage(coverImage)) errors.push("Välj bilden i bildväljaren (en av sajtens egna eller en uppladdad).");
   const coverImageAlt = text(raw, "coverImageAlt");
   if (coverImageAlt.length > LIMITS.coverImageAlt) errors.push(`Alt-texten får vara högst ${LIMITS.coverImageAlt} tecken.`);
   if (publishing && coverImage && coverImageAlt.length < 5) errors.push("Beskriv bilden (alt-text) innan du publicerar – den läses upp för den som inte ser bilden.");
@@ -101,7 +101,7 @@ export function validateContentInput(input: unknown, { publishing }: { publishin
   }
 
   const socialImage = optionalText(raw, "socialImage");
-  if (socialImage && !isLocalImagePath(socialImage)) errors.push("Delningsbilden måste ligga på sajten (en sökväg som börjar med /images/).");
+  if (socialImage && !isAllowedImage(socialImage)) errors.push("Välj delningsbilden i listan (en av sajtens egna eller en uppladdad).");
 
   if (errors.length > 0) return { ok: false, errors };
   return {
