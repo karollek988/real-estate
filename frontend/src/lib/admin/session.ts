@@ -7,8 +7,8 @@
  * changing the admin password invalidates every existing session at once.
  * The signing key must come from a secret that is NOT in the repository:
  * ADMIN_SESSION_SECRET, or - if that is unset - a key derived (HKDF, domain
- * separated) from SUPABASE_SERVICE_ROLE_KEY. Without either, sessions cannot
- * be issued or accepted in production (fails closed).
+ * separated) from SUPABASE_SERVICE_ROLE_KEY. Without either - or without
+ * ADMIN_PASSWORD_HASH - sessions cannot be issued or accepted (fails closed).
  */
 import { createHash, createHmac, hkdfSync, randomBytes, timingSafeEqual } from "node:crypto";
 import { getAdminPasswordHash } from "./credentials";
@@ -54,20 +54,18 @@ export function getSessionKey(): Buffer | null {
   return null;
 }
 
-function passwordFingerprint(): string {
-  return createHash("sha256").update(getAdminPasswordHash()).digest("hex").slice(0, 16);
-}
-
-function sign(key: Buffer, payload: string): Buffer {
-  return createHmac("sha256", key).update(`${payload}.${passwordFingerprint()}`).digest();
+function sign(key: Buffer, payload: string, passwordHash: string): Buffer {
+  const passwordFingerprint = createHash("sha256").update(passwordHash).digest("hex").slice(0, 16);
+  return createHmac("sha256", key).update(`${payload}.${passwordFingerprint}`).digest();
 }
 
 export function createSessionToken(nowMs: number = Date.now()): string | null {
   const key = getSessionKey();
-  if (!key) return null;
+  const passwordHash = getAdminPasswordHash();
+  if (!key || !passwordHash) return null;
   const expires = Math.floor(nowMs / 1000) + SESSION_TTL_SECONDS;
   const payload = `${TOKEN_VERSION}.${expires}.${randomBytes(16).toString("base64url")}`;
-  return `${payload}.${sign(key, payload).toString("base64url")}`;
+  return `${payload}.${sign(key, payload, passwordHash).toString("base64url")}`;
 }
 
 export function verifySessionToken(token: string | null | undefined, nowMs: number = Date.now()): boolean {
@@ -84,8 +82,9 @@ export function verifySessionToken(token: string | null | undefined, nowMs: numb
   if (expires <= nowSeconds || expires > nowSeconds + SESSION_TTL_SECONDS + 60) return false;
 
   const key = getSessionKey();
-  if (!key) return false;
-  const expected = sign(key, `${TOKEN_VERSION}.${expiresRaw}.${nonce}`);
+  const passwordHash = getAdminPasswordHash();
+  if (!key || !passwordHash) return false;
+  const expected = sign(key, `${TOKEN_VERSION}.${expiresRaw}.${nonce}`, passwordHash);
   const provided = Buffer.from(signature, "base64url");
   return provided.length === expected.length && timingSafeEqual(provided, expected);
 }

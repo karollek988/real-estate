@@ -4,10 +4,6 @@
 //
 // Run with:
 //   npx tsx src/lib/admin/admin.verify.mjs
-//
-// Optional: confirm the hash built into credentials.ts matches the password
-// you believe it is, without storing that password anywhere:
-//   ADMIN_VERIFY_DEFAULT_PASSWORD='<password>' npx tsx src/lib/admin/admin.verify.mjs
 import { randomBytes } from "node:crypto";
 import { NextRequest } from "next/server";
 import { POST as loginPost } from "../../app/api/admin-portal/login/route.ts";
@@ -91,12 +87,12 @@ check("username + password accepted", await verifyAdminLogin(ADMIN_USERNAME, thr
 check("wrong username rejected even with right password", await verifyAdminLogin("root", throwawayPassword), false);
 check("wrong password rejected", await verifyAdminLogin(ADMIN_USERNAME, "nope"), false);
 delete process.env.ADMIN_PASSWORD_HASH;
-check("built-in hash is a valid scrypt hash", getAdminPasswordHash().startsWith("scrypt:"), true);
-if (process.env.ADMIN_VERIFY_DEFAULT_PASSWORD) {
-  check("built-in hash matches ADMIN_VERIFY_DEFAULT_PASSWORD", await verifyPassword(process.env.ADMIN_VERIFY_DEFAULT_PASSWORD, getAdminPasswordHash()), true);
-} else {
-  console.log("SKIP - built-in hash vs real password (set ADMIN_VERIFY_DEFAULT_PASSWORD to run)");
-}
+check("no ADMIN_PASSWORD_HASH: there is no built-in fallback", getAdminPasswordHash(), null);
+check(
+  "no ADMIN_PASSWORD_HASH: login is a configuration error (fails closed)",
+  await rejects(verifyAdminLogin(ADMIN_USERNAME, throwawayPassword), InvalidPasswordHashError),
+  "rejected as expected"
+);
 
 // --- session tokens -----------------------------------------------------------
 process.env.ADMIN_PASSWORD_HASH = hash;
@@ -107,6 +103,9 @@ check("token issued when a secret is configured", typeof token, "string");
 check("fresh token verifies", verifySessionToken(token, now), true);
 check("token still valid just before expiry", verifySessionToken(token, now + (SESSION_TTL_SECONDS - 5) * 1000), true);
 check("token expired after the TTL", verifySessionToken(token, now + (SESSION_TTL_SECONDS + 5) * 1000), false);
+delete process.env.ADMIN_PASSWORD_HASH;
+check("no ADMIN_PASSWORD_HASH: no token is issued and none verifies", [createSessionToken(now), verifySessionToken(token, now)], [null, false]);
+process.env.ADMIN_PASSWORD_HASH = hash;
 const [v, exp, nonce, sig] = token.split(".");
 check("tampered expiry rejected", verifySessionToken([v, String(Number(exp) + 3600), nonce, sig].join("."), now), false);
 // A signature is 32 bytes = 43 base64url characters, and the last one carries only 4 meaningful bits: swapping it for a neighbour
@@ -230,6 +229,7 @@ check("the response is never cacheable", goodLogin.headers.get("cache-control"),
     return [res.status, (await bodyOf(res)).error ?? "ok"];
   };
   check("production without any session secret: login 503 not_configured", await outcome({ NODE_ENV: "production", ADMIN_PASSWORD_HASH: hash }), [503, "not_configured"]);
+  check("production without ADMIN_PASSWORD_HASH: login 503 not_configured", await outcome({ NODE_ENV: "production", ADMIN_SESSION_SECRET: secret }), [503, "not_configured"]);
   check("a garbage ADMIN_PASSWORD_HASH: login 503 not_configured", await outcome({ NODE_ENV: "production", ADMIN_SESSION_SECRET: secret, ADMIN_PASSWORD_HASH: "garbage" }), [503, "not_configured"]);
   check("production with the secret and a real hash: login works", await outcome({ NODE_ENV: "production", ADMIN_SESSION_SECRET: secret, ADMIN_PASSWORD_HASH: hash }), [200, "ok"]);
   resetEnv();

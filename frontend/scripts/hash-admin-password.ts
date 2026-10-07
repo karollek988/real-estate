@@ -5,10 +5,10 @@
  * Interactive (hidden prompt):   npm run admin:hash
  * From stdin (no TTY needed):    printf '%s' "$PASSWORD" | npm run admin:hash --silent
  *
- * Prints the hash on stdout (everything else goes to stderr). To rotate the
- * password, set the printed value as ADMIN_PASSWORD_HASH in the deployment's
- * environment; it takes precedence over the hash built into the code and
- * signs every existing admin session out.
+ * Prints the hash on stdout (everything else goes to stderr). Set the printed
+ * value as ADMIN_PASSWORD_HASH in the deployment's environment (and in
+ * .env.local for `next dev`) - there is no built-in hash, so admin login needs
+ * it. Changing it signs every existing admin session out.
  */
 import { hashPassword } from "../src/lib/admin/password";
 

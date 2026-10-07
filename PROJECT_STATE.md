@@ -12,6 +12,10 @@
   mentions in `docs/47` and `docs/48` are history.
 - Env vars documented: `frontend/.env.example` now also lists `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`,
   `OPENAI_API_KEY` and `NEXT_PUBLIC_DEV_ADMIN_EMAIL`; the Python service has its own `api/.env.example`.
+- **Security (the repo is public).** The Simply.com domain receipt (personal data) and the old admin password were
+  removed, also from the whole git history (rewritten and force-pushed). The admin portal no longer has a built-in
+  password hash: `ADMIN_PASSWORD_HASH` is required wherever admin login should work. A scan of every commit found no
+  API keys or other secrets. Anyone with an older clone must re-clone and must not push old branches.
 
 **Seventeenth session, second round (2026-10-07, at the user's request; pushed to `origin/styleRedesign` → Vercel Preview).**
 - The six AI articles (`lib/kunskap/articles.ts`) were **deleted**.
@@ -1260,9 +1264,10 @@ Everything lives under `frontend/src/lib/admin/`,
   `searchParams?.get(...) ?? null` — type-only, no runtime change. New code that
   uses those hooks needs the same null handling.
 - **Credentials.** Username `admin`. The password is stored **only as a scrypt
-  hash** (N=2^16, r=8, p=2, random salt; `lib/admin/password.ts`) — built into
-  `lib/admin/credentials.ts`, overridable with `ADMIN_PASSWORD_HASH`; create a
-  hash with `npm run admin:hash`. The plaintext is not in any file. Login
+  hash** (N=2^16, r=8, p=2, random salt; `lib/admin/password.ts`), and only in
+  the env var `ADMIN_PASSWORD_HASH` — no hash is built into the code any more
+  (2026-10-08); without the variable, login is disabled (503, fails closed).
+  Create a hash with `npm run admin:hash`. The plaintext is not in any file. Login
   always verifies the password even for a wrong username (no timing/enumeration
   signal), compares in constant time, and caps concurrent scrypt runs per
   instance (memory).
@@ -1289,13 +1294,12 @@ Everything lives under `frontend/src/lib/admin/`,
   lives in `localStorage` of the `admin.kopanalys.se` origin, nothing is
   sent to a server. The port HTML-escapes user/geocoder text and restricts
   link/image URLs (the original interpolated them raw into `innerHTML`).
-- **Known weakness — by request, not by design.** The account uses the
-  password `[redacted]`, which is in every common-password list: anyone who
-  finds `admin.kopanalys.se` can log in on the first try, and the hash (built
-  into the code, so visible to anyone with repo access) offers no protection
-  because it can be dictionary-attacked offline in seconds. Hashing/lockouts
-  only help against leaks and guessing, not against a known-weak password.
-  Rotate it: `npm run admin:hash` → set `ADMIN_PASSWORD_HASH` in Vercel.
+- **Former weakness, fixed 2026-10-08.** The first password was weak and its hash
+  was built into the code of this public repo. Production switched to its own
+  `ADMIN_PASSWORD_HASH` on 2026-10-07; on 2026-10-08 the built-in hash was
+  removed from the code and the old password from the git history. Every
+  environment that needs admin login (Production, Preview, local `next dev`)
+  must now set `ADMIN_PASSWORD_HASH` itself.
 - **Tests.** `npx tsx src/lib/admin/admin.verify.mjs` (70 checks: hashing,
   sessions, throttle, host routing, login/logout handlers; generated
   passwords only). Manually verified on `next dev` and on a production
@@ -1575,9 +1579,9 @@ PASS = actually run and green. FAIL = actually run and red. BLOCKED = not run.
      recommended. If it's missing the session key is derived from
      `SUPABASE_SERVICE_ROLE_KEY` (already set), so login still works; only if
      *neither* exists is login disabled (503 "not configured").
-  3. Optional but advisable: rotate the password (`npm run admin:hash`, set
-     `ADMIN_PASSWORD_HASH`) — see the known weakness in §3g — and add a Vercel
-     Firewall rate-limit rule for `POST /api/admin-portal/login`.
+  3. Required: `ADMIN_PASSWORD_HASH` (`npm run admin:hash`) — there is no
+     built-in hash. Advisable: a Vercel Firewall rate-limit rule for
+     `POST /api/admin-portal/login`.
   4. Deploying changes `frontend/package.json`/lockfile (adds `leaflet`,
      `@types/leaflet`); the lockfile was patched by hand to avoid npm-on-Windows
      dropping the `libc` fields of the Linux native-binary entries, so if you

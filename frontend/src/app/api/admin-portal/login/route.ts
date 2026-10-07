@@ -47,7 +47,7 @@ export async function POST(request: Request): Promise<Response> {
   } catch (error) {
     if (error instanceof VerifierBusyError) return adminJson({ error: "busy" }, 503, { "Retry-After": "2" });
     if (error instanceof InvalidPasswordHashError) {
-      console.error("[admin-portal] Login is disabled: ADMIN_PASSWORD_HASH is not a valid hash -", error.message);
+      console.error("[admin-portal] Login is disabled: ADMIN_PASSWORD_HASH is missing or not a valid hash -", error.message);
       return adminJson({ error: "not_configured" }, 503);
     }
     throw error;
