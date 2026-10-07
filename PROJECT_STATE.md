@@ -5,18 +5,122 @@
 > otherwise leave it alone. Detailed research/product docs live in `docs/`;
 > this file is the "what's actually true right now" summary.
 
-Last updated: 2026-10-07 — Sixteenth session (the Markov simulator's state model and simulator; **not
-committed**). Before it: the fifteenth (admin statistics and visitor counting; pushed as `d225e80`, whether the
-migration has been applied in Supabase is for the user to confirm), the fourteenth (the map page on the master
+Last updated: 2026-10-07 — Sixteenth session (the Markov simulator: state model and simulator, acquisition
+model, measured traffic sources behind a consent cookie, then **revenue/costs, company KPIs and strategies, which
+complete the six-step plan**; **not committed, and the new migration `20261007000000_acquisition_analytics.sql`
+is not applied anywhere**). Before it: the fifteenth (admin
+statistics and visitor counting; pushed as `d225e80`, whether its migration has been applied in Supabase is for the user to confirm), the fourteenth (the map page on the master
 variables) and the thirteenth (admin portal map removed), both on `main`; then the twelfth, eleventh, tenth.
+
+**Sixteenth session, fourth round — revenue and costs, company KPIs, marketing strategies (all six steps of the plan are now built).**
+Design choices by the user: Premium turns into revenue **per purchase with a package mix** (the measured mix from
+the real purchases by default); the costs to include are **payment fees and fixed monthly costs** (ad spend is
+always in); the KPIs are **profit and break-even, cost per new customer by channel, and value of a visitor and a
+customer**; strategies are **named, saved scenarios compared side by side**. Not chosen, so *not in the model*: what
+an analysis costs to produce, running costs of the non-ad channels, return on ad spend as its own KPI — the page says
+so, and the result is therefore before those (too good).
+- **Money (`lib/markov/finance.ts`):** every move into Premium is one purchase of a package (Områdesanalys 99 kr,
+  Trygghetspaketet 499 kr, Tre bostäder 999 kr, prices from `lib/pricing.ts`, **including 25 % VAT**; revenue = price ÷
+  (1 + VAT)). Revenue is booked in the month of the purchase; someone who stays in Premium does not pay again, but one
+  who leaves and re-enters does. Costs per month: payment fee (default 1,5 % of the price paid + 1,80 kr, editable),
+  the ad spend of the acquisition model, fixed costs (default 5 000 kr, an example). Defaults: mix 60/35/5 unless
+  measured. Output: revenue/fees/ads/fixed/costs/profit/cumulative by month, first profitable month, **break-even**
+  (the month the accumulated result is back at ≥ 0 after being below; "start" if never below; none if not reached or
+  nothing sold), per-channel economy (purchases, revenue, fees, ad spend, contribution, **value per 1 000 visitors**
+  from a cohort of that channel alone, ad cost per 1 000 visitors and per purchase), and company KPIs (cost per
+  purchase = ads + fixed ÷ purchases; value per 1 000 visitors and per paying customer = purchases per visitor/customer
+  × net per purchase; margin). `engine.ts` cohorts now return `purchasesPerVisitor`, and `cohortForChannel()` follows
+  one channel alone whatever its volume.
+- **Real purchases (`measured.ts` `purchaseMix`):** the package mix comes from the purchases the statistics page already
+  reads (newest 90 days, at least 10 purchases, shares rounded to 0,1 % that add up to exactly 100 %); the three
+  share boxes then start at it and are marked "uppmätt". The revenue card also compares real purchases per month with
+  what the model says (the model starts from nobody, so month 1 shows ~0).
+- **Strategies (`lib/markov/strategies.ts`, `StrategyPanel.tsx`, `store.ts`):** a strategy is a name plus the typed-in boxes
+  (overrides), so it keeps following new measurements for everything it did not change. Five presets (Nuläge, Mer SEO
+  6 %/mån, Annonser på 20 000 kr, AI-synlighet 15 %/mån, Allt på en gång) that can be loaded and compared, and up to
+  12 of the person's own: save, load (asks first if the boxes have unsaved changes), update, rename, delete.
+  Comparison of up to four (also "Nuvarande rutor"): a table of visitors, premium, purchases, revenue, costs, result,
+  cost per purchase, value per 1 000 visitors (best of a row in bold), break-even, margin, plus an overlay chart of
+  the accumulated result; **every column is run over the same number of months as the boxes say**. Saved in this
+  browser (`kopanalys.markov.strategies`, version 1, sanitised on load).
+- **UI:** `RevenueModel.tsx` (the money boxes), `FinanceResults.tsx` (six KPI cards, monthly and cumulative charts, cost
+  split, a purchase's split, economy by channel with a table that adds up to the result), `StrategyPanel.tsx`; the live
+  bar also shows the result. `LineChart` now has a signed axis (`niceRange`, a zero line); `run.ts` moved to
+  `lib/markov/run.ts`. The pipeline strip says "Byggd" on all six steps.
+- **Verified:** `markov.verify.mjs` (221: purchase and fee arithmetic, hand-computed month tables and break-even cases,
+  that channel results add up to the whole, purchases per visitor in a cycle, the real-mix rounding and windows, the
+  money boxes' validation, strategy sanitising/storage, that every preset reads over example and measured numbers),
+  `stats.verify.mjs` (55, now with the signed scale), and headless Chrome (58 checks for money and strategies, and the
+  earlier scripts re-run) in dev and in a production build under the real admin CSP, with expected numbers computed
+  independently by the engine. **Not verified:** that the example prices/mix/fee/fixed costs are right for the real
+  business (they are examples), and the money on real traffic (nothing real has been collected yet).
+- **Fixed on the way:** `admin.verify.mjs` "tampered signature rejected" was a flaky check (~6 % of runs): it swapped the
+  last base64 character of the signature for A or B, and that character carries only 4 meaningful bits, so a
+  neighbour can decode to the same bytes. Not a login weakness; the test now tampers a middle character and moves the
+  last one 16 places (40 clean runs).
+- **Next (not started):** what an analysis costs to produce (per package), running costs per channel (so every channel
+  has a full cost per customer), return on ad spend as its own KPI, Monte Carlo runs for ranges, and calibrating the
+  probabilities against the real purchases (the revenue card already shows the gap).
+
+**Sixteenth session, third round — real numbers for the channels (analytics cookie `ka_src`, needs consent).**
+The user asked that the acquisition model start from real statistics (how many come from search engines now),
+with scenarios still possible, using cookies and therefore consent. Design choices (all the recommended ones): the
+cookie remembers **only the first source**; consenting visitors are **scaled up using the banner choices**; boxes
+are **prefilled and any box can be typed over**; **growth defaults to 0 %**.
+- **The cookie:** `ka_src`, set by `components/analytics/SourceTracker.tsx` only after "Acceptera alla" (the banner's
+  `marketing` flag, which is the analysis consent), 90 days, first-party, `SameSite=Lax`, `Secure` on https, value
+  `channel.source` (e.g. `seo.google`) and nothing else. Not set, and nothing counted, with Do Not Track / Global
+  Privacy Control. Removed on decline and on "Cookie-inställningar". Where the visitor came from is worked out in
+  the browser (`lib/analytics/source.ts`: paid campaign tag/click id → ads; named `utm_source` (ChatGPT adds
+  `utm_source=chatgpt.com`) → ai/social/seo; else the referrer's host → ai, seo, social; own host or none → direct;
+  other sites → direct/link; Android app referrers too) and only the channel and a source name from a fixed list
+  are sent; the referrer and address never leave the device. The landing source is kept in memory (nothing is
+  stored before consent), so accepting on a later page of the same visit still gets it right; a visitor who
+  accepts only after a full page load on another page counts as `direct`.
+- **Server:** `POST /api/analytics/arrival` (`app/api/analytics/arrival/route.ts`; events `accept`, `arrive` (consenting,
+  cookie missing/expired: counts as new again), `decline`; same guards as the page-view beacon, 30/min per address,
+  excluded from the `proxy.ts` matcher) → `record_acquisition()` → `analytics_arrivals_daily(day, channel, source,
+  visitors)` and `analytics_consent_daily(day, accepted, declined)`: daily totals only, no id. **The user must apply
+  `supabase/migrations/20261007000000_acquisition_analytics.sql`** (Supabase SQL Editor); until then the Markov tab
+  says so and uses the example numbers.
+- **Consent versioning (`lib/consent.ts`, `CONSENT_VERSION = 2`):** an "accept" saved before this cookie existed is
+  **not carried over** — those visitors see the banner once more (the old policy said no such cookie existed); a
+  "decline" stays. Banner text and `/privacy` now describe the cookie (name, 90 days, content, purpose, the
+  decline count, retention). **The policy text is legal text and wants the user's/legal's read.**
+- **From the measurements to the boxes (`lib/markov/measured.ts`):** the newest 30 days (or since measuring began);
+  new visitors everyone = counted (accepted) + declined; each channel = its share of the counted × everyone ×
+  30.4375 ÷ days. Usable from 20 counted visitors over 7 days (else the example numbers, with the reason shown);
+  under 100 is called thin. Filled in: each channel's level, growth 0, a ceiling of at least 3× the level, and an
+  ad budget that reproduces the measured ad visitors (the ad curve solved backwards; 0 when no ads). Quality and
+  everything else stay as examples: nothing measures them yet. Assumes decliners arrive from the same places.
+  Ads show up only if links carry `utm_medium=cpc` etc. or a `gclid`/`msclkid`.
+- **Scenarios (`store.ts` now saves only what was typed — "overrides" — over the starting values):** untouched boxes
+  follow new measurements, typed boxes keep their value; typed boxes show "uppmätt: X" and a per-box
+  "Återställ", the card has "Återställ kanalerna till uppmätt", "Återställ allt" resets everything, and a box
+  typed to exactly its starting text counts as untouched. Settings saved by the earlier version (all boxes) are
+  migrated: only what differed from the example numbers is kept as typed. The baseline compare is unchanged
+  (a baseline is a full snapshot), so "measured baseline vs my scenario" works.
+- **Admin page:** `pages/admin-portal` also loads `loadMeasuredAcquisition()` (`lib/admin/acquisitionData.ts`); the
+  acquisition card has an "Uppmätt trafik" panel (counted, share, estimated per month, biggest source per channel,
+  how it was scaled, warnings). `ADMIN_STATS_DEMO=1` (development only) also gives demo measured traffic.
+- **Verified:** `analytics.verify.mjs` (131: all referrer cases incl. look-alike domains, cookie format, the
+  endpoint with the database call caught), `markov.verify.mjs` (144), the migration against PGlite (tables, checks,
+  the function, anon/authenticated denied, service role allowed), headless Chrome on the public site (31 checks:
+  real link click from a referrer, cookie contents/lifetime, decline, GPC, old consent re-asked, expired cookie,
+  reopening, nothing but day/event/channel/source sent) and on the admin portal (43 + the earlier 86), against a stub
+  database, in dev and in a production build under the real admin CSP. **Not verified:** the migration on the real
+  Supabase; real traffic (ChatGPT/Perplexity/Instagram referrers behave as documented, but were only simulated; some
+  apps and privacy browsers send no referrer at all and count as `direct`); the pre-existing banner lint error
+  (`set-state-in-effect` in `CookieConsentBanner.tsx`) is still there.
 
 **Sixteenth session — the "Markov-simulator" tab is built (customer state model + simulator).**
 Step one of the user's plan; the two layers above it are *not built* and the simulator is made to be fed by them.
 - **The plan the user gave:** (1) a customer state model, S0 Never visited … S7 Reactivated; (2) a customer
   acquisition model — Google/SEO, social, ads **and AI search engines** → visitors → engaged → premium; (3) a
   marketing structure on top: marketing strategy → acquisition model → new potential users → Markov model →
-  revenue/costs → company KPIs. Scope chosen by the user for this round: **state model + simulator only**.
-  The tab shows the six-step chain as a strip with "Byggd" on the Markov step and "Kommer" on the rest.
+  revenue/costs → company KPIs. Scope chosen by the user for the first round: **state model + simulator only**;
+  the acquisition model came in a second round (see below). The tab shows the six-step chain as a strip: "Byggd" on
+  förvärvsmodell, nya potentiella användare and the Markov model, "Kommer" on strategy, revenue/costs and KPIs.
 - **Decisions the user made:** nine states, not eight — **S8 Bounce** was added because their diagram has it
   (visited→bounce); churn flow **"hybrid"** (see `EDGES`: engaged→inactive; registered→inactive/churned;
   premium→inactive/churned; inactive→churned/reactivated; churned→reactivated with a tiny chance; reactivated→
@@ -46,18 +150,42 @@ Step one of the user's plan; the two layers above it are *not built* and the sim
   Bad input never produces numbers: the results are replaced by a "Resultatet väntar" notice and a sticky bar
   says how many boxes need fixing. A sticky bar with the headline numbers stays in view while editing.
 - **The default probabilities are placeholders, not measurements** (tuned so a new visitor has ≈3 % chance of
-  ever buying; example run: 795 premium after 24 months, 1 724 premium entries) — the site does not measure
-  registration, engagement or return yet. The page says so in a banner.
-- **Verified:** `tsc`, eslint, `markov.verify.mjs`, the earlier `stats`/`analytics`/`admin` verify scripts, and
-  headless Chrome (42 checks) against scratch copies in **both** `next dev --webpack` and a production
+  ever buying; with the visitors typed in as 3 000 a month: 795 premium after 24 months, 1 724 premium entries;
+  with the example channels, now the default: 1 167 and 2 291) — the site does not measure registration,
+  engagement or return yet. The page says so in a banner.
+- **Acquisition model (second round, user's design choices: five standard channels; volume matched to the
+  channel; a quality multiplier per channel; a switch between typed-in and channels).** `lib/markov/acquisition.ts`:
+  channels **seo, ads, social, ai (AI search engines), direct**. seo/social/ai = visitors in month 1 × (1 + growth)^
+  (month − 1), capped (growth may be negative: −50…100 %); ads = a monthly budget in kr where the cost per visitor
+  is `c·(1 + budget/D)` (c = cost at a small budget, D = "dubbel kostnad vid"), so visitors = budget·D/(c·(D+budget))
+  and can never pass D/c; ads can run from month X to Y; direct = a fixed number. **Quality** q multiplies
+  visited→engaged and the extra is taken out of visited→bounced (the total chance of deciding is unchanged, so q
+  can't make more people engage than decide); it acts only while someone is in "Besökt" (the engine keeps one
+  visited pool per channel plus a neutral pool for typed-in visitors and returns from bounce; every other state is
+  shared). Defaults: SEO 1 200 +4 %/mån tak 6 000 q 1; ads 15 000 kr, 12 kr, D 40 000 kr, q 0,8; social 400 +3 %
+  tak 3 000 q 0,6; AI 200 +10 % tak 4 000 q 1,4; direct 300 q 1,3 (≈3 009 visitors in month 1, 6 747 in month 24).
+  **The switch ("Skriv in själv" / "Från kanaler", default channels)** keeps the old "Nya besökare per månad" box
+  for typed-in mode; only the boxes in use are validated (a broken channel box is ignored while typing by hand and
+  vice versa), and saved settings from before the channels exist load with the example channels. Results in
+  channel mode: visitors per month by channel (stacked bars) and **"Kanalerna jämförda"** (visitors, share, new
+  premium, premium per 1 000 visitors, premium at the end, ad cost, cost per new premium). The split by channel is
+  **exact** because the model is linear (each channel's visitors are run alone and the runs add up; tested). Only
+  ads have a cost so far — the other channels cost too, which belongs to the revenue/cost layer. The S0 box and the
+  sticky bar show the average per month in channel mode. UI: `AcquisitionModel.tsx`, `ChannelResults.tsx`,
+  `Field.tsx` (shared box), `run.ts` (evaluate + types); `engine.ts` was rewritten around the pools (`attribute()`
+  added) and gives the old numbers exactly in typed-in mode. Tooltips in the charts now size to their text.
+- **Verified:** `tsc`, eslint, `markov.verify.mjs` (105 checks, now also: the growth and ad formulas, quality
+  clamping with hand-computed months, that one channel at quality 1 equals typing the number, people conserved,
+  per-channel results adding up to the whole, mixed cohorts, every channel box's validation), the earlier
+  `stats`/`analytics`/`admin` verify scripts, and headless Chrome (42 checks for the simulator + 44 for the
+  acquisition model: switch, the five channels, a broken box, ceiling/month rules, ads' rising cost per visitor,
+  schedule, tables and tooltips, baseline compare with channels, reload, phone) against scratch copies in **both** `next dev --webpack` and a production
   `next build --webpack` + `next start` under the real admin CSP: defaults, picking states by mouse and keyboard,
   editing, invalid box and over-100 % row, baseline compare, month-count mismatch, chart toggles and tooltips,
   tables, persistence across reload, damaged saved settings, reset, phone (no sideways page scroll, sticky bar,
   16 px inputs) and tablet — no console errors or warnings. (Turbopack can't build from the scratch copy's
   `node_modules` junction, so Turbopack itself was not run on this code.)
-- **Next (not started):** the acquisition model (SEO, ads, social, AI search engines → new visitors per month),
-  the marketing-strategy layer, revenue/costs/KPIs (needs the revenue answer above), optionally Monte Carlo runs
-  for ranges, and calibrating the probabilities from real statistics once registration/engagement are measured.
+- **Next:** done in the fourth round (above).
 
 **Fifteenth session — the admin portal's page is now statistics + a placeholder for the Markov simulator.**
 (The placeholder was replaced in the sixteenth session, above.)
@@ -108,8 +236,8 @@ is kept in the address as `#markov`), and the tab's page. Everything is Swedish.
   and the page on database rows.
 - **Not verified:** the migration on the real Supabase; any real traffic; the production deployment's
   response times; the "two simultaneous first page views count one visitor" guarantee under true parallel
-  connections (PGlite is single-connection; it rests on the primary key). One run of `admin.verify.mjs`
-  reported 1 failed check (not captured) and did not repeat in 7 further runs.
+  connections (PGlite is single-connection; it rests on the primary key). (One run of `admin.verify.mjs` once
+  failed a check; that turned out to be a flaw in the test, fixed in the sixteenth session.)
 
 **Fourteenth session (before this one)** — the map page, see below.
 

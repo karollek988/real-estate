@@ -98,15 +98,35 @@ export default function PrivacyPage() {
                 Marknadsföring & analys (kräver samtycke)
               </h3>
               <p>
-                Utöver den anonyma besöksstatistiken ovan använder Köpanalys inga
-                analys- eller marknadsföringsverktyg (till exempel annonsspårning eller
-                tredjepartsverktyg för användaranalys) — i övrigt sätts endast de
-                nödvändiga sessionscookies som beskrivs ovan. Cookie-bannerns val för
-                &quot;Acceptera alla&quot; finns på plats i förberedande syfte: om vi i
-                framtiden börjar samla in annan användningsstatistik eller
-                marknadsförings-/lead-trackingdata kommer det endast att ske för
-                besökare som aktivt samtyckt, och denna policy uppdateras då med vad
-                som samlas in och varför.
+                Om du väljer &quot;Acceptera alla&quot; i cookie-bannern sätter vi en
+                enda analyscookie, <code>ka_src</code>. Den innehåller bara var du först
+                kom ifrån, i form av en kanal och en källa, till exempel
+                &quot;sökmotor, Google&quot; eller &quot;AI-sökmotor, ChatGPT&quot; eller
+                &quot;direkt&quot;. Den innehåller inget id, ingen adress och inga
+                sidor, och den sparas i 90 dagar på din enhet.
+              </p>
+              <p className="mt-2">
+                Syftet är att veta hur många nya besökare som kommer från sökmotorer,
+                AI-sökmotorer, sociala medier och annonser, så att vi kan bedöma vilka
+                kanaler som fungerar. Din webbläsare avgör själv var du kom ifrån (utifrån
+                sidan som länkade hit och eventuella kampanjtaggar i adressen) och
+                skickar bara svaret till vår server, aldrig den länkande adressen. Första
+                gången, när du godkänner, räknas en ny besökare för den kanalen; så länge
+                cookien finns räknas du inte igen. Det som sparas är bara summor per dag,
+                kanal och källa, som inte kan kopplas till dig.
+              </p>
+              <p className="mt-2">
+                Vi räknar också, utan cookie och utan något id, hur många som godkänner
+                och hur många som avböjer i bannern, för att kunna uppskatta hur många nya
+                besökare vi har totalt. Har du Do Not Track eller Global Privacy Control
+                påslaget sätts ingen cookie och inget räknas. Avböjer du eller ändrar dig
+                via &quot;Cookie-inställningar&quot; längst ned på sidan tas cookien bort.
+              </p>
+              <p className="mt-2">
+                Utöver detta använder Köpanalys inga analys- eller marknadsföringsverktyg
+                (till exempel annonsspårning eller tredjepartsverktyg för användaranalys).
+                Om vi i framtiden samlar in mer kommer det endast att ske för besökare som
+                aktivt samtyckt, och denna policy uppdateras då.
               </p>
             </section>
 
@@ -128,8 +148,11 @@ export default function PrivacyPage() {
                   sparas, och engångsvärdet raderas efter två dygn.
                 </li>
                 <li>
-                  <strong>Marknadsföring & analys:</strong> Behandlingen baseras på ditt
-                  samtycke (art. 6.1 a GDPR).
+                  <strong>Marknadsföring & analys</strong> (analyscookien ka_src):
+                  Behandlingen baseras på ditt samtycke (art. 6.1 a GDPR). Räkningen av
+                  hur många som godkänner och avböjer görs utan cookie och baseras på
+                  vårt berättigade intresse (art. 6.1 f), på samma sätt som
+                  besöksstatistiken ovan.
                 </li>
               </ul>
             </section>
@@ -194,9 +217,15 @@ export default function PrivacyPage() {
                   sparas tills vidare.
                 </li>
                 <li>
-                  <strong>Marknadsförings- och analysdata</strong> sparas i högst 24
-                  månader från insamlingstillfället, eller tills du återkallar ditt
-                  samtycke.
+                  <strong>Analyscookien ka_src</strong> sparas i 90 dagar på din enhet,
+                  eller tills du avböjer eller återkallar ditt samtycke. Summorna per dag,
+                  kanal och källa, som inte kan kopplas till någon enskild besökare,
+                  sparas tills vidare.
+                </li>
+                <li>
+                  <strong>Annan marknadsförings- och analysdata</strong>, om sådan i
+                  framtiden samlas in, sparas i högst 24 månader från
+                  insamlingstillfället, eller tills du återkallar ditt samtycke.
                 </li>
               </ul>
             </section>

@@ -6,6 +6,7 @@ import { ChatWidget } from "@/components/ChatWidget";
 import { CookieConsentBanner } from "@/components/CookieConsentBanner";
 import { CookieSettingsLink } from "@/components/CookieSettingsLink";
 import { PageViewTracker } from "@/components/analytics/PageViewTracker";
+import { SourceTracker } from "@/components/analytics/SourceTracker";
 import { ScrollRestorationReset } from "@/components/ScrollRestorationReset";
 import { SiteFooter } from "@/components/SiteFooter";
 
@@ -46,6 +47,7 @@ export default function RootLayout({
         <AuthProvider>
           <ScrollRestorationReset />
           <PageViewTracker />
+          <SourceTracker />
           {children}
           <SiteFooter />
           <CookieConsentBanner />

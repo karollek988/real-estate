@@ -1,5 +1,6 @@
 import { useRef, useState, useSyncExternalStore, type KeyboardEvent } from "react";
 import type { AdminStatsResult } from "@/lib/admin/stats";
+import type { MeasuredResult } from "@/lib/markov/measured";
 import { MarkovSimulator } from "./markov/MarkovSimulator";
 import { StatsPanel } from "./stats/StatsPanel";
 
@@ -20,7 +21,7 @@ const readAddress = () => window.location.hash;
 const readAddressOnServer = () => "";
 
 /** What a signed-in admin sees: a slim session bar, the tabs, and the open tab's page. */
-export function AdminShell({ stats }: { stats: AdminStatsResult }) {
+export function AdminShell({ stats, measured }: { stats: AdminStatsResult; measured: MeasuredResult }) {
   const [signingOut, setSigningOut] = useState(false);
   const [signOutFailed, setSignOutFailed] = useState(false);
   const address = useSyncExternalStore(subscribeToAddress, readAddress, readAddressOnServer);
@@ -112,7 +113,7 @@ export function AdminShell({ stats }: { stats: AdminStatsResult }) {
             <StatsPanel result={stats} />
           </div>
           <div role="tabpanel" id="admin-panel-markov" aria-labelledby="admin-tab-markov" hidden={tab !== "markov"}>
-            <MarkovSimulator />
+            <MarkovSimulator measured={measured} stats={stats} />
           </div>
         </div>
       </main>

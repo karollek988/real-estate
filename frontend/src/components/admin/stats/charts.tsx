@@ -16,20 +16,39 @@ import { formatInt } from "@/lib/admin/stats";
 
 // ── scales ───────────────────────────────────────────────────────────────────
 
-/** A y axis from 0 to a round maximum. `integer` keeps the steps whole, for counts. */
-export function niceScale(max: number, integer = false, ticks = 4): { max: number; step: number } {
-  if (!(max > 0)) return { max: ticks, step: 1 };
-  const rough = max / ticks;
-  const power = 10 ** Math.floor(Math.log10(rough));
-  const f = rough / power;
-  let step = (f <= 1 ? 1 : f <= 2 ? 2 : f <= 5 ? 5 : 10) * power;
-  if (integer) step = Math.max(1, Math.ceil(step));
-  return { max: step * Math.ceil(max / step), step };
+/** A y axis: from `min` (0 unless there are negative numbers) to a round `max`, in steps of `step`. */
+export interface Scale {
+  min: number;
+  max: number;
+  step: number;
 }
 
-function tickValues(max: number, step: number): number[] {
+/** The size of a step that gives about `ticks` of them over `span`: 1, 2, 5 or 10 times a power of ten. */
+function niceStep(span: number, integer: boolean, ticks: number): number {
+  const rough = span / ticks;
+  const power = 10 ** Math.floor(Math.log10(rough));
+  const f = rough / power;
+  const step = (f <= 1 ? 1 : f <= 2 ? 2 : f <= 5 ? 5 : 10) * power;
+  return integer ? Math.max(1, Math.ceil(step)) : step;
+}
+
+/** A y axis from 0 to a round maximum. `integer` keeps the steps whole, for counts. */
+export function niceScale(max: number, integer = false, ticks = 4): Scale {
+  if (!(max > 0)) return { min: 0, max: ticks, step: 1 };
+  const step = niceStep(max, integer, ticks);
+  return { min: 0, max: step * Math.ceil(max / step), step };
+}
+
+/** Like niceScale, for numbers that may go below zero (a result that is a loss for a while). */
+export function niceRange(min: number, max: number, integer = false, ticks = 4): Scale {
+  if (!(min < 0)) return niceScale(max, integer, ticks);
+  const step = niceStep(Math.max(max, 0) - min, integer, ticks);
+  return { min: step * Math.floor(min / step), max: max > 0 ? step * Math.ceil(max / step) : 0, step };
+}
+
+function tickValues({ min, max, step }: Scale): number[] {
   const values: number[] = [];
-  for (let v = 0; v <= max + step / 1000; v += step) values.push(Math.round(v * 1000) / 1000);
+  for (let v = min; v <= max + step / 1000; v += step) values.push(Math.round(v * 1000) / 1000);
   return values;
 }
 
@@ -89,14 +108,14 @@ function useWidth() {
 }
 
 /** `x` says where the i-th label belongs: on a point of a line, or at the middle of a bar. */
-function Axes({ g, labels, scale, x }: { g: Geometry; labels: string[]; scale: { max: number; step: number }; x: (i: number) => number }) {
-  const y = (v: number) => g.T + g.innerH - (v / scale.max) * g.innerH;
+function Axes({ g, labels, scale, x }: { g: Geometry; labels: string[]; scale: Scale; x: (i: number) => number }) {
+  const y = (v: number) => g.T + g.innerH - ((v - scale.min) / (scale.max - scale.min)) * g.innerH;
   const n = labels.length;
   return (
     <g className="chart-axes">
-      {tickValues(scale.max, scale.step).map((v) => (
+      {tickValues(scale).map((v) => (
         <g key={v}>
-          <line className="chart-grid" x1={g.L} x2={g.W - g.R} y1={y(v)} y2={y(v)} />
+          <line className={v === 0 && scale.min < 0 ? "chart-grid is-zero" : "chart-grid"} x1={g.L} x2={g.W - g.R} y1={y(v)} y2={y(v)} />
           <text className="chart-tick" x={g.L - 8} y={y(v)} textAnchor="end" dominantBaseline="middle">
             {formatInt(v)}
           </text>
@@ -121,7 +140,9 @@ function indexAt(event: ReactPointerEvent<SVGElement>, svg: SVGSVGElement | null
   return Math.min(n - 1, Math.max(0, index));
 }
 
-function Tooltip({ g, x, lines, width = 150 }: { g: Geometry; x: number; lines: { text: string; className?: string; strong?: boolean }[]; width?: number }) {
+function Tooltip({ g, x, lines, width: fixedWidth }: { g: Geometry; x: number; lines: { text: string; className?: string; strong?: boolean }[]; width?: number }) {
+  // wide enough for the longest line (about 6.6 px a character at this size), never narrower than the usual 150
+  const width = fixedWidth ?? Math.max(150, Math.ceil(Math.max(...lines.map((line) => line.text.length)) * 6.6 + 24));
   const height = 14 + lines.length * 17;
   const left = Math.min(Math.max(x - width / 2, g.L), g.W - g.R - width);
   return (
@@ -207,9 +228,10 @@ export function LineChart({ labels, series, ariaLabel }: { labels: string[]; ser
   const [hover, setHover] = useState<number | null>(null);
   const n = labels.length;
   const top = Math.max(0, ...series.map((s) => Math.max(0, ...s.values)));
-  const scale = niceScale(top, top >= 8);
+  const bottom = Math.min(0, ...series.map((s) => Math.min(0, ...s.values)));
+  const scale = niceRange(bottom, top, top - bottom >= 8);
   const x = (i: number) => (n > 1 ? g.L + (i / (n - 1)) * g.innerW : g.L + g.innerW / 2);
-  const y = (v: number) => g.T + g.innerH - (v / scale.max) * g.innerH;
+  const y = (v: number) => g.T + g.innerH - ((v - scale.min) / (scale.max - scale.min)) * g.innerH;
   const path = (values: number[]) => values.map((v, i) => `${i === 0 ? "M" : "L"}${x(i).toFixed(1)},${y(v).toFixed(1)}`).join(" ");
 
   return (
@@ -237,7 +259,6 @@ export function LineChart({ labels, series, ariaLabel }: { labels: string[]; ser
           <Tooltip
             g={g}
             x={x(hover)}
-            width={206}
             lines={[
               { text: labels[hover] },
               ...series.filter((s) => hover < s.values.length).map((s) => ({ text: `${s.label}: ${formatInt(s.values[hover])}`, className: `legend-text series-${s.key}` })),

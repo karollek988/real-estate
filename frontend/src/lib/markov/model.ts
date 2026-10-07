@@ -22,6 +22,9 @@
  * are the user's to set, and the ones below are examples, not measurements.
  */
 
+import { DEFAULT_ACQUISITION, type Acquisition } from "./acquisition";
+import { DEFAULT_FINANCE, type Finance } from "./finance";
+
 export const STATE_IDS = ["never", "visited", "engaged", "registered", "premium", "inactive", "churned", "reactivated", "bounced"] as const;
 export type StateId = (typeof STATE_IDS)[number];
 /** Every state that holds a population: all of them except the source. */
@@ -93,8 +96,12 @@ export const EDGES: readonly Edge[] = [
 export const edgesFrom = (from: TrackedId): Edge[] => EDGES.filter((edge) => edge.from === from);
 
 export interface MarkovParams {
-  /** people entering "visited" each month: what the acquisition model will supply */
+  /** people entering "visited" each month when typed by hand (acquisition.mode === "manual") */
   newVisitors: number;
+  /** the channels that supply new visitors instead, when acquisition.mode === "channels" (acquisition.ts) */
+  acquisition: Acquisition;
+  /** what a purchase brings in and what is paid out each month (finance.ts) */
+  finance: Finance;
   /** people already in each state when the run starts */
   initial: Record<TrackedId, number>;
   /** chance per month of each move, 0 to 1 */
@@ -110,6 +117,8 @@ const zeroPopulation = (): Record<TrackedId, number> => ({ visited: 0, engaged: 
 /** Example numbers to start from. Assumptions, not measurements: the site does not yet measure registration, engagement or return. */
 export const DEFAULT_PARAMS: MarkovParams = {
   newVisitors: 3000,
+  acquisition: DEFAULT_ACQUISITION,
+  finance: DEFAULT_FINANCE,
   initial: zeroPopulation(),
   months: 24,
   // Chosen so that a new visitor has roughly a 3 % chance of ever buying, which is the order of

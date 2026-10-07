@@ -21,3 +21,23 @@ export async function recordPageView(day: string, visitor: string, device: Devic
     }
   }
 }
+
+export type AcquisitionEvent = "accept" | "decline" | "arrive";
+
+let warnedAcquisition = false;
+
+/**
+ * Records one acquisition event (record_acquisition, see 20261007000000_acquisition_analytics.sql). Like
+ * recordPageView it never throws and logs only its first failure.
+ */
+export async function recordAcquisition(day: string, event: AcquisitionEvent, channel: string | null, source: string | null): Promise<void> {
+  try {
+    const { error } = await createAdminClient().rpc("record_acquisition", { p_day: day, p_event: event, p_channel: channel, p_source: source });
+    if (error) throw new Error(error.message);
+  } catch (error) {
+    if (!warnedAcquisition) {
+      warnedAcquisition = true;
+      console.error("[analytics] acquisition event not recorded:", error instanceof Error ? error.message : error);
+    }
+  }
+}

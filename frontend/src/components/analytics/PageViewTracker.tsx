@@ -2,14 +2,9 @@
 
 import { usePathname } from "next/navigation";
 import { useEffect, useRef } from "react";
+import { privacySignalOn } from "@/lib/analytics/sourceCookie";
 
 const ENDPOINT = "/api/analytics/hit";
-
-/** Visitors who have asked their browser not to be tracked are not counted at all. */
-function optedOut(): boolean {
-  const nav = navigator as Navigator & { globalPrivacyControl?: boolean; msDoNotTrack?: string };
-  return nav.doNotTrack === "1" || nav.msDoNotTrack === "1" || nav.globalPrivacyControl === true;
-}
 
 /**
  * Tells the site's own server that a page was shown, once per page, so it can
@@ -26,7 +21,7 @@ export function PageViewTracker() {
   useEffect(() => {
     if (lastCounted.current === pathname) return; // React's double effect in development
     lastCounted.current = pathname;
-    if (optedOut()) return;
+    if (privacySignalOn()) return;
 
     const body = JSON.stringify({ t: navigator.maxTouchPoints > 1 ? 1 : 0 });
     try {

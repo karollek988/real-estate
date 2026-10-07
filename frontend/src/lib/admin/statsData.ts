@@ -15,10 +15,10 @@ import { buildDemoStats } from "./statsDemo";
 const PAGE_SIZE = 1000;
 const MAX_PAGES = 50;
 
-type Failure = { message: string; code?: string };
+export type Failure = { message: string; code?: string };
 
 // Postgres "undefined_table" and PostgREST's "not in the schema cache": the migration is missing.
-const isMissingTable = (error: Failure) =>
+export const isMissingTable = (error: Failure) =>
   error.code === "42P01" || error.code === "PGRST205" || /could not find the table|does not exist/i.test(error.message);
 
 async function fetchPurchases(client: SupabaseClient, since: string): Promise<{ rows: PurchaseRow[] } | { error: Failure }> {

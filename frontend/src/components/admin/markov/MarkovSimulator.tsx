@@ -1,39 +1,27 @@
-import { useMemo, useState, useSyncExternalStore, type ReactNode } from "react";
+import { useCallback, useMemo, useState, useSyncExternalStore, type ReactNode } from "react";
 import { change, formatDecimal, formatInt } from "@/lib/admin/stats";
-import { cohort, seriesOf, simulate, sum, type Cohort, type Simulation } from "@/lib/markov/engine";
-import { FIELD, parseFields, percentText, sameField, sameFields, type Fields } from "@/lib/markov/fields";
+import { seriesOf, sum, type Simulation } from "@/lib/markov/engine";
+import { FIELD, effectiveFields, percentText, sameField, sameFields, type Fields } from "@/lib/markov/fields";
+import type { AdminStatsResult } from "@/lib/admin/stats";
+import { defaultsFor, purchaseMix, type MeasuredResult } from "@/lib/markov/measured";
 import { MONTH_CHOICES, STATES, TRACKED_IDS, buildMatrix, edgeKey, edgesFrom, stayProbability, type MarkovParams, type StateId, type TrackedId } from "@/lib/markov/model";
 import { LineChart, type LineSeries } from "../stats/charts";
 import { Delta } from "../stats/StatsPanel";
+import { AcquisitionModel } from "./AcquisitionModel";
+import { ChannelResults } from "./ChannelResults";
+import { Field, FieldsContext, useFields, type FieldsContextValue } from "./Field";
+import { FinanceResults } from "./FinanceResults";
+import { kr } from "./format";
+import { LineSample } from "./LineSample";
+import { RevenueModel } from "./RevenueModel";
+import { StrategyPanel } from "./StrategyPanel";
 import { StateDiagram, SelectedMoves } from "./StateDiagram";
-import { clearBaseline, getServerSettings, getSettings, resetFields, saveBaseline, setField, subscribe } from "./store";
+import { COHORT_SIZE, averageVisitors, endPopulations, evaluate, sameLength, type Evaluated, type Run } from "@/lib/markov/run";
+import { clearBaseline, clearFields, getServerSettings, getSettings, resetFields, saveBaseline, setField, subscribe } from "./store";
 
-const COHORT_SIZE = 1000;
-
-// ── one run of the model ─────────────────────────────────────────────────────
-
-interface Run {
-  sim: Simulation;
-  cohort: Cohort;
-}
-
-interface Evaluated {
-  params: MarkovParams;
-  /** box name -> what is wrong; empty when the boxes can be run */
-  errors: Record<string, string>;
-  /** null while any box can't be read: there is nothing honest to show */
-  run: Run | null;
-}
-
-function evaluate(fields: Fields): Evaluated {
-  const { params, errors } = parseFields(fields);
-  const run = Object.keys(errors).length === 0 ? { sim: simulate(params), cohort: cohort(params, COHORT_SIZE) } : null;
-  return { params, errors, run };
-}
-
-const percent = (fraction: number) => `${percentText(fraction)} %`;
+const percent = (fraction: number) => `${percentText(fraction)} %`;
 /** 0.033 -> "3,3 %": a share with one decimal, since the interesting shares are small */
-const share = (fraction: number) => `${formatDecimal(fraction * 100)} %`;
+const share = (fraction: number) => `${formatDecimal(fraction * 100)} %`;
 const months = (value: number) => `${formatDecimal(value)} månader`;
 
 // How each state's line looks in the population chart: colour comes from the stylesheet, and the
@@ -52,19 +40,21 @@ const LINE_STYLE: Record<TrackedId, { dash?: string; heavy?: boolean }> = {
 // Bounce and visited are the biggest numbers and are not what is being decided: they would flatten the others.
 const SHOWN_AT_FIRST: readonly TrackedId[] = ["engaged", "registered", "premium", "inactive", "churned"];
 
-/** True when both runs cover the same number of months, so their end results can be compared. */
-const sameLength = (a: Run | null, b: Run | null) => a !== null && b !== null && a.cohort.months === b.cohort.months;
-
-/** People per state at the end of the run. */
-function endPopulations(sim: Simulation): Record<TrackedId, number> {
-  const last = sim.populations[sim.populations.length - 1];
-  return Object.fromEntries(TRACKED_IDS.map((id, i) => [id, last[i]])) as Record<TrackedId, number>;
-}
-
 // ── the page ─────────────────────────────────────────────────────────────────
 
-export function MarkovSimulator() {
-  const { fields, baseline } = useSyncExternalStore(subscribe, getSettings, getServerSettings);
+export function MarkovSimulator({ measured, stats }: { measured: MeasuredResult; stats: AdminStatsResult }) {
+  const { overrides, baseline, strategies, activeId } = useSyncExternalStore(subscribe, getSettings, getServerSettings);
+  // every box starts from the example numbers, with what has been measured laid over them; what the
+  // person has typed goes on top of that. A box typed to the same text as its starting text is not "typed".
+  // (the package mix comes from the real purchases the statistics page has already read)
+  const mix = useMemo(() => (stats.status === "ok" ? purchaseMix(stats.stats.days) : null), [stats]);
+  const defaults = useMemo(() => defaultsFor(measured.status === "ok" ? measured.measured : null, mix), [measured, mix]);
+  const fields = useMemo(() => effectiveFields(defaults.fields, overrides), [defaults, overrides]);
+  const edit = useCallback((name: string, value: string) => (value === defaults.fields[name] ? clearFields([name]) : setField(name, value)), [defaults]);
+  const context = useMemo<FieldsContextValue>(
+    () => ({ fields, defaults: defaults.fields, overrides, measuredNames: defaults.measuredNames, baseline, edit, restore: clearFields }),
+    [fields, defaults, overrides, baseline, edit]
+  );
   const [selected, setSelected] = useState<StateId | null>("visited");
   const [shown, setShown] = useState<readonly TrackedId[]>(SHOWN_AT_FIRST);
 
@@ -76,6 +66,7 @@ export function MarkovSimulator() {
   const atEnd = now.run ? endPopulations(now.run.sim) : null;
 
   return (
+    <FieldsContext.Provider value={context}>
     <div className="markov">
       <div className="stats-head">
         <div>
@@ -92,17 +83,24 @@ export function MarkovSimulator() {
 
       <LiveBar now={now} errorCount={errorCount} referenceRun={referenceRun} />
 
-      <Settings now={now} fields={fields} baseline={baseline} hasChanges={hasChanges} />
+      <StrategyPanel now={now} defaults={defaults} strategies={strategies} activeId={activeId} />
+
+      <Settings now={now} hasChanges={hasChanges} />
+
+      <AcquisitionModel now={now} measured={measured} defaults={defaults} />
 
       <section className="card markov-diagram-card" aria-labelledby="m-diagram">
         <h3 id="m-diagram">Kundens tillstånd</h3>
         <p className="card-sub">Nio tillstånd. Varje månad flyttar människor mellan dem, eller stannar.</p>
-        <StateDiagram params={now.params} populations={atEnd} selected={selected} onSelect={setSelected} />
+        <StateDiagram params={now.params} populations={atEnd} sourceLabel={sourceLabel(now)} selected={selected} onSelect={setSelected} />
         <SelectedMoves params={now.params} selected={selected} />
       </section>
 
       {now.run ? (
-        <Results run={now.run} params={now.params} referenceRun={referenceRun} shown={shown} onToggle={(id) => setShown((list) => (list.includes(id) ? list.filter((x) => x !== id) : [...list, id]))} />
+        <>
+          <Results run={now.run} params={now.params} referenceRun={referenceRun} shown={shown} onToggle={(id) => setShown((list) => (list.includes(id) ? list.filter((x) => x !== id) : [...list, id]))} />
+          <FinanceResults run={now.run} params={now.params} referenceRun={referenceRun} />
+        </>
       ) : (
         <div className="stats-notice" role="status">
           <h2>Resultatet väntar</h2>
@@ -119,26 +117,35 @@ export function MarkovSimulator() {
         </div>
         <div className="markov-states">
           {TRACKED_IDS.map((id) => (
-            <StateCard key={id} id={id} fields={fields} baseline={baseline} errors={now.errors} params={now.params} />
+            <StateCard key={id} id={id} errors={now.errors} params={now.params} />
           ))}
         </div>
       </section>
 
+      <RevenueModel now={now} defaults={defaults} />
+
       {now.run && <Tables run={now.run} params={now.params} />}
       <Explanation />
     </div>
+    </FieldsContext.Provider>
   );
+}
+
+/** What the "S0" box in the diagram says: the monthly visitors, as a figure or - from channels - an average. */
+function sourceLabel(now: Evaluated): string {
+  if (now.params.acquisition.mode === "manual") return `${formatInt(now.params.newVisitors)} / mån`;
+  return now.run ? `Ø ${formatInt(averageVisitors(now.run, now.params))} / mån` : "kanaler";
 }
 
 // ── how the model fits into the larger plan ──────────────────────────────────
 
 const PIPELINE = [
-  { name: "Marknadsstrategi", note: "Vad ska vi göra?", built: false },
-  { name: "Förvärvsmodell", note: "SEO, annonser, sociala medier, AI-sökmotorer", built: false },
-  { name: "Nya potentiella användare", note: "Just nu: rutan “Nya besökare per månad”", built: false },
+  { name: "Marknadsstrategi", note: "Sparade strategier, jämförda sida vid sida", built: true },
+  { name: "Förvärvsmodell", note: "Sökmotorer, annonser, sociala medier, AI-sökmotorer", built: true },
+  { name: "Nya potentiella användare", note: "Summan av kanalerna, eller ett tal du skriver in", built: true },
   { name: "Markov-modell", note: "Den här sidan", built: true },
-  { name: "Intäkter och kostnader", note: "Efter Premium", built: false },
-  { name: "Företagets nyckeltal", note: "Resultatet", built: false },
+  { name: "Intäkter och kostnader", note: "Paketmix, moms, avgifter, fasta kostnader", built: true },
+  { name: "Företagets nyckeltal", note: "Resultat, break-even, kostnad per köp, värde per besökare", built: true },
 ] as const;
 
 function Pipeline() {
@@ -179,30 +186,53 @@ function LiveBar({ now, errorCount, referenceRun }: { now: Evaluated; errorCount
         <span className="markov-live-label">Blir premium</span>
         <strong>{share(run.cohort.everPremium)}</strong>
       </span>
+      <span className="markov-live-stat">
+        <span className="markov-live-label">Resultat efter {run.cohort.months} mån</span>
+        <strong>{kr(run.economy.totals.profit)}</strong>
+        {referenceRun && sameLength(run, referenceRun) && <AmountChange now={run.economy.totals.profit} before={referenceRun.economy.totals.profit} />}
+      </span>
       <span className="markov-live-stat is-optional">
-        <span className="markov-live-label">Nya besökare / mån</span>
-        <strong>{formatInt(now.params.newVisitors)}</strong>
+        <span className="markov-live-label">{now.params.acquisition.mode === "channels" ? "Nya besökare / mån, snitt" : "Nya besökare / mån"}</span>
+        <strong>{formatInt(averageVisitors(run, now.params))}</strong>
       </span>
     </div>
   );
 }
 
+/** "▲ 5 000 kr": the change in an amount that may be negative. */
+function AmountChange({ now, before }: { now: number; before: number }) {
+  const diff = now - before;
+  if (Math.abs(diff) < 0.5) return <span className="delta is-flat">▬ oförändrat</span>;
+  return diff > 0 ? <span className="delta is-up">▲ {kr(diff)}</span> : <span className="delta is-down">▼ {kr(-diff)}</span>;
+}
+
 // ── settings: the few numbers that are not chances ───────────────────────────
 
-function Settings({ now, fields, baseline, hasChanges }: { now: Evaluated; fields: Fields; baseline: Fields | null; hasChanges: boolean }) {
+function Settings({ now, hasChanges }: { now: Evaluated; hasChanges: boolean }) {
+  const { fields, baseline, edit } = useFields();
   const canSave = now.run !== null;
   return (
     <section className="card markov-settings" aria-labelledby="m-settings">
       <h3 id="m-settings">Grundinställningar</h3>
       <div className="markov-settings-grid">
-        <Field name={FIELD.newVisitors} label="Nya besökare per månad" hint="Så många kommer in i “Besökt” varje månad. Senare räknas talet fram av förvärvsmodellen (SEO, annonser, sociala medier, AI-sökmotorer)." unit="personer" fields={fields} baseline={baseline} error={now.errors[FIELD.newVisitors]} />
+        {now.params.acquisition.mode === "manual" ? (
+          <Field name={FIELD.newVisitors} label="Nya besökare per månad" hint="Så många kommer in i “Besökt” varje månad. Eller välj “Från kanaler” i förvärvsmodellen här under, så räknas talet fram av kanalerna." unit="personer" error={now.errors[FIELD.newVisitors]} />
+        ) : (
+          <div className="markov-field">
+            <span className="markov-field-name">Nya besökare per månad</span>
+            <p className="markov-readout">
+              {now.run?.plan ? `Från kanalerna: ${formatInt(now.run.plan.total[1])} i månad 1, ${formatInt(now.run.plan.total[now.params.months])} i månad ${now.params.months}` : "Väntar på att kanalernas rutor rättas"}
+            </p>
+            <span className="markov-field-hint">Räknas fram av förvärvsmodellen här under. Välj “Skriv in själv” där för att i stället skriva ett eget tal.</span>
+          </div>
+        )}
         <div className="markov-field">
           <span className="markov-field-name" id="m-months-label">
             Antal månader att räkna
           </span>
           <div className="range" role="group" aria-labelledby="m-months-label">
             {MONTH_CHOICES.map((count) => (
-              <button key={count} type="button" aria-pressed={now.params.months === count} onClick={() => setField(FIELD.months, String(count))}>
+              <button key={count} type="button" aria-pressed={now.params.months === count} onClick={() => edit(FIELD.months, String(count))}>
                 {count} mån
               </button>
             ))}
@@ -216,13 +246,13 @@ function Settings({ now, fields, baseline, hasChanges }: { now: Evaluated; field
         <p className="markov-note">Lämna på 0 för att börja från noll. Fyll i om du vill räkna framåt från en känd situation, till exempel hur många betalande kunder som redan finns.</p>
         <div className="markov-initial">
           {TRACKED_IDS.map((id) => (
-            <Field key={id} name={FIELD.initial(id)} label={`${STATES[id].code} ${STATES[id].label}`} unit="personer" fields={fields} baseline={baseline} error={now.errors[FIELD.initial(id)]} />
+            <Field key={id} name={FIELD.initial(id)} label={`${STATES[id].code} ${STATES[id].label}`} unit="personer" error={now.errors[FIELD.initial(id)]} />
           ))}
         </div>
       </details>
 
       <div className="markov-actions">
-        <button type="button" className="markov-button is-primary" disabled={!canSave} onClick={saveBaseline}>
+        <button type="button" className="markov-button is-primary" disabled={!canSave} onClick={() => saveBaseline(fields)}>
           {baseline ? "Spara om som utgångsläge" : "Spara som utgångsläge"}
         </button>
         {baseline && (
@@ -234,10 +264,10 @@ function Settings({ now, fields, baseline, hasChanges }: { now: Evaluated; field
           type="button"
           className="markov-button"
           onClick={() => {
-            if (window.confirm("Återställa alla rutor till exempelvärdena? Dina ändringar går förlorade.")) resetFields();
+            if (window.confirm("Återställa alla rutor till startvärdena (uppmätt där det finns, annars exempelvärden)? Dina ändringar går förlorade.")) resetFields();
           }}
         >
-          Återställ exempelvärden
+          Återställ allt
         </button>
       </div>
       <p className="markov-note">
@@ -251,60 +281,9 @@ function Settings({ now, fields, baseline, hasChanges }: { now: Evaluated; field
   );
 }
 
-// ── input boxes ──────────────────────────────────────────────────────────────
+// ── one state's moves out ───────────────────────────────────────────────────
 
-function Field({
-  name,
-  label,
-  hint,
-  unit,
-  fields,
-  baseline,
-  error,
-}: {
-  name: string;
-  label: string;
-  hint?: string;
-  unit: "%" | "personer";
-  fields: Fields;
-  baseline: Fields | null;
-  error?: string;
-}) {
-  const id = `markov-${name.replace(/[^a-z0-9]+/gi, "-")}`;
-  const changed = baseline !== null && !sameField(name, fields, baseline);
-  return (
-    <div className={`markov-field${error ? " has-error" : ""}${changed ? " is-changed" : ""}`}>
-      <label htmlFor={id}>
-        <span className="markov-field-name">{label}</span>
-        {hint && <span className="markov-field-hint">{hint}</span>}
-      </label>
-      <span className="markov-input">
-        <input
-          id={id}
-          value={fields[name] ?? ""}
-          onChange={(event) => setField(name, event.target.value)}
-          inputMode="decimal"
-          autoComplete="off"
-          spellCheck={false}
-          maxLength={12}
-          aria-invalid={error ? true : undefined}
-          aria-describedby={error ? `${id}-error` : undefined}
-        />
-        <span className="markov-unit">{unit}</span>
-      </span>
-      {changed && baseline && (
-        <span className="markov-was">utgångsläge: {baseline[name]}{unit === "%" ? " %" : ""}</span>
-      )}
-      {error && (
-        <span id={`${id}-error`} className="markov-error">
-          {error}
-        </span>
-      )}
-    </div>
-  );
-}
-
-function StateCard({ id, fields, baseline, errors, params }: { id: TrackedId; fields: Fields; baseline: Fields | null; errors: Record<string, string>; params: MarkovParams }) {
+function StateCard({ id, errors, params }: { id: TrackedId; errors: Record<string, string>; params: MarkovParams }) {
   const info = STATES[id];
   const rowError = errors[FIELD.row(id)];
   const stay = stayProbability(params.transitions, id);
@@ -317,7 +296,7 @@ function StateCard({ id, fields, baseline, errors, params }: { id: TrackedId; fi
       <p className="markov-desc">{info.description}</p>
       {edgesFrom(id).map((edge) => {
         const name = FIELD.edge(edgeKey(edge.from, edge.to));
-        return <Field key={name} name={name} label={`till ${STATES[edge.to].code} ${STATES[edge.to].label}`} hint={edge.hint} unit="%" fields={fields} baseline={baseline} error={errors[name]} />;
+        return <Field key={name} name={name} label={`till ${STATES[edge.to].code} ${STATES[edge.to].label}`} hint={edge.hint} unit="%" error={errors[name]} />;
       })}
       {rowError ? (
         <p className="markov-error">{rowError}</p>
@@ -344,14 +323,6 @@ function Metric({ label, value, note, delta }: { label: string; value: string; n
       )}
       {note && <p className="kpi-note">{note}</p>}
     </div>
-  );
-}
-
-function LineSample({ dash, heavy }: { dash?: string; heavy?: boolean }) {
-  return (
-    <svg className="markov-sample" width="26" height="10" viewBox="0 0 26 10" aria-hidden>
-      <line x1="1" x2="25" y1="5" y2="5" strokeWidth={heavy ? 3.6 : 2.4} strokeDasharray={dash} strokeLinecap="round" />
-    </svg>
   );
 }
 
@@ -485,6 +456,8 @@ function Results({ run, params, referenceRun, shown, onToggle }: { run: Run; par
           />
           <CompareLegend withReference={referenceRun !== null} />
         </section>
+
+        <ChannelResults run={run} months={params.months} />
       </div>
     </section>
   );
@@ -593,13 +566,28 @@ function Explanation() {
           Simulatorn räknar förväntade antal människor, inte slumpade enskilda personer. Samma siffror ger därför alltid samma resultat, och ett decimaltal som “795,3 personer” är ett medelvärde, inte ett fel.
         </p>
         <p>
-          Varje månad kommer “Nya besökare per månad” in i Besökt, och sedan flyttar alla enligt matrisen. Den som kommer i månad 3 kan alltså redan bli engagerad i månad 3. S0 “Aldrig besökt” är ingen grupp som räknas: den är källan som nya besökare kommer ur.
+          Varje månad kommer de nya besökarna in i Besökt, och sedan flyttar alla enligt matrisen. Den som kommer i månad 3 kan alltså redan bli engagerad i månad 3. S0 “Aldrig besökt” är ingen grupp som räknas: den är källan som nya besökare kommer ur.
+        </p>
+        <p>
+          Hur många de nya besökarna är kommer från förvärvsmodellen, eller från rutan “Nya besökare per månad” om du skriver in själv. Sökmotorer, sociala medier och AI-sökmotorer börjar på en nivå och växer med en procentsats varje månad, upp till ett tak. Annonser kostar en budget: varje besökare kostar mer ju mer som spenderas (kostnaden per besökare är den vid liten budget gånger 1 + budget ÷ “dubbel kostnad vid”), så fler kronor ger fler besökare men aldrig hur många som helst. Direkt och hänvisning är ett fast tal.
+        </p>
+        <p>
+          Kvalitet säger hur ofta en besökare från kanalen börjar använda sidan jämfört med den vanliga besökaren: 1,4 betyder 40 % oftare. Det extra tas från dem som annars hade lämnat direkt, så andelen som över huvud taget bestämmer sig är oförändrad, och ingen kanal kan få fler att engagera sig än de som bestämmer sig. Kvaliteten gäller bara så länge en besökare är i Besökt; efter det är alla likadana.
         </p>
         <p>
           Premium betyder betalande kund. Webbplatsen säljer engångspaket och inte prenumeration, så “Premium” står just nu för att ha köpt. Hur intäkter följer av Premium bestäms när intäktsdelen byggs.
         </p>
         <p>
           “Vad blir det av 1 000 nya besökare?” följer en enda grupp och ingen annan, vilket visar hur lång vägen från besökare till kund är. “Blir premium” räknar en person som varit premium någon gång, även om personen sedan har lämnat.
+        </p>
+        <p>
+          Varje gång någon går in i Premium räknas det som ett köp av ett av tre paket. Priserna står inklusive moms, så intäkten är priset delat med 1 + momsen. Av varje köp går en betalavgift (en procent av det kunden betalar plus ett fast belopp), och varje månad kostar annonserna och de fasta kostnaderna. Resultatet är intäkt minus de tre. Någon som blir kvar i Premium betalar inte igen; för att köpa igen måste personen lämna Premium och komma tillbaka, vilket modellen tillåter.
+        </p>
+        <p>
+          Vad en analys kostar att ta fram, vad de andra kanalerna än annonser kostar, rabattkoder, återbetalningar och skatter ingår inte, så resultatet är för gott. Break-even är den månad då det ackumulerade resultatet är tillbaka på noll efter att ha varit under. Värdet av 1 000 besökare räknas på samma sätt som “Vad blir det av 1 000 nya besökare?” och gäller därför hela perioden från ankomsten.
+        </p>
+        <p>
+          En strategi är ett namn på de rutor du har ändrat. Jämförelsen kör varje strategi över lika många månader som rutorna nu säger, med startvärdena (uppmätta där det finns) som grund för allt som inte ändrats.
         </p>
         <p>Ett utgångsläge är en sparad kopia av rutorna. Ändrade rutor markeras, och diagram och nyckeltal jämför med kopian. Allt sparas bara i den här webbläsaren.</p>
       </div>

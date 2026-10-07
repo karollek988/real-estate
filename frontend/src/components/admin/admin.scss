@@ -461,6 +461,11 @@
 .chart-grid {
   stroke: rgba($white, 0.08);
   stroke-width: 1;
+
+  // the line for zero, when the axis goes below it
+  &.is-zero {
+    stroke: rgba($white, 0.32);
+  }
 }
 
 .chart-tick {
@@ -692,6 +697,25 @@
 @include series(run, $admin-green);
 @include series(reference, $admin-chart-grey);
 
+// ...and the five traffic channels. They share hues with some states (a channel is never drawn beside a
+// state in one chart, and each is named in its legend, table row and tooltip).
+@include series(seo, $admin-chart-blue);
+@include series(ads, $admin-chart-orange);
+@include series(social, $admin-chart-purple);
+@include series(ai, $admin-chart-teal);
+@include series(direct, $admin-chart-grey);
+
+// The economy: revenue, costs and profit; what the costs are; and the compared strategies (up to four).
+@include series(revenue, $admin-green);
+@include series(costs, $admin-chart-orange);
+@include series(profit, $admin-chart-sky);
+@include series(fees, $admin-chart-purple);
+@include series(fixed, $admin-chart-grey);
+@include series(s1, $admin-green);
+@include series(s2, $admin-chart-sky);
+@include series(s3, $admin-chart-orange);
+@include series(s4, $admin-chart-purple);
+
 .stats-foot {
   max-width: 920px;
   margin: 18px 2px 0;
@@ -838,7 +862,7 @@
 // The headline numbers, kept in view while the boxes further down are edited.
 .markov-live {
   position: sticky;
-  top: 6px;
+  top: 0;
   z-index: 5;
   display: flex;
   flex-wrap: wrap;
@@ -936,6 +960,103 @@
   min-width: 18px;
   color: $admin-text-muted;
   font-size: 12px;
+}
+
+// A box typed over its measured (or example) starting value: green, with what it started as under it
+.markov-field.is-typed .markov-input input {
+  border-color: rgba($admin-green, 0.7);
+}
+
+.markov-tag {
+  display: inline-block;
+  margin-left: 8px;
+  padding: 0 8px;
+  color: $admin-green;
+  border: 1px solid rgba($admin-green, 0.5);
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 1.5;
+  vertical-align: 1px;
+  white-space: nowrap;
+
+  &.is-demo {
+    color: $admin-chart-orange;
+    border-color: rgba($admin-chart-orange, 0.55);
+  }
+}
+
+.markov-measured {
+  color: $admin-text-muted;
+  font-size: 12px;
+}
+
+.markov-link {
+  padding: 0;
+  color: $admin-green;
+  background: none;
+  border: 0;
+  font: inherit;
+  font-weight: 700;
+  text-decoration: underline;
+  cursor: pointer;
+
+  &:focus-visible {
+    outline: 2px solid $admin-green;
+    outline-offset: 2px;
+    border-radius: 3px;
+  }
+}
+
+// What the site has measured about where new visitors come from, above the channels' boxes
+.markov-measured-panel {
+  margin-top: 16px;
+  padding: 14px 16px 16px;
+  background: rgba($white, 0.03);
+  border: 1px solid rgba($white, 0.1);
+  border-radius: 12px;
+
+  h4 {
+    display: flex;
+    align-items: center;
+    gap: 2px;
+    margin: 0 0 4px;
+    color: $admin-text-bright;
+    font-size: 14px;
+  }
+
+  p {
+    margin: 8px 0 0;
+    color: $admin-text;
+    font-size: 13px;
+    line-height: 1.6;
+  }
+
+  .markov-note {
+    margin-top: 12px;
+    color: $admin-text-muted;
+    font-size: 12.5px;
+  }
+
+  .markov-table-scroll {
+    margin: 12px 0 0;
+  }
+
+  // nothing (or too little) to start from: the example numbers are in use, and this says why
+  &.is-missing {
+    background: rgba($admin-chart-orange, 0.06);
+    border-color: rgba($admin-chart-orange, 0.5);
+  }
+
+  code {
+    padding: 0.1em 0.4em;
+    color: $admin-text-strong;
+    background: rgba($white, 0.07);
+    border-radius: 5px;
+    font-size: 0.92em;
+    // a file name has no spaces to break at: on a phone it must still fit
+    overflow-wrap: anywhere;
+  }
 }
 
 // A box that can't be used: red, and the words say why. A box that differs from the baseline: orange, and it says what it was.
@@ -1151,11 +1272,17 @@
   align-items: center;
   gap: 4px 14px;
 
+  // wide enough for "40000" beside its unit
   .markov-input {
-    max-width: 118px;
+    max-width: 160px;
+
+    input {
+      min-width: 78px;
+    }
   }
 
   .markov-was,
+  .markov-measured,
   .markov-error {
     grid-column: 1 / -1;
   }
@@ -1310,6 +1437,10 @@
   thead th {
     color: $admin-text-muted;
     font-weight: 700;
+
+    &:first-child {
+      text-align: left;
+    }
   }
 
   tbody th {
@@ -1332,6 +1463,214 @@
       color: $admin-green;
     }
   }
+}
+
+// The acquisition model: a switch, and one card per channel (the cards are the state cards' look)
+.markov-acq-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 14px 24px;
+}
+
+.markov-acq-switch {
+  display: grid;
+  gap: 6px;
+  justify-items: end;
+}
+
+// Channels that are not in use stay editable but quieter
+.markov-channels.is-off .markov-state {
+  opacity: 0.55;
+}
+
+.markov-readout {
+  margin: 0;
+  padding: 10px 12px;
+  color: $admin-text-strong;
+  background: rgba($white, 0.04);
+  border: 1px solid rgba($white, 0.1);
+  border-radius: 10px;
+  font-size: 13.5px;
+  line-height: 1.5;
+}
+
+.card-full {
+  grid-column: 1 / -1;
+}
+
+.markov-table .swatch {
+  display: inline-block;
+  margin-right: 8px;
+  vertical-align: -1px;
+}
+
+.markov-table tfoot {
+  th,
+  td {
+    color: $admin-text-bright;
+    font-weight: 700;
+    border-top: 1px solid rgba($white, 0.2);
+    border-bottom: 0;
+  }
+
+  th {
+    text-align: left;
+  }
+}
+
+// The money: the packages' cards are the state cards, and a purchase's split is a short list
+.legend.markov-split {
+  margin-top: 14px;
+}
+
+.markov-split li {
+  grid-template-columns: minmax(0, 1fr) auto;
+}
+
+.markov-money {
+  margin-bottom: 4px;
+}
+
+// Strategies: a list of presets and the person's own, what to compare, and the comparison itself
+.markov-strategies {
+  display: grid;
+  gap: 8px;
+  margin: 16px 0 0;
+  padding: 0;
+  list-style: none;
+
+  li {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr) auto;
+    align-items: center;
+    gap: 8px 14px;
+    padding: 10px 12px;
+    background: rgba($white, 0.03);
+    border: 1px solid rgba($white, 0.08);
+    border-radius: 12px;
+
+    &.is-active {
+      background: rgba($admin-green, 0.06);
+      border-color: rgba($admin-green, 0.6);
+    }
+  }
+}
+
+.markov-pick {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  color: $admin-text-muted;
+  font-size: 12px;
+  cursor: pointer;
+
+  input {
+    width: 16px;
+    height: 16px;
+    accent-color: $admin-green;
+  }
+}
+
+.markov-strategy-name {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 4px 10px;
+  min-width: 0;
+
+  strong {
+    color: $admin-text-bright;
+    font-size: 14px;
+  }
+}
+
+.markov-strategy-desc {
+  flex: 1 1 100%;
+  color: $admin-text-muted;
+  font-size: 12px;
+  line-height: 1.45;
+}
+
+.markov-strategy-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  justify-content: flex-end;
+}
+
+.markov-tag.is-quiet {
+  color: $admin-text-muted;
+  border-color: rgba($white, 0.22);
+}
+
+.markov-button.is-small {
+  flex: 0 0 auto;
+  height: 28px;
+  padding: 0 11px;
+  border-radius: 8px;
+  font-size: 12px;
+}
+
+.markov-save-strategy {
+  margin-top: 18px;
+
+  label {
+    display: block;
+    margin-bottom: 7px;
+    color: $admin-text-strong;
+    font-size: 13px;
+    font-weight: 700;
+  }
+
+  div {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+  }
+}
+
+.markov-save-strategy input,
+.markov-rename input {
+  flex: 1 1 240px;
+  min-width: 0;
+  padding: 8px 12px;
+  color: $admin-text-strong;
+  background: rgba($white, 0.04);
+  border: 1px solid rgba($white, 0.16);
+  border-radius: 10px;
+  font-size: 14px;
+
+  &:focus-visible {
+    outline: 2px solid $admin-green;
+    outline-offset: 1px;
+    border-color: transparent;
+  }
+}
+
+.markov-rename {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.markov-compare {
+  margin-top: 20px;
+  padding-top: 16px;
+  border-top: 1px solid rgba($white, 0.07);
+}
+
+.markov-compare-title {
+  margin: 18px 0 0;
+  color: $admin-text-bright;
+  font-size: 14px;
+}
+
+.markov-table td.is-best {
+  color: $admin-text-bright;
+  background: rgba($admin-green, 0.1);
+  font-weight: 700;
 }
 
 .markov-prose {
@@ -1451,6 +1790,20 @@
 
   .markov-live-stat.is-optional {
     display: none;
+  }
+
+  .markov-acq-switch {
+    justify-items: start;
+  }
+
+  // a strategy's buttons go under its name
+  .markov-strategies li {
+    grid-template-columns: auto minmax(0, 1fr);
+  }
+
+  .markov-strategy-actions {
+    grid-column: 1 / -1;
+    justify-content: flex-start;
   }
 
   .markov-state {

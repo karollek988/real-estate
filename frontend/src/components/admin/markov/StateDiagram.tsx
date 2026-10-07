@@ -21,12 +21,15 @@ function andList(items: string[]): string {
 export function StateDiagram({
   params,
   populations,
+  sourceLabel,
   selected,
   onSelect,
 }: {
   params: MarkovParams;
   /** people per state at the end of the run; null while the boxes can't be read */
   populations: Record<TrackedId, number> | null;
+  /** what the S0 box says about the monthly visitors: "3 000 / mån" */
+  sourceLabel: string;
   selected: StateId | null;
   onSelect: (id: StateId | null) => void;
 }) {
@@ -79,7 +82,7 @@ export function StateDiagram({
           const info = STATES[id];
           const isSource = id === "never";
           const isSelected = selected === id;
-          const people = isSource ? `${formatInt(params.newVisitors)} / mån` : populations ? formatInt(populations[id as TrackedId]) : "–";
+          const people = isSource ? sourceLabel : populations ? formatInt(populations[id as TrackedId]) : "–";
           return (
             <g
               key={id}

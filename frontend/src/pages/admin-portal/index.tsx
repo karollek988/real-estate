@@ -5,12 +5,16 @@ import { AdminShell } from "@/components/admin/AdminShell";
 import { isAdminHost } from "@/lib/admin/host";
 import { isAdminSessionValid, isSecureRequest } from "@/lib/admin/session";
 import type { AdminStatsResult } from "@/lib/admin/stats";
+import { loadMeasuredAcquisition } from "@/lib/admin/acquisitionData";
 import { loadAdminStats } from "@/lib/admin/statsData";
+import type { MeasuredResult } from "@/lib/markov/measured";
 
 interface AdminPortalProps {
   authenticated: boolean;
   /** only ever set for a signed-in admin: the numbers are not in the page for anyone else */
   stats: AdminStatsResult | null;
+  /** where new visitors come from, as measured; the Markov simulator starts from it */
+  measured: MeasuredResult | null;
 }
 
 /**
@@ -31,10 +35,11 @@ export const getServerSideProps: GetServerSideProps<AdminPortalProps> = async ({
     "encrypted" in req.socket && req.socket.encrypted ? "https:" : "http:"
   );
   const authenticated = isAdminSessionValid(req.headers.cookie, secure);
-  return { props: { authenticated, stats: authenticated ? await loadAdminStats() : null } };
+  const [stats, measured] = authenticated ? await Promise.all([loadAdminStats(), loadMeasuredAcquisition()]) : [null, null];
+  return { props: { authenticated, stats, measured } };
 };
 
-export default function AdminPortal({ authenticated, stats }: AdminPortalProps) {
+export default function AdminPortal({ authenticated, stats, measured }: AdminPortalProps) {
   return (
     <>
       <Head>
@@ -43,7 +48,7 @@ export default function AdminPortal({ authenticated, stats }: AdminPortalProps) 
         <meta name="theme-color" content="#0a0f0d" />
         <link rel="icon" href="/icon.png" />
       </Head>
-      {authenticated && stats ? <AdminShell stats={stats} /> : <AdminLogin />}
+      {authenticated && stats && measured ? <AdminShell stats={stats} measured={measured} /> : <AdminLogin />}
     </>
   );
 }

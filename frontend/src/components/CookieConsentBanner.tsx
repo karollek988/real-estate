@@ -36,7 +36,9 @@ export function CookieConsentBanner() {
       <div className="mx-auto max-w-2xl rounded-2xl border border-white/10 bg-[#0A0F0D] p-5 shadow-[0_8px_30px_rgba(0,0,0,0.45)] backdrop-blur-xl sm:p-6 sm:shadow-[0_16px_48px_rgba(0,0,0,0.5)]">
         <p className="text-sm leading-relaxed text-neutral-300">
           Vi använder nödvändiga cookies för att webbplatsen ska fungera. Vill du även
-          godkänna cookies för marknadsföring och analys? Läs mer i vår{" "}
+          godkänna en cookie för analys och marknadsföring? Den kommer ihåg var du först
+          hittade oss (till exempel en sökmotor), så att vi kan se vilka kanaler som
+          fungerar. Läs mer i vår{" "}
           <a
             href="/privacy"
             className="font-medium text-green-400 underline underline-offset-4 transition hover:text-green-300"

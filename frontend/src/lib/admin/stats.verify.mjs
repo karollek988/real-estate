@@ -1,7 +1,7 @@
 // Standalone verification for the admin statistics (no test framework in this
 // project - see helpers.verify.mjs). Run with:
 //   npx tsx src/lib/admin/stats.verify.mjs
-import { niceScale } from "../../components/admin/stats/charts.tsx";
+import { niceRange, niceScale } from "../../components/admin/stats/charts.tsx";
 import {
   HISTORY_DAYS,
   PACKAGES,
@@ -91,11 +91,13 @@ check("change: down 20 %", change(8, 10), -0.2);
 check("change from nothing is not a number", change(5, 0), null);
 
 // ── the chart scale ──────────────────────────────────────────────────────────
-check("scale for nothing is a small empty axis", niceScale(0, true), { max: 4, step: 1 });
-check("scale for 7 whole things", niceScale(7, true), { max: 8, step: 2 });
-check("scale for 230", niceScale(230, true), { max: 300, step: 100 });
-check("a count of 1 keeps whole steps", niceScale(1, true), { max: 1, step: 1 });
+check("scale for nothing is a small empty axis", niceScale(0, true), { min: 0, max: 4, step: 1 });
+check("scale for 7 whole things", niceScale(7, true), { min: 0, max: 8, step: 2 });
+check("scale for 230", niceScale(230, true), { min: 0, max: 300, step: 100 });
+check("a count of 1 keeps whole steps", niceScale(1, true), { min: 0, max: 1, step: 1 });
 check("the scale always reaches the data", [3, 17, 41, 99, 100, 101, 987, 12345].every((v) => niceScale(v, true).max >= v), true);
+check("a scale that goes below zero keeps zero among its ticks, and reaches both ends of the data", [[-300, 700], [-5, 40], [-1200, 0], [-0.5, 3]].every(([lo, hi]) => { const s = niceRange(lo, hi); const ticks = []; for (let v = s.min; v <= s.max + 1e-9; v += s.step) ticks.push(Math.round(v * 1000) / 1000); return s.min <= lo && s.max >= hi && ticks.includes(0); }), true);
+check("with nothing below zero, niceRange is niceScale", JSON.stringify(niceRange(0, 230, true)), JSON.stringify(niceScale(230, true)));
 
 // ── demo data and the loader's safety switches ───────────────────────────────
 const demoA = buildDemoStats(TODAY, "2026-10-06T10:00:00Z");
