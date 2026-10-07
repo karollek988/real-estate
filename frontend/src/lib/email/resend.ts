@@ -19,5 +19,5 @@ export function createResendClient(): Resend {
 }
 
 export function getEmailFrom(): string {
-  return process.env.RESEND_FROM_EMAIL ?? "Köpanalys <info@kopanalys.se>";
+  return process.env.RESEND_FROM_EMAIL ?? "Köpanalys <kontakt@kopanalys.se>";
 }

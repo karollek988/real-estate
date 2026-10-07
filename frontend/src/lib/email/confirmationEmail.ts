@@ -51,7 +51,7 @@ function renderShell(preheader: string, bodyHtml: string): string {
               <td style="padding:20px 28px; border-top:1px solid #e5e7eb; background-color:#fafafa;">
                 <p style="margin:0; font-size:12px; line-height:1.6; color:${BRAND.textMuted};">
                   Köpanalys &middot; Frågor? Skriv till
-                  <a href="mailto:info@kopanalys.se" style="color:${BRAND.green}; text-decoration:underline;">info@kopanalys.se</a>
+                  <a href="mailto:kontakt@kopanalys.se" style="color:${BRAND.green}; text-decoration:underline;">kontakt@kopanalys.se</a>
                 </p>
               </td>
             </tr>

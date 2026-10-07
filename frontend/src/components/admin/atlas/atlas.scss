@@ -1,12 +1,11 @@
-// Atlas map workspace styles - ported from KopanalysMapDemo/src/style.css (commit 10152df).
-// Changes since: the Google Fonts @import and the hard-coded 'Inter' family are gone - Inter is
-// self-hosted through next/font in pages/_app.tsx and reaches these rules by inheritance - and
-// the Sass conversion (2026-10-05) moved colours, fonts, easings, shadows and breakpoints into
-// the master variables file, compiling to the same CSS as before. Since the public map page
-// (2026-10-05) the workspace rules live in _atlas-workspace.scss; this file adds the page-level
-// resets the admin portal needs and emits the workspace globally.
+// Page-level resets for the admin portal (admin.kopanalys.se): colour and background, box-sizing,
+// body margin and form-control fonts. Inter is self-hosted through next/font in pages/_app.tsx and
+// reaches these rules by inheritance.
+//
+// This file used to emit the whole map workspace as well (ported from KopanalysMapDemo/src/style.css,
+// commit 10152df). The admin portal has no map since 2026-10-06; the workspace lives in
+// _atlas-workspace.scss and is emitted only by atlas-public.scss for /karta, on the brand palette.
 @use "../../../styles/variables" as *;
-@use "atlas-workspace";
 
 :root {
   color: $admin-text-bright;
@@ -34,5 +33,3 @@ textarea {
 button {
   cursor: pointer;
 }
-
-@include atlas-workspace.workspace;

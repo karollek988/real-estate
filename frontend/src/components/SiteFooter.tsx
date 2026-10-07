@@ -67,11 +67,11 @@ export function SiteFooter() {
               Köpa bostad? Vi visar vad du faktiskt köper – föreningens ekonomi, området och alla kostnader.
             </p>
             <a
-              href="mailto:info@kopanalys.se"
+              href="mailto:kontakt@kopanalys.se"
               className="mt-5 inline-flex items-center gap-2 text-[14px] font-medium text-white/80 transition hover:text-white"
             >
               <MailIcon className="h-4 w-4 text-ka-mint" />
-              info@kopanalys.se
+              kontakt@kopanalys.se
             </a>
             <div className="mt-5 flex items-center gap-2">
               <a

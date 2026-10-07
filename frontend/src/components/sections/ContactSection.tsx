@@ -46,7 +46,7 @@ export function ContactSection({
       if (!res.ok) {
         setError(
           data.error?.message ??
-            "Kontakt via formulär är inte tillgänglig just nu — mejla oss direkt på info@kopanalys.se istället.",
+            "Kontakt via formulär är inte tillgänglig just nu — mejla oss direkt på kontakt@kopanalys.se istället.",
         );
         return;
       }
@@ -58,7 +58,7 @@ export function ContactSection({
       successTimer.current = setTimeout(() => setSuccess(false), 6000);
     } catch {
       setError(
-        "Kontakt via formulär är inte tillgänglig just nu — mejla oss direkt på info@kopanalys.se istället.",
+        "Kontakt via formulär är inte tillgänglig just nu — mejla oss direkt på kontakt@kopanalys.se istället.",
       );
     } finally {
       setLoading(false);
@@ -85,10 +85,10 @@ export function ContactSection({
                 Har du en fråga, ett förslag eller något annat på hjärtat? Skicka ett meddelande
                 så återkommer vi, eller mejla oss direkt på{" "}
                 <a
-                  href="mailto:info@kopanalys.se"
+                  href="mailto:kontakt@kopanalys.se"
                   className="font-semibold text-ka-green-700 underline underline-offset-4 hover:text-ka-green-900"
                 >
-                  info@kopanalys.se
+                  kontakt@kopanalys.se
                 </a>
                 .
               </p>
@@ -178,10 +178,10 @@ export function ContactSection({
                           {error.split("istället")[0]}
                           istället
                           <a
-                            href="mailto:info@kopanalys.se"
+                            href="mailto:kontakt@kopanalys.se"
                             className="ml-1 font-semibold text-ka-green-700 underline underline-offset-4 hover:text-ka-green-900"
                           >
-                            info@kopanalys.se
+                            kontakt@kopanalys.se
                           </a>
                         </>
                       ) : (

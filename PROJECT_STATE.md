@@ -5,12 +5,342 @@
 > otherwise leave it alone. Detailed research/product docs live in `docs/`;
 > this file is the "what's actually true right now" summary.
 
-Last updated: 2026-10-05 — Twelfth session (landing hero centred again). **Merged to `main` and
-deployed to production the same day at the user's request**: `main` = `2420a7c`, a merge commit of
-`styleRedesign` (`9e020de`) onto the old `main` (`bbef750`), no conflicts (main had nothing the branch
-lacked). Vercel (kopanalys.se) and Railway (`kopanalys-python-api`, API code unchanged) both deployed
-successfully; the merge also brought the earlier build fix and approved cleanup to `main`. The eleventh
-and tenth sessions follow below it.
+Last updated: 2026-10-07 — Sixteenth session (the Markov simulator: state model and simulator, acquisition
+model, measured traffic sources behind a consent cookie, then **revenue/costs, company KPIs and strategies, which
+complete the six-step plan**; **not committed, and the new migration `20261007000000_acquisition_analytics.sql`
+is not applied anywhere**). Before it: the fifteenth (admin
+statistics and visitor counting; pushed as `d225e80`, whether its migration has been applied in Supabase is for the user to confirm), the fourteenth (the map page on the master
+variables) and the thirteenth (admin portal map removed), both on `main`; then the twelfth, eleventh, tenth.
+
+**Sixteenth session, fourth round — revenue and costs, company KPIs, marketing strategies (all six steps of the plan are now built).**
+Design choices by the user: Premium turns into revenue **per purchase with a package mix** (the measured mix from
+the real purchases by default); the costs to include are **payment fees and fixed monthly costs** (ad spend is
+always in); the KPIs are **profit and break-even, cost per new customer by channel, and value of a visitor and a
+customer**; strategies are **named, saved scenarios compared side by side**. Not chosen, so *not in the model*: what
+an analysis costs to produce, running costs of the non-ad channels, return on ad spend as its own KPI — the page says
+so, and the result is therefore before those (too good).
+- **Money (`lib/markov/finance.ts`):** every move into Premium is one purchase of a package (Områdesanalys 99 kr,
+  Trygghetspaketet 499 kr, Tre bostäder 999 kr, prices from `lib/pricing.ts`, **including 25 % VAT**; revenue = price ÷
+  (1 + VAT)). Revenue is booked in the month of the purchase; someone who stays in Premium does not pay again, but one
+  who leaves and re-enters does. Costs per month: payment fee (default 1,5 % of the price paid + 1,80 kr, editable),
+  the ad spend of the acquisition model, fixed costs (default 5 000 kr, an example). Defaults: mix 60/35/5 unless
+  measured. Output: revenue/fees/ads/fixed/costs/profit/cumulative by month, first profitable month, **break-even**
+  (the month the accumulated result is back at ≥ 0 after being below; "start" if never below; none if not reached or
+  nothing sold), per-channel economy (purchases, revenue, fees, ad spend, contribution, **value per 1 000 visitors**
+  from a cohort of that channel alone, ad cost per 1 000 visitors and per purchase), and company KPIs (cost per
+  purchase = ads + fixed ÷ purchases; value per 1 000 visitors and per paying customer = purchases per visitor/customer
+  × net per purchase; margin). `engine.ts` cohorts now return `purchasesPerVisitor`, and `cohortForChannel()` follows
+  one channel alone whatever its volume.
+- **Real purchases (`measured.ts` `purchaseMix`):** the package mix comes from the purchases the statistics page already
+  reads (newest 90 days, at least 10 purchases, shares rounded to 0,1 % that add up to exactly 100 %); the three
+  share boxes then start at it and are marked "uppmätt". The revenue card also compares real purchases per month with
+  what the model says (the model starts from nobody, so month 1 shows ~0).
+- **Strategies (`lib/markov/strategies.ts`, `StrategyPanel.tsx`, `store.ts`):** a strategy is a name plus the typed-in boxes
+  (overrides), so it keeps following new measurements for everything it did not change. Five presets (Nuläge, Mer SEO
+  6 %/mån, Annonser på 20 000 kr, AI-synlighet 15 %/mån, Allt på en gång) that can be loaded and compared, and up to
+  12 of the person's own: save, load (asks first if the boxes have unsaved changes), update, rename, delete.
+  Comparison of up to four (also "Nuvarande rutor"): a table of visitors, premium, purchases, revenue, costs, result,
+  cost per purchase, value per 1 000 visitors (best of a row in bold), break-even, margin, plus an overlay chart of
+  the accumulated result; **every column is run over the same number of months as the boxes say**. Saved in this
+  browser (`kopanalys.markov.strategies`, version 1, sanitised on load).
+- **UI:** `RevenueModel.tsx` (the money boxes), `FinanceResults.tsx` (six KPI cards, monthly and cumulative charts, cost
+  split, a purchase's split, economy by channel with a table that adds up to the result), `StrategyPanel.tsx`; the live
+  bar also shows the result. `LineChart` now has a signed axis (`niceRange`, a zero line); `run.ts` moved to
+  `lib/markov/run.ts`. The pipeline strip says "Byggd" on all six steps.
+- **Verified:** `markov.verify.mjs` (221: purchase and fee arithmetic, hand-computed month tables and break-even cases,
+  that channel results add up to the whole, purchases per visitor in a cycle, the real-mix rounding and windows, the
+  money boxes' validation, strategy sanitising/storage, that every preset reads over example and measured numbers),
+  `stats.verify.mjs` (55, now with the signed scale), and headless Chrome (58 checks for money and strategies, and the
+  earlier scripts re-run) in dev and in a production build under the real admin CSP, with expected numbers computed
+  independently by the engine. **Not verified:** that the example prices/mix/fee/fixed costs are right for the real
+  business (they are examples), and the money on real traffic (nothing real has been collected yet).
+- **Fixed on the way:** `admin.verify.mjs` "tampered signature rejected" was a flaky check (~6 % of runs): it swapped the
+  last base64 character of the signature for A or B, and that character carries only 4 meaningful bits, so a
+  neighbour can decode to the same bytes. Not a login weakness; the test now tampers a middle character and moves the
+  last one 16 places (40 clean runs).
+- **Next (not started):** what an analysis costs to produce (per package), running costs per channel (so every channel
+  has a full cost per customer), return on ad spend as its own KPI, Monte Carlo runs for ranges, and calibrating the
+  probabilities against the real purchases (the revenue card already shows the gap).
+
+**Sixteenth session, third round — real numbers for the channels (analytics cookie `ka_src`, needs consent).**
+The user asked that the acquisition model start from real statistics (how many come from search engines now),
+with scenarios still possible, using cookies and therefore consent. Design choices (all the recommended ones): the
+cookie remembers **only the first source**; consenting visitors are **scaled up using the banner choices**; boxes
+are **prefilled and any box can be typed over**; **growth defaults to 0 %**.
+- **The cookie:** `ka_src`, set by `components/analytics/SourceTracker.tsx` only after "Acceptera alla" (the banner's
+  `marketing` flag, which is the analysis consent), 90 days, first-party, `SameSite=Lax`, `Secure` on https, value
+  `channel.source` (e.g. `seo.google`) and nothing else. Not set, and nothing counted, with Do Not Track / Global
+  Privacy Control. Removed on decline and on "Cookie-inställningar". Where the visitor came from is worked out in
+  the browser (`lib/analytics/source.ts`: paid campaign tag/click id → ads; named `utm_source` (ChatGPT adds
+  `utm_source=chatgpt.com`) → ai/social/seo; else the referrer's host → ai, seo, social; own host or none → direct;
+  other sites → direct/link; Android app referrers too) and only the channel and a source name from a fixed list
+  are sent; the referrer and address never leave the device. The landing source is kept in memory (nothing is
+  stored before consent), so accepting on a later page of the same visit still gets it right; a visitor who
+  accepts only after a full page load on another page counts as `direct`.
+- **Server:** `POST /api/analytics/arrival` (`app/api/analytics/arrival/route.ts`; events `accept`, `arrive` (consenting,
+  cookie missing/expired: counts as new again), `decline`; same guards as the page-view beacon, 30/min per address,
+  excluded from the `proxy.ts` matcher) → `record_acquisition()` → `analytics_arrivals_daily(day, channel, source,
+  visitors)` and `analytics_consent_daily(day, accepted, declined)`: daily totals only, no id. **The user must apply
+  `supabase/migrations/20261007000000_acquisition_analytics.sql`** (Supabase SQL Editor); until then the Markov tab
+  says so and uses the example numbers.
+- **Consent versioning (`lib/consent.ts`, `CONSENT_VERSION = 2`):** an "accept" saved before this cookie existed is
+  **not carried over** — those visitors see the banner once more (the old policy said no such cookie existed); a
+  "decline" stays. Banner text and `/privacy` now describe the cookie (name, 90 days, content, purpose, the
+  decline count, retention). **The policy text is legal text and wants the user's/legal's read.**
+- **From the measurements to the boxes (`lib/markov/measured.ts`):** the newest 30 days (or since measuring began);
+  new visitors everyone = counted (accepted) + declined; each channel = its share of the counted × everyone ×
+  30.4375 ÷ days. Usable from 20 counted visitors over 7 days (else the example numbers, with the reason shown);
+  under 100 is called thin. Filled in: each channel's level, growth 0, a ceiling of at least 3× the level, and an
+  ad budget that reproduces the measured ad visitors (the ad curve solved backwards; 0 when no ads). Quality and
+  everything else stay as examples: nothing measures them yet. Assumes decliners arrive from the same places.
+  Ads show up only if links carry `utm_medium=cpc` etc. or a `gclid`/`msclkid`.
+- **Scenarios (`store.ts` now saves only what was typed — "overrides" — over the starting values):** untouched boxes
+  follow new measurements, typed boxes keep their value; typed boxes show "uppmätt: X" and a per-box
+  "Återställ", the card has "Återställ kanalerna till uppmätt", "Återställ allt" resets everything, and a box
+  typed to exactly its starting text counts as untouched. Settings saved by the earlier version (all boxes) are
+  migrated: only what differed from the example numbers is kept as typed. The baseline compare is unchanged
+  (a baseline is a full snapshot), so "measured baseline vs my scenario" works.
+- **Admin page:** `pages/admin-portal` also loads `loadMeasuredAcquisition()` (`lib/admin/acquisitionData.ts`); the
+  acquisition card has an "Uppmätt trafik" panel (counted, share, estimated per month, biggest source per channel,
+  how it was scaled, warnings). `ADMIN_STATS_DEMO=1` (development only) also gives demo measured traffic.
+- **Verified:** `analytics.verify.mjs` (131: all referrer cases incl. look-alike domains, cookie format, the
+  endpoint with the database call caught), `markov.verify.mjs` (144), the migration against PGlite (tables, checks,
+  the function, anon/authenticated denied, service role allowed), headless Chrome on the public site (31 checks:
+  real link click from a referrer, cookie contents/lifetime, decline, GPC, old consent re-asked, expired cookie,
+  reopening, nothing but day/event/channel/source sent) and on the admin portal (43 + the earlier 86), against a stub
+  database, in dev and in a production build under the real admin CSP. **Not verified:** the migration on the real
+  Supabase; real traffic (ChatGPT/Perplexity/Instagram referrers behave as documented, but were only simulated; some
+  apps and privacy browsers send no referrer at all and count as `direct`); the pre-existing banner lint error
+  (`set-state-in-effect` in `CookieConsentBanner.tsx`) is still there.
+
+**Sixteenth session — the "Markov-simulator" tab is built (customer state model + simulator).**
+Step one of the user's plan; the two layers above it are *not built* and the simulator is made to be fed by them.
+- **The plan the user gave:** (1) a customer state model, S0 Never visited … S7 Reactivated; (2) a customer
+  acquisition model — Google/SEO, social, ads **and AI search engines** → visitors → engaged → premium; (3) a
+  marketing structure on top: marketing strategy → acquisition model → new potential users → Markov model →
+  revenue/costs → company KPIs. Scope chosen by the user for the first round: **state model + simulator only**;
+  the acquisition model came in a second round (see below). The tab shows the six-step chain as a strip: "Byggd" on
+  förvärvsmodell, nya potentiella användare and the Markov model, "Kommer" on strategy, revenue/costs and KPIs.
+- **Decisions the user made:** nine states, not eight — **S8 Bounce** was added because their diagram has it
+  (visited→bounce); churn flow **"hybrid"** (see `EDGES`: engaged→inactive; registered→inactive/churned;
+  premium→inactive/churned; inactive→churned/reactivated; churned→reactivated with a tiny chance; reactivated→
+  engaged/premium/inactive; bounce→visited at 0 until set); time step **one month**. Premium = a **paying
+  customer** (the product sells one-time packages 99/499/999 kr, no subscription) — *how revenue follows from
+  Premium is not decided: ask the user when the revenue layer is built*. S0 is not a population: it is the source,
+  and "Nya besökare per månad" (default 3 000) is what leaves it — that one number is where the acquisition model
+  plugs in later.
+- **Code:** `lib/markov/model.ts` (states, allowed moves, defaults, `buildMatrix`), `engine.ts` (`simulate`:
+  expected populations, deterministic, arrivals added to Visited at the start of each month and then everyone
+  moves; `cohort`: what becomes of 1 000 new visitors, with "ever premium" and mean month to first premium),
+  `fields.ts` (the boxes as text — Swedish decimal comma, `%`, spaces — parsed and checked: per-box errors, a
+  row over 100 % is an error, months only 12/24/36, saved settings versioned and never trusted),
+  `markov.verify.mjs` (59 checks, incl. closed-form chains and that every move has an arrow in the diagram, each
+  arrow starting and ending on the right boxes). UI in `components/admin/markov/`: `MarkovSimulator.tsx`,
+  `StateDiagram.tsx` + `diagramLayout.ts` (hand-placed SVG, pick a state to see its arrows get thicker with the
+  chance and be labelled; also written out in words; keyboard-operable), `store.ts` (settings in this browser's
+  localStorage via `useSyncExternalStore`, so no hydration mismatch). `LineChart` added to `stats/charts.tsx`;
+  tokens `$admin-chart-yellow/-purple/-vermillion`, `$admin-raised(-hover)`; state colours are Okabe-Ito and the
+  lines also differ by dash pattern. The old placeholder `stats/MarkovPanel.tsx` is deleted.
+- **What it does:** every probability is a box (17 of them, grouped per state; "stannar kvar" is what is left);
+  start populations and months; results — premium after N months, premium entries, share of visitors that ever
+  become premium, mean time to first premium; a population-per-state chart (states can be switched on/off;
+  Bounce/Visited are off at first as they dwarf the rest); premium over time; the 1 000-visitor cohort; tables
+  (month by month, the 8×8 matrix); an explanation. **"Spara som utgångsläge"** keeps the current boxes as a
+  baseline: changed boxes are marked (orange, "utgångsläge: …"), results show the change and a second line.
+  Bad input never produces numbers: the results are replaced by a "Resultatet väntar" notice and a sticky bar
+  says how many boxes need fixing. A sticky bar with the headline numbers stays in view while editing.
+- **The default probabilities are placeholders, not measurements** (tuned so a new visitor has ≈3 % chance of
+  ever buying; with the visitors typed in as 3 000 a month: 795 premium after 24 months, 1 724 premium entries;
+  with the example channels, now the default: 1 167 and 2 291) — the site does not measure registration,
+  engagement or return yet. The page says so in a banner.
+- **Acquisition model (second round, user's design choices: five standard channels; volume matched to the
+  channel; a quality multiplier per channel; a switch between typed-in and channels).** `lib/markov/acquisition.ts`:
+  channels **seo, ads, social, ai (AI search engines), direct**. seo/social/ai = visitors in month 1 × (1 + growth)^
+  (month − 1), capped (growth may be negative: −50…100 %); ads = a monthly budget in kr where the cost per visitor
+  is `c·(1 + budget/D)` (c = cost at a small budget, D = "dubbel kostnad vid"), so visitors = budget·D/(c·(D+budget))
+  and can never pass D/c; ads can run from month X to Y; direct = a fixed number. **Quality** q multiplies
+  visited→engaged and the extra is taken out of visited→bounced (the total chance of deciding is unchanged, so q
+  can't make more people engage than decide); it acts only while someone is in "Besökt" (the engine keeps one
+  visited pool per channel plus a neutral pool for typed-in visitors and returns from bounce; every other state is
+  shared). Defaults: SEO 1 200 +4 %/mån tak 6 000 q 1; ads 15 000 kr, 12 kr, D 40 000 kr, q 0,8; social 400 +3 %
+  tak 3 000 q 0,6; AI 200 +10 % tak 4 000 q 1,4; direct 300 q 1,3 (≈3 009 visitors in month 1, 6 747 in month 24).
+  **The switch ("Skriv in själv" / "Från kanaler", default channels)** keeps the old "Nya besökare per månad" box
+  for typed-in mode; only the boxes in use are validated (a broken channel box is ignored while typing by hand and
+  vice versa), and saved settings from before the channels exist load with the example channels. Results in
+  channel mode: visitors per month by channel (stacked bars) and **"Kanalerna jämförda"** (visitors, share, new
+  premium, premium per 1 000 visitors, premium at the end, ad cost, cost per new premium). The split by channel is
+  **exact** because the model is linear (each channel's visitors are run alone and the runs add up; tested). Only
+  ads have a cost so far — the other channels cost too, which belongs to the revenue/cost layer. The S0 box and the
+  sticky bar show the average per month in channel mode. UI: `AcquisitionModel.tsx`, `ChannelResults.tsx`,
+  `Field.tsx` (shared box), `run.ts` (evaluate + types); `engine.ts` was rewritten around the pools (`attribute()`
+  added) and gives the old numbers exactly in typed-in mode. Tooltips in the charts now size to their text.
+- **Verified:** `tsc`, eslint, `markov.verify.mjs` (105 checks, now also: the growth and ad formulas, quality
+  clamping with hand-computed months, that one channel at quality 1 equals typing the number, people conserved,
+  per-channel results adding up to the whole, mixed cohorts, every channel box's validation), the earlier
+  `stats`/`analytics`/`admin` verify scripts, and headless Chrome (42 checks for the simulator + 44 for the
+  acquisition model: switch, the five channels, a broken box, ceiling/month rules, ads' rising cost per visitor,
+  schedule, tables and tooltips, baseline compare with channels, reload, phone) against scratch copies in **both** `next dev --webpack` and a production
+  `next build --webpack` + `next start` under the real admin CSP: defaults, picking states by mouse and keyboard,
+  editing, invalid box and over-100 % row, baseline compare, month-count mismatch, chart toggles and tooltips,
+  tables, persistence across reload, damaged saved settings, reset, phone (no sideways page scroll, sticky bar,
+  16 px inputs) and tablet — no console errors or warnings. (Turbopack can't build from the scratch copy's
+  `node_modules` junction, so Turbopack itself was not run on this code.)
+- **Next:** done in the fourth round (above).
+
+**Fifteenth session — the admin portal's page is now statistics + a placeholder for the Markov simulator.**
+(The placeholder was replaced in the sixteenth session, above.)
+After login on `admin.kopanalys.se`: the session bar, two tabs ("Statistik", "Markov-simulator"; the open tab
+is kept in the address as `#markov`), and the tab's page. Everything is Swedish.
+- **What the statistics page shows** (`components/admin/stats/`, data from `lib/admin/stats*.ts`): visitors,
+  page views, purchases and estimated revenue for 7/30/90 days, each against the period before; visitors per
+  day (area chart); the split of visitors on mobile/tablet/desktop (donut); purchases per day by package
+  (stacked bars); which package is chosen (share, count, revenue). Charts are hand-built SVG (no chart
+  library; drawn at their real width so phone labels stay readable; Okabe-Ito colours for devices, one green in
+  three lightnesses for packages — tokens `$admin-chart-*` — and every series is also named in text).
+  Built when the page is requested, for a signed-in admin only (`getServerSideProps`); the numbers are not in
+  the page for anyone else. If the database settings or the new tables are missing, or a query fails, the tab
+  says so and what to do instead of crashing.
+- **Visitor counting is new, first-party and cookieless** (chosen by the user over consent-only counting and
+  over sample data). `PageViewTracker` (root layout) sends a same-origin beacon `POST /api/analytics/hit` once
+  per page shown, with one bit of body (touch yes/no, to tell an iPad from a Mac). The route
+  (`app/api/analytics/hit/route.ts`) refuses the admin host, other sites, bots, Do Not Track / Global Privacy
+  Control, and more than 120 hits/min from one address; it keeps **no IP, user agent or URL**. A visitor is
+  `HMAC(secret, Stockholm day | IP | user agent)`: it changes every day and cannot be followed across days.
+  The secret is `ANALYTICS_HASH_SECRET` or, failing that, derived from `SUPABASE_SERVICE_ROLE_KEY`. So a
+  "visitor" over several days is the sum of daily visitors (someone who returns three days counts three times).
+  `proxy.ts` leaves `/api/analytics/hit` out of its matcher (no Supabase session refresh per page view).
+- **Database: `supabase/migrations/20261006000000_site_analytics.sql`** — `analytics_visitor_days` (the daily
+  hashes, deleted after two days by the function itself) and `analytics_daily` (visitors and page views per day
+  and device, kept), `record_page_view()` (service role only; anon/authenticated denied). **The user has to apply
+  it** (Supabase SQL Editor) before anything is counted; until then the Statistik tab shows a "tables missing"
+  notice. Purchases need nothing new: they come from `credit_purchases` (days in Swedish time; revenue =
+  count × today's list price, because the ledger stores no amounts, so discount codes are not reflected;
+  older price keys such as `premium_analysis` show as "Äldre / övrigt").
+- **Privacy policy changed** (`app/privacy/page.tsx`): it used to promise that any usage statistics would only
+  be collected with consent. It now describes the anonymous counting (what, how, two-day deletion), gives
+  legitimate interest (art. 6.1 f) as the basis and adds the retention line. **This is legal text and wants the
+  user's/legal's read**, like the terms. The consent banner is unchanged (marketing/analysis cookies are still
+  consent-only; counting uses none).
+- **Dev preview without data:** `ADMIN_STATS_DEMO=1` (development only; the loader ignores it in production)
+  shows deterministic made-up numbers under a "Demodata" banner. Documented in `.env.example` with
+  `ANALYTICS_HASH_SECRET`.
+- **Markov simulator tab:** a placeholder in this session ("Kommer snart"); built in the sixteenth.
+- **Verified:** `analytics.verify.mjs` (48: devices, bots, the daily hash, the Swedish day, and the beacon
+  route with the outgoing database call intercepted — only day, hash and device leave), `stats.verify.mjs` (45:
+  day building, purchases bucketed by Swedish day, revenue, ranges, the loader against a stand-in REST server
+  including paging past 1000 rows and the missing-table case), the migration run against real Postgres
+  (PGlite: counting, same-visitor dedupe, the two-day purge, permissions), `admin.verify.mjs` (71), `tsc`,
+  eslint on the new code, and headless Chrome against a scratch copy: login, tabs (click, arrows, `#markov`
+  link after reload), ranges, hover readouts, phone layout (no sideways scroll), the real beacon from Chrome
+  (page views, in-site navigation, mobile, DNT/GPC sending nothing, admin host neither sending nor counted),
+  and the page on database rows.
+- **Not verified:** the migration on the real Supabase; any real traffic; the production deployment's
+  response times; the "two simultaneous first page views count one visitor" guarantee under true parallel
+  connections (PGlite is single-connection; it rests on the primary key). (One run of `admin.verify.mjs` once
+  failed a check; that turned out to be a flaw in the test, fixed in the sixteenth session.)
+
+**Fourteenth session (before this one)** — the map page, see below.
+
+**Fourteenth session — `/karta` is on the brand palette.** The map used to be the dark demo
+(`$admin-*` colours) inside the cream site; it now takes every colour from the master variables.
+- **Roles in `styles/_variables.scss`** ("Public map" section): `$map-canvas/-surface/-raised/-line/
+  -scrim/-wash`, `$map-text-strong/-text/-text-muted/-text-faint`, `$map-primary` (= the header's
+  "Skapa analys" green), `$map-accent`, `$map-sell` (pins, dots, counts: one shade brighter than the
+  accent so a dense cluster stays readable), `$map-buy`, `$map-exchange`, `$map-amber`, plus the
+  panel/shadow tokens. They are built on `$ka-*`: change a brand colour and the map follows. The one
+  new hue is the buyer blue (`#2f67b1`; the brand palette has none).
+- **`_atlas-workspace.scss`** (the 1,800-line mixin) names roles only; it has no hex colours and no
+  `$admin-*` any more. Headings use `$font-display` (the site's display serif) and the labels that
+  asked for "DM Mono" (never loaded, so they rendered in the browser's monospace) use `$font-sans`.
+  `atlas.ts` no longer sets the exchange arc's colour; the stylesheet does (`.exchange-arc { stroke }`
+  beats Leaflet's attribute).
+- **`atlas.scss` (admin) no longer emits the workspace**, only the page resets (colour, background,
+  box-sizing, body margin, form fonts): the admin has no map, and the workspace's global `h1, h2`
+  rules would otherwise have turned the admin login heading dark. The admin page ships 50 CSS rules
+  instead of ~1,000. This supersedes the eleventh session's "`atlas.scss` compiles byte-identical".
+- **Pruned** the 22 `$admin-*`/font tokens that only the old dark map used. Still admin: bar, base,
+  surface, canvas, text-bright/strong/text/soft/muted, green, green-strong, on-green, red, red-light,
+  red-pale, shadow-modal/glow, `$bankid-*`.
+- **The "Karta · Förhandsversion · Kartan visar exempelannonser…" strip above the map is gone.** Its
+  content is now `.map-notice` in the map's top bar, between the search and the icons (template in
+  `atlas.ts`, public variant only; styles in `atlas-public.scss`; `$map-badge*` tokens). It wraps
+  below the title when the line doesn't fit, and on phones shares the first row with the icons. The
+  page's `h1` stays in `app/(site)/karta/page.tsx` as a visually hidden `h1` so it is in the
+  server-rendered HTML (the top bar only exists once the map has mounted); the visible "Karta" in
+  the bar is a plain label. The map now gets the whole height under the site header.
+- **Phone layout (≤ 700 px, `$map-bp-stacked`): the listing pane is a drawer over a full-size map**
+  instead of a block stacked above it. Opens from the list button in the map's top-left corner or by
+  a swipe in from the left edge (a 22 px strip, `.drawer-edge`); the drawer follows the finger and a
+  third of the way decides. Closes on choosing a listing (pin or exchange), a search, "Skapa annons",
+  the × in its corner, a tap on the dimmed map, Escape, or a swipe back. Closed, it is `visibility:
+  hidden` (not reachable by keyboard or screen reader); focus moves into it on open and back to the
+  list button on close; crossing the breakpoint resets it. Code: the drawer block above `selectPin`
+  in `atlas.ts` (the `700` there must match `$map-bp-stacked`), styles in the phone media query of
+  `_atlas-workspace.scss` and `atlas-public.scss`. The detail panel is a bottom sheet on phones
+  (max 46 % of the map, above the site's chat button) and `flyToPin` / the exchange framing put the
+  focused pin in the upper half, so the sheet never hides it. `setSelectedMarker` scrolls the sidebar
+  itself instead of calling `scrollIntoView`, which also moved the page and the clipped workspace.
+  **Not tested on a real phone:** the gestures were driven with synthetic touch pointer events; iOS
+  Safari and Android gesture navigation may claim a swipe that starts at the very edge, which is why
+  the button is the primary way in.
+- **Map colours (2026-10-06) — site-matched and colour-blind-safe.** The basemap is OpenStreetMap
+  *raster* tiles in Leaflet, so individual features (parks, roads, buildings) cannot be restyled; the
+  street layer (`className: 'map-tiles-street'`) gets one CSS filter, `$map-tiles-filter` in
+  `_variables.scss`, that retones the whole picture (cream land, sage parks, soft blue water; the pink
+  buildings, orange roads and magenta paths are gone). A different look would need another tile
+  provider (CARTO/Stadia/MapTiler styles) — a licensing/API-key decision, not done. The three kinds
+  of pins no longer rely on hue alone: **sale = dark green circle, buyer = lighter blue square,
+  exchange = amber diamond** (was red). They differ in lightness (the old green and red had almost the
+  same, so red-green colour blind users could not tell them apart), and in shape on the pins, the
+  legend and the group headings. Fill vs text colours are separate tokens where contrast needs it
+  (`$map-buy`/`-light`, `$map-exchange`/`-strong`, text on amber is ink, delete uses `$map-danger`).
+  Exchange route lines: dark amber dashed (`$map-arc`) on a white halo, drawn as two polylines
+  (`casing` + `arc`) because Leaflet strokes once; the old thin dotted red looked like OSM's footpaths.
+  Before/after comparison sheets under protanopia, deuteranopia, tritanopia and greyscale are in
+  `docs/design/map-colorblind-2026-10/` (two sheets + the 20 single frames in `parts/`, ~22 MB;
+  generated with headless Chrome driving the last commit vs the working tree, Machado et al. 2009
+  matrices, so they can be regenerated). Kinds stay distinct in all four; the weakest case is
+  tritanopia, where the amber looks pale pink (lightness and shape still separate it). Tritanopia and greyscale were not captured (the pane returned stale frames); by the
+  numbers green/blue/amber have relative luminance 0.15 / 0.23 / 0.40, and shapes cover the rest.
+- **The detail panel's × is always in the panel's top right corner**, over the photo when there is one
+  (it used to sit in the text body, i.e. under the photo). It is a zero-height sticky row at the top of
+  the panel (`DETAIL_CLOSE` in `atlas.ts`, `.detail-close-bar` in the mixin), so it also stays put while
+  the phone sheet scrolls.
+- **Testing trap:** if the browser pane is not being displayed while `/karta` loads, the page sees a
+  0 × 0 viewport and Leaflet fits Sweden's bounds against no size (the map opens at zoom 19 over
+  forest). A real visible tab is unaffected; `mountAtlas` fits once and never re-measures.
+- **Verified** (dev server, browser): `tsc` clean; every stylesheet compiles; `/karta` at desktop and
+  390 px — list, selected row, detail panel, "Skapa annons" and "Mina annonser" modals — no console
+  errors; computed colours of pins/arcs/panels equal the `$ka-*` values; admin login unchanged.
+  **Not checked:** the exchange route/arc with an active selection, the pending-pin pulse, the
+  address-picking mode and the broken-image fallback (the example data has no case for them).
+- **Dev tooling note (not code):** on Windows, `next dev` (Turbopack) can get into a state where it
+  serves a page whose scripts reference Next's *default* `_app` (or a 500 `SyntaxError: Unexpected end
+  of JSON input` from its own `manifest-loader`), which shows up as a hydration error on the admin
+  page. Stop the server, delete `frontend/.next`, start again; `next dev --webpack` avoids that code.
+  The "extension attributes on `<body>`" hydration warning (Grammarly) is silenced with
+  `suppressHydrationWarning` in `app/layout.tsx`.
+- **Opening the dev server from a phone** (`http://192.168.x.x:3001`): `next.config.ts` has to list the
+  origin in `allowedDevOrigins` (it has `192.168.*.*`; add a public address or tunnel by name).
+  Otherwise the dev server answers 403 to the hot-reload socket, the page reloads itself in a loop,
+  and `/karta` stays on "Laddar kartan…" because the map's chunk is never requested. Dev only; a
+  production build ignores it. Changing the setting restarts the dev server by itself.
+
+**Thirteenth session — the admin portal no longer has a map.** On `admin.kopanalys.se` a signed-in
+admin now sees the slim session bar ("Köpanalys Admin" · "Logga ut") above an empty page
+(`<main className="admin-content" />` in `AdminShell.tsx`); the login, routing, session and headers
+are unchanged. `components/admin/AtlasWorkspace.tsx` (its only user) was deleted, along with the
+`.atlas-root` / `.admin-load-error` rules in `admin.scss` and the `leaflet.css` import in
+`pages/_app.tsx`. `components/admin/atlas/` stays: the public `/karta` (`PublicMap`) still mounts
+it, and `atlas.scss` is still imported by `_app.tsx` for the admin's page resets and background.
+The admin host's CSP (§3g) still allows Nominatim/https images for the map; tighten it when the
+admin page gets its real content. "Visa karta" in the landing hero already linked to `/karta`
+(twelfth session) — nothing to change there. **Verified:** `tsc` clean, `admin.verify.mjs` passes,
+the admin login page and `/karta` return 200 on the running dev server, `/admin-portal` on the main
+host 404s. **Not verified:** the signed-in empty page in a browser (no throwaway login possible
+while the user's dev server holds Next's lock on the project folder).
+
+**Twelfth session merge (kept from `styleRedesign`):** on 2026-10-05 `styleRedesign` (`9e020de`) was merged to `main` as `2420a7c` and deployed at the user's request. Since then `main` moved on (sessions 13–16 above, pushed straight to `main`), and on 2026-10-07 `origin/main` (`87a9cb1`) was merged back into `styleRedesign` before the Bostadsguiden redesign.
 
 **Twelfth session — the landing hero is centred again.** The user rejected the eleventh session's split
 hero (text left, photo right). Header, menus, pages and routing stay exactly as built; only the top of
@@ -836,12 +1166,16 @@ verifies signatures correctly (`stripe.webhooks.constructEvent`). No
 `.update`/`.upsert` on `profiles` anywhere outside the service-role admin
 client.
 
-### 3g. Admin portal (`admin.kopanalys.se`) — login + embedded map demo
+### 3g. Admin portal (`admin.kopanalys.se`) — login + empty page
 
-Added 2026-09-28. `admin.kopanalys.se` shows a login box; after login it shows
+Added 2026-09-28. `admin.kopanalys.se` shows a login box; after login it showed
 the KopanalysMapDemo "Atlas" map workspace (github.com/intothenether/KopanalysMapDemo,
 ported into `frontend/src/components/admin/atlas/`, differences listed in that
-file's header comment). Everything lives under `frontend/src/lib/admin/`,
+file's header comment). **Since 2026-10-06 the map is gone from the admin portal** — after login
+there is only the session bar above an empty page (see the thirteenth session); the atlas port
+now serves only the public `/karta`, so the bullets below that mention "the demo" / "the map"
+(BankID mock, localStorage, geolocation, Nominatim) no longer apply to the admin host.
+Everything lives under `frontend/src/lib/admin/`,
 `src/components/admin/`, `src/pages/` and `src/app/api/admin-portal/`.
 
 - **Routing.** `proxy.ts` runs `lib/admin/adminProxy.ts` first. On the admin

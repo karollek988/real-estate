@@ -5,6 +5,8 @@ import { AuthProvider } from "@/lib/auth/AuthProvider";
 import { ChatWidget } from "@/components/ChatWidget";
 import { CookieConsentBanner } from "@/components/CookieConsentBanner";
 import { CookieSettingsLink } from "@/components/CookieSettingsLink";
+import { PageViewTracker } from "@/components/analytics/PageViewTracker";
+import { SourceTracker } from "@/components/analytics/SourceTracker";
 import { ScrollRestorationReset } from "@/components/ScrollRestorationReset";
 import { SiteFooter } from "@/components/SiteFooter";
 
@@ -39,9 +41,13 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="sv">
-      <body className={`${inter.variable} antialiased`}>
+      {/* Browser extensions (Grammarly, password managers) add attributes to <body> before React hydrates.
+          suppressHydrationWarning covers this element's own attributes only, not its children. */}
+      <body className={`${inter.variable} antialiased`} suppressHydrationWarning>
         <AuthProvider>
           <ScrollRestorationReset />
+          <PageViewTracker />
+          <SourceTracker />
           {children}
           <SiteFooter />
           <CookieConsentBanner />

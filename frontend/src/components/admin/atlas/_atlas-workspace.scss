@@ -1,13 +1,16 @@
 // Atlas map workspace - every rule of the workspace itself, as one mixin.
 //
-// The admin portal (atlas.scss) emits it globally, exactly as before; the
-// public map page /karta (atlas-public.scss) emits it under its own root, so
+// The public map page /karta (atlas-public.scss) emits it under its own root, so
 // none of the workspace's generic class names (.topbar, .brand, .sidebar ...)
-// or element rules (h1, h2) reach the rest of the public site. Keyframe names
-// take a prefix for the same reason: the workspace has its own "fade-in-up".
+// or element rules (h1, h2) reach the rest of the site. Keyframe names take a
+// prefix for the same reason: the workspace has its own "fade-in-up".
+//
+// Colours are the $map-* roles from the master variables (styles/_variables.scss),
+// which take their values from the brand palette ($ka-*). The mixin names what a
+// colour is for - surface, line, accent, buyer pin - and never a raw colour.
 //
 // Ported from KopanalysMapDemo/src/style.css (commit 10152df); see atlas.scss
-// for the history.
+// for the history. The demo was dark; it is on the brand palette since 2026-10-06.
 @use "../../../styles/variables" as *;
 
 @mixin workspace($keyframe-prefix: "") {
@@ -16,7 +19,7 @@
     display: flex;
     flex-direction: column;
     overflow: hidden;
-    background: $admin-canvas;
+    background: $map-canvas;
   }
 
   .topbar {
@@ -26,8 +29,8 @@
     align-items: center;
     justify-content: space-between;
     padding: 0 28px;
-    background: $admin-base;
-    border-bottom: 1px solid rgba($white, 0.07);
+    background: $map-surface;
+    border-bottom: 1px solid $map-line;
   }
 
   .search-form {
@@ -37,15 +40,15 @@
     width: min(430px, 36vw);
     height: 38px;
     margin: 0 20px;
-    color: $admin-text;
-    background: rgba($white, 0.04);
-    border: 1px solid rgba($white, 0.08);
+    color: $map-text;
+    background: $map-raised;
+    border: 1px solid $map-line;
     border-radius: 10px;
   }
 
   .search-icon {
     padding-left: 12px;
-    color: $admin-green;
+    color: $map-accent;
     font-size: 22px;
     line-height: 1;
   }
@@ -55,14 +58,14 @@
     flex: 1;
     height: 100%;
     padding: 0 9px;
-    color: $admin-text-strong;
+    color: $map-text-strong;
     background: transparent;
     border: 0;
     outline: 0;
     font-size: 12px;
 
     &::placeholder {
-      color: $admin-text-subtle;
+      color: $map-text-muted;
     }
   }
 
@@ -70,15 +73,15 @@
     height: 28px;
     margin-right: 5px;
     padding: 0 11px;
-    color: $admin-on-green;
-    background: $admin-green;
+    color: $white;
+    background: $map-accent;
     border: 0;
     border-radius: 7px;
     font-size: 11px;
     font-weight: 700;
 
     &:hover {
-      background: $admin-green-light;
+      background: $map-accent-hover;
     }
   }
 
@@ -86,7 +89,7 @@
     display: flex;
     align-items: center;
     gap: 9px;
-    color: $white;
+    color: $map-text-strong;
     font-size: 20px;
     font-weight: 600;
     text-decoration: none;
@@ -104,8 +107,8 @@
     display: flex;
     align-items: center;
     gap: 9px;
-    color: $admin-text-subtle;
-    font: 11px $admin-font-mono;
+    color: $map-text-muted;
+    font: 11px $font-sans;
     letter-spacing: .1px;
     text-transform: uppercase;
   }
@@ -113,27 +116,27 @@
   .status-dot {
     width: 6px;
     height: 6px;
-    background: $admin-green;
+    background: $map-accent;
     border-radius: 50%;
   }
 
   .divider {
     height: 13px;
     width: 1px;
-    background: rgba($white, 0.102);
+    background: $map-line;
     margin: 0 4px;
   }
 
   .icon-button,
   .more-button {
-    color: $admin-text-muted;
+    color: $map-text-muted;
     background: transparent;
     border: 0;
     font-size: 25px;
     line-height: 1;
 
     &:hover {
-      color: $admin-green;
+      color: $map-accent;
     }
   }
 
@@ -174,7 +177,7 @@
     color: $bankid-blue;
     background: $white;
     border-radius: 5px;
-    font: 800 10px $admin-font-mono;
+    font: 800 10px $font-sans;
   }
 
   .auth-actions {
@@ -190,17 +193,17 @@
   .logout-button {
     height: 38px;
     padding: 0 14px;
-    color: $admin-text-soft;
-    background: rgba($white, 0.04);
-    border: 1px solid rgba($white, 0.07);
+    color: $map-text;
+    background: $map-raised;
+    border: 1px solid $map-line;
     border-radius: 8px;
     font-size: 12px;
     font-weight: 700;
     white-space: nowrap;
 
     &:hover {
-      background: rgba($white, 0.07);
-      color: $white;
+      background: $map-raised-hover;
+      color: $map-text-strong;
     }
   }
 
@@ -217,10 +220,10 @@
     padding: 0 3px;
     display: grid;
     place-items: center;
-    color: $admin-on-green;
-    background: $admin-green;
+    color: $white;
+    background: $map-accent;
     border-radius: 999px;
-    font: 700 9px $admin-font-mono;
+    font: 700 9px $font-sans;
   }
 
   .inbox-dropdown {
@@ -230,10 +233,10 @@
     right: 0;
     width: 290px;
     padding: 14px;
-    background: rgba($admin-surface, 0.96);
-    border: 1px solid rgba($white, 0.094);
+    background: rgba($map-surface, 0.96);
+    border: 1px solid $map-line;
     border-radius: 16px;
-    box-shadow: $admin-shadow-popover;
+    box-shadow: $map-shadow-popover;
     backdrop-filter: blur(14px);
 
     &[hidden] {
@@ -246,7 +249,7 @@
     flex-wrap: wrap;
     align-items: baseline;
     padding: 10px 2px;
-    border-top: 1px solid rgba($white, 0.05);
+    border-top: 1px solid $map-line;
 
     &:first-of-type {
       border-top: 0;
@@ -254,21 +257,21 @@
     }
 
     strong {
-      color: $admin-text-strong;
+      color: $map-text-strong;
       font-size: 12px;
     }
   }
 
   .inbox-time {
     margin-left: auto;
-    color: $admin-text-faint;
-    font: 10px $admin-font-mono;
+    color: $map-text-faint;
+    font: 10px $font-sans;
   }
 
   .inbox-message p {
     flex-basis: 100%;
     margin: 4px 0 0;
-    color: $admin-text-muted;
+    color: $map-text-muted;
     font-size: 11px;
     line-height: 1.5;
   }
@@ -279,14 +282,23 @@
     min-height: 0;
   }
 
+  // On a phone the sidebar is a drawer over the map (media query below); these
+  // four exist only for that.
+  .list-toggle,
+  .drawer-close,
+  .drawer-backdrop,
+  .drawer-edge {
+    display: none;
+  }
+
   .sidebar {
     width: 355px;
     flex: 0 0 355px;
     display: flex;
     flex-direction: column;
     padding: 38px 30px 24px;
-    background: $admin-canvas;
-    border-right: 1px solid rgba($white, 0.07);
+    background: $map-surface;
+    border-right: 1px solid $map-line;
     overflow-y: auto;
   }
 
@@ -298,8 +310,8 @@
 
   .eyebrow {
     margin: 0 0 9px;
-    color: $admin-green;
-    font: 11px $admin-font-mono;
+    color: $map-accent;
+    font: 11px $font-sans;
     letter-spacing: .8px;
     text-transform: uppercase;
   }
@@ -307,10 +319,10 @@
   h1,
   h2 {
     margin: 0;
-    color: $white;
-    font-family: $admin-font-serif;
-    font-weight: 400;
-    letter-spacing: -.5px;
+    color: $map-text-strong;
+    font-family: $font-display;
+    font-weight: 700;
+    letter-spacing: -.015em;
   }
 
   h1 {
@@ -332,7 +344,7 @@
   .intro {
     max-width: 270px;
     margin: 15px 0 27px;
-    color: $admin-text-muted;
+    color: $map-text-muted;
     font-size: 13px;
     line-height: 1.7;
   }
@@ -353,12 +365,12 @@
 
   .primary-button {
     padding: 12px 17px;
-    color: $admin-on-green;
-    background: $admin-green-strong;
-    box-shadow: $admin-shadow-glow;
+    color: $white;
+    background: $map-primary;
+    box-shadow: $map-shadow-primary;
 
     &:hover {
-      background: $admin-green;
+      background: $map-primary-hover;
     }
 
     span {
@@ -370,12 +382,12 @@
 
   .secondary-button {
     padding: 12px 14px;
-    color: $admin-text-soft;
-    background: rgba($white, 0.04);
-    border: 1px solid rgba($white, 0.07);
+    color: $map-text;
+    background: $map-raised;
+    border: 1px solid $map-line;
 
     &:hover {
-      background: rgba($white, 0.07);
+      background: $map-raised-hover;
     }
   }
 
@@ -386,10 +398,10 @@
     width: 100%;
     margin-bottom: 13px;
     padding: 4px 2px;
-    color: $admin-text-subtle;
+    color: $map-text-muted;
     background: transparent;
     border: 0;
-    font: 11px $admin-font-mono;
+    font: 11px $font-sans;
     letter-spacing: .6px;
     text-transform: uppercase;
     text-align: left;
@@ -397,7 +409,7 @@
     transition: opacity .15s ease;
 
     &:hover {
-      color: $admin-text-muted;
+      color: $map-text-muted;
     }
 
     &.is-off {
@@ -406,7 +418,7 @@
 
     strong {
       margin-left: auto;
-      color: $admin-green;
+      color: $map-sell;
       font-weight: 500;
     }
   }
@@ -417,11 +429,11 @@
   }
 
   .buyer-heading strong {
-    color: $admin-blue;
+    color: $map-buy;
   }
 
   .exchange-heading strong {
-    color: $admin-red;
+    color: $map-exchange-strong;
   }
 
   .heading-dot {
@@ -429,20 +441,20 @@
     width: 7px;
     height: 7px;
     border-radius: 50%;
-    background: $admin-green;
-    border: 1.5px solid $admin-green;
+    background: $map-sell;
+    border: 1.5px solid $map-sell;
     box-sizing: border-box;
     transition: background .15s ease;
   }
 
   .buyer-heading .heading-dot {
-    background: $admin-blue;
-    border-color: $admin-blue;
+    background: $map-buy-light;
+    border-color: $map-buy;
   }
 
   .exchange-heading .heading-dot {
-    background: $admin-red;
-    border-color: $admin-red;
+    background: $map-exchange;
+    border-color: $map-exchange-strong;
   }
 
   .list-heading.is-off .heading-dot {
@@ -455,42 +467,42 @@
     align-items: center;
     gap: 11px;
     padding: 9px 8px;
-    color: $admin-text-strong;
+    color: $map-text-strong;
     text-align: left;
     background: transparent;
     border: 0;
-    border-top: 1px solid rgba($white, 0.05);
+    border-top: 1px solid $map-line;
     border-radius: 10px;
 
     &:hover {
-      background: rgba($white, 0.03);
+      background: $map-raised;
     }
 
     &.is-selected {
-      background: rgba($admin-green, 0.08);
-      box-shadow: inset 3px 0 0 $admin-green;
+      background: rgba($map-sell, 0.08);
+      box-shadow: inset 3px 0 0 $map-sell;
 
       .item-arrow {
-        color: $admin-green;
+        color: $map-sell;
       }
     }
   }
 
   .buyer-item.is-selected {
-    background: rgba($admin-blue, 0.08);
-    box-shadow: inset 3px 0 0 $admin-blue;
+    background: rgba($map-buy, 0.08);
+    box-shadow: inset 3px 0 0 $map-buy;
 
     .item-arrow {
-      color: $admin-blue;
+      color: $map-buy;
     }
   }
 
   .exchange-item.is-selected {
-    background: rgba($admin-red, 0.08);
-    box-shadow: inset 3px 0 0 $admin-red;
+    background: rgba($map-exchange, 0.08);
+    box-shadow: inset 3px 0 0 $map-exchange-strong;
 
     .item-arrow {
-      color: $admin-red;
+      color: $map-exchange-strong;
     }
   }
 
@@ -501,7 +513,7 @@
     height: 44px;
     overflow: hidden;
     border-radius: 10px;
-    background: rgba($white, 0.05);
+    background: $map-raised;
 
     img {
       display: block;
@@ -515,15 +527,15 @@
     display: block;
     width: 100%;
     height: 100%;
-    background: linear-gradient(145deg, rgba($admin-green, 0.25), rgba($admin-green, 0.063));
+    background: linear-gradient(145deg, rgba($map-sell, 0.25), rgba($map-sell, 0.063));
   }
 
   .buyer-item .pin-thumb-fallback {
-    background: linear-gradient(145deg, rgba($admin-blue, 0.25), rgba($admin-blue, 0.063));
+    background: linear-gradient(145deg, rgba($map-buy, 0.25), rgba($map-buy, 0.063));
   }
 
   .exchange-item .pin-thumb-fallback {
-    background: linear-gradient(145deg, rgba($admin-red, 0.25), rgba($admin-red, 0.063));
+    background: linear-gradient(145deg, rgba($map-exchange, 0.25), rgba($map-exchange, 0.063));
   }
 
   .pin-number {
@@ -534,21 +546,21 @@
     place-items: center;
     width: 16px;
     height: 16px;
-    color: $admin-on-green;
-    background: rgba($admin-green, 0.8);
+    color: $white;
+    background: rgba($map-sell, 0.8);
     border-radius: 50%;
-    font: 8px $admin-font-mono;
+    font: 8px $font-sans;
     box-shadow: 0 1px 3px rgba($black, 0.4);
   }
 
   .buyer-item .pin-number {
-    color: $admin-on-blue;
-    background: rgba($admin-blue, 0.8);
+    color: $white;
+    background: rgba($map-buy, 0.8);
   }
 
   .exchange-item .pin-number {
-    color: $admin-on-red;
-    background: rgba($admin-red, 0.8);
+    color: $map-on-exchange;
+    background: rgba($map-exchange, 0.8);
   }
 
   .pin-item-text {
@@ -571,20 +583,20 @@
 
   .pin-item-text small {
     margin-top: 3px;
-    color: $admin-text-subtle;
+    color: $map-text-muted;
     font-size: 10px;
   }
 
   .item-arrow {
     flex: 0 0 auto;
     margin-left: auto;
-    color: $admin-text-faint;
+    color: $map-text-faint;
     font-size: 20px;
   }
 
   .empty-state {
     padding: 21px 4px;
-    color: $admin-text-subtle;
+    color: $map-text-muted;
     font-size: 12px;
     line-height: 1.7;
   }
@@ -592,8 +604,8 @@
   .sidebar-footer {
     margin-top: auto;
     padding-top: 22px;
-    color: $admin-text-subtle;
-    font: 10px $admin-font-mono;
+    color: $map-text-muted;
+    font: 10px $font-sans;
   }
 
   .source-row {
@@ -604,18 +616,18 @@
 
   .sidebar-footer a {
     margin-left: auto;
-    color: $admin-text-muted;
+    color: $map-text-muted;
   }
 
   .copyright {
     display: block;
     margin-top: 8px;
-    color: $admin-text-fainter;
+    color: $map-text-faint;
     font-size: 9px;
   }
 
   .map-badge {
-    color: $admin-green;
+    color: $map-accent;
     font-size: 15px;
   }
 
@@ -631,12 +643,14 @@
     }
   }
 
-  .leaflet-tile {
-    filter: saturate(.88) brightness(1.02) contrast(1.01);
+  // The street tiles' layer (className in atlas.ts), retoned as one picture; the
+  // satellite and rail layers keep their own colours.
+  .map-tiles-street {
+    filter: $map-tiles-filter;
   }
 
   .leaflet-control-attribution {
-    font: 9px $admin-font-mono;
+    font: 9px $font-sans;
     opacity: .7;
   }
 
@@ -647,10 +661,11 @@
       display: block;
       width: 25px;
       height: 25px;
-      background: $admin-green;
-      border: 3px solid $admin-base;
+      background: $map-sell;
+      border: 3px solid $white;
       border-radius: 50% 50% 50% 2px;
-      box-shadow: 0 3px 12px rgba($black, 0.4);
+      // A thin dark ring under the white edge keeps every pin's outline visible on pale ground
+      box-shadow: 0 0 0 1px rgba($map-wash, 0.38), 0 1px 3px rgba($map-wash, 0.3);
       transform: rotate(-45deg);
       transition: transform .2s $ease-out-back, box-shadow .2s ease;
     }
@@ -661,42 +676,54 @@
 
     span {
       transform: rotate(-45deg) scale(1.4);
-      box-shadow: 0 6px 18px rgba($black, 0.627);
+      box-shadow: 0 0 0 1px rgba($map-wash, 0.45), 0 5px 14px rgba($map-wash, 0.4);
     }
   }
 
+  // The mark inside a pin says the kind in shape, so colour is not the only cue:
+  // sale = circle, buyer = square, exchange = diamond. (The pin is turned -45deg,
+  // so the buyer's square is turned back by 45deg to stand upright, and the
+  // exchange's square is left to become a diamond.)
   .custom-pin span::after {
     content: '';
     display: block;
-    width: 5px;
-    height: 5px;
-    margin: 7px;
-    background: $admin-base;
+    width: 7px;
+    height: 7px;
+    margin: 6px;
+    background: $white;
     border-radius: 50%;
   }
 
   .custom-buyer-pin span {
-    background: $admin-blue;
+    background: $map-buy-light;
 
     &::after {
-      background: $admin-on-blue;
+      width: 6px;
+      height: 6px;
+      margin: 6.5px;
+      border-radius: 1px;
+      transform: rotate(45deg);
     }
   }
 
   .custom-exchange-pin span {
-    background: $admin-red;
+    background: $map-exchange;
 
     &::after {
-      background: $admin-on-red;
+      width: 6px;
+      height: 6px;
+      margin: 6.5px;
+      border-radius: 1px;
+      background: $map-on-exchange;
     }
   }
 
   .custom-exchange-to span {
-    background: $admin-canvas;
-    border-color: $admin-red;
+    background: $white;
+    border-color: $map-exchange;
 
     &::after {
-      background: $admin-red;
+      background: $map-exchange-strong;
     }
   }
 
@@ -708,15 +735,15 @@
       width: 14px;
       height: 14px;
       background: $white;
-      border: 3px solid $admin-green-strong;
+      border: 3px solid $map-sell;
       border-radius: 50%;
-      box-shadow: 0 2px 8px rgba($black, 0.4);
+      box-shadow: 0 2px 6px rgba($map-wash, 0.3);
       animation: #{$keyframe-prefix}pending-pulse 1.4s ease-in-out infinite;
     }
   }
 
   .pending-pin-to span {
-    border-color: $admin-amber;
+    border-color: $map-exchange;
   }
 
   @keyframes #{$keyframe-prefix}pending-pulse {
@@ -737,13 +764,24 @@
     }
   }
 
+  // The route line between the two ends of an exchange. Its colours live here, not
+  // in atlas.ts: a CSS rule beats the stroke attribute Leaflet sets. A thin dotted
+  // red line is how OpenStreetMap draws footpaths, which is why the old arc blended
+  // into the map; this is a dashed line in dark amber on a white halo (atlas.ts draws
+  // the halo as a wider line underneath, in the same path).
+  .exchange-arc-casing {
+    stroke: $map-arc-halo;
+  }
+
   .exchange-arc {
+    stroke: $map-arc;
     animation: #{$keyframe-prefix}exchange-arc-flow 1.4s linear infinite;
   }
 
+  // One dash period (9 + 8, see atlas.ts), so the loop is seamless
   @keyframes #{$keyframe-prefix}exchange-arc-flow {
     to {
-      stroke-dashoffset: -22;
+      stroke-dashoffset: -17;
     }
   }
 
@@ -754,7 +792,7 @@
   }
 
   .exchange-arc-active {
-    filter: drop-shadow(0 0 6px rgba($admin-red, 0.8));
+    filter: drop-shadow(0 0 4px rgba($map-arc, 0.5));
   }
 
   .search-pin {
@@ -764,10 +802,10 @@
       display: block;
       width: 19px;
       height: 19px;
-      background: $admin-green-strong;
+      background: $map-accent;
       border: 3px solid $white;
       border-radius: 50%;
-      box-shadow: 0 2px 8px rgba($black, 0.333);
+      box-shadow: 0 2px 6px rgba($map-wash, 0.28);
 
       &::after {
         content: '';
@@ -797,7 +835,7 @@
     white-space: nowrap;
 
     span {
-      color: $admin-green-strong;
+      color: $map-accent;
       font-size: 15px;
       vertical-align: -1px;
     }
@@ -827,7 +865,7 @@
       font-size: 21px;
 
       &:hover {
-        color: $admin-green-deep;
+        color: $map-accent;
         background: $white;
       }
 
@@ -837,20 +875,20 @@
     }
 
     .map-style-toggle.is-active {
-      color: $admin-on-green;
-      background: $admin-green;
+      color: $white;
+      background: $map-accent;
 
       &:hover {
-        background: $admin-green-light;
+        background: $map-accent-hover;
       }
     }
 
     .transit-toggle.is-active {
-      color: $admin-on-green;
-      background: $admin-green;
+      color: $white;
+      background: $map-accent;
 
       &:hover {
-        background: $admin-green-light;
+        background: $map-accent-hover;
       }
     }
   }
@@ -899,24 +937,37 @@
     width: 8px;
     height: 8px;
     border-radius: 50%;
-    background: $admin-green-strong;
-    border: 1.5px solid $admin-green-strong;
+    background: $map-sell;
+    border: 1.5px solid $map-sell;
     box-sizing: border-box;
     transition: background .15s ease;
   }
 
   .legend-item[data-filter-section="buyer"] .legend-dot {
-    background: $admin-blue-strong;
-    border-color: $admin-blue-strong;
+    background: $map-buy-light;
+    border-color: $map-buy;
   }
 
   .legend-item[data-filter-section="exchange"] .legend-dot {
-    background: $admin-red-strong;
-    border-color: $admin-red-strong;
+    background: $map-exchange;
+    border-color: $map-exchange-strong;
   }
 
   .legend-item.is-off .legend-dot {
     background: transparent;
+  }
+
+  // The same shapes as the pins, so the legend and the group headings can be read
+  // without telling the colours apart: sale = circle, buyer = square, exchange = diamond.
+  .buyer-heading .heading-dot,
+  .legend-item[data-filter-section="buyer"] .legend-dot {
+    border-radius: 2px;
+  }
+
+  .exchange-heading .heading-dot,
+  .legend-item[data-filter-section="exchange"] .legend-dot {
+    border-radius: 1px;
+    transform: rotate(45deg) scale(0.82);
   }
 
   .modal-backdrop {
@@ -925,7 +976,7 @@
     inset: 0;
     display: grid;
     place-items: center;
-    background: rgba($admin-scrim, 0.72);
+    background: rgba($map-scrim, 0.72);
     backdrop-filter: blur(8px);
 
     &[hidden] {
@@ -937,17 +988,17 @@
     position: relative;
     width: min(390px, calc(100% - 36px));
     padding: 31px;
-    background: $admin-surface;
-    border: 1px solid rgba($white, 0.07);
+    background: $map-surface;
+    border: 1px solid $map-line;
     border-radius: 20px;
-    box-shadow: $admin-shadow-modal;
+    box-shadow: $map-shadow-modal;
   }
 
   .modal-close {
     position: absolute;
     top: 18px;
     right: 20px;
-    color: $admin-text-subtle;
+    color: $map-text-muted;
     background: transparent;
     border: 0;
     font-size: 24px;
@@ -956,12 +1007,12 @@
   .place-modal label {
     display: block;
     margin: 17px 0;
-    color: $admin-text;
+    color: $map-text;
     font-size: 11px;
     font-weight: 700;
 
     span {
-      color: $admin-text-subtle;
+      color: $map-text-muted;
       font-weight: 400;
     }
   }
@@ -972,11 +1023,11 @@
     width: 100%;
     margin-top: 7px;
     padding: 11px 12px;
-    color: $admin-text-strong;
-    background: rgba($white, 0.03);
-    border: 1px solid rgba($white, 0.07);
+    color: $map-text-strong;
+    background: $map-raised;
+    border: 1px solid $map-line;
     border-radius: 10px;
-    outline-color: $admin-green;
+    outline-color: $map-accent;
     font-size: 12px;
   }
 
@@ -1006,7 +1057,7 @@
     align-items: center;
     gap: 8px 11px;
     padding: 13px 4px;
-    border-top: 1px solid rgba($white, 0.05);
+    border-top: 1px solid $map-line;
 
     &:first-child {
       border-top: 0;
@@ -1032,31 +1083,31 @@
   .my-listing-tag {
     flex: 0 0 auto;
     padding: 4px 9px;
-    color: $admin-on-green;
-    background: $admin-green;
+    color: $white;
+    background: $map-sell;
     border-radius: 999px;
-    font: 9px $admin-font-mono;
+    font: 9px $font-sans;
     text-transform: uppercase;
     white-space: nowrap;
   }
 
   .my-listing-tag-buyer {
-    color: $admin-on-blue;
-    background: $admin-blue;
+    color: $white;
+    background: $map-buy;
   }
 
   .my-listing-tag-exchange {
-    color: $admin-on-red;
-    background: $admin-red;
+    color: $map-on-exchange;
+    background: $map-exchange;
   }
 
   .my-listing-edit,
   .my-listing-delete {
     flex: 0 0 auto;
     padding: 7px 11px;
-    color: $admin-text-soft;
-    background: rgba($white, 0.04);
-    border: 1px solid rgba($white, 0.07);
+    color: $map-text;
+    background: $map-raised;
+    border: 1px solid $map-line;
     border-radius: 8px;
     font-size: 10px;
     font-weight: 700;
@@ -1064,15 +1115,15 @@
   }
 
   .my-listing-edit:hover {
-    color: $admin-on-green;
-    background: $admin-green;
-    border-color: $admin-green;
+    color: $white;
+    background: $map-accent;
+    border-color: $map-accent;
   }
 
   .my-listing-delete:hover {
     color: $white;
-    background: $admin-red-strong;
-    border-color: $admin-red-strong;
+    background: $map-danger;
+    border-color: $map-danger;
   }
 
   .address-input {
@@ -1094,21 +1145,21 @@
     place-items: center;
     width: 38px;
     height: 38px;
-    color: $admin-text-muted;
-    background: rgba($white, 0.03);
-    border: 1px solid rgba($white, 0.07);
+    color: $map-text-muted;
+    background: $map-raised;
+    border: 1px solid $map-line;
     border-radius: 10px;
     font-size: 16px;
 
     &:hover {
-      color: $admin-green;
-      border-color: rgba($admin-green, 0.35);
+      color: $map-accent;
+      border-color: rgba($map-accent, 0.35);
     }
 
     &.is-picking {
-      color: $admin-on-green;
-      background: $admin-green;
-      border-color: $admin-green;
+      color: $white;
+      background: $map-accent;
+      border-color: $map-accent;
     }
   }
 
@@ -1123,15 +1174,15 @@
     gap: 4px;
     margin: 24px 0 4px;
     padding: 4px;
-    background: rgba($white, 0.03);
-    border: 1px solid rgba($white, 0.05);
+    background: $map-raised;
+    border: 1px solid $map-line;
     border-radius: 12px;
   }
 
   .type-option {
     min-width: 0;
     padding: 9px 5px;
-    color: $admin-text-subtle;
+    color: $map-text-muted;
     background: transparent;
     border: 0;
     border-radius: 8px;
@@ -1139,12 +1190,12 @@
     font-weight: 700;
 
     &:hover {
-      color: $admin-text-strong;
+      color: $map-text-strong;
     }
 
     &.is-active {
-      color: $admin-on-green;
-      background: $admin-green;
+      color: $white;
+      background: $map-accent;
     }
   }
 
@@ -1177,14 +1228,14 @@
 
   .place-modal input[type="file"] {
     padding: 8px 10px;
-    color: $admin-text-subtle;
+    color: $map-text-muted;
     font-size: 10px;
 
     &::file-selector-button {
       margin-right: 8px;
       padding: 6px 10px;
-      color: $admin-on-green;
-      background: $admin-green;
+      color: $white;
+      background: $map-accent;
       border: 0;
       border-radius: 7px;
       font-size: 10px;
@@ -1192,7 +1243,7 @@
       cursor: pointer;
 
       &:hover {
-        background: $admin-green-light;
+        background: $map-accent-hover;
       }
     }
 
@@ -1216,7 +1267,7 @@
       height: 84px;
       object-fit: cover;
       border-radius: 10px;
-      border: 1px solid rgba($white, 0.094);
+      border: 1px solid $map-line;
     }
   }
 
@@ -1228,16 +1279,16 @@
     height: 22px;
     display: grid;
     place-items: center;
-    color: $admin-text-strong;
-    background: $admin-raised;
-    border: 1px solid rgba($white, 0.14);
+    color: $map-text-strong;
+    background: $map-raised;
+    border: 1px solid $map-line;
     border-radius: 50%;
     font-size: 14px;
     line-height: 1;
     box-shadow: 0 2px 6px rgba($black, 0.333);
 
     &:hover {
-      color: $admin-red;
+      color: $map-danger;
     }
   }
 
@@ -1248,10 +1299,10 @@
     right: 24px;
     width: min(390px, calc(100% - 48px));
     overflow: hidden;
-    background: rgba($admin-surface, 0.96);
-    border: 1px solid rgba($white, 0.094);
+    background: rgba($map-surface, 0.96);
+    border: 1px solid $map-line;
     border-radius: 20px;
-    box-shadow: $admin-shadow-popover;
+    box-shadow: $map-shadow-popover;
     backdrop-filter: blur(14px);
     animation: #{$keyframe-prefix}detail-pop .35s $ease-out-expo both;
 
@@ -1275,7 +1326,7 @@
     content: '';
     position: absolute;
     inset: 0;
-    background: linear-gradient(180deg, rgba($black, 0.03) 40%, $admin-surface 100%);
+    background: linear-gradient(180deg, rgba($black, 0.03) 40%, $map-surface 100%);
   }
 
   .detail-tag {
@@ -1284,10 +1335,10 @@
     top: 14px;
     left: 15px;
     padding: 5px 9px;
-    color: $admin-on-green;
-    background: $admin-green;
+    color: $white;
+    background: $map-sell;
     border-radius: 999px;
-    font: 10px $admin-font-mono;
+    font: 10px $font-sans;
     text-transform: uppercase;
   }
 
@@ -1309,20 +1360,20 @@
 
   .detail-note {
     margin: 0 0 14px;
-    color: $admin-text-muted;
+    color: $map-text-muted;
     font-size: 12px;
   }
 
   .detail-meta {
     margin: 0 0 14px;
-    color: $admin-green;
-    font: 11px $admin-font-mono;
+    color: $map-accent;
+    font: 11px $font-sans;
     line-height: 1.6;
   }
 
   .detail-description {
     margin: 0 0 18px;
-    color: $admin-text;
+    color: $map-text;
     font-size: 12px;
     line-height: 1.65;
   }
@@ -1333,8 +1384,8 @@
     align-items: center;
     justify-content: space-between;
     padding: 11px 13px;
-    color: $admin-on-green;
-    background: $admin-green;
+    color: $white;
+    background: $map-accent;
     border-radius: 10px;
     font-size: 12px;
     font-weight: 700;
@@ -1342,16 +1393,16 @@
   }
 
   .detail-link:hover {
-    background: $admin-green-light;
+    background: $map-accent-hover;
   }
 
   .detail-map-link {
     margin-top: 8px;
-    color: $admin-blue-pale;
-    background: $admin-blue-strong;
+    color: $white;
+    background: $map-buy;
 
     &:hover {
-      background: $admin-blue-hover;
+      background: $map-buy-hover;
     }
   }
 
@@ -1363,10 +1414,11 @@
     box-sizing: border-box;
     margin-top: 8px;
     padding: 11px 13px;
-    color: $admin-on-gold;
-    background: $admin-gold;
+    color: $white;
+    background: $map-primary;
     border: 0;
     border-radius: 10px;
+    box-shadow: $map-shadow-primary;
     font: inherit;
     font-size: 12px;
     font-weight: 700;
@@ -1374,11 +1426,11 @@
     cursor: pointer;
 
     &:hover {
-      background: $admin-gold-light;
+      background: $map-primary-hover;
     }
 
     &:focus-visible {
-      outline: 2px solid $admin-gold-light;
+      outline: 2px solid $map-accent;
       outline-offset: 2px;
     }
   }
@@ -1388,29 +1440,40 @@
     font-size: 17px;
   }
 
+  // A row with no height at the very top of the panel, holding the close button:
+  // the button is always in the panel's top right corner, over the photo when
+  // there is one, and sticky so it stays there while the phone sheet scrolls.
+  .detail-close-bar {
+    position: sticky;
+    z-index: 3;
+    top: 0;
+    height: 0;
+  }
+
   .detail-close {
     position: absolute;
-    z-index: 2;
     top: 12px;
     right: 14px;
     width: 28px;
     height: 28px;
-    color: $admin-text-muted;
-    background: rgba($admin-surface, 0.8);
+    color: $map-text-muted;
+    background: rgba($map-surface, 0.85);
     border: 0;
     border-radius: 50%;
+    box-shadow: 0 1px 4px rgba($map-wash, 0.25);
     font-size: 21px;
     line-height: 1;
 
     &:hover {
-      color: $white;
+      color: $map-text-strong;
+      background: $map-surface;
     }
   }
 
   .contact-dot {
     width: 7px;
     height: 7px;
-    background: $admin-green;
+    background: $map-sell;
     border-radius: 50%;
   }
 
@@ -1419,8 +1482,8 @@
     align-items: center;
     gap: 8px;
     margin-bottom: 18px;
-    color: $admin-text-subtle;
-    font: 10px $admin-font-mono;
+    color: $map-text-muted;
+    font: 10px $font-sans;
     text-transform: uppercase;
   }
 
@@ -1431,13 +1494,13 @@
   }
 
   .detail-tag-buyer {
-    color: $admin-on-blue;
-    background: $admin-blue;
+    color: $white;
+    background: $map-buy;
   }
 
   .detail-tag-exchange {
-    color: $admin-on-red;
-    background: $admin-red;
+    color: $map-on-exchange;
+    background: $map-exchange;
   }
 
   .exchange-route {
@@ -1446,8 +1509,8 @@
     gap: 6px;
     margin-bottom: 16px;
     padding: 6px;
-    background: rgba($white, 0.03);
-    border: 1px solid rgba($white, 0.07);
+    background: $map-raised;
+    border: 1px solid $map-line;
     border-radius: 12px;
   }
 
@@ -1468,11 +1531,11 @@
 
   .exchange-stop:hover,
   .exchange-stop.is-active {
-    background: rgba($white, 0.08);
+    background: $map-raised-hover;
   }
 
   .exchange-stop:focus-visible {
-    outline: 2px solid $admin-red;
+    outline: 2px solid $map-exchange-strong;
     outline-offset: -2px;
   }
 
@@ -1482,15 +1545,15 @@
 
   .exchange-stop small {
     display: block;
-    color: $admin-text-subtle;
-    font: 10px $admin-font-mono;
+    color: $map-text-muted;
+    font: 10px $font-sans;
     text-transform: uppercase;
   }
 
   .exchange-stop strong {
     display: block;
     overflow-wrap: break-word;
-    color: $admin-text-strong;
+    color: $map-text-strong;
     font-size: 12px;
     font-weight: 700;
     line-height: 1.35;
@@ -1504,18 +1567,18 @@
   }
 
   .exchange-dot-from {
-    background: $admin-red;
+    background: $map-exchange;
   }
 
   .exchange-dot-to {
     background: transparent;
-    border: 2px solid $admin-red;
+    border: 2px solid $map-exchange-strong;
   }
 
   .exchange-route-arrow {
     flex: 0 0 auto;
     align-self: center;
-    color: $admin-red;
+    color: $map-exchange-strong;
     font-size: 15px;
   }
 
@@ -1524,17 +1587,17 @@
     align-items: center;
     justify-content: space-between;
     padding: 11px 13px;
-    color: $admin-green-pale;
-    background: rgba($white, 0.05);
-    border: 1px solid rgba($admin-green, 0.35);
+    color: $map-accent;
+    background: $map-raised;
+    border: 1px solid rgba($map-accent, 0.35);
     border-radius: 10px;
     font-size: 12px;
     font-weight: 700;
     text-decoration: none;
 
     &:hover {
-      color: $admin-on-green;
-      background: $admin-green-light;
+      color: $white;
+      background: $map-accent-hover;
     }
 
     span {
@@ -1609,19 +1672,33 @@
       margin: 0;
     }
 
+    // The map gets the whole workspace; the sidebar is a drawer over it. Closed it
+    // waits off the left edge and is hidden from keyboard and screen readers;
+    // .drawer-open on .app-shell slides it in. (animation: none, because the
+    // entrance animation's end state would otherwise override the transform.)
     .workspace {
-      flex-direction: column;
+      position: relative;
       overflow: hidden;
     }
 
     .sidebar {
-      width: 100%;
-      flex: 0 0 42%;
+      position: absolute;
+      z-index: 700;
+      top: 0;
+      bottom: 0;
+      left: 0;
+      width: min(88%, 360px);
+      flex: none;
       min-height: 0;
       overflow-y: auto;
+      overscroll-behavior: contain;
+      touch-action: pan-y;
       padding: 22px 20px 14px;
-      border-right: 0;
-      border-bottom: 1px solid rgba($white, 0.07);
+      box-shadow: $map-shadow-popover;
+      transform: translateX(-102%);
+      visibility: hidden;
+      transition: transform .28s $ease-out-expo, visibility 0s .28s;
+      animation: none;
 
       .list-heading {
         flex-shrink: 0;
@@ -1633,9 +1710,100 @@
       }
     }
 
-    .map-wrap {
-      flex: 0 0 58%;
-      min-height: 0;
+    .app-shell.drawer-open .sidebar {
+      transform: none;
+      visibility: visible;
+      transition: transform .28s $ease-out-expo, visibility 0s;
+    }
+
+    .drawer-backdrop {
+      display: block;
+      position: absolute;
+      z-index: 690;
+      inset: 0;
+      background: rgba($map-scrim, 0.4);
+      opacity: 0;
+      pointer-events: none;
+      touch-action: none;
+      transition: opacity .28s ease;
+    }
+
+    .app-shell.drawer-open .drawer-backdrop {
+      opacity: 1;
+      pointer-events: auto;
+    }
+
+    // A strip along the left edge that catches the swipe which opens the drawer.
+    // It starts below the toggle button, so the button is never covered.
+    .drawer-edge {
+      display: block;
+      position: absolute;
+      z-index: 650;
+      top: 60px;
+      bottom: 0;
+      left: 0;
+      width: 22px;
+      touch-action: none;
+    }
+
+    .app-shell.drawer-open .drawer-edge {
+      display: none;
+    }
+
+    .app-shell.drawer-open .drawer-close {
+      display: grid;
+    }
+
+    .list-toggle {
+      position: absolute;
+      z-index: 660;
+      top: 12px;
+      left: 12px;
+      display: grid;
+      place-items: center;
+      width: 40px;
+      height: 40px;
+      color: $map-panel-text;
+      background: rgba($map-panel, 0.92);
+      border: 1px solid $white;
+      border-radius: 10px;
+      box-shadow: $map-shadow-float;
+
+      &:hover {
+        color: $map-accent;
+        background: $white;
+      }
+    }
+
+    // In the drawer's top right corner, outside the scrolling list; first in the
+    // tab order when the drawer opens. Only shown while it is open.
+    .drawer-close {
+      position: absolute;
+      z-index: 710;
+      top: 14px;
+      left: calc(min(88%, 360px) - 48px);
+      display: none;
+      place-items: center;
+      width: 34px;
+      height: 34px;
+      color: $map-text-muted;
+      background: $map-raised;
+      border: 0;
+      border-radius: 50%;
+      font-size: 22px;
+      line-height: 1;
+
+      &:hover {
+        color: $map-text-strong;
+        background: $map-raised-hover;
+      }
+    }
+
+    @include reduced-motion {
+      .sidebar,
+      .drawer-backdrop {
+        transition: none;
+      }
     }
 
     .intro {
@@ -1677,11 +1845,14 @@
       font-size: 10px;
     }
 
+    // A sheet along the bottom, so the pin that was just focused stays in view above it.
     .detail-panel {
-      top: 12px;
+      top: auto;
       right: 12px;
-      width: min(340px, calc(100% - 24px));
-      max-height: calc(100% - 24px);
+      bottom: 12px;
+      left: 12px;
+      width: auto;
+      max-height: 46%;
       overflow-y: auto;
     }
 
@@ -1792,10 +1963,9 @@
     }
 
     .detail-panel {
-      top: 8px;
       right: 8px;
-      width: calc(100% - 16px);
-      max-height: calc(100% - 16px);
+      bottom: 8px;
+      left: 8px;
     }
 
     .detail-photo-wrap {
@@ -1815,13 +1985,6 @@
   .copyright {
     font-family: inherit !important;
     letter-spacing: 0 !important;
-  }
-
-  h1,
-  h2 {
-    font-family: inherit !important;
-    font-weight: 700;
-    letter-spacing: 0;
   }
 
   .brand {

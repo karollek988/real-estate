@@ -61,10 +61,10 @@ export function PublicMap() {
     <div className="relative h-full">
       <div ref={rootRef} className="atlas-root atlas-public" />
       {status === "loading" && (
-        <p className="pointer-events-none absolute inset-0 flex items-center justify-center text-sm text-white/70">Laddar kartan…</p>
+        <p className="pointer-events-none absolute inset-0 flex items-center justify-center text-sm text-ka-muted">Laddar kartan…</p>
       )}
       {status === "failed" && (
-        <p role="alert" className="absolute inset-0 flex items-center justify-center px-6 text-center text-sm text-white/80">
+        <p role="alert" className="absolute inset-0 flex items-center justify-center px-6 text-center text-sm text-ka-text">
           Kartan kunde inte laddas. Ladda om sidan och försök igen.
         </p>
       )}

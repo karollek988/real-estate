@@ -109,7 +109,12 @@ check("token still valid just before expiry", verifySessionToken(token, now + (S
 check("token expired after the TTL", verifySessionToken(token, now + (SESSION_TTL_SECONDS + 5) * 1000), false);
 const [v, exp, nonce, sig] = token.split(".");
 check("tampered expiry rejected", verifySessionToken([v, String(Number(exp) + 3600), nonce, sig].join("."), now), false);
-check("tampered signature rejected", verifySessionToken([v, exp, nonce, `${sig.slice(0, -1)}${sig.endsWith("A") ? "B" : "A"}`].join("."), now), false);
+// A signature is 32 bytes = 43 base64url characters, and the last one carries only 4 meaningful bits: swapping it for a neighbour
+// (A for B, say) can decode to the very same bytes, which is the same signature and rightly verifies. So tamper where it matters:
+// a character in the middle, and a last character moved far enough that its meaningful bits change.
+check("tampered signature rejected (a middle character)", verifySessionToken([v, exp, nonce, `${sig.slice(0, 10)}${sig[10] === "A" ? "B" : "A"}${sig.slice(11)}`].join("."), now), false);
+const B64URL = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_";
+check("tampered signature rejected (the last character moved 16 places on, so its meaningful bits change)", verifySessionToken([v, exp, nonce, `${sig.slice(0, -1)}${B64URL[(B64URL.indexOf(sig.at(-1)) + 16) % 64]}`].join("."), now), false);
 check("garbage / empty / oversized tokens rejected", [verifySessionToken("", now), verifySessionToken("a.b.c.d", now), verifySessionToken("x".repeat(400), now), verifySessionToken(null, now)], [false, false, false, false]);
 process.env.ADMIN_SESSION_SECRET = randomBytes(32).toString("hex");
 check("token signed with a different secret rejected", verifySessionToken(token, now), false);

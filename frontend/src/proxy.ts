@@ -11,5 +11,8 @@ export async function proxy(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)"],
+  // api/analytics/hit and api/analytics/arrival are left out: the beacons need no login session, and
+  // refreshing one on every page view would double the site's calls to Supabase Auth. (The routes
+  // themselves refuse the admin host, which this matcher would otherwise have shut out.)
+  matcher: ["/((?!_next/static|_next/image|favicon.ico|api/analytics/(?:hit|arrival)|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)"],
 };

@@ -22,7 +22,7 @@ export async function POST(request: Request) {
         error: {
           code: "contact_unavailable",
           message:
-            "Kontakt via formulär är inte tillgänglig just nu — mejla oss direkt på info@kopanalys.se istället.",
+            "Kontakt via formulär är inte tillgänglig just nu — mejla oss direkt på kontakt@kopanalys.se istället.",
         },
       },
       { status: 503 },
@@ -31,7 +31,7 @@ export async function POST(request: Request) {
 
   if (!checkRateLimit(`contact:${clientIp(request)}`, RATE_LIMIT_PER_HOUR, 60 * 60_000)) {
     return NextResponse.json(
-      { error: { code: "rate_limited", message: "För många meddelanden skickade – försök igen senare eller mejla info@kopanalys.se." } },
+      { error: { code: "rate_limited", message: "För många meddelanden skickade – försök igen senare eller mejla kontakt@kopanalys.se." } },
       { status: 429 },
     );
   }
@@ -85,7 +85,7 @@ export async function POST(request: Request) {
         error: {
           code: "contact_unavailable",
           message:
-            "Kontakt via formulär är inte tillgänglig just nu — mejla oss direkt på info@kopanalys.se istället.",
+            "Kontakt via formulär är inte tillgänglig just nu — mejla oss direkt på kontakt@kopanalys.se istället.",
         },
       },
       { status: 503 },

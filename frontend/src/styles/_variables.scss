@@ -13,8 +13,9 @@
 // Built on it:
 //   app/globals.scss                    public site (App Router) + Tailwind
 //   app/analyzing/ldbar.scss            progress ring label on /analyzing
-//   components/admin/atlas/atlas.scss   admin portal: map workspace
+//   components/admin/atlas/atlas.scss   admin portal: page resets
 //   components/admin/admin.scss         admin portal: login + session bar
+//   components/admin/atlas/atlas-public.scss  public map /karta (the $map-* roles)
 //
 // Not covered: colours written straight into components (Tailwind's own
 // palette such as zinc-900, or arbitrary values such as text-[#...]).
@@ -80,17 +81,18 @@ $page-foreground: #0a0a0a;
 $dash-tab-glow: #4ade80;
 
 // -----------------------------------------------------------------------------
-// Admin portal (admin.kopanalys.se) - the dark map workspace and its login.
-// Came with the map demo (KopanalysMapDemo); most accents are Tailwind palette
-// values, noted on the right.
+// Admin portal (admin.kopanalys.se) - the dark login and session bar. Most
+// accents are Tailwind palette values, noted on the right. (The map workspace
+// that used to be dark and live here is on the brand palette now: "Public map"
+// below.)
 // -----------------------------------------------------------------------------
 // Surfaces, darkest first
-$admin-bar: #060a08; // session bar above the map
-$admin-scrim: #050807; // modal backdrop (used translucent)
-$admin-base: #0a0f0d; // top bar, login page, pin outlines
-$admin-surface: #0f1417; // cards, modals, floating panels
-$admin-canvas: #111927; // app shell and sidebar
-$admin-raised: #1a1f22; // small controls on top of a surface
+$admin-bar: #060a08; // session bar
+$admin-base: #0a0f0d; // login page
+$admin-surface: #0f1417; // login card
+$admin-canvas: #111927; // page background
+$admin-raised: #182026; // a box on a surface: the Markov simulator's state boxes
+$admin-raised-hover: #212b32;
 
 // Text, brightest first
 $admin-text-bright: #f4f6f4;
@@ -98,47 +100,99 @@ $admin-text-strong: #edf2ee;
 $admin-text: #c9d1cc;
 $admin-text-soft: #c0c8c3;
 $admin-text-muted: #a0aaa4;
-$admin-text-subtle: #7c847f;
-$admin-text-faint: #68736d;
-$admin-text-fainter: #59665f;
 
-// Green: the main accent (focus rings, links, active states) and seller pins
+// Green: the main accent (focus rings, links, primary button)
 $admin-green: #4ade80; // green-400
-$admin-green-light: #86efac; // green-300, hover
-$admin-green-pale: #b7f7ca;
 $admin-green-strong: #16a34a; // green-600, primary buttons
-$admin-green-deep: #16803d;
 $admin-on-green: #07110b; // text on green
 
-// Blue: buyer pins
-$admin-blue: #60a5fa; // blue-400
-$admin-blue-hover: #3b82f6; // blue-500
-$admin-blue-strong: #2563eb; // blue-600
-$admin-blue-pale: #dbeafe; // blue-100
-$admin-on-blue: #07111f;
-
-// Red: exchange pins and errors
+// Red: errors
 $admin-red: #f87171; // red-400
-$admin-red-strong: #dc2626; // red-600
 $admin-red-light: #fca5a5; // red-300
 $admin-red-pale: #fecaca; // red-200
-$admin-on-red: #230708;
 
-// Amber: pending pins and the "create analysis" action
-$admin-amber: #f59e0b; // amber-500
-$admin-gold: #e8a53a;
-$admin-gold-light: #f0b955;
-$admin-on-gold: #1a1203;
+// Charts on the statistics page. Devices use the Okabe-Ito colours, picked so
+// three series stay apart for people with red-green colour blindness (they
+// differ in lightness as well as hue). The packages are one green in three
+// lightnesses - the cheaper the package, the lighter - so their order reads
+// even without telling the greens apart. Every series is also named in text
+// beside the chart; colour is never the only way to read one.
+$admin-chart-sky: #56b4e9; // mobile
+$admin-chart-orange: #e69f00; // tablet; also "demo data" and "coming soon"
+$admin-chart-teal: #009e73; // desktop
+$admin-chart-pack-1: #b9efd0; // Områdesanalys
+$admin-chart-pack-2: #4cc487; // Trygghetspaketet
+$admin-chart-pack-3: #2a8c58; // Tre bostäder
+$admin-chart-grey: #8a949d; // older or unknown packages
+// The rest of the Okabe-Ito set, for the Markov simulator's nine states (with the sky, orange, teal
+// and grey above). Lines are also told apart by dash pattern, and every state is named in text.
+$admin-chart-blue: #0072b2; // sökmotorer (SEO), among the traffic channels
+$admin-chart-yellow: #f0e442; // registered
+$admin-chart-purple: #cc79a7; // reactivated
+$admin-chart-vermillion: #d55e00; // churned
 
-// BankID sign-in button
+// BankID sign-in button (the demo's mock sign-in, not rendered on the public map)
 $bankid-blue: #1a3c5e;
 $bankid-blue-hover: #24507a;
 
-// Light map chrome floating over the tiles
-$map-tiles-bg: #d5ddd8; // shown before the tiles load
-$map-panel: #f3f7f4; // hint, zoom control, legend (used translucent)
-$map-panel-text: #34443c;
-$map-panel-divider: #d9e2dc;
+// -----------------------------------------------------------------------------
+// Public map (/karta) - the map workspace on the brand palette. These are roles,
+// not colours: the workspace stylesheet says what a colour is for, and each role
+// takes its value from $ka-* here. Change a $ka-* colour and the map follows.
+// -----------------------------------------------------------------------------
+// Surfaces
+$map-canvas: $ka-cream; // behind everything, as on the rest of the site
+$map-surface: $ka-paper; // top bar, sidebar, detail panel, modals
+$map-raised: $ka-sand; // fields and secondary buttons on a surface
+$map-raised-hover: $ka-stone;
+$map-line: $ka-line; // hairlines and borders
+$map-scrim: $ka-ink; // modal backdrop (used translucent)
+$map-wash: $ka-ink; // hover fills (used translucent)
+
+// Text
+$map-text-strong: $ka-ink;
+$map-text: $ka-text;
+$map-text-muted: $ka-muted;
+$map-text-faint: rgba($ka-muted, 0.6); // decorative arrows
+$map-badge: $ka-sage; // the "Förhandsversion" label
+$map-badge-text: $ka-green-900;
+
+// Actions
+$map-primary: $ka-green-900; // main buttons, as the header's "Skapa analys"
+$map-primary-hover: $ka-green-800;
+$map-accent: $ka-green-700; // links, icons, active states, seller pins
+$map-accent-hover: $ka-green-800;
+$map-sell: $ka-green-600; // seller pins, dots and counts: a shade brighter, so a dense cluster of pins stays readable
+
+// Pins: green sells, blue buys, amber exchanges. Chosen so they stay apart for
+// people with red-green colour blindness: green, blue and amber differ in
+// lightness as well as hue (a red and a green of the same lightness, the usual
+// map pair, look alike), and the map also gives each kind its own shape - circle,
+// square, diamond - so colour is never the only cue. The brand palette has no
+// blue or amber; these two sit well with the greens and the cream.
+$map-buy: #2f67b1; // text, buttons, bars and rings (5.6:1 on paper)
+$map-buy-light: #4a86d0; // fills of pins and dots: lighter than the seller green, so the two differ in lightness too
+$map-buy-hover: #285a9c;
+$map-exchange: #e0a122; // pins and dots
+$map-exchange-strong: #9a5a00; // lines, bars and text on light surfaces (5:1 on paper)
+$map-on-exchange: $ka-ink; // text on the amber (white would not be readable)
+$map-danger: $ka-red-600; // destructive actions: deleting a listing
+
+// The route line between the two ends of an exchange: dark amber with a white halo.
+$map-arc: $map-exchange-strong;
+$map-arc-halo: $white;
+
+// Base map. The OpenStreetMap tiles are raster pictures, so their colours cannot
+// be restyled feature by feature; this filter retones the whole picture toward the
+// site (cream land, sage parks, soft blue water) and takes the noise out of it
+// (pink buildings, orange roads, magenta paths), so the pins and lines carry the colour.
+$map-tiles-filter: saturate(0.5) sepia(0.14) hue-rotate(-4deg) contrast(0.92) brightness(1.04);
+
+// Light chrome floating over the tiles
+$map-tiles-bg: $ka-sage; // shown before the tiles load
+$map-panel: $ka-paper; // hint, zoom control, legend (used translucent)
+$map-panel-text: $ka-text;
+$map-panel-divider: $ka-line;
 
 // -----------------------------------------------------------------------------
 // Typography
@@ -148,10 +202,6 @@ $font-sans: var(--font-sans, ui-sans-serif, system-ui, sans-serif);
 // Display serif for headlines (Tailwind font-display); --font-serif-display is
 // set by next/font (lib/fonts.ts) on the landing page wrapper
 $font-display: var(--font-serif-display), "Iowan Old Style", Georgia, serif;
-// Map workspace labels and headings; most are reset to inherit Inter at the
-// end of atlas.scss
-$admin-font-mono: "DM Mono", monospace;
-$admin-font-serif: "DM Serif Display", serif;
 
 // -----------------------------------------------------------------------------
 // Motion
@@ -166,16 +216,19 @@ $ease-out-back: cubic-bezier(0.34, 1.56, 0.64, 1); // map pins popping (overshoo
 $bp-xl: 1280px; // = Tailwind xl
 $bp-short-max-height: 860px; // short: variant - wide but short laptop screens
 $admin-bp-phone: 520px; // admin login and session bar
+$admin-bp-tablet: 1000px; // statistics page: the three-column card grid becomes one column
 $map-bp-stacked: 700px; // map workspace stacks the sidebar above the map
 $map-bp-narrow: 420px; // map workspace on small phones
 
 // -----------------------------------------------------------------------------
-// Elevation (admin portal)
+// Elevation (admin portal, public map)
 // -----------------------------------------------------------------------------
 $admin-shadow-modal: 0 18px 50px rgba($black, 0.45);
-$admin-shadow-popover: 0 18px 50px rgba($black, 0.4);
 $admin-shadow-glow: 0 4px 20px rgba($admin-green-strong, 0.208); // primary buttons
-$map-shadow-float: 0 5px 18px rgba($black, 0.15);
+$map-shadow-float: 0 5px 18px rgba($ka-ink, 0.15);
+$map-shadow-popover: 0 18px 50px rgba($ka-ink, 0.18); // detail panel, dropdowns
+$map-shadow-modal: 0 18px 50px rgba($ka-ink, 0.22);
+$map-shadow-primary: 0 8px 18px -10px rgba($ka-green-950, 0.8); // main buttons
 
 // -----------------------------------------------------------------------------
 // Mixins

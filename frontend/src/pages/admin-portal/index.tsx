@@ -4,15 +4,24 @@ import { AdminLogin } from "@/components/admin/AdminLogin";
 import { AdminShell } from "@/components/admin/AdminShell";
 import { isAdminHost } from "@/lib/admin/host";
 import { isAdminSessionValid, isSecureRequest } from "@/lib/admin/session";
+import type { AdminStatsResult } from "@/lib/admin/stats";
+import { loadMeasuredAcquisition } from "@/lib/admin/acquisitionData";
+import { loadAdminStats } from "@/lib/admin/statsData";
+import type { MeasuredResult } from "@/lib/markov/measured";
 
 interface AdminPortalProps {
   authenticated: boolean;
+  /** only ever set for a signed-in admin: the numbers are not in the page for anyone else */
+  stats: AdminStatsResult | null;
+  /** where new visitors come from, as measured; the Markov simulator starts from it */
+  measured: MeasuredResult | null;
 }
 
 /**
  * The admin portal. proxy.ts rewrites "/" on admin.kopanalys.se to this page and
  * answers 404 for it on every other host; the host is re-checked here as well.
- * Signed out: the login form. Signed in: the embedded map workspace.
+ * Signed out: the login form. Signed in: the statistics (and the Markov simulator's
+ * tab), read when the page is built.
  */
 export const getServerSideProps: GetServerSideProps<AdminPortalProps> = async ({ req, res }) => {
   if (!isAdminHost(req.headers.host)) return { notFound: true };
@@ -25,10 +34,12 @@ export const getServerSideProps: GetServerSideProps<AdminPortalProps> = async ({
     Array.isArray(forwardedProto) ? forwardedProto[0] : forwardedProto,
     "encrypted" in req.socket && req.socket.encrypted ? "https:" : "http:"
   );
-  return { props: { authenticated: isAdminSessionValid(req.headers.cookie, secure) } };
+  const authenticated = isAdminSessionValid(req.headers.cookie, secure);
+  const [stats, measured] = authenticated ? await Promise.all([loadAdminStats(), loadMeasuredAcquisition()]) : [null, null];
+  return { props: { authenticated, stats, measured } };
 };
 
-export default function AdminPortal({ authenticated }: AdminPortalProps) {
+export default function AdminPortal({ authenticated, stats, measured }: AdminPortalProps) {
   return (
     <>
       <Head>
@@ -37,7 +48,7 @@ export default function AdminPortal({ authenticated }: AdminPortalProps) {
         <meta name="theme-color" content="#0a0f0d" />
         <link rel="icon" href="/icon.png" />
       </Head>
-      {authenticated ? <AdminShell /> : <AdminLogin />}
+      {authenticated && stats && measured ? <AdminShell stats={stats} measured={measured} /> : <AdminLogin />}
     </>
   );
 }
