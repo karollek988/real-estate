@@ -8,8 +8,8 @@ import { HandNote } from "./HandNote";
 /**
  * The top of /bostadsguider: what the page is for, a search field, and a
  * Stockholm photo in a soft organic frame with a handwritten note - after
- * frontend/public/Bostadsguider-Page-Newlook.png, as direction rather than
- * pixels. Stacks on phones: text, search, then a shorter photo.
+ * the Bostadsguiden design mockup (not kept in the repo), as direction rather
+ * than pixels. Stacks on phones: text, search, then a shorter photo.
  */
 export function BostadsguidenHero() {
   return (

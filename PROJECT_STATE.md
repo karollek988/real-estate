@@ -5,6 +5,14 @@
 > otherwise leave it alone. Detailed research/product docs live in `docs/`;
 > this file is the "what's actually true right now" summary.
 
+**Handoff cleanup (2026-10-08, at the user's request, before another developer takes over).**
+- **The C++ backend migration was dropped.** Its branch `feature/cpp-backend-migration` and the `real-estate-cpp`
+  worktree are deleted; the engine code and its plan were never committed. Nothing on `main` imported, built or
+  deployed it (no C++ files, no CMake, no workflow), so the analyses run in the Python service exactly as before. Its
+  mentions in `docs/47` and `docs/48` are history.
+- Env vars documented: `frontend/.env.example` now also lists `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`,
+  `OPENAI_API_KEY` and `NEXT_PUBLIC_DEV_ADMIN_EMAIL`; the Python service has its own `api/.env.example`.
+
 **Seventeenth session, second round (2026-10-07, at the user's request; pushed to `origin/styleRedesign` → Vercel Preview).**
 - The six AI articles (`lib/kunskap/articles.ts`) were **deleted**.
 - **Picture upload** in the editor: `POST /api/admin/content/images` (admins, same origin, ≤ 12 MB) →
@@ -29,9 +37,9 @@
   bostadsmarknaden"), Nyheter (`/nyheter`, "Det senaste just nu"). "Blogg" and "Guider" are gone: `/blogg`, `/guider`
   and every `/blogg/*`, `/guider/*` 308-redirect to `/bostadsguider` (`next.config.ts`). Their route files and
   `ArticleCard`/`ArticlePage` were deleted; the six AI-written articles were unpublished, then deleted (second round).
-- **`/bostadsguider`** (after `frontend/public/Bostadsguider-Page-Newlook.png`, as direction): hero with search and a
-  Strandvägen photo in an organic frame + handwritten note (Caveat via next/font, `font-hand`), deep-green wavy
-  category band (5 subjects → `?kategori=…#guider`), featured guide, filterable/searchable grid (1/2/3 columns),
+- **`/bostadsguider`** (after the design mockup `Bostadsguider-Page-Newlook.png`, not kept in the repo, as direction):
+  hero with search and a Strandvägen photo in an organic frame + handwritten note (Caveat via next/font, `font-hand`),
+  deep-green wavy category band (5 subjects → `?kategori=…#guider`), featured guide, filterable/searchable grid (1/2/3 columns),
   links to Insikter/Nyheter, CTA "Jag vill veta hur den här bostaden faktiskt står sig." Components in
   `components/kunskap/`. Cards: white, `ka-line-strong` edge + `shadow-ka-card` (white on cream is only 1.09:1).
   New tokens in `_variables.scss`: `$ka-line-strong`, category tones `amber/sky/coral -100/-300/-700`, card shadows,
