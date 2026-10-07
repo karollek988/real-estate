@@ -55,28 +55,6 @@ export function getPriceId(key: OneTimePriceKey): string {
 }
 
 /**
- * Subscriptions are no longer sold, and nothing creates a subscription
- * checkout. These two Price ids are kept only so the webhook can still
- * recognise a subscription that already exists in Stripe (see
- * getTierForPriceId) — remove them, and the subscription handling in
- * webhooks.ts, once no active subscription is left in the Stripe Dashboard.
- */
-export type SubscriptionTier = "premium" | "ultra";
-
-const LEGACY_SUBSCRIPTION_PRICE_ENV: Record<SubscriptionTier, string> = {
-  premium: "STRIPE_PRICE_PREMIUM_MONTHLY",
-  ultra: "STRIPE_PRICE_ULTRA_MONTHLY",
-};
-
-export function getTierForPriceId(priceId: string): SubscriptionTier | null {
-  for (const [tier, envVar] of Object.entries(LEGACY_SUBSCRIPTION_PRICE_ENV) as [SubscriptionTier, string][]) {
-    const configured = process.env[envVar];
-    if (configured && configured === priceId) return tier;
-  }
-  return null;
-}
-
-/**
  * Discount codes: a code is good for one purchase of the product it was
  * issued for and is applied through a Stripe Coupon (50% off, duration
  * "once"), created once in the Stripe Dashboard and referenced by id — the

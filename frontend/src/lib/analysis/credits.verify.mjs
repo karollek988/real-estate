@@ -8,7 +8,6 @@
 import {
   getOneTimeProduct,
   getPriceId,
-  getTierForPriceId,
   getCouponId,
   isOneTimePriceKey,
 } from "../stripe/prices.ts";
@@ -57,15 +56,6 @@ delete process.env.STRIPE_COUPON_ANALYSIS_50OFF;
 check("a missing coupon id throws", throws(() => getCouponId("trygghetspaket")));
 process.env.STRIPE_COUPON_ANALYSIS_50OFF = "coupon_test";
 check("one coupon serves both code kinds", getCouponId("trygghetspaket") === "coupon_test" && getCouponId("omradesanalys") === "coupon_test");
-
-// ── legacy subscription recognition (webhook off-ramp only) ──────────────────
-delete process.env.STRIPE_PRICE_PREMIUM_MONTHLY;
-delete process.env.STRIPE_PRICE_ULTRA_MONTHLY;
-check("an unset legacy Price id never matches an empty string", getTierForPriceId("") === null);
-process.env.STRIPE_PRICE_PREMIUM_MONTHLY = "price_prem";
-process.env.STRIPE_PRICE_ULTRA_MONTHLY = "price_ultra";
-check("legacy subscription prices still map to a tier", getTierForPriceId("price_prem") === "premium" && getTierForPriceId("price_ultra") === "ultra");
-check("a package price is not mistaken for a subscription", getTierForPriceId("price_area_test") === null);
 
 // ── account summary counts ───────────────────────────────────────────────────
 const none = countAnalyses([]);
