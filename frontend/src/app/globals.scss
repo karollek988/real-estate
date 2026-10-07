@@ -14,6 +14,10 @@
   @each $name, $color in $ka-palette {
     --color-ka-#{$name}: #{$color};
   }
+
+  // shadow-ka-card, shadow-ka-card-hover
+  --shadow-ka-card: #{$ka-shadow-card};
+  --shadow-ka-card-hover: #{$ka-shadow-card-hover};
 }
 
 // Wide but short viewports (most laptops): the landing hero tightens so the
@@ -23,6 +27,7 @@
 // `inline`: the variable is set by next/font on the landing page wrapper, not on :root.
 @theme inline {
   --font-display: #{meta.inspect($font-display)};
+  --font-hand: #{meta.inspect($font-hand)};
 }
 
 :root {
@@ -430,5 +435,20 @@ $city-tags-end: 0.393; // the lowest tag beside the laptop (Östermalm) ends
       transform: none;
       transition: none;
     }
+  }
+}
+
+// === Bostadsguiden (components/kunskap) ===
+
+// The hero photo's soft, organic outline (after Bostadsguider-Page-Newlook.png):
+// a rounded blob rather than a rectangle, so the page reads as an editorial
+// guide and not as a broker's listing grid.
+// Phones get plain rounded corners: on a narrow, wide picture the blob turns
+// into a thin lens.
+.guide-blob {
+  border-radius: 28px;
+
+  @media (min-width: $bp-sm) {
+    border-radius: 64% 36% 55% 45% / 52% 44% 56% 48%;
   }
 }

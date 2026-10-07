@@ -43,7 +43,34 @@ const ADMIN_HEADERS = [
   ...(process.env.NODE_ENV === "production" ? [{ key: "Content-Security-Policy", value: ADMIN_CSP }] : []),
 ];
 
+// Pictures uploaded from the content editor live in the public Supabase
+// Storage bucket "content-images" (lib/content/imageUpload.ts). next/image may
+// fetch from that bucket of our own project and nowhere else.
+const SUPABASE_URL = (() => {
+  try {
+    return process.env.NEXT_PUBLIC_SUPABASE_URL ? new URL(process.env.NEXT_PUBLIC_SUPABASE_URL) : null;
+  } catch {
+    return null;
+  }
+})();
+
 const nextConfig: NextConfig = {
+  images: {
+    remotePatterns: SUPABASE_URL
+      ? [
+          {
+            protocol: SUPABASE_URL.protocol === "http:" ? "http" : "https",
+            hostname: SUPABASE_URL.hostname,
+            port: SUPABASE_URL.port,
+            pathname: "/storage/v1/object/public/content-images/**",
+          },
+        ]
+      : [],
+    // Next refuses to optimise pictures from local addresses. Allowed only in
+    // `next dev` against the local Supabase stack (127.0.0.1), never in a build.
+    dangerouslyAllowLocalIP:
+      process.env.NODE_ENV === "development" && (SUPABASE_URL?.hostname === "127.0.0.1" || SUPABASE_URL?.hostname === "localhost"),
+  },
   // Dev server only (ignored by `next build`). By default it refuses every request that comes from
   // another origin than localhost, including its hot-reload socket, and a page opened that way then
   // reloads itself in a loop and never gets as far as mounting the map. Allowed here:
@@ -52,6 +79,16 @@ const nextConfig: NextConfig = {
   //    matches any address of the usual home range; each * is one number).
   // Anything else, such as a public address or a tunnel, has to be added by name.
   allowedDevOrigins: ["admin.localhost", "192.168.*.*"],
+  // Kunskap (2026-10): "Blogg" and "Guider" became Bostadsguiden. Their old
+  // addresses, and the six articles that lived under them, now lead to it.
+  async redirects() {
+    return [
+      { source: "/blogg", destination: "/bostadsguider", permanent: true },
+      { source: "/blogg/:slug*", destination: "/bostadsguider", permanent: true },
+      { source: "/guider", destination: "/bostadsguider", permanent: true },
+      { source: "/guider/:slug*", destination: "/bostadsguider", permanent: true },
+    ];
+  },
   async headers() {
     return [
       { source: "/:path*", headers: SECURITY_HEADERS },

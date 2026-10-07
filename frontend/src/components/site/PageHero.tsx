@@ -1,12 +1,8 @@
-import Link from "next/link";
 import { LANDING_CONTAINER } from "@/components/landing/container";
-import { ChevronRightIcon } from "@/components/icons";
-import { ROUTES, type NavIcon } from "@/components/site/navigation";
+import { Breadcrumbs, type Crumb } from "@/components/site/Breadcrumbs";
+import type { NavIcon } from "@/components/site/navigation";
 
-export interface Crumb {
-  label: string;
-  href?: string;
-}
+export type { Crumb };
 
 /**
  * The top of every public page below the landing page: breadcrumbs, a
@@ -46,32 +42,7 @@ export function PageHero({
         }`}
       >
         <div className="max-w-[760px]">
-          <nav aria-label="Brödsmulor">
-            <ol className="flex flex-wrap items-center gap-1.5 text-[13.5px] text-ka-muted">
-              <li>
-                <Link href={ROUTES.home} className="transition hover:text-ka-green-800 hover:underline">
-                  Start
-                </Link>
-              </li>
-              {crumbs.map((crumb, i) => {
-                const last = i === crumbs.length - 1;
-                return (
-                  <li key={crumb.label} className="flex items-center gap-1.5">
-                    <ChevronRightIcon className="h-3.5 w-3.5 text-ka-muted/70" strokeWidth={2} />
-                    {crumb.href && !last ? (
-                      <Link href={crumb.href} className="transition hover:text-ka-green-800 hover:underline">
-                        {crumb.label}
-                      </Link>
-                    ) : (
-                      <span aria-current={last ? "page" : undefined} className={last ? "font-medium text-ka-text" : ""}>
-                        {crumb.label}
-                      </span>
-                    )}
-                  </li>
-                );
-              })}
-            </ol>
-          </nav>
+          <Breadcrumbs crumbs={crumbs} />
 
           <p className="mt-8 inline-flex items-center gap-2 rounded-full bg-ka-sage/75 px-3.5 py-1.5 text-[12px] font-semibold uppercase tracking-[0.08em] text-ka-green-900">
             <Icon className="h-4 w-4" />

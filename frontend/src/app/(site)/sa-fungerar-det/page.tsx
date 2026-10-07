@@ -55,7 +55,7 @@ const FLOW = [
 const JOURNEY = [
   { icon: MapFoldIcon, title: "Hitta", text: "Utforska bostäder, köpare och byten på kartan.", href: ROUTES.karta, cta: "Till kartan", note: "Förhandsversion" },
   { icon: SearchIcon, title: "Analysera", text: "Föreningens ekonomi, området och kostnaderna – i klartext.", href: ROUTES.skapaAnalys, cta: "Skapa analys" },
-  { icon: ClipboardIcon, title: "Inspektera", text: "Frågorna att ställa och vad du ska titta efter på visningen.", href: "/guider/infor-visningen", cta: "Läs guiden" },
+  { icon: ClipboardIcon, title: "Inspektera", text: "Frågorna att ställa och vad du ska titta efter på visningen.", href: ROUTES.bostadsguiden, cta: "Till Bostadsguiden" },
   { icon: TargetIcon, title: "Besluta", text: "Ett samlat underlag med allt som påverkar köpet.", href: ROUTES.exempelrapport, cta: "Se exempelrapporten" },
 ];
 

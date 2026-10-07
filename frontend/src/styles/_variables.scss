@@ -49,6 +49,21 @@ $ka-green-400: #63b088;
 $ka-mint: #9fd8b8; // accent text on deep green
 $ka-mint-bright: #4ce8a6; // the highlighted third step in the landing hero (tre-steg-tryggare.png)
 $ka-red-600: #bb3b34;
+$ka-line-strong: #d6cebf; // card edges that must read against cream and sand (Bostadsguiden cards)
+
+// Content categories (Bostadsguiden): one tone each, so a category reads the
+// same in the green band, on a card's pill and in the filter. -100 is the pill
+// background, -700 the pill text (all >= 5.8:1 on their -100), -300 the icon
+// on deep green (>= 7:1 on green-950).
+$ka-amber-100: #f7e6c4;
+$ka-amber-300: #f2c46b;
+$ka-amber-700: #7a4300;
+$ka-sky-100: #dde8f4;
+$ka-sky-300: #9cc3ee;
+$ka-sky-700: #1f4f86;
+$ka-coral-100: #f6dcd6;
+$ka-coral-300: #f3998d;
+$ka-coral-700: #9a2c25;
 
 // Every entry becomes a Tailwind colour named ka-<key>. Add a colour above,
 // list it here, and bg-ka-<key> / text-ka-<key> / border-ka-<key> exist.
@@ -71,6 +86,16 @@ $ka-palette: (
   "mint": $ka-mint,
   "mint-bright": $ka-mint-bright,
   "red-600": $ka-red-600,
+  "line-strong": $ka-line-strong,
+  "amber-100": $ka-amber-100,
+  "amber-300": $ka-amber-300,
+  "amber-700": $ka-amber-700,
+  "sky-100": $ka-sky-100,
+  "sky-300": $ka-sky-300,
+  "sky-700": $ka-sky-700,
+  "coral-100": $ka-coral-100,
+  "coral-300": $ka-coral-300,
+  "coral-700": $ka-coral-700,
 );
 
 // Page defaults, before any section paints over them
@@ -202,6 +227,9 @@ $font-sans: var(--font-sans, ui-sans-serif, system-ui, sans-serif);
 // Display serif for headlines (Tailwind font-display); --font-serif-display is
 // set by next/font (lib/fonts.ts) on the landing page wrapper
 $font-display: var(--font-serif-display), "Iowan Old Style", Georgia, serif;
+// Handwriting for the small margin notes on Bostadsguiden (Tailwind font-hand);
+// --font-hand is set by next/font (lib/fonts.ts) on that page's wrapper
+$font-hand: var(--font-hand), "Segoe Print", "Bradley Hand", cursive;
 
 // -----------------------------------------------------------------------------
 // Motion
@@ -213,6 +241,7 @@ $ease-out-back: cubic-bezier(0.34, 1.56, 0.64, 1); // map pins popping (overshoo
 // -----------------------------------------------------------------------------
 // Breakpoints (Tailwind's sm/md/lg/xl/2xl stay Tailwind's)
 // -----------------------------------------------------------------------------
+$bp-sm: 640px; // = Tailwind sm
 $bp-xl: 1280px; // = Tailwind xl
 $bp-short-max-height: 860px; // short: variant - wide but short laptop screens
 $admin-bp-phone: 520px; // admin login and session bar
@@ -229,6 +258,12 @@ $map-shadow-float: 0 5px 18px rgba($ka-ink, 0.15);
 $map-shadow-popover: 0 18px 50px rgba($ka-ink, 0.18); // detail panel, dropdowns
 $map-shadow-modal: 0 18px 50px rgba($ka-ink, 0.22);
 $map-shadow-primary: 0 8px 18px -10px rgba($ka-green-950, 0.8); // main buttons
+
+// Public site cards (Tailwind shadow-ka-card / shadow-ka-card-hover). A white
+// card on cream is only 1.09:1, so a card needs this shadow and a
+// $ka-line-strong edge to stand off the page.
+$ka-shadow-card: 0 1px 2px rgba($ka-ink, 0.06), 0 16px 36px -20px rgba($ka-ink, 0.32);
+$ka-shadow-card-hover: 0 2px 4px rgba($ka-ink, 0.07), 0 30px 56px -26px rgba($ka-ink, 0.42);
 
 // -----------------------------------------------------------------------------
 // Mixins

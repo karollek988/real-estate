@@ -7,8 +7,8 @@ import {
   MapFoldIcon,
   MapPinIcon,
   NewspaperIcon,
-  NotepadIcon,
   TagIcon,
+  TrendingUpIcon,
 } from "@/components/icons";
 
 export type NavIcon = React.ComponentType<React.SVGProps<SVGSVGElement>>;
@@ -26,9 +26,9 @@ export const ROUTES = {
   prisutveckling: "/prisutveckling",
   omraden: "/omraden",
   priser: "/priser",
-  blogg: "/blogg",
+  bostadsguiden: "/bostadsguider",
+  insikter: "/insikter",
   nyheter: "/nyheter",
-  guider: "/guider",
   saFungerarDet: "/sa-fungerar-det",
   kontakt: "/kontakt",
   faq: "/#faq",
@@ -58,10 +58,12 @@ export const BOSTADSANALYS_MENU: NavMenuLink[] = [
   { label: "Prisutveckling", description: "Se prisutveckling och trender", href: ROUTES.prisutveckling, icon: BarChartIcon },
 ];
 
+// Kunskap (2026-10): Bostadsguiden replaced "Blogg" and "Guider" - the old
+// /blogg and /guider addresses redirect there (next.config.ts).
 export const KUNSKAP_MENU: NavMenuLink[] = [
-  { label: "Blogg", description: "Tips, guider och analyser", href: ROUTES.blogg, icon: NotepadIcon },
-  { label: "Nyheter", description: "Senaste uppdateringarna", href: ROUTES.nyheter, icon: NewspaperIcon },
-  { label: "Guider", description: "Steg för steg till ett tryggare köp", href: ROUTES.guider, icon: LightbulbIcon },
+  { label: "Bostadsguiden", description: "Förstå bostadsköpet", href: ROUTES.bostadsguiden, icon: LightbulbIcon },
+  { label: "Insikter", description: "Data från bostadsmarknaden", href: ROUTES.insikter, icon: TrendingUpIcon },
+  { label: "Nyheter", description: "Det senaste just nu", href: ROUTES.nyheter, icon: NewspaperIcon },
 ];
 
 export const MAIN_NAV: NavEntry[] = [
@@ -73,7 +75,7 @@ export const MAIN_NAV: NavEntry[] = [
   { kind: "link", label: "Kontakt", href: ROUTES.kontakt },
 ];
 
-/** True on `href` itself and on any page below it (/blogg/[slug] counts as /blogg). */
+/** True on `href` itself and on any page below it (/bostadsguider/[slug] counts as /bostadsguider). */
 export function isActivePath(pathname: string, href: string): boolean {
   if (href === "/" || href.includes("#")) return false;
   return pathname === href || pathname.startsWith(`${href}/`);

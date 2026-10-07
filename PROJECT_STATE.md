@@ -5,6 +5,56 @@
 > otherwise leave it alone. Detailed research/product docs live in `docs/`;
 > this file is the "what's actually true right now" summary.
 
+**Seventeenth session, second round (2026-10-07, at the user's request; pushed to `origin/styleRedesign` → Vercel Preview).**
+- The six AI articles (`lib/kunskap/articles.ts`) were **deleted**.
+- **Picture upload** in the editor: `POST /api/admin/content/images` (admins, same origin, ≤ 12 MB) →
+  `lib/content/imageUpload.ts` checks the real file type by its first bytes, refuses decompression bombs, turns the
+  picture upright, scales it to ≤ 2400 px, **drops EXIF/GPS** and stores WebP in the public Storage bucket
+  `content-images` (generated names, never overwritten). Items may use the site's own pictures or our own bucket's
+  (`isAllowedImage`; `next.config.ts` remotePatterns only that bucket). Drafts can be deleted
+  (`DELETE /api/admin/content/:id`, drafts only).
+- **The migration `20261007120000_content_items.sql` (now incl. the bucket and the delete grant) was applied to the
+  production Supabase project `mifrdfjucyniddhlkudo` on 2026-10-07** from the SQL editor (the user approved the review;
+  read-only preflight first; the SQL was hash-checked against the file). Verified afterwards: RLS on, one policy, anon
+  cannot insert or read `created_by`, bucket public 5 MB WebP-only; from outside with the site's publishable key: list
+  → `[]`, `select=*` and insert → 42501, bucket listing → `[]`, anonymous upload → RLS refusal. Seba's
+  `20261007000000_acquisition_analytics.sql` was **not** touched.
+- Locally `.env.local` points at a local Supabase stack (127.0.0.1:54331, Docker); `next dev` may load its pictures
+  (`images.dangerouslyAllowLocalIP` only in dev against that stack).
+- Verified: `content.verify.mjs` 92, PGlite migration test 34, `tsc`, eslint (changed files clean), `next build`.
+
+**Seventeenth session (2026-10-07, branch `styleRedesign`) — Kunskap redesign: Bostadsguiden.**
+`origin/main` (`87a9cb1`) was merged into `styleRedesign` first (only conflict: this file). Then:
+- **Kunskap menu** = Bostadsguiden (`/bostadsguider`, "Förstå bostadsköpet"), Insikter (`/insikter`, "Data från
+  bostadsmarknaden"), Nyheter (`/nyheter`, "Det senaste just nu"). "Blogg" and "Guider" are gone: `/blogg`, `/guider`
+  and every `/blogg/*`, `/guider/*` 308-redirect to `/bostadsguider` (`next.config.ts`). Their route files and
+  `ArticleCard`/`ArticlePage` were deleted; the six AI-written articles were unpublished, then deleted (second round).
+- **`/bostadsguider`** (after `frontend/public/Bostadsguider-Page-Newlook.png`, as direction): hero with search and a
+  Strandvägen photo in an organic frame + handwritten note (Caveat via next/font, `font-hand`), deep-green wavy
+  category band (5 subjects → `?kategori=…#guider`), featured guide, filterable/searchable grid (1/2/3 columns),
+  links to Insikter/Nyheter, CTA "Jag vill veta hur den här bostaden faktiskt står sig." Components in
+  `components/kunskap/`. Cards: white, `ka-line-strong` edge + `shadow-ka-card` (white on cream is only 1.09:1).
+  New tokens in `_variables.scss`: `$ka-line-strong`, category tones `amber/sky/coral -100/-300/-700`, card shadows,
+  `$font-hand`, `$bp-sm`. Web copies of the user's Stockholm photos in `public/images/bostadsguiden/` (the 2-7.5 MB
+  originals in `public/` are left untracked).
+- **Content system** (`lib/content/`): one model for guide/insight/news; table `public.content_items`
+  (`supabase/migrations/20261007120000_content_items.sql`, applied to production in the second round); RLS: anon and
+  authenticated read only published rows whose `published_at` has come, only the public columns; writes only via the
+  service role. Public pages read with the anon key and no cookies (static, `revalidate = 300`, revalidated at once on
+  publish). Body = a small Markdown subset rendered as React (no HTML). Item pages `/bostadsguider/[slug]`,
+  `/insikter/[slug]`, `/nyheter/[slug]` with canonical, OG/Twitter, Article + BreadcrumbList JSON-LD, TOC. Hubs are
+  `noindex` and left out of the sitemap until they have a real item.
+- **Editor** `/admin/content` (list, new, edit, preview) in the existing admin console - same gate as `/admin/brf`
+  (`KOPANALYS_ADMIN_EMAILS`, server-side); API `POST /api/admin/content`, `PATCH /api/admin/content/:id` (same-origin
+  check, validation in `lib/content/validate.ts`). Pictures from `lib/content/images.ts` or uploaded (second round).
+- **Demo content** (`lib/content/demo.ts`, marked "Exempel", noindex): only in `next dev`, Vercel Preview or
+  `CONTENT_DEMO=1`; never on Vercel Production. Production today shows the empty states.
+- **Verified:** `content.verify.mjs` (67), the migration against PGlite (25: constraints, trigger, RLS as
+  anon/authenticated, column grants), `tsc`, eslint on all changed files (the 14 remaining lint problems are older,
+  in untouched files), `next build`, a production server (redirects 308, demo slugs 404, hubs noindex, sitemap), and
+  screenshots at 375-1440 px with no horizontal overflow. `hemnetPage.verify.mjs` has one older failure (fireplace
+  feature), unrelated.
+
 Last updated: 2026-10-07 — Sixteenth session (the Markov simulator: state model and simulator, acquisition
 model, measured traffic sources behind a consent cookie, then **revenue/costs, company KPIs and strategies, which
 complete the six-step plan**; **not committed, and the new migration `20261007000000_acquisition_analytics.sql`
@@ -339,6 +389,8 @@ admin page gets its real content. "Visa karta" in the landing hero already linke
 the admin login page and `/karta` return 200 on the running dev server, `/admin-portal` on the main
 host 404s. **Not verified:** the signed-in empty page in a browser (no throwaway login possible
 while the user's dev server holds Next's lock on the project folder).
+
+**Twelfth session merge (kept from `styleRedesign`):** on 2026-10-05 `styleRedesign` (`9e020de`) was merged to `main` as `2420a7c` and deployed at the user's request. Since then `main` moved on (sessions 13–16 above, pushed straight to `main`), and on 2026-10-07 `origin/main` (`87a9cb1`) was merged back into `styleRedesign` before the Bostadsguiden redesign.
 
 **Twelfth session — the landing hero is centred again.** The user rejected the eleventh session's split
 hero (text left, photo right). Header, menus, pages and routing stay exactly as built; only the top of
