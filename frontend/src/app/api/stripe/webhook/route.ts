@@ -1,13 +1,6 @@
 import { NextResponse } from "next/server";
 import { createStripeClient } from "@/lib/stripe/admin";
-import {
-  handleCheckoutSessionCompleted,
-  handleCheckoutSessionExpired,
-  handleSubscriptionCreatedOrUpdated,
-  handleSubscriptionDeleted,
-  handleInvoicePaid,
-  handleInvoicePaymentFailed,
-} from "@/lib/stripe/webhooks";
+import { handleCheckoutSessionCompleted, handleCheckoutSessionExpired } from "@/lib/stripe/webhooks";
 
 function errorResponse(status: number, code: string, message: string) {
   return NextResponse.json({ error: { code, message } }, { status });
@@ -54,35 +47,6 @@ export async function POST(request: Request) {
         console.log("[Webhook] Handling checkout.session.expired");
         await handleCheckoutSessionExpired(event.data.object);
         console.log("[Webhook] ✓ checkout.session.expired handled");
-        break;
-      }
-
-      case "customer.subscription.created":
-      case "customer.subscription.updated": {
-        console.log("[Webhook] Handling", event.type);
-        await handleSubscriptionCreatedOrUpdated(event.data.object);
-        console.log("[Webhook] ✓", event.type, "handled");
-        break;
-      }
-
-      case "customer.subscription.deleted": {
-        console.log("[Webhook] Handling customer.subscription.deleted");
-        await handleSubscriptionDeleted(event.data.object);
-        console.log("[Webhook] ✓ customer.subscription.deleted handled");
-        break;
-      }
-
-      case "invoice.paid": {
-        console.log("[Webhook] Handling invoice.paid");
-        await handleInvoicePaid(event.data.object);
-        console.log("[Webhook] ✓ invoice.paid handled");
-        break;
-      }
-
-      case "invoice.payment_failed": {
-        console.log("[Webhook] Handling invoice.payment_failed");
-        await handleInvoicePaymentFailed(event.data.object);
-        console.log("[Webhook] ✓ invoice.payment_failed handled");
         break;
       }
 

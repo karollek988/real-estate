@@ -351,14 +351,6 @@ export interface ProfileSummary {
   /** Analyses the account already holds, by kind. */
   analyses: AnalysisCounts;
   memberSince: string;
-  // Only meaningful for an account that still has a subscription from before
-  // subscriptions were discontinued — it is how that account finds the way to
-  // cancel it. Nothing sells or reads subscriptions any more.
-  subscriptionStatus: string | null;
-  subscriptionTier: string | null;
-  subscriptionEnd: string | null;
-  currentPeriodEnd: string | null;
-  stripeCustomerId: string | null;
 }
 
 export async function getProfileSummary(userId: string): Promise<ProfileSummary | null> {
@@ -366,9 +358,7 @@ export async function getProfileSummary(userId: string): Promise<ProfileSummary 
   const [{ data: profile, error: profileError }, owned] = await Promise.all([
     client
       .from("profiles")
-      .select(
-        "full_analyses_remaining, area_analyses_remaining, created_at, subscription_status, subscription_tier, subscription_end, current_period_end, stripe_customer_id"
-      )
+      .select("full_analyses_remaining, area_analyses_remaining, created_at")
       .eq("id", userId)
       .maybeSingle(),
     listAnalysisRequestsForUser(userId),
@@ -380,21 +370,11 @@ export async function getProfileSummary(userId: string): Promise<ProfileSummary 
     full_analyses_remaining: number;
     area_analyses_remaining: number;
     created_at: string;
-    subscription_status: string | null;
-    subscription_tier: string | null;
-    subscription_end: string | null;
-    current_period_end: string | null;
-    stripe_customer_id: string | null;
   };
 
   return {
     credits: { full: row.full_analyses_remaining, area: row.area_analyses_remaining },
     analyses: countAnalyses(owned),
     memberSince: row.created_at,
-    subscriptionStatus: row.subscription_status,
-    subscriptionTier: row.subscription_tier,
-    subscriptionEnd: row.subscription_end,
-    currentPeriodEnd: row.current_period_end,
-    stripeCustomerId: row.stripe_customer_id,
   };
 }
