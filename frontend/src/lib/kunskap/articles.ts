@@ -9,6 +9,12 @@ import {
 } from "@/lib/report/housingCost";
 
 /**
+ * RETIRED 2026-10-07 - not used by any page. These six AI-written articles were
+ * the old /blogg and /guider, which now redirect to Bostadsguiden
+ * (next.config.ts); new content is written in /admin/content (lib/content).
+ * Kept only until the team decides whether to delete them (Monday: "Ta bort
+ * AI genererade blogg") or rework some into real guides.
+ *
  * The articles on /blogg and /guider. Written from what the product itself
  * relies on, so an article can never contradict a report:
  *  - BRF key figures and their low/high levels: lib/brf/interpret.ts

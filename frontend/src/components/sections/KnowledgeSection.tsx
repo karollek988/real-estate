@@ -4,7 +4,7 @@ import { KUNSKAP_MENU } from "@/components/site/navigation";
 import { ArrowRightIcon, BookOpenIcon } from "@/components/icons";
 
 /**
- * A small pointer to the Kunskap pages (Blogg, Nyheter, Guider). The articles
+ * A small pointer to the Kunskap pages (Bostadsguiden, Insikter, Nyheter). The articles
  * themselves live on their own pages, not on the landing page.
  */
 export function KnowledgeSection() {
@@ -20,7 +20,7 @@ export function KnowledgeSection() {
             <h2 id="kunskap-title" className="mt-3 font-display text-[28px] font-bold leading-[1.12] tracking-[-0.01em] text-ka-ink sm:text-[32px]">
               Bli tryggare inför ditt köp
             </h2>
-            <p className="mt-2 text-[15px] leading-relaxed text-ka-muted">Guider, tips och nyheter om bostadsmarknaden.</p>
+            <p className="mt-2 text-[15px] leading-relaxed text-ka-muted">Guider, insikter och nyheter om bostadsmarknaden.</p>
           </div>
           <ul className="grid gap-3 sm:grid-cols-3">
             {KUNSKAP_MENU.map(({ label, description, href, icon: Icon }) => (

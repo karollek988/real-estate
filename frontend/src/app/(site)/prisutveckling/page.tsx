@@ -6,6 +6,7 @@ import { CtaBand } from "@/components/site/CtaBand";
 import { PageHero } from "@/components/site/PageHero";
 import { ROUTES } from "@/components/site/navigation";
 import { ArrowRightIcon, BarChartIcon, BuildingIcon, ChartIcon, PercentIcon, TrendingUpIcon } from "@/components/icons";
+import { categoryHref } from "@/lib/content/paths";
 
 export const metadata: Metadata = {
   title: "Prisutveckling och trender på bostadsmarknaden",
@@ -18,7 +19,7 @@ const MEANINGS = [
     icon: PercentIcon,
     title: "Styrräntan",
     text: "Riksbankens styrränta påverkar bankernas räntor – både på ditt bolån och på föreningens lån. Därför är föreningens räntekänslighet värd att känna till.",
-    link: { label: "Läs om räntekänslighet", href: "/blogg/rantekanslighet" },
+    link: { label: "Guider om BRF & ekonomi", href: categoryHref("guide", "brf-ekonomi") },
   },
   {
     icon: TrendingUpIcon,

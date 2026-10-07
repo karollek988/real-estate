@@ -5,6 +5,39 @@
 > otherwise leave it alone. Detailed research/product docs live in `docs/`;
 > this file is the "what's actually true right now" summary.
 
+**Seventeenth session (2026-10-07, branch `styleRedesign`, committed locally, not pushed) — Kunskap redesign: Bostadsguiden.**
+`origin/main` (`87a9cb1`) was merged into `styleRedesign` first (only conflict: this file). Then:
+- **Kunskap menu** = Bostadsguiden (`/bostadsguider`, "Förstå bostadsköpet"), Insikter (`/insikter`, "Data från
+  bostadsmarknaden"), Nyheter (`/nyheter`, "Det senaste just nu"). "Blogg" and "Guider" are gone: `/blogg`, `/guider`
+  and every `/blogg/*`, `/guider/*` 308-redirect to `/bostadsguider` (`next.config.ts`). Their route files and
+  `ArticleCard`/`ArticlePage` were deleted; **the six AI-written articles in `lib/kunskap/articles.ts` are unpublished
+  but kept** (no page uses them) until the user decides: delete (Monday "Ta bort AI genererade blogg") or rework.
+- **`/bostadsguider`** (after `frontend/public/Bostadsguider-Page-Newlook.png`, as direction): hero with search and a
+  Strandvägen photo in an organic frame + handwritten note (Caveat via next/font, `font-hand`), deep-green wavy
+  category band (5 subjects → `?kategori=…#guider`), featured guide, filterable/searchable grid (1/2/3 columns),
+  links to Insikter/Nyheter, CTA "Jag vill veta hur den här bostaden faktiskt står sig." Components in
+  `components/kunskap/`. Cards: white, `ka-line-strong` edge + `shadow-ka-card` (white on cream is only 1.09:1).
+  New tokens in `_variables.scss`: `$ka-line-strong`, category tones `amber/sky/coral -100/-300/-700`, card shadows,
+  `$font-hand`, `$bp-sm`. Web copies of the user's Stockholm photos in `public/images/bostadsguiden/` (the 2-7.5 MB
+  originals in `public/` are left untracked).
+- **Content system** (`lib/content/`): one model for guide/insight/news; table `public.content_items`
+  (`supabase/migrations/20261007120000_content_items.sql`, **not applied anywhere** - Seba's call); RLS: anon and
+  authenticated read only published rows whose `published_at` has come, only the public columns; writes only via the
+  service role. Public pages read with the anon key and no cookies (static, `revalidate = 300`, revalidated at once on
+  publish). Body = a small Markdown subset rendered as React (no HTML). Item pages `/bostadsguider/[slug]`,
+  `/insikter/[slug]`, `/nyheter/[slug]` with canonical, OG/Twitter, Article + BreadcrumbList JSON-LD, TOC. Hubs are
+  `noindex` and left out of the sitemap until they have a real item.
+- **Editor** `/admin/content` (list, new, edit, preview) in the existing admin console - same gate as `/admin/brf`
+  (`KOPANALYS_ADMIN_EMAILS`, server-side); API `POST /api/admin/content`, `PATCH /api/admin/content/:id` (same-origin
+  check, validation in `lib/content/validate.ts`). Pictures from `lib/content/images.ts` (no upload yet).
+- **Demo content** (`lib/content/demo.ts`, marked "Exempel", noindex): only in `next dev`, Vercel Preview or
+  `CONTENT_DEMO=1`; never on Vercel Production. Production today shows the empty states.
+- **Verified:** `content.verify.mjs` (67), the migration against PGlite (25: constraints, trigger, RLS as
+  anon/authenticated, column grants), `tsc`, eslint on all changed files (the 14 remaining lint problems are older,
+  in untouched files), `next build`, a production server (redirects 308, demo slugs 404, hubs noindex, sitemap), and
+  screenshots at 375-1440 px with no horizontal overflow. `hemnetPage.verify.mjs` has one older failure (fireplace
+  feature), unrelated.
+
 Last updated: 2026-10-07 — Sixteenth session (the Markov simulator: state model and simulator, acquisition
 model, measured traffic sources behind a consent cookie, then **revenue/costs, company KPIs and strategies, which
 complete the six-step plan**; **not committed, and the new migration `20261007000000_acquisition_analytics.sql`

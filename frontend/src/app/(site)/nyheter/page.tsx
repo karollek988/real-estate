@@ -1,11 +1,16 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { LANDING_CONTAINER } from "@/components/landing/container";
+import { GuideCard } from "@/components/kunskap/GuideCard";
 import { NewsSection } from "@/components/sections/NewsSection";
 import { CtaBand } from "@/components/site/CtaBand";
 import { PageHero } from "@/components/site/PageHero";
 import { ROUTES } from "@/components/site/navigation";
 import { ArrowRightIcon, BarChartIcon, LightbulbIcon, NewspaperIcon } from "@/components/icons";
+import { listPublishedContent } from "@/lib/content/repository";
+
+// Our own news items (from /admin/content) appear within five minutes, at once when the editor publishes.
+export const revalidate = 300;
 
 export const metadata: Metadata = {
   title: "Nyheter om bostadsmarknaden",
@@ -15,10 +20,12 @@ export const metadata: Metadata = {
 
 const NEXT_STEPS = [
   { icon: BarChartIcon, title: "Prisutveckling", text: "Styrränta, bostadspriser och inflation i siffror.", href: ROUTES.prisutveckling },
-  { icon: LightbulbIcon, title: "Guider", text: "Steg för steg till ett tryggare köp.", href: ROUTES.guider },
+  { icon: LightbulbIcon, title: "Bostadsguiden", text: "Förstå bostadsköpet – ekonomi, kostnader, områden och risker.", href: ROUTES.bostadsguiden },
 ];
 
-export default function NyheterPage() {
+export default async function NyheterPage() {
+  const ownNews = await listPublishedContent("news");
+
   return (
     <>
       <PageHero
@@ -28,6 +35,22 @@ export default function NyheterPage() {
         lead="Räntor, priser och beslut som påverkar din nästa bostad – de senaste uppdateringarna, samlade på ett ställe."
         crumbs={[{ label: "Kunskap" }, { label: "Nyheter" }]}
       />
+      {ownNews.length > 0 && (
+        <section aria-labelledby="own-news-title" className="bg-ka-cream">
+          <div className={`${LANDING_CONTAINER} pt-14 lg:pt-20`}>
+            <h2 id="own-news-title" className="font-display text-[30px] font-bold text-ka-ink sm:text-[36px]">
+              Från Köpanalys
+            </h2>
+            <ul className="mt-8 grid gap-6 md:grid-cols-2 lg:grid-cols-3 lg:gap-7">
+              {ownNews.slice(0, 6).map((item) => (
+                <li key={item.id}>
+                  <GuideCard item={item} />
+                </li>
+              ))}
+            </ul>
+          </div>
+        </section>
+      )}
       <NewsSection />
       <section aria-label="Mer att läsa" className="bg-ka-cream">
         <div className={`${LANDING_CONTAINER} grid gap-4 md:grid-cols-2`}>

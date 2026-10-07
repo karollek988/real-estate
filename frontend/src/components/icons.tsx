@@ -642,3 +642,16 @@ export function ClockIcon(props: React.SVGProps<SVGSVGElement>) {
     </svg>
   );
 }
+
+/** Stacked coins - "BRF & ekonomi" in Bostadsguiden. */
+export function CoinsIcon(props: React.SVGProps<SVGSVGElement>) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.6} strokeLinecap="round" strokeLinejoin="round" {...props}>
+      <ellipse cx="9" cy="6.5" rx="5.5" ry="2.5" />
+      <path d="M3.5 6.5v3.5c0 1.4 2.5 2.5 5.5 2.5s5.5-1.1 5.5-2.5V6.5" />
+      <path d="M3.5 10v3.5C3.5 14.9 6 16 9 16c1 0 1.9-.1 2.7-.3" />
+      <ellipse cx="15" cy="14" rx="5.5" ry="2.5" />
+      <path d="M9.5 14v3.5c0 1.4 2.5 2.5 5.5 2.5s5.5-1.1 5.5-2.5V14" />
+    </svg>
+  );
+}

@@ -52,6 +52,16 @@ const nextConfig: NextConfig = {
   //    matches any address of the usual home range; each * is one number).
   // Anything else, such as a public address or a tunnel, has to be added by name.
   allowedDevOrigins: ["admin.localhost", "192.168.*.*"],
+  // Kunskap (2026-10): "Blogg" and "Guider" became Bostadsguiden. Their old
+  // addresses, and the six articles that lived under them, now lead to it.
+  async redirects() {
+    return [
+      { source: "/blogg", destination: "/bostadsguider", permanent: true },
+      { source: "/blogg/:slug*", destination: "/bostadsguider", permanent: true },
+      { source: "/guider", destination: "/bostadsguider", permanent: true },
+      { source: "/guider/:slug*", destination: "/bostadsguider", permanent: true },
+    ];
+  },
   async headers() {
     return [
       { source: "/:path*", headers: SECURITY_HEADERS },

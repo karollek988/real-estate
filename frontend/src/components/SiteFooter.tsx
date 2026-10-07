@@ -27,9 +27,9 @@ const COLUMNS: { title: string; links: { label: string; href: string }[] }[] = [
   {
     title: "Kunskap",
     links: [
-      { label: "Blogg", href: ROUTES.blogg },
+      { label: "Bostadsguiden", href: ROUTES.bostadsguiden },
+      { label: "Insikter", href: ROUTES.insikter },
       { label: "Nyheter", href: ROUTES.nyheter },
-      { label: "Guider", href: ROUTES.guider },
     ],
   },
   {
