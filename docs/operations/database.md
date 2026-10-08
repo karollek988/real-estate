@@ -41,8 +41,8 @@ How it got there: before 2026-10-08 six migrations had been applied by hand (`20
 `20261006000000`, `20261007120000`) and were missing from the history, and two had never been run
 (`20261007000000_acquisition_analytics`, `20261008120000_text_translations`). On 2026-10-08 the six were recorded and the
 two were applied and recorded (steps 1 and 2 below), and a second inventory confirmed it: 29 history rows, no migration
-missing, and the only differences from Git are the ones explained below. The one open difference is
-`properties.field_provenance` having no default (step 3, optional, not run).
+missing, and the only differences from Git are the ones explained below. The one remaining difference,
+`properties.field_provenance` having no default, was put right by step 3 on 2026-10-09.
 
 A new migration is applied to production **by hand first** (rule 5) and then recorded in the history - or run through the
 GitHub integration once that has been checked; either way, the history table must list it, or the next deploy tries it again.
@@ -55,8 +55,10 @@ line with what the 29 migrations produce, step by step, on an empty database. Re
 - **History:** 21 rows. Recorded but not in Git: none. (Now 29, see above.)
 - **Structure equals the migrations up to `20261008000000`**, with three explained differences:
   1. `20261007000000_acquisition_analytics` and `20261008120000_text_translations` are absent (no table, no function).
-  2. `properties.field_provenance` is `not null` but has **no default** (the migration says `default '{}'`). Harmless
-     today - the app sends a value - and put right by step 3 below.
+  2. `properties.field_provenance` is `not null` but had **no default** (the migration says `default '{}'`). Not
+     harmless: `insertProperty` creates a property without that column (only `updateProperty` sets it later), so a new
+     property would have been refused by the not-null check. Whether an insert ever failed is not known. Put right by
+     step 3 below (run 2026-10-09).
   3. The bucket `brf-annual-reports` exists although no migration creates it: `supabase/config.toml`
      (`[storage.buckets.brf-annual-reports]`) declares it, so Git does explain it.
 - **Functions:** all 13 that exist equal the Git versions. Production's bodies carry Windows line endings (pasted from
@@ -70,24 +72,26 @@ like production: with the history as it is, the CLI reports 21 migrations in bot
 `supabase db push` refuses ("Found local migration files to be inserted before the last migration on remote
 database"); after the three steps below it reports 29 of 29 and "Remote database is up to date".
 
-### The repair (`supabase/diagnostics/repair/`) - steps 1 and 2 applied 2026-10-08, step 3 not
+### The repair (`supabase/diagnostics/repair/`) - steps 1 and 2 applied 2026-10-08, step 3 on 2026-10-09
 
 Every step needs Karol's explicit OK first (rule 2) and the backup of rule 4. They were run in this order, in the SQL
 Editor of production; each is safe to repeat and runs as one transaction. The state before is kept in
-`real-estate-db-backups/2026-10-08-migration-history/`, the state after is the second inventory there.
+`real-estate-db-backups/2026-10-08-migration-history/`, the state after steps 1 and 2 is the second inventory there.
 
 | Step | File | What changes in production |
 |---|---|---|
 | 1 - done | `01-record-applied-migrations.sql` | **Only the history table:** 6 rows (`20260906000000`, `20261002000000/100/200`, `20261006000000`, `20261007120000`). No migration is run. |
 | 2 - done | `02-apply-pending-migrations.sql` | **Adds** `analytics_arrivals_daily`, `analytics_consent_daily`, `record_acquisition()` and `text_translations`, then records both in the history. Changes nothing that exists. |
-| 3 (optional) - not run | `03-align-field-provenance-default.sql` | One column default on `properties.field_provenance`. No data. |
+| 3 - done 2026-10-09 | `03-align-field-provenance-default.sql` | One column default on `properties.field_provenance`. No data. |
 
 Production's `record_acquisition()` is the file's text with Windows line endings, like the older functions (pasted from
 Windows into the SQL Editor): the same function. The arrival counting (`/api/analytics/arrival`) and the translation cache
 start working now that the tables exist.
 
-The config change that switches off the send-email hook (`fix/supabase-sync`) goes in **after** steps 1 and 2 - and it did:
-a valid config lets the GitHub integration run whatever is missing from the history, and nothing is missing any more.
+The config change that switches off the send-email hook (`fix/supabase-sync`) goes in **after** steps 1 and 2 - and it did,
+as a precaution: if the GitHub integration applies migrations on merge, a valid config lets it run whatever is missing
+from the history, and nothing is missing any more. Whether it does is **not confirmed** - Project Settings -> Integrations
+-> GitHub has no "Deploy to production" option (Karol, 2026-10-09) - so treat the risk as real until it is.
 
 ## What lives where
 
@@ -106,7 +110,7 @@ a valid config lets the GitHub integration run whatever is missing from the hist
 
 - The repository's `supabase/config.toml` fails to load in the CLI because of the send-email hook secret format. The same
   error fails the GitHub check **"Supabase Preview"** (project `mifrdfjucyniddhlkudo`) on every push - it validates this file
-  too, not only `supabase start` - and, while it fails, nothing is deployed to production. `fix/supabase-sync` switches the
+  too, not only `supabase start` - so the check was red on every push. `fix/supabase-sync` switches the
   hook off in the file (the hook of the hosted project is set in the Dashboard and is not touched), after which the CLI loads
   the file as it is; until it is merged, to query the linked project run the CLI from a scratch folder that contains only a minimal `config.toml` and a copy of
   `supabase/.temp/` (details in the `prod-db-readonly` skill).

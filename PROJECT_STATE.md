@@ -32,9 +32,11 @@ Items marked **REQUIRES REVIEW** need a decision by Karol (or the owner of the a
 
 1. **GitHub branch protection is not active** — the rules API returns no rules for `main` (checked 2026-10-08). The
    rulesets in `.github/rulesets/` must be imported by a repository admin. **REQUIRES REVIEW**
-2. **Production migration history is out of sync**, `20261007000000_acquisition_analytics` (source tracking for the
-   Markov tab) and `20261008120000_text_translations` (translation cache) are **not applied**. What the translation
-   feature does without its cache table in production: UNKNOWN. Details: `docs/operations/database.md`. **REQUIRES REVIEW**
+2. **The "Supabase Preview" check fails on every push** until `fix/supabase-sync` is merged: it switches off the
+   send-email hook in `supabase/config.toml` (an enabled hook without its secret is an invalid config). The production
+   migration history was repaired on 2026-10-08/09 (29 of 29 recorded, the two missing migrations applied, the
+   `field_provenance` default restored). Whether the GitHub integration applies migrations on merge is not confirmed (the
+   project's settings show no "Deploy to production" option). Details: `docs/operations/database.md`. **REQUIRES REVIEW**
 3. **Unverified claims on the landing page** (`frontend/src/i18n/messages/{sv,en}/landing.ts`, shown by
    `components/landing/AnalyzeSection.tsx`): "4.8/5 baserat på 256 omdömen" (recorded as a placeholder without a
    source; kept on Karol's decision of 2026-10-02 until it is replaced) and "Betrodd av fastighetsinvesterare över hela
@@ -63,7 +65,7 @@ Items marked **REQUIRES REVIEW** need a decision by Karol (or the owner of the a
 
 - **Boendekalkyl** (hidden costs per home): start from `lib/report/housingCost.ts`, then set `HOUSING_COST_LIVE = true`.
 - Replace the social proof (item 3) and review the legal texts (item 4).
-- Apply the missing migrations and repair the migration history — with Karol's OK (item 2).
+- Merge `fix/supabase-sync` and confirm the "Supabase Preview" check turns green (item 2).
 - Import the GitHub rulesets (item 1).
 - Possible later: reuse a published BRF review for other homes in the same association; a reminder before a review is
   late; read the loan notes of an annual report automatically.

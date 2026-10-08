@@ -20,22 +20,24 @@ migrations were applied by hand in the SQL Editor, and a migration applied that 
 ## `repair/` - the one-time repair of the migration history (2026-10-08)
 
 Made after the inventory of production (results: `docs/operations/database.md`). **Steps 1 and 2 were run on production
-on 2026-10-08; step 3 was not.** Each step changes production, so each needed Karol's OK and the backup of rule 4 (the export
+on 2026-10-08, step 3 on 2026-10-09.** Each step changes production, so each needed Karol's OK and the backup of rule 4 (the export
 of `select * from supabase_migrations.schema_migrations order by version` to `real-estate-db-backups/`). Order:
 
 1. `01-record-applied-migrations.sql` - six history rows for migrations production already has. Touches only the history table.
 2. `02-apply-pending-migrations.sql` - the two migrations production lacks (new tables and one function), then their history rows.
-3. `03-align-field-provenance-default.sql` - optional; one column default.
+3. `03-align-field-provenance-default.sql` - one column default (`properties.field_provenance`). Without it a new property
+   is refused: `insertProperty` creates the row without that column.
 
 Tested on a throwaway Postgres built to look like production (identical to the real inventory line for line): run twice each,
 then `supabase migration list` shows 29 migrations in both places and `supabase db push --dry-run` says "Remote database is
-up to date". After running on production, `inventory.sql` was run again: 29 history rows, no migration missing. Steps 1 and 2
-are kept here as the record of what was run; delete this folder when step 3 is decided (run it, or drop the file).
+up to date". After running on production, `inventory.sql` was run again: 29 history rows, no migration missing. All three
+steps have been run; the files are kept here as the record of what was run. Delete the folder when it is no longer useful.
 
 ## Why it matters
 
-The GitHub integration with "Deploy to production" switched on applies every migration in Git that is missing from
+If the GitHub integration applies migrations on merge (its "Deploy to production" option - Karol found no such option in
+the project's settings on 2026-10-09, so this is unconfirmed), it applies every migration in Git that is missing from
 `supabase_migrations.schema_migrations`. Run against a database that already has the objects, many of the migrations fail
 (`policy ... already exists`), and some would run and bring back things that were removed on purpose (dropped columns, the
 `broker_documents` table and its bucket, old functions). The history table therefore has to match reality before that
-switch is on.
+can happen.

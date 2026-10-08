@@ -3,7 +3,8 @@
 -- Production already contains what these 6 migrations create (checked with supabase/diagnostics/inventory.sql on 2026-10-08: the
 -- tables, columns, constraints, functions, policies and buckets are all there). They were applied by hand in the SQL
 -- Editor, and the SQL Editor does not write to the history table, so it has no row for them. Without a row, the
--- GitHub integration ("Deploy to production") would try to run them again; several of them fail when run twice.
+-- GitHub integration (if it applies migrations on merge) or a `supabase db push` would try to run them again; several
+-- of them fail when run twice.
 --
 -- The migration files themselves are NOT run here. Safe to run more than once: a row that exists is left alone.
 
