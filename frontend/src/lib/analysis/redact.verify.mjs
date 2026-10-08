@@ -11,7 +11,15 @@ import {
   redactPropertyForScope,
 } from "./redact.ts";
 import { resolveViewScope } from "./access.ts";
-import { buildAreaAnalysis } from "../report/build.ts";
+import { buildAreaAnalysis as buildAreaAnalysisWith } from "../report/build.ts";
+import { swedishTextKit } from "../../i18n/textKit.ts";
+import brfModule from "../../i18n/messages/sv/brf.ts";
+import reportModule from "../../i18n/messages/sv/report.ts";
+
+// The report code writes its sentences through a text kit; these checks read the Swedish report.
+// (tsx wraps a default export twice when a .mjs file imports a .ts file.)
+const KIT = swedishTextKit({ brf: brfModule.default ?? brfModule, report: reportModule.default ?? reportModule });
+const buildAreaAnalysis = (report, attributes, dataSources) => buildAreaAnalysisWith(report, attributes, dataSources, KIT);
 
 let failures = 0;
 function check(name, condition, detail) {

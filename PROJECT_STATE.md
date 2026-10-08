@@ -17,7 +17,23 @@
   password hash: `ADMIN_PASSWORD_HASH` is required wherever admin login should work. A scan of every commit found no
   API keys or other secrets. Anyone with an older clone must re-clone and must not push old branches.
 
-**Languages (2026-10-08) — the site in Swedish and English; articles and map listings translated on the fly (branch `i18n-restore`, not merged or pushed).**
+**Repository workflow (2026-10-08, at the user's request; branch `feature/ci-and-branch-rules`, not merged yet).**
+- Work happens on `feature/`, `fix/` and `refactor/` branches and reaches `main` only through a pull request (1 approval, every
+  conversation resolved, branch up to date, squash merge, check **CI passed**). How it works day to day: `CONTRIBUTING.md`.
+- **CI** is `.github/workflows/ci.yml`: branch-name check, frontend (`npm run typecheck`, `npm run i18n:check`, `npm run verify` = all
+  26 `*.verify.mjs` via `frontend/scripts/run-verify.mjs`) and the Python API tests (`api/tests`); the job `ci-passed` needs all three
+  and is the only check the branch rule names. Checked on Linux in containers (Node 24, Python 3.13), not yet on GitHub itself.
+- **The protection is not switched on yet.** GitHub keeps branch rules in its settings; `.github/rulesets/protect-main.json` and
+  `branch-names.json` are importable copies (steps in `.github/rulesets/README.md`, plus two repository settings: squash only,
+  delete head branches after merge). Until they are imported `main` accepts direct pushes. Repository admins can bypass the
+  approval and CI requirement, but only from a pull request.
+- Two stale verify scripts were repaired on the way (`redact.verify.mjs` still called `buildAreaAnalysis` without the text kit,
+  `hemnetPage.verify.mjs` expected the fireplace as a feature although it has been its own boolean from the start).
+- **Not in CI yet:** ESLint (12 errors from before), the root `tests/` folder (the Poetry project needs a path dependency that is not in
+  the repo) and `BRF-Scraper/tests`. Branches that do not follow the prefixes (`mapDemoIntegration`, `styleRedesign`,
+  `backup/main-before-merge-2026-10-07`) were left alone; rename or delete them when they are next touched.
+
+**Languages (2026-10-08) — the site in Swedish and English; articles and map listings translated on the fly (merged to `main`; the work was done on the branch `i18n-restore`).**
 Design choices by the user: Swedish stays unprefixed and English lives under `/en` with English page names (every page is
 written once; the message files supply the words, so a new page needs no per-language copy); scope = all pages and app
 screens, FAQ, privacy policy and terms, e-mails, the AI chat, the payment page's language, the analysis report with its PDF

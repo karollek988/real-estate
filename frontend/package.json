@@ -8,7 +8,9 @@
     "start": "next start -p 3001",
     "lint": "eslint",
     "admin:hash": "tsx scripts/hash-admin-password.ts",
-    "i18n:check": "tsx scripts/i18n-check.ts"
+    "i18n:check": "tsx scripts/i18n-check.ts",
+    "typecheck": "tsc --noEmit",
+    "verify": "node scripts/run-verify.mjs"
   },
   "dependencies": {
     "@sparticuz/chromium": "^149.0.0",
