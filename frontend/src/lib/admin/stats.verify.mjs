@@ -178,4 +178,6 @@ await new Promise((resolve) => server.close(resolve));
 restore();
 
 console.log(failures === 0 ? "\nAll statistics checks passed." : `\n${failures} check(s) FAILED.`);
-process.exit(failures === 0 ? 0 : 1);
+// exitCode instead of process.exit(): exiting while fetch's sockets are still closing aborts Node on Windows
+// ("Assertion failed: !(handle->flags & UV_HANDLE_CLOSING)").
+process.exitCode = failures === 0 ? 0 : 1;

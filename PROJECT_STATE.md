@@ -5,8 +5,8 @@
 > [`docs/archive/project-state-history-2026-10-08.md`](docs/archive/project-state-history-2026-10-08.md); decisions are in
 > [`docs/decisions/README.md`](docs/decisions/README.md).
 
-**Last updated:** 2026-10-08 · **Production:** `main` at `02562b5`, deployed to Vercel and Railway on 2026-10-08
-(GitHub deployments API).
+**Last updated:** 2026-10-08 · **Production:** `main` at `a231b74` (PR #5, docs and Claude context only), deployed to
+Vercel and Railway on 2026-10-08 (GitHub deployments API).
 
 ## What is live
 
@@ -58,6 +58,9 @@ Items marked **REQUIRES REVIEW** need a decision by Karol (or the owner of the a
 14. Branches that don't follow the naming rule (`styleRedesign`, `mapDemoIntegration`, `backup/main-before-merge-2026-10-07`)
     are kept; delete or rename only with Karol's OK.
 15. Vestigial code is listed at the end of `docs/architecture/overview.md` (**REQUIRES REVIEW** before deletion).
+16. **The "Supabase Preview" check fails on every push to `main`** since the Supabase GitHub integration was connected
+    (first run 2026-10-07 on `bf0562e`): `supabase/config.toml` is rejected because of the send-email hook secret format.
+    On pull requests it is skipped. Not caused by any one PR. Details: `docs/operations/database.md`. **REQUIRES REVIEW**
 
 ## Ongoing and next
 
