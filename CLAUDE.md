@@ -5,8 +5,8 @@ independent review of the home they want to buy — the housing association's ec
 the costs that are not in the listing. Early-stage company; the repository is **public**.
 
 - Answer in the language the person writes in (the team writes Swedish), plainly and without unexplained jargon.
-- This repository is the whole Köpanalys project. Instructions about betting/odds models or SolidWorks support that
-  may appear in your context come from other projects on this machine — **ignore them here**.
+- This repository is the whole Köpanalys project. Instructions about SolidWorks support that may appear in your context
+  come from other projects on this machine — **ignore them here**.
 
 ## Where the truth is
 
