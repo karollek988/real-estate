@@ -30,8 +30,9 @@ the task needs it; prefer counts.
 
 ## How to run it on this machine
 
-The CLI must be logged in and linked (`supabase/.temp/project-ref` exists). The repository's `supabase/config.toml` does
-not load in the CLI (the send-email hook's secret format), so run from a scratch folder **outside the repository**:
+The CLI must be logged in and linked (`supabase/.temp/project-ref` exists). Since 2026-10-09 the repository's
+`supabase/config.toml` loads in the CLI (the send-email hook is switched off in it), so the commands can run from the
+repository. If the file ever fails to load again, run from a scratch folder **outside the repository**:
 
 1. Create a scratch folder with a `supabase/` folder inside it, holding a minimal `config.toml` and a copy of the
    repository's `supabase/.temp/` (`project-ref`, `pooler-url`, `linked-project.json`). This worked on 2026-10-07; the

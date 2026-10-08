@@ -113,17 +113,16 @@ from the history, and nothing is missing any more. Whether it does is **not conf
 
 ## Known gotchas
 
-- The repository's `supabase/config.toml` fails to load in the CLI because of the send-email hook secret format. The same
-  error fails the GitHub check **"Supabase Preview"** (project `mifrdfjucyniddhlkudo`) on every push - it validates this file
-  too, not only `supabase start` - so the check was red on every push. `fix/supabase-sync` switches the
-  hook off in the file (the hook of the hosted project is set in the Dashboard and is not touched), after which the CLI loads
-  the file as it is; until it is merged, to query the linked project run the CLI from a scratch folder that contains only a minimal `config.toml` and a copy of
-  `supabase/.temp/` (details in the `prod-db-readonly` skill).
-- The same config error makes the **Supabase GitHub integration** fail on every push to `main` (check "Supabase Preview",
-  first failure 2026-10-07 on `bf0562e`; skipped on pull requests). Its message: `auth.hook.send_email.secrets must be
-  formatted as "v1,whsec_<base64_encoded_secret>"` — `config.toml` reads it from `env(SEND_EMAIL_HOOK_SECRET)`, which the
-  integration does not have. Whether the integration would apply migrations to production once the config loads:
-  UNKNOWN — check its settings in the Supabase dashboard first, because the migration history is out of sync (rule 3).
+- **Fixed 2026-10-09 (PR #8):** `supabase/config.toml` used to fail to load in the CLI because of the send-email hook
+  secret format. The same error failed the GitHub check **"Supabase Preview"** (project `mifrdfjucyniddhlkudo`) on every
+  push - it validates this file too, not only `supabase start`. The hook is now switched off in the file (the hook of the
+  hosted project is set in the Dashboard and was not touched), the CLI loads the file as it is, and the check passed on
+  `main` after #8 and #9. If it ever fails to load again, the scratch-folder route in the `prod-db-readonly` skill still works.
+- The failure was `auth.hook.send_email.secrets must be formatted as "v1,whsec_<base64_encoded_secret>"` (first seen
+  2026-10-07 on `bf0562e`; the check is skipped on pull requests and runs on `main`): `config.toml` reads the secret from
+  `env(SEND_EMAIL_HOOK_SECRET)`, which the integration does not have. Whether the integration applies migrations to
+  production when one is merged: UNKNOWN - the project's settings show no "Deploy to production" option. The migration
+  history matches production now (29 of 29), so a merge changes nothing today; apply any new migration by hand first (rule 5).
   **REQUIRES REVIEW** before anyone "fixes" the check.
 - Storage deletes go through `supabase storage rm … --linked --experimental`, with relative paths (a `C:` path is read as
   a URL scheme). Deletes need Karol's OK like any other production change.

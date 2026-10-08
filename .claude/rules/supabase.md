@@ -24,4 +24,4 @@ Production uses one Supabase project for Preview **and** Production. Full rules 
   "Supabase Preview"** on every push: an invalid value (such as an enabled hook without its secret) fails that check. If the
   integration applies migrations on merge (unconfirmed: the project's settings show no "Deploy to production" option), a
   valid file lets it deploy migrations that are missing from the history. Change it only when the task is about
-  it, and not before the migration history matches production (`docs/operations/database.md`).
+  it (the migration history matches production since 2026-10-09: `docs/operations/database.md`).
