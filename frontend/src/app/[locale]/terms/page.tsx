@@ -18,7 +18,7 @@ type RichTranslator = { rich(key: string, tags: typeof legalRich): React.ReactNo
 function Clause({ title, children }: { title: string; children: React.ReactNode }) {
   return (
     <li className="[counter-increment:section]">
-      <h2 className="mb-3 text-[17px] font-semibold tracking-tight text-white before:content-[counter(section)'.__']">{title}</h2>
+      <h2 className="mb-3 text-[17px] font-semibold tracking-tight text-ka-ink before:content-[counter(section)'.__']">{title}</h2>
       {children}
     </li>
   );
@@ -32,17 +32,17 @@ export default async function TermsPage({ params }: LocaleParams) {
 
   return (
     <>
-      <SiteHeader />
-      <main id="main" className="min-h-screen bg-[#111927]">
+      <SiteHeader variant="light" />
+      <main id="main" className="min-h-screen bg-ka-cream">
         <div className="mx-auto max-w-3xl px-6 py-16 sm:py-24">
-          <h1 className="text-[32px] font-bold leading-tight tracking-tight text-white sm:text-[36px]">{t("terms.title")}</h1>
+          <h1 className="text-[32px] font-bold leading-tight tracking-tight text-ka-ink sm:text-[36px]">{t("terms.title")}</h1>
           {locale !== "sv" && (
-            <p className="mt-4 rounded-md border border-white/10 bg-white/[0.04] px-4 py-3 text-[14px] leading-relaxed text-neutral-300">
+            <p className="mt-4 rounded-md border border-ka-line-strong bg-ka-cream px-4 py-3 text-[14px] leading-relaxed text-ka-text">
               {t("translationNotice")}
             </p>
           )}
 
-          <ol className="mt-10 flex flex-col gap-8 text-[15px] leading-relaxed text-neutral-200 [counter-reset:section]">
+          <ol className="mt-10 flex flex-col gap-8 text-[15px] leading-relaxed text-ka-text [counter-reset:section]">
             <Clause title={t("terms.service.title")}>
               <p>{rich("service.text")}</p>
             </Clause>
@@ -73,7 +73,7 @@ export default async function TermsPage({ params }: LocaleParams) {
             </Clause>
 
             <Clause title={t("terms.liability.title")}>
-              <p className="text-xs text-neutral-500">{t("terms.liability.text")}</p>
+              <p className="text-xs text-ka-muted">{t("terms.liability.text")}</p>
             </Clause>
           </ol>
         </div>

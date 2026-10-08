@@ -9,12 +9,7 @@
 import { getTranslations } from "next-intl/server";
 import { DEFAULT_LOCALE, LOCALES, type AppLocale } from "@/i18n/locales";
 import type { Translator } from "@/i18n/translator";
-
-const BRAND = {
-  darkBg: "#111927",
-  green: "#16a34a",
-  textMuted: "#94a3b8",
-} as const;
+import { EMAIL_COLOURS as C } from "./colours";
 
 function siteUrl(): string {
   return process.env.NEXT_PUBLIC_SITE_URL ?? "https://kopanalys.se";
@@ -30,7 +25,7 @@ function escapeHtml(value: string): string {
 }
 
 function renderShell(locale: AppLocale, t: Translator, preheader: string, bodyHtml: string): string {
-  const logoUrl = `${siteUrl()}/kopanalys-bostad-logo.png`;
+  const logoUrl = `${siteUrl()}/images/kopanalys-logo-mark.png`;
   return `<!doctype html>
 <html lang="${LOCALES[locale].htmlLang}">
   <head>
@@ -38,15 +33,16 @@ function renderShell(locale: AppLocale, t: Translator, preheader: string, bodyHt
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Köpanalys</title>
   </head>
-  <body style="margin:0; padding:0; background-color:#f4f5f7; font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;">
+  <body style="margin:0; padding:0; background-color:${C["ka-cream"]}; font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;">
     <div style="display:none; max-height:0; overflow:hidden; opacity:0;">${escapeHtml(preheader)}</div>
-    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background-color:#f4f5f7; padding:24px 12px;">
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background-color:${C["ka-cream"]}; padding:24px 12px;">
       <tr>
         <td align="center">
-          <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:480px; background-color:#ffffff; border-radius:16px; overflow:hidden; border:1px solid #e5e7eb;">
+          <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:480px; background-color:${C.white}; border-radius:16px; overflow:hidden; border:1px solid ${C["ka-line"]};">
             <tr>
-              <td align="center" style="background-color:${BRAND.darkBg}; padding:32px 24px;">
-                <img src="${logoUrl}" alt="Köpanalys" height="32" style="height:32px; width:auto; display:block;" />
+              <td align="center" style="background-color:${C["ka-green-950"]}; padding:28px 24px;">
+                <img src="${logoUrl}" alt="" width="36" height="36" style="width:36px; height:36px; border-radius:50%; display:inline-block; vertical-align:middle;" />
+                <span style="display:inline-block; vertical-align:middle; margin-left:10px; font-size:20px; font-weight:700; letter-spacing:-0.03em; color:${C.white};">Köpanalys<span style="font-weight:500;">.se</span></span>
               </td>
             </tr>
             <tr>
@@ -55,10 +51,10 @@ function renderShell(locale: AppLocale, t: Translator, preheader: string, bodyHt
               </td>
             </tr>
             <tr>
-              <td style="padding:20px 28px; border-top:1px solid #e5e7eb; background-color:#fafafa;">
-                <p style="margin:0; font-size:12px; line-height:1.6; color:${BRAND.textMuted};">
+              <td style="padding:20px 28px; border-top:1px solid ${C["ka-line"]}; background-color:${C["ka-paper"]};">
+                <p style="margin:0; font-size:12px; line-height:1.6; color:${C["ka-muted"]};">
                   Köpanalys &middot; ${escapeHtml(t("footer"))}
-                  <a href="mailto:kontakt@kopanalys.se" style="color:${BRAND.green}; text-decoration:underline;">kontakt@kopanalys.se</a>
+                  <a href="mailto:kontakt@kopanalys.se" style="color:${C["ka-green-700"]}; text-decoration:underline;">kontakt@kopanalys.se</a>
                 </p>
               </td>
             </tr>
@@ -73,8 +69,8 @@ function renderShell(locale: AppLocale, t: Translator, preheader: string, bodyHt
 function ctaButton(url: string, label: string): string {
   return `<table role="presentation" cellpadding="0" cellspacing="0" style="margin:24px 0;">
     <tr>
-      <td align="center" style="border-radius:12px; background-color:${BRAND.green};">
-        <a href="${url}" style="display:inline-block; padding:14px 32px; font-size:15px; font-weight:600; color:#ffffff; text-decoration:none;">
+      <td align="center" style="border-radius:12px; background-color:${C["ka-green-900"]};">
+        <a href="${url}" style="display:inline-block; padding:14px 32px; font-size:15px; font-weight:600; color:${C.white}; text-decoration:none;">
           ${escapeHtml(label)}
         </a>
       </td>
@@ -84,9 +80,9 @@ function ctaButton(url: string, label: string): string {
 
 /** The small print under a button: the same address as plain text, for when the button does not work. */
 function fallbackLink(t: Translator, url: string): string {
-  return `<p style="margin:0; font-size:12px; line-height:1.5; color:${BRAND.textMuted};">
+  return `<p style="margin:0; font-size:12px; line-height:1.5; color:${C["ka-muted"]};">
       ${escapeHtml(t("fallbackLink"))}<br />
-      <a href="${url}" style="color:${BRAND.green}; word-break:break-all;">${url}</a>
+      <a href="${url}" style="color:${C["ka-green-700"]}; word-break:break-all;">${url}</a>
     </p>`;
 }
 
@@ -105,8 +101,8 @@ export async function renderSignupConfirmationEmail(params: {
   const greeting = greetingName ? escapeHtml(t("signup.greetingNamed", { name: greetingName })) : escapeHtml(t("signup.greeting"));
 
   const body = `
-    <h1 style="margin:0 0 12px; font-size:20px; font-weight:700; color:#111927;">${greeting}</h1>
-    <p style="margin:0 0 8px; font-size:15px; line-height:1.6; color:#374151;">
+    <h1 style="margin:0 0 12px; font-size:20px; font-weight:700; color:${C["ka-ink"]};">${greeting}</h1>
+    <p style="margin:0 0 8px; font-size:15px; line-height:1.6; color:${C["ka-text"]};">
       ${escapeHtml(t("signup.body"))}
     </p>
     ${ctaButton(params.confirmUrl, t("signup.button"))}
@@ -135,9 +131,9 @@ export async function renderNotificationEmail(params: {
   const locale = params.locale ?? DEFAULT_LOCALE;
   const t = await emailTexts(locale);
   const body = `
-    <h1 style="margin:0 0 12px; font-size:20px; font-weight:700; color:#111927;">${escapeHtml(params.heading)}</h1>
+    <h1 style="margin:0 0 12px; font-size:20px; font-weight:700; color:${C["ka-ink"]};">${escapeHtml(params.heading)}</h1>
     ${params.paragraphs
-      .map((p) => `<p style="margin:0 0 10px; font-size:15px; line-height:1.6; color:#374151;">${escapeHtml(p)}</p>`)
+      .map((p) => `<p style="margin:0 0 10px; font-size:15px; line-height:1.6; color:${C["ka-text"]};">${escapeHtml(p)}</p>`)
       .join("\n")}
     ${ctaButton(params.ctaUrl, params.ctaLabel)}
     ${fallbackLink(t, params.ctaUrl)}
@@ -166,11 +162,11 @@ export async function renderGenericAuthEmail(
     cta: t(`account.${kind}.cta`),
   };
   const body = `
-    <h1 style="margin:0 0 12px; font-size:20px; font-weight:700; color:#111927;">${escapeHtml(copy.heading)}</h1>
-    <p style="margin:0 0 8px; font-size:15px; line-height:1.6; color:#374151;">${escapeHtml(copy.body)}</p>
+    <h1 style="margin:0 0 12px; font-size:20px; font-weight:700; color:${C["ka-ink"]};">${escapeHtml(copy.heading)}</h1>
+    <p style="margin:0 0 8px; font-size:15px; line-height:1.6; color:${C["ka-text"]};">${escapeHtml(copy.body)}</p>
     ${ctaButton(confirmUrl, copy.cta)}
     ${fallbackLink(t, confirmUrl)}
-    <p style="margin:16px 0 0; font-size:12px; line-height:1.5; color:${BRAND.textMuted};">
+    <p style="margin:16px 0 0; font-size:12px; line-height:1.5; color:${C["ka-muted"]};">
       ${escapeHtml(t("ignore"))}
     </p>
   `;

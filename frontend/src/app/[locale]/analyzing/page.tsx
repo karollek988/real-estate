@@ -131,6 +131,11 @@ function AnalyzingContent() {
     const LdBar = window.ldBar;
     if (!LdBar) return;
     // el.ldBar guards against the library's own window "load" auto-init running a second time.
+    // the ring's colours are variables of ldbar.scss, so they come from the master variables
+    const ring = getComputedStyle(el);
+    const from = ring.getPropertyValue("--ring-from").trim();
+    const to = ring.getPropertyValue("--ring-to").trim();
+    if (from && to) el.setAttribute("data-stroke", `data:ldbar/res,gradient(0,1,${from},${to})`);
     const instance = el.ldBar ?? new LdBar(el);
     el.ldBar = instance;
     ldBarInstanceRef.current = instance;
@@ -143,7 +148,7 @@ function AnalyzingContent() {
   }, [progressPct]);
 
   return (
-    <div className="flex min-h-screen flex-col items-center justify-center bg-[#111927] px-6 py-16 text-white">
+    <div className="flex min-h-screen flex-col items-center justify-center bg-ka-cream px-6 py-16 text-ka-ink">
       <Script
         src="/vendor/ldbar/loading-bar.js"
         strategy="afterInteractive"
@@ -153,7 +158,7 @@ function AnalyzingContent() {
         {/* Logo / brand mark */}
         <div className="flex flex-col items-center gap-4">
           <h1 className="text-[22px] font-semibold tracking-tight">{t("title")}</h1>
-          <div className="w-full max-w-[360px] overflow-hidden rounded-2xl bg-[#FAFAFA] ring-1 ring-white/[0.06]">
+          <div className="w-full max-w-[360px] overflow-hidden rounded-2xl border border-ka-line-strong bg-white shadow-ka-card">
             <video
               ref={videoRef}
               src="/Loading_Icon_Video_Davinci_house.mp4"
@@ -175,13 +180,13 @@ function AnalyzingContent() {
               driven by the same progressPct that feeds the bar below,
               guarantees the two numbers can never disagree.
             */}
-            <div className="flex items-center justify-center bg-[#FAFAFA] pb-5 pt-1">
-              <span className="text-[40px] font-black leading-none tracking-tight text-[#111111]">
+            <div className="flex items-center justify-center bg-white pb-5 pt-1">
+              <span className="text-[40px] font-black leading-none tracking-tight text-ka-ink">
                 {progressPct}%
               </span>
             </div>
           </div>
-          <p className="max-w-xs text-sm leading-relaxed text-neutral-400">
+          <p className="max-w-xs text-sm leading-relaxed text-ka-muted">
             {t("text")}
           </p>
         </div>
@@ -192,13 +197,12 @@ function AnalyzingContent() {
             ref={ldBarElRef}
             className="ldBar w-full"
             style={{ width: "100%", height: 60 }}
-            data-stroke="data:ldbar/res,gradient(0,1,#9df,#9fd,#df9,#fd9)"
             data-path="M10 20Q20 15 30 20Q40 25 50 20Q60 15 70 20Q80 25 90 20"
           />
         </div>
 
         {/* Stage checklist */}
-        <div className="w-full rounded-2xl border border-white/[0.06] bg-white/[0.02] p-5 text-left backdrop-blur-sm">
+        <div className="w-full rounded-2xl border border-ka-line-strong bg-white p-5 text-left shadow-ka-card">
           <ul className="flex flex-col gap-1.5">
             {STAGES.map((stage, i) => {
               const isComplete = completedStages.includes(i);
@@ -208,17 +212,17 @@ function AnalyzingContent() {
                 <li
                   key={i}
                   className={`flex items-center gap-3 rounded-xl px-3 py-2 transition-all duration-500 ${
-                    isActive ? "bg-white/[0.03]" : ""
+                    isActive ? "bg-ka-cream" : ""
                   }`}
                 >
                   {/* Status icon */}
                   <span
                     className={`flex h-5 w-5 shrink-0 items-center justify-center rounded-full transition-all duration-500 ${
                       isComplete
-                        ? "bg-emerald-500/15 text-emerald-400"
+                        ? "bg-ka-sage text-ka-green-700"
                         : isActive
-                          ? "border border-emerald-500/40 bg-emerald-500/10"
-                          : "border border-white/[0.06] bg-transparent"
+                          ? "border border-ka-green-700/40 bg-ka-sage/60"
+                          : "border border-ka-line bg-transparent"
                     }`}
                   >
                     {isComplete ? (
@@ -232,7 +236,7 @@ function AnalyzingContent() {
                         />
                       </svg>
                     ) : isActive ? (
-                      <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                      <span className="h-1.5 w-1.5 rounded-full bg-ka-green-600 animate-pulse" />
                     ) : null}
                   </span>
 
@@ -240,10 +244,10 @@ function AnalyzingContent() {
                   <span
                     className={`text-sm transition-colors duration-500 ${
                       isComplete
-                        ? "text-neutral-200"
+                        ? "text-ka-text"
                         : isActive
-                          ? "text-neutral-100 font-medium"
-                          : "text-neutral-600"
+                          ? "text-ka-text font-medium"
+                          : "text-ka-muted"
                     }`}
                   >
                     {t(`stages.${stage.id}`)}
@@ -252,7 +256,7 @@ function AnalyzingContent() {
                   {/* Spinner for active stage */}
                   {isActive && (
                     <span className="ml-auto">
-                      <svg className="h-3.5 w-3.5 animate-spin text-emerald-400/60" viewBox="0 0 16 16" fill="none">
+                      <svg className="h-3.5 w-3.5 animate-spin text-ka-green-700/60" viewBox="0 0 16 16" fill="none">
                         <circle cx="8" cy="8" r="6" stroke="currentColor" strokeWidth="1.5" strokeDasharray="28" strokeDashoffset="8" strokeLinecap="round" />
                       </svg>
                     </span>
@@ -263,7 +267,7 @@ function AnalyzingContent() {
           </ul>
         </div>
 
-        <p className="text-xs text-neutral-600">{t("building")}</p>
+        <p className="text-xs text-ka-muted">{t("building")}</p>
       </div>
     </div>
   );

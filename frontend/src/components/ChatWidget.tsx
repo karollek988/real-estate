@@ -85,13 +85,13 @@ export function ChatWidget() {
   return (
     <>
       {open && (
-        <div className="fixed bottom-20 right-3 z-[90] flex w-[360px] max-w-[calc(100vw-24px)] flex-col rounded-2xl border border-white/10 bg-neutral-900 shadow-2xl">
-          <div className="flex items-center justify-between border-b border-white/10 px-4 py-3">
-            <span className="text-sm font-semibold text-white">{t("title")}</span>
+        <div className="fixed bottom-20 right-3 z-[90] flex w-[360px] max-w-[calc(100vw-24px)] flex-col rounded-2xl border border-ka-line-strong bg-white shadow-ka-card-hover">
+          <div className="flex items-center justify-between border-b border-ka-line-strong px-4 py-3">
+            <span className="text-sm font-semibold text-ka-ink">{t("title")}</span>
             <button
               type="button"
               onClick={() => setOpen(false)}
-              className="rounded-lg p-1 text-neutral-400 transition hover:text-white"
+              className="rounded-lg p-1 text-ka-muted transition hover:text-ka-ink"
               aria-label={t("close")}
             >
               <CloseIcon className="h-5 w-5" />
@@ -107,8 +107,8 @@ export function ChatWidget() {
                 <div
                   className={`max-w-[85%] rounded-2xl px-3.5 py-2 text-sm leading-relaxed ${
                     msg.role === "user"
-                      ? "bg-green-500/20 text-green-100"
-                      : "bg-white/10 text-neutral-200"
+                      ? "bg-ka-green-900 text-white"
+                      : "bg-ka-sand text-ka-text"
                   }`}
                 >
                   {msg.content}
@@ -117,18 +117,18 @@ export function ChatWidget() {
             ))}
             {loading && (
               <div className="flex justify-start">
-                <div className="max-w-[85%] rounded-2xl bg-white/10 px-3.5 py-2 text-sm text-neutral-400">
+                <div className="max-w-[85%] rounded-2xl bg-ka-sand px-3.5 py-2 text-sm text-ka-muted">
                   <span className="inline-flex gap-1">
-                    <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-neutral-400" />
-                    <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-neutral-400 [animation-delay:0.1s]" />
-                    <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-neutral-400 [animation-delay:0.2s]" />
+                    <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-ka-muted" />
+                    <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-ka-muted [animation-delay:0.1s]" />
+                    <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-ka-muted [animation-delay:0.2s]" />
                   </span>
                 </div>
               </div>
             )}
           </div>
 
-          <div className="border-t border-white/10 px-4 py-3">
+          <div className="border-t border-ka-line-strong px-4 py-3">
             <div className="flex items-center gap-2">
               <input
                 type="text"
@@ -137,13 +137,13 @@ export function ChatWidget() {
                 onKeyDown={handleKeyDown}
                 placeholder={t("placeholder")}
                 disabled={loading}
-                className="min-w-0 flex-1 rounded-xl border border-white/10 bg-white/5 px-3.5 py-2 text-sm text-white placeholder-neutral-500 outline-none transition focus:border-green-500/50 disabled:opacity-50"
+                className="min-w-0 flex-1 rounded-xl border border-ka-line-strong bg-ka-cream px-3.5 py-2 text-sm text-ka-ink placeholder:text-ka-muted/70 outline-none transition focus:border-ka-green-700/40 disabled:opacity-50"
               />
               <button
                 type="button"
                 onClick={sendMessage}
                 disabled={loading || !input.trim()}
-                className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-green-500 text-white transition hover:bg-green-400 disabled:opacity-50"
+                className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-ka-green-900 text-white transition hover:bg-ka-green-800 disabled:opacity-50"
                 aria-label={t("send")}
               >
                 <ArrowRightIcon className="h-4 w-4" />
@@ -156,7 +156,7 @@ export function ChatWidget() {
       <button
         type="button"
         onClick={() => setOpen((v) => !v)}
-        className="fixed bottom-3 right-3 z-[90] flex h-12 w-12 items-center justify-center rounded-full bg-green-500 text-white shadow-lg transition hover:bg-green-400"
+        className="fixed bottom-3 right-3 z-[90] flex h-12 w-12 items-center justify-center rounded-full bg-ka-green-900 text-white shadow-ka-card-hover transition hover:bg-ka-green-800"
         aria-label={open ? t("close") : t("open")}
       >
         {open ? (

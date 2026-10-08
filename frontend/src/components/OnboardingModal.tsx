@@ -64,7 +64,7 @@ export function OnboardingModal({ open, onClose }: { open: boolean; onClose: () 
   return (
     <div className="fixed inset-0 z-[100] overflow-y-auto" role="dialog" aria-modal="true" aria-label={t("title")}>
       <div
-        className="fixed inset-0 animate-overlay-fade-in bg-black/70 backdrop-blur-sm"
+        className="fixed inset-0 animate-overlay-fade-in bg-ka-ink/70 backdrop-blur-sm"
         aria-hidden="true"
       />
       <div
@@ -75,40 +75,40 @@ export function OnboardingModal({ open, onClose }: { open: boolean; onClose: () 
       >
         <div
           ref={dialogRef}
-          className="animate-modal-pop-in relative w-full max-w-[480px] overflow-hidden rounded-[24px] border border-white/10 bg-[#0F1417] shadow-[0_24px_60px_rgba(0,0,0,0.5)]"
+          className="animate-modal-pop-in relative w-full max-w-[480px] overflow-hidden rounded-[24px] border border-ka-line-strong bg-white shadow-ka-card-hover"
         >
           <button
             type="button"
             onClick={onClose}
             aria-label={t("close")}
-            className="absolute right-4 top-4 z-10 flex h-9 w-9 items-center justify-center rounded-full text-neutral-400 transition hover:bg-white/10 hover:text-white"
+            className="absolute right-4 top-4 z-10 flex h-9 w-9 items-center justify-center rounded-full text-ka-muted transition hover:bg-ka-sand hover:text-ka-ink"
           >
             <CloseIcon className="h-5 w-5" />
           </button>
 
           <div className="px-6 pb-7 pt-8 lg:px-8">
-            <h2 className="text-xl font-semibold tracking-tight text-white">{t("title")}</h2>
-            <p className="mt-1.5 text-sm text-neutral-400">{t("lead")}</p>
+            <h2 className="text-xl font-semibold tracking-tight text-ka-ink">{t("title")}</h2>
+            <p className="mt-1.5 text-sm text-ka-muted">{t("lead")}</p>
 
             <ol className="mt-6 flex flex-col gap-4">
               {STEPS.map(({ id, emoji }, i) => (
                 <li key={id} className="flex gap-4">
-                  <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-white/10 bg-white/5 text-xl">
+                  <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-ka-line-strong bg-ka-cream text-xl">
                     {emoji}
                   </span>
                   <div className="min-w-0 pt-0.5">
-                    <p className="text-[15px] font-semibold text-white">
-                      <span className="mr-1.5 text-green-400">{i + 1}.</span>
+                    <p className="text-[15px] font-semibold text-ka-ink">
+                      <span className="mr-1.5 text-ka-green-700">{i + 1}.</span>
                       {t(`steps.${id}.title`)}
                     </p>
-                    <p className="mt-1 text-sm leading-relaxed text-neutral-400">{t(`steps.${id}.description`)}</p>
+                    <p className="mt-1 text-sm leading-relaxed text-ka-muted">{t(`steps.${id}.description`)}</p>
                   </div>
                 </li>
               ))}
             </ol>
 
-            <div className="mt-7 flex items-center gap-2 text-sm text-neutral-400">
-              <span className="text-green-400">✓</span>
+            <div className="mt-7 flex items-center gap-2 text-sm text-ka-muted">
+              <span className="text-ka-green-700">✓</span>
               {t("duration")}
             </div>
 
@@ -116,7 +116,7 @@ export function OnboardingModal({ open, onClose }: { open: boolean; onClose: () 
               ref={ctaRef}
               type="button"
               onClick={handleCta}
-              className="mt-5 w-full rounded-xl bg-green-600 py-3.5 text-[15px] font-semibold text-white transition hover:bg-green-500 focus:outline-none focus:ring-4 focus:ring-green-500/20"
+              className="mt-5 w-full rounded-xl bg-ka-green-900 py-3.5 text-[15px] font-semibold text-white transition hover:bg-ka-green-800 focus:outline-none focus:ring-4 focus:ring-ka-green-700/20"
             >
               {t("cta")}
             </button>

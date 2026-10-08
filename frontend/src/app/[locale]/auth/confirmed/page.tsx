@@ -22,18 +22,18 @@ export default function ConfirmedPage() {
   }, [secondsLeft, router]);
 
   return (
-    <main className="flex min-h-screen items-center justify-center bg-[#0A0F0D] px-6">
-      <div className="w-full max-w-md rounded-[24px] border border-white/10 bg-[#0F1417] p-8 text-center shadow-[0_24px_60px_rgba(0,0,0,0.45)]">
-        <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-green-600/20">
-          <CheckIcon className="h-8 w-8 text-green-400" />
+    <main className="flex min-h-screen items-center justify-center bg-ka-paper px-6">
+      <div className="w-full max-w-md rounded-[24px] border border-ka-line-strong bg-white p-8 text-center shadow-ka-card-hover">
+        <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-ka-sage">
+          <CheckIcon className="h-8 w-8 text-ka-green-700" />
         </div>
-        <h1 className="mt-6 text-2xl font-bold tracking-tight text-white">
+        <h1 className="mt-6 text-2xl font-bold tracking-tight text-ka-ink">
           {t("title")}
         </h1>
-        <p className="mt-3 text-sm leading-relaxed text-neutral-400">{t("text", { seconds: secondsLeft })}</p>
+        <p className="mt-3 text-sm leading-relaxed text-ka-muted">{t("text", { seconds: secondsLeft })}</p>
         <Link
           href="/"
-          className="mt-8 flex w-full items-center justify-center gap-2.5 rounded-2xl bg-green-600 py-3.5 text-base font-semibold text-white transition hover:bg-green-500"
+          className="mt-8 flex w-full items-center justify-center gap-2.5 rounded-2xl bg-ka-green-900 py-3.5 text-base font-semibold text-white transition hover:bg-ka-green-800"
         >
           <HouseIcon className="h-5 w-5" />
           {t("button")}

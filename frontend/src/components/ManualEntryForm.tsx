@@ -120,7 +120,7 @@ export function ManualEntryForm({ initialValues, sourceNotice }: ManualEntryForm
   return (
     <form className="flex flex-col gap-6" onSubmit={handleSubmit}>
       {sourceNotice && (
-        <p className="rounded-xl border border-green-500/20 bg-green-500/[0.06] px-4 py-3 text-sm text-green-300">
+        <p className="rounded-xl border border-ka-mint/30 bg-ka-mint/10 px-4 py-3 text-sm text-ka-mint">
           {sourceNotice}
         </p>
       )}
@@ -263,7 +263,7 @@ export function ManualEntryForm({ initialValues, sourceNotice }: ManualEntryForm
           />
         </div>
         <div className="sm:col-span-2">
-          <label htmlFor="description" className="text-sm font-medium text-neutral-200">
+          <label htmlFor="description" className="text-sm font-medium text-white/80">
             {t("fields.description")}
           </label>
           <textarea
@@ -271,12 +271,12 @@ export function ManualEntryForm({ initialValues, sourceNotice }: ManualEntryForm
             name="description"
             rows={4}
             defaultValue={initialValues?.description ?? undefined}
-            className="mt-2 w-full rounded-xl border border-white/10 bg-black/40 px-4 py-3 text-sm text-white placeholder:text-neutral-500 outline-none transition focus:border-green-500/60 focus:ring-4 focus:ring-green-500/10 resize-none"
+            className="mt-2 w-full rounded-xl border border-white/10 bg-ka-ink/40 px-4 py-3 text-sm text-white placeholder:text-white/45 outline-none transition focus:border-ka-mint/60 focus:ring-4 focus:ring-ka-mint/10 resize-none"
           />
         </div>
       </div>
 
-      <p className="text-sm text-neutral-400">
+      <p className="text-sm text-white/60">
         {t("includes")}
       </p>
 

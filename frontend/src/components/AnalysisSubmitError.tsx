@@ -6,12 +6,12 @@ export function AnalysisSubmitError({ error }: { error: { code: string; message:
   const t = useTranslations("forms");
   if (!error) return null;
   return (
-    <p className="text-sm text-red-400">
+    <p className="text-sm text-ka-coral-300">
       {error.message}
       {error.code === "no_credit" && (
         <>
           {" "}
-          <Link href="/buy" className="font-semibold text-green-400 underline underline-offset-4 hover:text-green-300">
+          <Link href="/buy" className="font-semibold text-ka-mint underline underline-offset-4 hover:text-ka-mint-bright">
             {t("goToStore")}
           </Link>
         </>
