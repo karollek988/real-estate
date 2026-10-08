@@ -85,7 +85,7 @@ for (const file of walk(src)) {
       for (const match of line.matchAll(rule.re)) {
         const text = match[0];
         // a colour typed into a class comes with its brackets: [#1a0dab]
-        if (ALLOWED_LITERALS[text.replace(/^[|]$/g, "").toLowerCase()]) continue;
+        if (ALLOWED_LITERALS[text.replace(/^\[|\]$/g, "").toLowerCase()]) continue;
         if (!stylesheet && rule.notInClass && inShadow(line, match.index)) continue;
         // a hex inside a class is reported once, by the class rule
         if (!stylesheet && rule.notInClass && /\[$/.test(line.slice(Math.max(0, match.index - 1), match.index))) continue;
