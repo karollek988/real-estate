@@ -45,7 +45,8 @@ export default function AdminPortal({ authenticated, stats, measured }: AdminPor
       <Head>
         <title>{authenticated ? "Köpanalys Admin" : "Logga in | Köpanalys Admin"}</title>
         <meta name="robots" content="noindex, nofollow, noarchive" />
-        <meta name="theme-color" content="#0a0f0d" />
+        {/* the browser's own bar takes the page colour: $ka-cream (a stylesheet variable cannot be read here) */}
+        <meta name="theme-color" content="#f8f5f1" />
         <link rel="icon" href="/icon.png" />
       </Head>
       {authenticated && stats && measured ? <AdminShell stats={stats} measured={measured} /> : <AdminLogin />}

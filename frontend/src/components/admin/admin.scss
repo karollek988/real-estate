@@ -1,7 +1,7 @@
-// Admin portal chrome: login card, the session bar and the empty page below it.
-// Shares the admin palette (styles/_variables.scss) with the map workspace
-// (atlas/atlas.scss), which still supplies the base resets (box-sizing, body
-// margin, button/input font inheritance) and the page background.
+// Admin portal (admin.kopanalys.se): the login, the session bar, the tabs, the statistics and the Markov
+// simulator. On the brand palette like the rest of the site: every colour is a role from styles/_variables.scss
+// ("Admin portal"), which takes its value from the $ka-* colours. atlas/atlas.scss supplies the base resets
+// (box-sizing, body margin, button/input font inheritance) and the page colours.
 @use "../../styles/variables" as *;
 
 .admin-login {
@@ -9,14 +9,14 @@
   display: grid;
   place-items: center;
   padding: 24px 16px;
-  background: radial-gradient(1200px 600px at 50% -10%, rgba($admin-green-strong, 0.12), transparent 60%), $admin-base;
+  background: radial-gradient(1200px 600px at 50% -10%, rgba($ka-sage, 0.6), transparent 60%), $admin-canvas;
 }
 
 .admin-login-card {
   width: min(400px, 100%);
   padding: 32px 28px 28px;
   background: $admin-surface;
-  border: 1px solid rgba($white, 0.07);
+  border: 1px solid $admin-line-strong;
   border-radius: 20px;
   box-shadow: $admin-shadow-modal;
 }
@@ -25,7 +25,7 @@
   display: flex;
   align-items: center;
   gap: 10px;
-  color: $white;
+  color: $admin-text-strong;
   font-size: 15px;
   font-weight: 600;
 
@@ -38,10 +38,39 @@
   }
 }
 
+// The wordmark as on the site: Köpanalys in bold, ".se" a little lighter, and a small "Admin" label after it.
+.admin-login-wordmark {
+  font-size: 17px;
+  font-weight: 700;
+  letter-spacing: -0.03em;
+
+  span {
+    font-size: 0.86em;
+    font-weight: 500;
+    letter-spacing: -0.01em;
+    opacity: 0.9;
+  }
+}
+
+.admin-login-badge {
+  padding: 2px 9px;
+  color: $admin-text-muted;
+  background: $admin-raised;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
 .admin-login-card h1 {
   margin: 26px 0 4px;
-  font-size: 24px;
-  line-height: 1.2;
+  color: $admin-text-strong;
+  font-family: $font-display;
+  font-size: 28px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  line-height: 1.15;
 }
 
 .admin-login-lead {
@@ -64,8 +93,8 @@
   margin-top: 7px;
   padding: 12px;
   color: $admin-text-strong;
-  background: rgba($white, 0.03);
-  border: 1px solid rgba($white, 0.12);
+  background: $admin-field;
+  border: 1px solid $admin-line-strong;
   border-radius: 10px;
   font-size: 14px;
 
@@ -109,9 +138,9 @@
 .admin-login-error {
   margin: 16px 0 0;
   padding: 10px 12px;
-  color: $admin-red-pale;
-  background: rgba($admin-red, 0.102);
-  border: 1px solid rgba($admin-red, 0.4);
+  color: $admin-error;
+  background: $admin-error-wash;
+  border: 1px solid $admin-error-line;
   border-radius: 10px;
   font-size: 13px;
   line-height: 1.45;
@@ -121,21 +150,21 @@
   width: 100%;
   margin-top: 20px;
   padding: 13px 17px;
-  color: $admin-on-green;
-  background: $admin-green-strong;
+  color: $admin-on-primary;
+  background: $admin-primary;
   border: 0;
   border-radius: 10px;
-  box-shadow: $admin-shadow-glow;
+  box-shadow: $admin-shadow-primary;
   font-size: 14px;
   font-weight: 700;
   transition: background .15s ease;
 
   &:hover:not(:disabled) {
-    background: $admin-green;
+    background: $admin-primary-hover;
   }
 
   &:focus-visible {
-    outline: 2px solid $white;
+    outline: 2px solid $admin-green;
     outline-offset: 2px;
   }
 
@@ -149,7 +178,7 @@
   display: flex;
   flex-direction: column;
   height: 100svh;
-  background: $admin-base;
+  background: $admin-canvas;
 }
 
 .admin-strip {
@@ -160,7 +189,7 @@
   padding: 0 16px;
   color: $admin-text-muted;
   background: $admin-bar;
-  border-bottom: 1px solid rgba($white, 0.07);
+  border-bottom: 1px solid $admin-line;
   font-size: 12px;
 }
 
@@ -186,24 +215,24 @@
 }
 
 .admin-strip-error {
-  color: $admin-red-light;
+  color: $admin-error;
   white-space: nowrap;
 }
 
 .admin-strip button {
   height: 24px;
   padding: 0 10px;
-  color: $admin-text-soft;
-  background: rgba($white, 0.04);
-  border: 1px solid rgba($white, 0.094);
+  color: $admin-text;
+  background: $admin-field;
+  border: 1px solid $admin-line-strong;
   border-radius: 6px;
   font-size: 11px;
   font-weight: 700;
   white-space: nowrap;
 
   &:hover:not(:disabled) {
-    color: $white;
-    background: rgba($white, 0.08);
+    color: $admin-text-strong;
+    background: $admin-raised;
   }
 
   &:disabled {
@@ -225,8 +254,8 @@
   gap: 4px;
   padding: 0 14px;
   overflow-x: auto;
-  background: $admin-base;
-  border-bottom: 1px solid rgba($white, 0.07);
+  background: $admin-bar;
+  border-bottom: 1px solid $admin-line;
 
   button {
     position: relative;
@@ -243,7 +272,7 @@
     }
 
     &[aria-selected="true"] {
-      color: $white;
+      color: $admin-text-strong;
 
       // the open tab's underline sits on the bar's own border
       &::after {
@@ -272,7 +301,7 @@
   // room for the simulator's sticky result bar, so a box tabbed to is not scrolled in underneath it
   scroll-padding-top: 96px;
   overflow-y: auto;
-  background: $admin-base;
+  background: $admin-canvas;
 }
 
 .admin-page {
@@ -293,9 +322,12 @@
 
   h2 {
     margin: 0;
-    color: $admin-text-bright;
-    font-size: 22px;
-    line-height: 1.2;
+    color: $admin-text-strong;
+    font-family: $font-display;
+    font-size: 26px;
+    font-weight: 600;
+    letter-spacing: -0.01em;
+    line-height: 1.15;
   }
 }
 
@@ -309,8 +341,8 @@
   display: inline-flex;
   gap: 2px;
   padding: 3px;
-  background: rgba($white, 0.04);
-  border: 1px solid rgba($white, 0.08);
+  background: $admin-raised;
+  border: 1px solid $admin-line-strong;
   border-radius: 10px;
 
   button {
@@ -328,12 +360,12 @@
     }
 
     &[aria-pressed="true"] {
-      color: $admin-on-green;
-      background: $admin-green;
+      color: $admin-on-primary;
+      background: $admin-primary;
     }
 
     &:focus-visible {
-      outline: 2px solid $white;
+      outline: 2px solid $admin-green;
       outline-offset: 1px;
     }
   }
@@ -343,15 +375,15 @@
   margin: 0 0 16px;
   padding: 10px 14px;
   color: $admin-text;
-  background: rgba($white, 0.04);
-  border: 1px solid rgba($white, 0.08);
+  background: $admin-surface;
+  border: 1px solid $admin-line-strong;
   border-radius: 10px;
   font-size: 13px;
   line-height: 1.5;
 
   &.is-demo {
-    background: rgba($admin-chart-orange, 0.1);
-    border-color: rgba($admin-chart-orange, 0.5);
+    background: $admin-warn-wash;
+    border-color: $admin-warn-line;
   }
 }
 
@@ -366,8 +398,9 @@
 .card {
   min-width: 0;
   background: $admin-surface;
-  border: 1px solid rgba($white, 0.07);
+  border: 1px solid $admin-line-strong;
   border-radius: 14px;
+  box-shadow: $admin-shadow-card;
 }
 
 .kpi {
@@ -385,7 +418,7 @@
 
 .kpi-value {
   margin: 8px 0 5px;
-  color: $admin-text-bright;
+  color: $admin-text-strong;
   font-size: 28px;
   font-weight: 700;
   line-height: 1.1;
@@ -407,7 +440,7 @@
   }
 
   &.is-down {
-    color: $admin-red-light;
+    color: $admin-error;
   }
 }
 
@@ -429,7 +462,7 @@
 
   h3 {
     margin: 0;
-    color: $admin-text-bright;
+    color: $admin-text-strong;
     font-size: 15px;
   }
 }
@@ -459,12 +492,12 @@
 }
 
 .chart-grid {
-  stroke: rgba($white, 0.08);
+  stroke: $admin-line;
   stroke-width: 1;
 
   // the line for zero, when the axis goes below it
   &.is-zero {
-    stroke: rgba($white, 0.32);
+    stroke: rgba($admin-wash, 0.4);
   }
 }
 
@@ -491,7 +524,7 @@
 }
 
 .chart-cursor {
-  stroke: rgba($white, 0.3);
+  stroke: rgba($admin-wash, 0.35);
   stroke-dasharray: 3 3;
 }
 
@@ -512,8 +545,8 @@
 
 .chart-tooltip {
   rect {
-    fill: $admin-base;
-    stroke: rgba($white, 0.2);
+    fill: $admin-surface;
+    stroke: $admin-line-strong;
   }
 
   text {
@@ -525,7 +558,7 @@
     }
 
     &.is-strong {
-      fill: $white;
+      fill: $admin-text-strong;
       font-weight: 700;
     }
   }
@@ -545,7 +578,7 @@
 }
 
 .donut-track {
-  stroke: rgba($white, 0.06);
+  stroke: $admin-raised;
 }
 
 .donut-slice {
@@ -553,7 +586,7 @@
 }
 
 .donut-value {
-  fill: $admin-text-bright;
+  fill: $admin-text-strong;
   font-size: 26px;
   font-weight: 700;
   font-variant-numeric: tabular-nums;
@@ -594,7 +627,7 @@
 }
 
 .legend-count {
-  color: $admin-text-bright;
+  color: $admin-text-strong;
   font-weight: 700;
   font-variant-numeric: tabular-nums;
 }
@@ -637,7 +670,7 @@
 }
 
 .bars-count {
-  color: $admin-text-bright;
+  color: $admin-text-strong;
   font-weight: 700;
   font-variant-numeric: tabular-nums;
 }
@@ -651,7 +684,7 @@
   height: 8px;
   margin-top: 8px;
   overflow: hidden;
-  background: rgba($white, 0.07);
+  background: $admin-raised;
   border-radius: 999px;
 }
 
@@ -674,7 +707,7 @@
   }
 }
 
-@include series(visitors, $admin-green);
+@include series(visitors, $admin-chart-green);
 @include series(mobile, $admin-chart-sky);
 @include series(tablet, $admin-chart-orange);
 @include series(desktop, $admin-chart-teal);
@@ -689,12 +722,12 @@
 @include series(visited, $admin-chart-teal);
 @include series(engaged, $admin-chart-sky);
 @include series(registered, $admin-chart-yellow);
-@include series(premium, $admin-green);
+@include series(premium, $admin-chart-green);
 @include series(inactive, $admin-chart-orange);
 @include series(churned, $admin-chart-vermillion);
 @include series(reactivated, $admin-chart-purple);
 @include series(bounced, $admin-chart-grey);
-@include series(run, $admin-green);
+@include series(run, $admin-chart-green);
 @include series(reference, $admin-chart-grey);
 
 // ...and the five traffic channels. They share hues with some states (a channel is never drawn beside a
@@ -706,12 +739,12 @@
 @include series(direct, $admin-chart-grey);
 
 // The economy: revenue, costs and profit; what the costs are; and the compared strategies (up to four).
-@include series(revenue, $admin-green);
+@include series(revenue, $admin-chart-green);
 @include series(costs, $admin-chart-orange);
 @include series(profit, $admin-chart-sky);
 @include series(fees, $admin-chart-purple);
 @include series(fixed, $admin-chart-grey);
-@include series(s1, $admin-green);
+@include series(s1, $admin-chart-green);
 @include series(s2, $admin-chart-sky);
 @include series(s3, $admin-chart-orange);
 @include series(s4, $admin-chart-purple);
@@ -729,14 +762,14 @@
   padding: 24px 26px;
   color: $admin-text;
   background: $admin-surface;
-  border: 1px solid rgba($white, 0.07);
+  border: 1px solid $admin-line-strong;
   border-radius: 14px;
   font-size: 14px;
   line-height: 1.6;
 
   h2 {
     margin: 0 0 10px;
-    color: $admin-text-bright;
+    color: $admin-text-strong;
     font-size: 18px;
   }
 
@@ -746,7 +779,7 @@
 }
 
 .stats-notice-detail {
-  color: $admin-red-pale;
+  color: $admin-error;
   word-break: break-word;
 }
 
@@ -754,7 +787,7 @@
 .stats-notice code {
   padding: 0.1em 0.4em;
   color: $admin-text-strong;
-  background: rgba($white, 0.07);
+  background: $admin-raised;
   border-radius: 5px;
   font-size: 0.92em;
 }
@@ -777,9 +810,12 @@
 
   .stats-head h3 {
     margin: 0;
-    color: $admin-text-bright;
-    font-size: 18px;
-    line-height: 1.2;
+    color: $admin-text-strong;
+    font-family: $font-display;
+    font-size: 22px;
+    font-weight: 600;
+    letter-spacing: -0.01em;
+    line-height: 1.15;
   }
 }
 
@@ -806,8 +842,8 @@
     align-content: start;
     min-width: 0;
     padding: 11px 12px 12px;
-    background: rgba($white, 0.03);
-    border: 1px dashed rgba($white, 0.18);
+    background: $admin-canvas;
+    border: 1px dashed $admin-line-strong;
     border-radius: 12px;
 
     &.is-built {
@@ -832,7 +868,7 @@
 }
 
 .markov-pipeline-name {
-  color: $admin-text-bright;
+  color: $admin-text-strong;
   font-size: 12.5px;
   font-weight: 700;
 }
@@ -847,8 +883,8 @@
   justify-self: start;
   margin-top: 3px;
   padding: 1px 9px;
-  color: $admin-chart-orange;
-  border: 1px solid rgba($admin-chart-orange, 0.55);
+  color: $admin-warn;
+  border: 1px solid $admin-warn-line;
   border-radius: 999px;
   font-size: 11px;
   font-weight: 700;
@@ -871,15 +907,15 @@
   padding: 10px 18px;
   color: $admin-text-muted;
   background: $admin-surface;
-  border: 1px solid rgba($white, 0.12);
+  border: 1px solid $admin-line-strong;
   border-radius: 12px;
-  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.4);
+  box-shadow: $admin-shadow-float;
   font-size: 13px;
 
   &.is-error {
-    color: $admin-chart-orange;
-    background: linear-gradient(rgba($admin-chart-orange, 0.14), rgba($admin-chart-orange, 0.14)), $admin-surface;
-    border-color: rgba($admin-chart-orange, 0.6);
+    color: $admin-warn;
+    background: $admin-warn-wash;
+    border-color: $admin-warn-line;
   }
 }
 
@@ -890,7 +926,7 @@
   gap: 2px 9px;
 
   strong {
-    color: $admin-text-bright;
+    color: $admin-text-strong;
     font-size: 20px;
     font-variant-numeric: tabular-nums;
   }
@@ -940,8 +976,8 @@
     min-width: 0;
     padding: 9px 12px;
     color: $admin-text-strong;
-    background: rgba($white, 0.04);
-    border: 1px solid rgba($white, 0.16);
+    background: $admin-field;
+    border: 1px solid $admin-line-strong;
     border-radius: 10px;
     font-size: 14px;
     font-variant-numeric: tabular-nums;
@@ -981,8 +1017,8 @@
   white-space: nowrap;
 
   &.is-demo {
-    color: $admin-chart-orange;
-    border-color: rgba($admin-chart-orange, 0.55);
+    color: $admin-warn;
+    border-color: $admin-warn-line;
   }
 }
 
@@ -1012,8 +1048,8 @@
 .markov-measured-panel {
   margin-top: 16px;
   padding: 14px 16px 16px;
-  background: rgba($white, 0.03);
-  border: 1px solid rgba($white, 0.1);
+  background: $admin-canvas;
+  border: 1px solid $admin-line-strong;
   border-radius: 12px;
 
   h4 {
@@ -1021,7 +1057,7 @@
     align-items: center;
     gap: 2px;
     margin: 0 0 4px;
-    color: $admin-text-bright;
+    color: $admin-text-strong;
     font-size: 14px;
   }
 
@@ -1044,14 +1080,14 @@
 
   // nothing (or too little) to start from: the example numbers are in use, and this says why
   &.is-missing {
-    background: rgba($admin-chart-orange, 0.06);
-    border-color: rgba($admin-chart-orange, 0.5);
+    background: $admin-warn-wash;
+    border-color: $admin-warn-line;
   }
 
   code {
     padding: 0.1em 0.4em;
     color: $admin-text-strong;
-    background: rgba($white, 0.07);
+    background: $admin-raised;
     border-radius: 5px;
     font-size: 0.92em;
     // a file name has no spaces to break at: on a phone it must still fit
@@ -1061,22 +1097,22 @@
 
 // A box that can't be used: red, and the words say why. A box that differs from the baseline: orange, and it says what it was.
 .markov-field.has-error .markov-input input {
-  background: rgba($admin-red, 0.1);
-  border-color: $admin-red;
+  background: $admin-error-wash;
+  border-color: $admin-error;
 }
 
 .markov-field.is-changed .markov-input input {
-  border-color: $admin-chart-orange;
+  border-color: $admin-warn;
 }
 
 .markov-was {
-  color: $admin-chart-orange;
+  color: $admin-warn;
   font-size: 12px;
 }
 
 .markov-error {
   margin: 0;
-  color: $admin-red-light;
+  color: $admin-error;
   font-size: 12px;
   line-height: 1.4;
 }
@@ -1099,24 +1135,23 @@
   height: 36px;
   padding: 0 15px;
   color: $admin-text-strong;
-  background: rgba($white, 0.05);
-  border: 1px solid rgba($white, 0.16);
+  background: $admin-field;
+  border: 1px solid $admin-line-strong;
   border-radius: 10px;
   font-size: 13px;
   font-weight: 700;
 
   &:hover:not(:disabled) {
-    background: rgba($white, 0.1);
+    background: $admin-raised;
   }
 
   &.is-primary {
-    color: $admin-on-green;
-    background: $admin-green;
+    color: $admin-on-primary;
+    background: $admin-primary;
     border-color: transparent;
 
     &:hover:not(:disabled) {
-      background: $admin-green;
-      filter: brightness(1.1);
+      background: $admin-primary-hover;
     }
   }
 
@@ -1126,7 +1161,7 @@
   }
 
   &:focus-visible {
-    outline: 2px solid $white;
+    outline: 2px solid $admin-green;
     outline-offset: 2px;
   }
 }
@@ -1149,11 +1184,11 @@
 
 .markov-edge {
   fill: none;
-  stroke: rgba($white, 0.22);
+  stroke: rgba($admin-wash, 0.3);
   stroke-width: 1.3;
 
   &.is-source {
-    stroke: rgba($white, 0.4);
+    stroke: rgba($admin-wash, 0.5);
     stroke-width: 1.6;
   }
 
@@ -1171,7 +1206,7 @@
 }
 
 .markov-tip.is-dim path {
-  fill: rgba($white, 0.4);
+  fill: rgba($admin-wash, 0.5);
 }
 
 .markov-node {
@@ -1193,7 +1228,7 @@
   }
 
   &:focus-visible rect {
-    stroke: $white;
+    stroke: $admin-text-strong;
     stroke-width: 3.2;
   }
 
@@ -1216,7 +1251,7 @@
 }
 
 .markov-node-label {
-  fill: $admin-text-bright;
+  fill: $admin-text-strong;
   font-size: 13px;
   font-weight: 700;
 }
@@ -1252,7 +1287,7 @@
   min-width: 0;
   padding: 16px 18px 18px;
   background: $admin-surface;
-  border: 1px solid rgba($white, 0.07);
+  border: 1px solid $admin-line-strong;
   border-left: 3px solid var(--series);
   border-radius: 14px;
 
@@ -1261,7 +1296,7 @@
     align-items: center;
     gap: 10px;
     margin: 0;
-    color: $admin-text-bright;
+    color: $admin-text-strong;
     font-size: 14px;
   }
 }
@@ -1301,7 +1336,7 @@
   font-size: 12.5px;
 
   strong {
-    color: $admin-text-bright;
+    color: $admin-text-strong;
     font-variant-numeric: tabular-nums;
   }
 }
@@ -1324,19 +1359,19 @@
   padding: 6px 12px;
   color: $admin-text-muted;
   background: transparent;
-  border: 1px solid rgba($white, 0.16);
+  border: 1px solid $admin-line-strong;
   border-radius: 999px;
   font-size: 12.5px;
   font-weight: 600;
 
   &:hover {
-    color: $white;
+    color: $admin-text-strong;
   }
 
   &[aria-pressed="true"] {
-    color: $admin-text-bright;
-    background: rgba($white, 0.07);
-    border-color: rgba($white, 0.34);
+    color: $admin-text-strong;
+    background: $admin-raised;
+    border-color: $admin-text-muted;
   }
 
   &[aria-pressed="false"] .markov-sample {
@@ -1370,7 +1405,7 @@
 .markov-details {
   summary {
     padding: 14px 0;
-    color: $admin-text-bright;
+    color: $admin-text-strong;
     font-size: 14px;
     font-weight: 700;
     cursor: pointer;
@@ -1412,7 +1447,7 @@
 
 .markov-settings .markov-details {
   margin-top: 14px;
-  border-top: 1px solid rgba($white, 0.07);
+  border-top: 1px solid $admin-line;
 }
 
 .markov-table-scroll {
@@ -1431,7 +1466,7 @@
     padding: 7px 11px;
     text-align: right;
     white-space: nowrap;
-    border-bottom: 1px solid rgba($white, 0.06);
+    border-bottom: 1px solid $admin-line;
   }
 
   thead th {
@@ -1455,8 +1490,8 @@
 
   &.is-matrix {
     td.is-stay {
-      color: $admin-text-bright;
-      background: rgba($white, 0.05);
+      color: $admin-text-strong;
+      background: $admin-raised;
     }
 
     td.is-move {
@@ -1489,8 +1524,8 @@
   margin: 0;
   padding: 10px 12px;
   color: $admin-text-strong;
-  background: rgba($white, 0.04);
-  border: 1px solid rgba($white, 0.1);
+  background: $admin-raised;
+  border: 1px solid $admin-line;
   border-radius: 10px;
   font-size: 13.5px;
   line-height: 1.5;
@@ -1509,9 +1544,9 @@
 .markov-table tfoot {
   th,
   td {
-    color: $admin-text-bright;
+    color: $admin-text-strong;
     font-weight: 700;
-    border-top: 1px solid rgba($white, 0.2);
+    border-top: 1px solid $admin-line-strong;
     border-bottom: 0;
   }
 
@@ -1547,8 +1582,8 @@
     align-items: center;
     gap: 8px 14px;
     padding: 10px 12px;
-    background: rgba($white, 0.03);
-    border: 1px solid rgba($white, 0.08);
+    background: $admin-canvas;
+    border: 1px solid $admin-line-strong;
     border-radius: 12px;
 
     &.is-active {
@@ -1581,7 +1616,7 @@
   min-width: 0;
 
   strong {
-    color: $admin-text-bright;
+    color: $admin-text-strong;
     font-size: 14px;
   }
 }
@@ -1602,7 +1637,7 @@
 
 .markov-tag.is-quiet {
   color: $admin-text-muted;
-  border-color: rgba($white, 0.22);
+  border-color: $admin-line-strong;
 }
 
 .markov-button.is-small {
@@ -1637,8 +1672,8 @@
   min-width: 0;
   padding: 8px 12px;
   color: $admin-text-strong;
-  background: rgba($white, 0.04);
-  border: 1px solid rgba($white, 0.16);
+  background: $admin-field;
+  border: 1px solid $admin-line-strong;
   border-radius: 10px;
   font-size: 14px;
 
@@ -1658,17 +1693,17 @@
 .markov-compare {
   margin-top: 20px;
   padding-top: 16px;
-  border-top: 1px solid rgba($white, 0.07);
+  border-top: 1px solid $admin-line;
 }
 
 .markov-compare-title {
   margin: 18px 0 0;
-  color: $admin-text-bright;
+  color: $admin-text-strong;
   font-size: 14px;
 }
 
 .markov-table td.is-best {
-  color: $admin-text-bright;
+  color: $admin-text-strong;
   background: rgba($admin-green, 0.1);
   font-weight: 700;
 }

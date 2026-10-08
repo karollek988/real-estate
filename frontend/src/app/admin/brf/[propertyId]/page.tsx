@@ -55,39 +55,39 @@ export default async function BrfReviewPage({ params }: { params: Promise<{ prop
     <div className="flex flex-col gap-6">
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div>
-          <Link href="/admin/brf" className="text-xs font-medium text-neutral-500 hover:underline">
+          <Link href="/admin/brf" className="text-xs font-medium text-ka-muted hover:underline">
             ← Alla granskningar
           </Link>
-          <h1 className="mt-1 text-2xl font-semibold tracking-tight text-[#12271D]">{property.address}</h1>
-          <p className="mt-0.5 text-sm text-neutral-600">
+          <h1 className="mt-1 text-2xl font-semibold tracking-tight text-ka-ink">{property.address}</h1>
+          <p className="mt-0.5 text-sm text-ka-muted">
             {associationName ?? "Förening okänd"}
             {apartment.livingAreaM2 ? ` · ${apartment.livingAreaM2} m²` : ""}
             {apartment.monthlyFeeSek ? ` · avgift ${new Intl.NumberFormat("sv-SE").format(apartment.monthlyFeeSek)} kr/mån` : ""}
             {apartment.buildingYear ? ` · byggår ${apartment.buildingYear}` : ""}
           </p>
         </div>
-        <div className="rounded-lg border border-black/10 bg-white px-4 py-3 text-sm">
+        <div className="rounded-lg border border-ka-line-strong bg-white px-4 py-3 text-sm">
           {review.status === "pending" ? (
-            <p className={overdue ? "font-semibold text-red-700" : "font-semibold text-[#12271D]"}>
+            <p className={overdue ? "font-semibold text-ka-coral-700" : "font-semibold text-ka-ink"}>
               {overdue ? "Försenad — utlovad " : "Klar senast "}
               {dueSv(review.dueAt)}
             </p>
           ) : review.status === "published" ? (
-            <p className="font-semibold text-green-800">Publicerad {daySv(review.publishedAt)}</p>
+            <p className="font-semibold text-ka-green-800">Publicerad {daySv(review.publishedAt)}</p>
           ) : (
-            <p className="font-semibold text-neutral-600">Markerad som ej aktuell</p>
+            <p className="font-semibold text-ka-muted">Markerad som ej aktuell</p>
           )}
           {review.status === "pending" && review.published && (
-            <p className="mt-0.5 text-xs text-neutral-500">Ny årsredovisning — kunden ser den tidigare publicerade analysen tills du publicerar.</p>
+            <p className="mt-0.5 text-xs text-ka-muted">Ny årsredovisning — kunden ser den tidigare publicerade analysen tills du publicerar.</p>
           )}
           <div className="mt-1.5 flex flex-wrap gap-3 text-xs">
             {analysis && (
-              <Link href={`/report?id=${analysis.id}`} className="font-medium text-[#3B5F7A] hover:underline" target="_blank">
+              <Link href={`/report?id=${analysis.id}`} className="font-medium text-ka-sky-700 hover:underline" target="_blank">
                 Kundens rapport
               </Link>
             )}
             {listingUrl && (
-              <a href={listingUrl} className="font-medium text-[#3B5F7A] hover:underline" target="_blank" rel="noreferrer">
+              <a href={listingUrl} className="font-medium text-ka-sky-700 hover:underline" target="_blank" rel="noreferrer">
                 Annonsen
               </a>
             )}
@@ -95,26 +95,26 @@ export default async function BrfReviewPage({ params }: { params: Promise<{ prop
         </div>
       </div>
 
-      <section className="rounded-lg border border-black/10 bg-white p-4">
-        <h2 className="text-sm font-semibold text-[#12271D]">Årsredovisning</h2>
+      <section className="rounded-lg border border-ka-line-strong bg-white p-4">
+        <h2 className="text-sm font-semibold text-ka-ink">Årsredovisning</h2>
         {document ? (
           <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-sm">
             {documentUrl ? (
-              <a href={documentUrl} target="_blank" rel="noreferrer" className="font-medium text-[#3B5F7A] hover:underline">
+              <a href={documentUrl} target="_blank" rel="noreferrer" className="font-medium text-ka-sky-700 hover:underline">
                 Öppna {document.originalFilename ?? "dokumentet"}
               </a>
             ) : (
               <span>{document.originalFilename ?? "Dokument"} (kunde inte skapa länk)</span>
             )}
-            <span className="text-neutral-500">
+            <span className="text-ka-muted">
               {document.fiscalYear ? `Räkenskapsår ${document.fiscalYear} · ` : ""}uppladdad {daySv(document.createdAt)}
             </span>
             {extractionFailed && (
-              <span className="text-amber-700">Motorn kunde inte läsa filen automatiskt — fyll i uppgifterna från dokumentet.</span>
+              <span className="text-ka-amber-700">Motorn kunde inte läsa filen automatiskt — fyll i uppgifterna från dokumentet.</span>
             )}
           </div>
         ) : (
-          <p className="mt-2 text-sm text-amber-700">
+          <p className="mt-2 text-sm text-ka-amber-700">
             Ingen årsredovisning är uppladdad. Ta fram den senaste (mäklaren, föreningen, annonsen eller Bolagsverket) och ladda upp den här.
           </p>
         )}

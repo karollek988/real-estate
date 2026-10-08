@@ -14,7 +14,7 @@
 //   app/globals.scss                    public site (App Router) + Tailwind
 //   app/[locale]/analyzing/ldbar.scss            progress ring label on /analyzing
 //   components/admin/atlas/atlas.scss   admin portal: page resets
-//   components/admin/admin.scss         admin portal: login + session bar
+//   components/admin/admin.scss         admin portal: login, session bar, statistics, Markov simulator
 //   components/admin/atlas/atlas-public.scss  public map /karta (the $map-* roles)
 //
 // Kept to by `npm run colours` (scripts/check-colours.mjs): no component or stylesheet writes a colour
@@ -104,54 +104,66 @@ $page-background: $white;
 $page-foreground: #0a0a0a;
 
 // -----------------------------------------------------------------------------
-// Admin portal (admin.kopanalys.se) - the dark login and session bar. Most
-// accents are Tailwind palette values, noted on the right. (The map workspace
-// that used to be dark and live here is on the brand palette now: "Public map"
-// below.)
+// Admin portal (admin.kopanalys.se) - the login, the session bar, the statistics
+// and the Markov simulator, on the brand palette like the rest of the site: cream
+// paper, white cards, deep green. These are roles, not colours: the admin
+// stylesheet says what a colour is for, and each role takes its value from $ka-*
+// above, so a change to a brand colour reaches the portal too. (The portal used to
+// be dark, with a palette of its own.)
 // -----------------------------------------------------------------------------
-// Surfaces, darkest first
-$admin-bar: #060a08; // session bar
-$admin-base: #0a0f0d; // login page
-$admin-surface: #0f1417; // login card
-$admin-canvas: #111927; // page background
-$admin-raised: #182026; // a box on a surface: the Markov simulator's state boxes
-$admin-raised-hover: #212b32;
+// Surfaces
+$admin-canvas: $ka-cream; // behind everything: the login page, the page under the session bar
+$admin-bar: $ka-paper; // the session bar and the row of tabs
+$admin-surface: $white; // cards, figures, the login card; always with $admin-line-strong as its edge
+$admin-field: $white; // text boxes and the buttons that sit in a card
+$admin-raised: $ka-sand; // a quiet fill on a card: readouts, code, a bar's track, the Markov state boxes
+$admin-raised-hover: $ka-stone;
+$admin-line: $ka-line; // hairlines between rows, under a bar
+$admin-line-strong: $ka-line-strong; // the edge of a card, a text box or a button
 
-// Text, brightest first
-$admin-text-bright: #f4f6f4;
-$admin-text-strong: #edf2ee;
-$admin-text: #c9d1cc;
-$admin-text-soft: #c0c8c3;
-$admin-text-muted: #a0aaa4;
+// Text
+$admin-text-strong: $ka-ink; // headings and numbers
+$admin-text: $ka-text; // running text
+$admin-text-muted: $ka-muted; // labels, captions, units (5.8:1 on cream)
 
-// Green: the main accent (focus rings, links, primary button)
-$admin-green: #4ade80; // green-400
-$admin-green-strong: #16a34a; // green-600, primary buttons
-$admin-on-green: #07110b; // text on green
+// Accent: links, focus rings, the open tab, a rise. The main button is the site's
+// ("Skapa analys").
+$admin-green: $ka-green-700;
+$admin-primary: $ka-green-900;
+$admin-primary-hover: $ka-green-800;
+$admin-on-primary: $white;
 
-// Red: errors
-$admin-red: #f87171; // red-400
-$admin-red-light: #fca5a5; // red-300
-$admin-red-pale: #fecaca; // red-200
+// Cues for the state of the data. Each is a text colour, a wash behind it and a
+// line round it; the words always say the same thing, so colour is never the only cue.
+$admin-warn: $ka-amber-700; // demo data, "it was", a box that differs from the baseline (7.3:1 on cream)
+$admin-warn-wash: $ka-amber-100;
+$admin-warn-line: $ka-amber-300;
+$admin-error: $ka-red-600; // errors, a fall (5.1:1 on cream)
+$admin-error-wash: rgba($ka-red-600, 0.08);
+$admin-error-line: rgba($ka-red-600, 0.45);
 
-// Charts on the statistics page. Devices use the Okabe-Ito colours, picked so
-// three series stay apart for people with red-green colour blindness (they
-// differ in lightness as well as hue). The packages are one green in three
-// lightnesses - the cheaper the package, the lighter - so their order reads
-// even without telling the greens apart. Every series is also named in text
-// beside the chart; colour is never the only way to read one.
-$admin-chart-sky: #56b4e9; // mobile
-$admin-chart-orange: #e69f00; // tablet; also "demo data" and "coming soon"
+// Ink for what is drawn over a surface: hover fills, chart cursors, shadows (used translucent)
+$admin-wash: $ka-ink;
+
+// Charts. The series colours are the Okabe-Ito set, picked so three series stay apart for people with
+// red-green colour blindness (they differ in lightness as well as hue), nudged for white cards: each is at
+// least 3:1 on white (the lightest package, 2.7:1, is told apart by its lightness and its name). The packages
+// are one green in three lightnesses - the cheaper the package, the lighter - so their order reads even
+// without telling the greens apart. Every series is also named in text beside the chart; colour is never the
+// only way to read one.
+$admin-chart-green: $ka-green-700; // visitors, premium, revenue, the first strategy, the current run
+$admin-chart-sky: #2b8cc4; // mobile
+$admin-chart-orange: #c27a00; // tablet; costs, ads
 $admin-chart-teal: #009e73; // desktop
-$admin-chart-pack-1: #b9efd0; // Områdesanalys
-$admin-chart-pack-2: #4cc487; // Trygghetspaketet
-$admin-chart-pack-3: #2a8c58; // Tre bostäder
-$admin-chart-grey: #8a949d; // older or unknown packages
+$admin-chart-pack-1: #5aaf80; // Områdesanalys
+$admin-chart-pack-2: #2e9461; // Trygghetspaketet
+$admin-chart-pack-3: #1a6b40; // Tre bostäder
+$admin-chart-grey: #7c868f; // older or unknown packages
 // The rest of the Okabe-Ito set, for the Markov simulator's nine states (with the sky, orange, teal
 // and grey above). Lines are also told apart by dash pattern, and every state is named in text.
 $admin-chart-blue: #0072b2; // sökmotorer (SEO), among the traffic channels
-$admin-chart-yellow: #f0e442; // registered
-$admin-chart-purple: #cc79a7; // reactivated
+$admin-chart-yellow: #9c8d00; // registered (a yellow dark enough to see on white)
+$admin-chart-purple: #b9669a; // reactivated
 $admin-chart-vermillion: #d55e00; // churned
 
 // BankID sign-in button (the demo's mock sign-in, not rendered on the public map)
@@ -250,8 +262,10 @@ $map-bp-narrow: 420px; // map workspace on small phones
 // -----------------------------------------------------------------------------
 // Elevation (admin portal, public map)
 // -----------------------------------------------------------------------------
-$admin-shadow-modal: 0 18px 50px rgba($black, 0.45);
-$admin-shadow-glow: 0 4px 20px rgba($admin-green-strong, 0.208); // primary buttons
+$admin-shadow-modal: 0 18px 50px rgba($ka-ink, 0.14); // the login card
+$admin-shadow-card: 0 1px 2px rgba($ka-ink, 0.06); // cards and figures: with their edge they stand off the cream
+$admin-shadow-float: 0 10px 24px rgba($ka-ink, 0.12); // the Markov simulator's sticky result bar
+$admin-shadow-primary: 0 8px 18px -10px rgba($ka-green-950, 0.8); // the main button
 $map-shadow-float: 0 5px 18px rgba($ka-ink, 0.15);
 $map-shadow-popover: 0 18px 50px rgba($ka-ink, 0.18); // detail panel, dropdowns
 $map-shadow-modal: 0 18px 50px rgba($ka-ink, 0.22);

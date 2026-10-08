@@ -21,9 +21,9 @@ import { LIMITS } from "@/lib/content/validate";
 
 type Action = "save" | "publish" | "unpublish";
 
-const FIELD = "w-full rounded-lg border border-black/15 bg-white px-3 py-2 text-sm text-neutral-900 outline-none focus:border-[#12271D] focus:ring-2 focus:ring-[#12271D]/15";
-const LABEL = "text-sm font-semibold text-neutral-800";
-const HINT = "mt-1 text-xs text-neutral-500";
+const FIELD = "w-full rounded-lg border border-ka-line-strong bg-white px-3 py-2 text-sm text-ka-ink outline-none focus:border-ka-green-700 focus:ring-2 focus:ring-ka-green-700/15";
+const LABEL = "text-sm font-semibold text-ka-ink";
+const HINT = "mt-1 text-xs text-ka-muted";
 
 function emptyInput(): ContentInput {
   return {
@@ -68,7 +68,7 @@ function toInput(item: ContentItem): ContentInput {
 
 function Counter({ value, max }: { value: string | null; max: number }) {
   const n = value?.length ?? 0;
-  return <span className={`text-xs tabular-nums ${n > max ? "font-semibold text-red-700" : "text-neutral-500"}`}>{`${n}/${max}`}</span>;
+  return <span className={`text-xs tabular-nums ${n > max ? "font-semibold text-ka-coral-700" : "text-ka-muted"}`}>{`${n}/${max}`}</span>;
 }
 
 /**
@@ -206,11 +206,11 @@ export function ContentEditor({ item }: { item?: ContentItem }) {
     >
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <Link href="/admin/content" className="text-xs font-medium text-neutral-500 hover:underline">
+          <Link href="/admin/content" className="text-xs font-medium text-ka-muted hover:underline">
             ← Allt innehåll
           </Link>
-          <h1 className="mt-1 text-xl font-semibold text-[#12271D]">{saved ? input.title || "Utan titel" : "Nytt innehåll"}</h1>
-          <p className="mt-1 text-sm text-neutral-600">
+          <h1 className="mt-1 text-xl font-semibold text-ka-ink">{saved ? input.title || "Utan titel" : "Nytt innehåll"}</h1>
+          <p className="mt-1 text-sm text-ka-muted">
             {saved ? (published ? "Publicerad – ändringar syns på sajten när du sparar." : "Utkast – syns inte på sajten.") : "Inte sparat ännu."}
           </p>
         </div>
@@ -219,20 +219,20 @@ export function ContentEditor({ item }: { item?: ContentItem }) {
             <Link
               href={`/admin/content/${saved.id}/preview`}
               target="_blank"
-              className="rounded-lg border border-black/15 bg-white px-3.5 py-2 text-sm font-semibold text-[#12271D] hover:border-[#12271D]"
+              className="rounded-lg border border-ka-line-strong bg-white px-3.5 py-2 text-sm font-semibold text-ka-ink hover:border-ka-green-700"
             >
               Förhandsgranska
             </Link>
           )}
           {saved && published && (
-            <Link href={contentHref(saved)} target="_blank" className="rounded-lg border border-black/15 bg-white px-3.5 py-2 text-sm font-semibold text-[#12271D] hover:border-[#12271D]">
+            <Link href={contentHref(saved)} target="_blank" className="rounded-lg border border-ka-line-strong bg-white px-3.5 py-2 text-sm font-semibold text-ka-ink hover:border-ka-green-700">
               Visa live
             </Link>
           )}
           <button
             type="submit"
             disabled={busy !== null}
-            className="rounded-lg border border-[#12271D] bg-white px-3.5 py-2 text-sm font-semibold text-[#12271D] hover:bg-[#12271D]/[0.05] disabled:opacity-60"
+            className="rounded-lg border border-ka-green-700 bg-white px-3.5 py-2 text-sm font-semibold text-ka-ink hover:bg-ka-ink/[0.05] disabled:opacity-60"
           >
             {busy === "save" ? "Sparar…" : published ? "Spara ändringar" : "Spara utkast"}
           </button>
@@ -241,7 +241,7 @@ export function ContentEditor({ item }: { item?: ContentItem }) {
               type="button"
               disabled={busy !== null || deleting}
               onClick={() => void removeDraft()}
-              className="rounded-lg px-3 py-2 text-sm font-semibold text-red-800 hover:bg-red-50 disabled:opacity-60"
+              className="rounded-lg px-3 py-2 text-sm font-semibold text-ka-coral-700 hover:bg-ka-coral-100 disabled:opacity-60"
             >
               {deleting ? "Tar bort…" : "Ta bort utkast"}
             </button>
@@ -251,7 +251,7 @@ export function ContentEditor({ item }: { item?: ContentItem }) {
               type="button"
               disabled={busy !== null}
               onClick={() => void submit("unpublish")}
-              className="rounded-lg border border-red-300 bg-white px-3.5 py-2 text-sm font-semibold text-red-800 hover:bg-red-50 disabled:opacity-60"
+              className="rounded-lg border border-ka-coral-300 bg-white px-3.5 py-2 text-sm font-semibold text-ka-coral-700 hover:bg-ka-coral-100 disabled:opacity-60"
             >
               {busy === "unpublish" ? "Avpublicerar…" : "Avpublicera"}
             </button>
@@ -260,7 +260,7 @@ export function ContentEditor({ item }: { item?: ContentItem }) {
               type="button"
               disabled={busy !== null}
               onClick={() => void submit("publish")}
-              className="rounded-lg bg-[#12271D] px-3.5 py-2 text-sm font-semibold text-white hover:bg-[#1f4d3a] disabled:opacity-60"
+              className="rounded-lg bg-ka-green-900 px-3.5 py-2 text-sm font-semibold text-white hover:bg-ka-green-800 disabled:opacity-60"
             >
               {busy === "publish" ? "Publicerar…" : "Publicera"}
             </button>
@@ -269,7 +269,7 @@ export function ContentEditor({ item }: { item?: ContentItem }) {
       </div>
 
       {errors.length > 0 && (
-        <div role="alert" className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-900">
+        <div role="alert" className="rounded-lg border border-ka-coral-300 bg-ka-coral-100 px-4 py-3 text-sm text-ka-coral-700">
           <ul className="list-disc pl-5">
             {errors.map((error) => (
               <li key={error}>{error}</li>
@@ -278,13 +278,13 @@ export function ContentEditor({ item }: { item?: ContentItem }) {
         </div>
       )}
       {notice && (
-        <p role="status" className="rounded-lg border border-green-200 bg-green-50 px-4 py-3 text-sm text-green-900">
+        <p role="status" className="rounded-lg border border-ka-sage bg-ka-sage/40 px-4 py-3 text-sm text-ka-green-800">
           {notice}
         </p>
       )}
 
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-[minmax(0,1fr)_360px]">
-        <div className="flex flex-col gap-5 rounded-lg border border-black/10 bg-white p-5">
+        <div className="flex flex-col gap-5 rounded-lg border border-ka-line-strong bg-white p-5">
           <div>
             <label htmlFor="ce-title" className={LABEL}>
               Titel
@@ -305,8 +305,8 @@ export function ContentEditor({ item }: { item?: ContentItem }) {
             <label htmlFor="ce-slug" className={LABEL}>
               Adress
             </label>
-            <div className="mt-1.5 flex items-center overflow-hidden rounded-lg border border-black/15 bg-neutral-50 focus-within:border-[#12271D]">
-              <span className="whitespace-nowrap pl-3 text-sm text-neutral-500">{basePath}/</span>
+            <div className="mt-1.5 flex items-center overflow-hidden rounded-lg border border-ka-line-strong bg-ka-paper focus-within:border-ka-green-700">
+              <span className="whitespace-nowrap pl-3 text-sm text-ka-muted">{basePath}/</span>
               <input
                 id="ce-slug"
                 className="min-w-0 flex-1 bg-white px-2 py-2 text-sm outline-none"
@@ -344,7 +344,7 @@ export function ContentEditor({ item }: { item?: ContentItem }) {
               value={input.body}
               onChange={(e) => set("body", e.target.value)}
             />
-            <details className="mt-2 text-xs text-neutral-600">
+            <details className="mt-2 text-xs text-ka-muted">
               <summary className="cursor-pointer font-semibold">Så formaterar du texten</summary>
               <ul className="mt-2 list-disc space-y-1 pl-5">
                 <li>
@@ -367,8 +367,8 @@ export function ContentEditor({ item }: { item?: ContentItem }) {
         </div>
 
         <div className="flex flex-col gap-5">
-          <fieldset className="flex min-w-0 flex-col gap-4 rounded-lg border border-black/10 bg-white p-5">
-            <legend className="px-1 text-sm font-semibold text-neutral-800">Publicering</legend>
+          <fieldset className="flex min-w-0 flex-col gap-4 rounded-lg border border-ka-line-strong bg-white p-5">
+            <legend className="px-1 text-sm font-semibold text-ka-ink">Publicering</legend>
             <div>
               <label htmlFor="ce-type" className={LABEL}>
                 Typ
@@ -420,22 +420,22 @@ export function ContentEditor({ item }: { item?: ContentItem }) {
                 onChange={(e) => set("readingMinutes", e.target.value ? Number(e.target.value) : null)}
               />
             </div>
-            <label className="flex items-start gap-2.5 text-sm text-neutral-800">
-              <input type="checkbox" className="mt-0.5 h-4 w-4 accent-[#12271D]" checked={input.featured} onChange={(e) => set("featured", e.target.checked)} />
+            <label className="flex items-start gap-2.5 text-sm text-ka-ink">
+              <input type="checkbox" className="mt-0.5 h-4 w-4 accent-ka-green-700" checked={input.featured} onChange={(e) => set("featured", e.target.checked)} />
               <span>
                 <span className="font-semibold">Utvald</span>
-                <span className="block text-xs text-neutral-500">Visas stort överst på sidan (den senast publicerade utvalda).</span>
+                <span className="block text-xs text-ka-muted">Visas stort överst på sidan (den senast publicerade utvalda).</span>
               </span>
             </label>
           </fieldset>
 
-          <fieldset className="flex min-w-0 flex-col gap-3 rounded-lg border border-black/10 bg-white p-5">
-            <legend className="px-1 text-sm font-semibold text-neutral-800">Bild</legend>
+          <fieldset className="flex min-w-0 flex-col gap-3 rounded-lg border border-ka-line-strong bg-white p-5">
+            <legend className="px-1 text-sm font-semibold text-ka-ink">Bild</legend>
             <div className="grid grid-cols-3 gap-2">
               <button
                 type="button"
                 onClick={() => set("coverImage", null)}
-                className={`flex aspect-[4/3] items-center justify-center rounded-md border text-xs text-neutral-500 ${!input.coverImage ? "border-[#12271D] ring-2 ring-[#12271D]/30" : "border-black/15"}`}
+                className={`flex aspect-[4/3] items-center justify-center rounded-md border text-xs text-ka-muted ${!input.coverImage ? "border-ka-green-700 ring-2 ring-ka-green-700/30" : "border-ka-line-strong"}`}
               >
                 Ingen bild
               </button>
@@ -454,14 +454,14 @@ export function ContentEditor({ item }: { item?: ContentItem }) {
                       coverImageAlt: !current.coverImageAlt || findContentImage(current.coverImage)?.alt === current.coverImageAlt ? image.alt : current.coverImageAlt,
                     }));
                   }}
-                  className={`relative aspect-[4/3] overflow-hidden rounded-md border ${input.coverImage === image.src ? "border-[#12271D] ring-2 ring-[#12271D]/40" : "border-black/15"}`}
+                  className={`relative aspect-[4/3] overflow-hidden rounded-md border ${input.coverImage === image.src ? "border-ka-green-700 ring-2 ring-ka-green-700/40" : "border-ka-line-strong"}`}
                 >
                   <Image src={image.src} alt="" fill sizes="120px" className="object-cover" />
                 </button>
               ))}
             </div>
             <label
-              className={`flex cursor-pointer items-center justify-center gap-2 rounded-md border border-dashed border-[#12271D]/40 px-3 py-2.5 text-sm font-semibold text-[#12271D] hover:bg-[#12271D]/[0.04] focus-within:ring-2 focus-within:ring-[#12271D]/30 ${
+              className={`flex cursor-pointer items-center justify-center gap-2 rounded-md border border-dashed border-ka-green-700/40 px-3 py-2.5 text-sm font-semibold text-ka-ink hover:bg-ka-ink/[0.04] focus-within:ring-2 focus-within:ring-ka-green-700/30 ${
                 uploading ? "pointer-events-none opacity-60" : ""
               }`}
             >
@@ -478,8 +478,8 @@ export function ContentEditor({ item }: { item?: ContentItem }) {
                 }}
               />
             </label>
-            <p className="text-xs text-neutral-500">JPEG, PNG, WebP eller AVIF, högst 12 MB. Bilden förminskas och platsdata (EXIF) tas bort.</p>
-            {coverImage && <p className="text-xs text-neutral-500">Vald: {coverImage.label}</p>}
+            <p className="text-xs text-ka-muted">JPEG, PNG, WebP eller AVIF, högst 12 MB. Bilden förminskas och platsdata (EXIF) tas bort.</p>
+            {coverImage && <p className="text-xs text-ka-muted">Vald: {coverImage.label}</p>}
             <div>
               <div className="flex items-baseline justify-between">
                 <label htmlFor="ce-alt" className={LABEL}>
@@ -492,8 +492,8 @@ export function ContentEditor({ item }: { item?: ContentItem }) {
             </div>
           </fieldset>
 
-          <fieldset className="flex min-w-0 flex-col gap-3 rounded-lg border border-black/10 bg-white p-5">
-            <legend className="px-1 text-sm font-semibold text-neutral-800">Sök och delning</legend>
+          <fieldset className="flex min-w-0 flex-col gap-3 rounded-lg border border-ka-line-strong bg-white p-5">
+            <legend className="px-1 text-sm font-semibold text-ka-ink">Sök och delning</legend>
             <div>
               <div className="flex items-baseline justify-between">
                 <label htmlFor="ce-seo-title" className={LABEL}>
@@ -551,11 +551,11 @@ export function ContentEditor({ item }: { item?: ContentItem }) {
                 ))}
               </select>
             </div>
-            <div className="rounded-md border border-black/10 bg-neutral-50 p-3">
-              <p className="text-[11px] font-semibold uppercase tracking-wide text-neutral-500">Så kan det se ut i Google</p>
+            <div className="rounded-md border border-ka-line-strong bg-ka-paper p-3">
+              <p className="text-[11px] font-semibold uppercase tracking-wide text-ka-muted">Så kan det se ut i Google</p>
               <p className="mt-1.5 truncate text-[15px] text-[#1a0dab]">{(input.seoTitle || input.title || "Titel") + " | Köpanalys"}</p>
               <p className="truncate text-xs text-[#006621]">kopanalys.se{basePath}/{input.slug || "adress"}</p>
-              <p className="mt-0.5 line-clamp-2 text-xs text-neutral-700">{input.seoDescription || input.excerpt || "Sammanfattningen visas här."}</p>
+              <p className="mt-0.5 line-clamp-2 text-xs text-ka-text">{input.seoDescription || input.excerpt || "Sammanfattningen visas här."}</p>
             </div>
           </fieldset>
         </div>
