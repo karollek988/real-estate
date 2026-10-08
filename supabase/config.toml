@@ -299,8 +299,16 @@ max_frequency = "5s"
 # email transport is replaced. For a hosted project, configure the matching
 # HTTP hook (same secret) under Authentication > Hooks in the Supabase
 # Dashboard; this [auth.hook.send_email] block only drives `supabase start`.
+#
+# Switched off here on purpose. Supabase validates this file for `supabase start` AND for every Preview branch, and an
+# enabled hook needs SEND_EMAIL_HOOK_SECRET ("v1,whsec_<base64>", 32+ characters) in the environment plus a URL the
+# branch can reach. A Preview has neither, so the whole configuration was refused ("Invalid hook config") and the
+# Preview check failed. Production is not touched by this: its hook is the one set in the Dashboard (the auth
+# settings of this file are not deployed to production).
+# To try the branded e-mails on your own machine, set enabled = true and export SEND_EMAIL_HOOK_SECRET in the shell
+# that runs `supabase start` - and do not commit that change.
 [auth.hook.send_email]
-enabled = true
+enabled = false
 uri = "http://host.docker.internal:3001/api/auth/send-email"
 secrets = "env(SEND_EMAIL_HOOK_SECRET)"
 

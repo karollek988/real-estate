@@ -1,0 +1,4 @@
+# SQL is always checked out with LF line endings, also on Windows (core.autocrlf=true would make it CRLF).
+# Why: SQL pasted from a working copy into the Supabase SQL Editor carries its line endings into function bodies,
+# and production's functions then differ from Git byte for byte (found in the 2026-10-08 inventory).
+*.sql text eol=lf
