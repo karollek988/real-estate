@@ -1,5 +1,7 @@
 # Plan: migrering från Hemnet-scraping till laglig datainhämtning
 
+> **STATUS: OPEN DRAFT.** Kept at this path because code comments link to it. **REASON:** Plan from 2026-08-13 to replace Hemnet scraping; not decided, and Hemnet fetching is still reachable (see `PROJECT_STATE.md`). Current documentation starts at `docs/README.md`.
+
 **Status:** Draft, 2026-08-13. Scraping förblir aktivt under tiden — enda
 användare är projektägaren, ingen betalande kund exponeras för
 scraping-baserad data. Målet är att ha en fullt laglig datapipeline innan
