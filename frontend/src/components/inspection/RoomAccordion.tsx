@@ -7,9 +7,9 @@ import { ROOMS, type ChecklistState, type CheckpointState, type Severity } from 
 
 /** How serious a remark is, and how its button looks. The labels: inspection.severities.<value> */
 const SEVERITIES: { value: Severity; className: string }[] = [
-  { value: "ok", className: "border-green-500/40 bg-green-500/10 text-green-400" },
-  { value: "minor", className: "border-amber-400/40 bg-amber-400/10 text-amber-300" },
-  { value: "major", className: "border-red-500/40 bg-red-500/10 text-red-300" },
+  { value: "ok", className: "border-ka-green-700/40 bg-ka-sage/40 text-ka-green-700" },
+  { value: "minor", className: "border-ka-amber-300 bg-ka-amber-100 text-ka-amber-700" },
+  { value: "major", className: "border-ka-coral-300 bg-ka-coral-100 text-ka-red-600" },
 ];
 
 const EMPTY_CHECKPOINT: CheckpointState = { checked: false, severity: null, notes: "", photoIds: [] };
@@ -41,7 +41,7 @@ export function RoomAccordion({
         const { done, total } = roomProgress(room, roomState);
         const open = openRoom === room.id;
         return (
-          <div key={room.id} className="rounded-xl border border-white/10 bg-black/20">
+          <div key={room.id} className="rounded-xl border border-ka-line-strong bg-ka-cream">
             <button
               type="button"
               onClick={() => setOpenRoom(open ? null : room.id)}
@@ -51,20 +51,20 @@ export function RoomAccordion({
                 <span
                   className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-xs font-semibold ${
                     done === total
-                      ? "bg-green-400/10 text-green-400"
+                      ? "bg-ka-sage/60 text-ka-green-700"
                       : done > 0
-                        ? "bg-amber-400/10 text-amber-300"
-                        : "bg-white/5 text-neutral-400"
+                        ? "bg-ka-amber-100 text-ka-amber-700"
+                        : "bg-ka-cream text-ka-muted"
                   }`}
                 >
                   {done}/{total}
                 </span>
-                <p className="text-sm font-medium text-white">{t(`rooms.${room.id}.label`)}</p>
+                <p className="text-sm font-medium text-ka-ink">{t(`rooms.${room.id}.label`)}</p>
               </div>
-              <ChevronDownIcon className={`h-4 w-4 text-neutral-500 transition-transform ${open ? "rotate-180" : ""}`} />
+              <ChevronDownIcon className={`h-4 w-4 text-ka-muted transition-transform ${open ? "rotate-180" : ""}`} />
             </button>
             {open && (
-              <div className="flex flex-col gap-3 border-t border-white/5 px-4 py-4">
+              <div className="flex flex-col gap-3 border-t border-ka-line px-4 py-4">
                 {room.checkpoints.map((checkpoint) => {
                   const state = roomState?.[checkpoint.id] ?? EMPTY_CHECKPOINT;
                   return (
@@ -105,18 +105,18 @@ function CheckpointRow({
   const [uploading, setUploading] = useState(false);
 
   return (
-    <div className="rounded-lg border border-white/5 bg-white/[0.02] p-3">
+    <div className="rounded-lg border border-ka-line bg-white p-3">
       <div className="flex items-center justify-between gap-3">
         <label className="flex flex-1 items-center gap-2.5">
           <input
             type="checkbox"
             checked={state.checked}
             onChange={(e) => onChange({ checked: e.target.checked, severity: e.target.checked ? state.severity ?? "ok" : null })}
-            className="h-4 w-4 shrink-0 rounded border-white/20 bg-black/40 text-green-500 focus:ring-green-500/40"
+            className="h-4 w-4 shrink-0 rounded border-ka-line-strong bg-white text-ka-green-700 focus:ring-ka-green-700/40"
           />
-          <span className="text-sm text-neutral-200">{label}</span>
+          <span className="text-sm text-ka-text">{label}</span>
         </label>
-        {state.severity === "major" && <WarningIcon className="h-4 w-4 shrink-0 text-red-400" />}
+        {state.severity === "major" && <WarningIcon className="h-4 w-4 shrink-0 text-ka-red-600" />}
       </div>
 
       {state.checked && (
@@ -128,7 +128,7 @@ function CheckpointRow({
                 type="button"
                 onClick={() => onChange({ severity: s.value })}
                 className={`rounded-full border px-2.5 py-1 text-[11px] font-medium transition ${
-                  state.severity === s.value ? s.className : "border-white/10 text-neutral-500 hover:border-white/20"
+                  state.severity === s.value ? s.className : "border-ka-line-strong text-ka-muted hover:border-ka-line-strong"
                 }`}
               >
                 {t(`severities.${s.value}`)}
@@ -141,7 +141,7 @@ function CheckpointRow({
             onChange={(e) => onChange({ notes: e.target.value })}
             placeholder={t("checkpoint.notes")}
             rows={2}
-            className="w-full resize-none rounded-lg border border-white/10 bg-black/30 px-3 py-2 text-xs text-white placeholder:text-neutral-500 outline-none transition focus:border-green-500/60"
+            className="w-full resize-none rounded-lg border border-ka-line-strong bg-white px-3 py-2 text-xs text-ka-ink placeholder:text-ka-muted outline-none transition focus:border-ka-green-700"
           />
 
           <div className="flex items-center gap-3">
@@ -149,13 +149,13 @@ function CheckpointRow({
               type="button"
               onClick={() => fileRef.current?.click()}
               disabled={uploading}
-              className="flex items-center gap-1.5 rounded-lg border border-white/10 px-2.5 py-1.5 text-xs font-medium text-neutral-300 transition hover:border-white/20 disabled:opacity-60"
+              className="flex items-center gap-1.5 rounded-lg border border-ka-line-strong px-2.5 py-1.5 text-xs font-medium text-ka-text transition hover:border-ka-green-700/40 disabled:opacity-60"
             >
               <UploadCloudIcon className="h-3.5 w-3.5" />
               {uploading ? t("checkpoint.uploading") : t("checkpoint.addPhoto")}
             </button>
-            {photoCount > 0 && <CheckIcon className="h-3.5 w-3.5 text-green-400" />}
-            {photoCount > 0 && <span className="text-xs text-neutral-500">{t("checkpoint.photos", { count: photoCount })}</span>}
+            {photoCount > 0 && <CheckIcon className="h-3.5 w-3.5 text-ka-green-700" />}
+            {photoCount > 0 && <span className="text-xs text-ka-muted">{t("checkpoint.photos", { count: photoCount })}</span>}
             <input
               ref={fileRef}
               type="file"

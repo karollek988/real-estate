@@ -1,5 +1,7 @@
 # 37 — Köpanalys Platform Architecture
 
+> **STATUS: HISTORICAL.** Kept at this path because code comments link to it. **REASON:** Architecture design from July 2026 (design only); current architecture in `docs/architecture/overview.md`. Current documentation starts at `docs/README.md`.
+
 **Date:** 2026-07-20 · **Status:** architecture design only — no code, no APIs, no plugins built.
 **Role:** Chief Platform Architect sprint. Successor to `docs/36_location_intelligence_engine.md` (research phase).
 

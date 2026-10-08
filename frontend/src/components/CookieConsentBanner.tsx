@@ -40,13 +40,13 @@ export function CookieConsentBanner() {
 
   return (
     <div className="fixed bottom-0 left-0 right-0 z-[90] p-4 sm:p-6">
-      <div className="mx-auto max-w-2xl rounded-2xl border border-white/10 bg-[#0A0F0D] p-5 shadow-[0_8px_30px_rgba(0,0,0,0.45)] backdrop-blur-xl sm:p-6 sm:shadow-[0_16px_48px_rgba(0,0,0,0.5)]">
-        <p className="text-sm leading-relaxed text-neutral-300">
+      <div className="mx-auto max-w-2xl rounded-2xl border border-ka-line-strong bg-ka-paper p-5 shadow-ka-card-hover backdrop-blur-xl sm:p-6 sm:shadow-ka-card-hover">
+        <p className="text-sm leading-relaxed text-ka-text">
           {t.rich("text", {
             link: (chunks) => (
               <Link
                 href="/privacy"
-                className="font-medium text-green-400 underline underline-offset-4 transition hover:text-green-300"
+                className="font-medium text-ka-green-700 underline underline-offset-4 transition hover:text-ka-green-800"
               >
                 {chunks}
               </Link>
@@ -57,21 +57,21 @@ export function CookieConsentBanner() {
           <button
             type="button"
             onClick={() => decide(false)}
-            className="cursor-pointer rounded-xl border border-white/10 bg-white/5 px-5 py-2.5 text-sm font-semibold text-neutral-200 transition hover:border-white/20 hover:bg-white/10"
+            className="cursor-pointer rounded-xl border border-ka-line-strong bg-ka-cream px-5 py-2.5 text-sm font-semibold text-ka-text transition hover:border-ka-green-700/40 hover:bg-ka-sand"
           >
             {t("necessaryOnly")}
           </button>
           <button
             type="button"
             onClick={() => setCustomizing(true)}
-            className="cursor-pointer rounded-xl border border-white/10 bg-white/5 px-5 py-2.5 text-sm font-semibold text-neutral-200 transition hover:border-white/20 hover:bg-white/10"
+            className="cursor-pointer rounded-xl border border-ka-line-strong bg-ka-cream px-5 py-2.5 text-sm font-semibold text-ka-text transition hover:border-ka-green-700/40 hover:bg-ka-sand"
           >
             {t("customize")}
           </button>
           <button
             type="button"
             onClick={() => decide(true)}
-            className="cursor-pointer rounded-xl bg-green-600 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-green-500"
+            className="cursor-pointer rounded-xl bg-ka-green-900 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-ka-green-800"
           >
             {t("acceptAll")}
           </button>

@@ -12,7 +12,7 @@ export function CookieSettingsLink() {
     <button
       type="button"
       onClick={reopenCookieConsent}
-      className="fixed bottom-3 left-3 z-[80] cursor-pointer rounded-lg bg-black/40 px-3 py-1.5 text-xs text-neutral-400 backdrop-blur-sm transition hover:text-neutral-200"
+      className="fixed bottom-3 left-3 z-[80] cursor-pointer rounded-lg border border-ka-line-strong bg-white/90 px-3 py-1.5 text-xs text-ka-muted backdrop-blur-sm transition hover:text-ka-ink"
     >
       {t("settings")}
     </button>

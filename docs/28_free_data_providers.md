@@ -1,5 +1,7 @@
 # Free Data Providers
 
+> **STATUS: REFERENCE.** Kept at this path because code comments link to it. **REASON:** Explains the provider conventions (honest absence, wave rules) that code comments cite; the current provider list is in `docs/architecture/overview.md`. Current documentation starts at `docs/README.md`.
+
 **Date:** 2026-07-16 · **Milestone:** real data pipeline, free sources only · **Status:** implemented, verified against live APIs
 
 ## What this milestone is (and isn't)

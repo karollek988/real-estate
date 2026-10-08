@@ -6,7 +6,7 @@ it. Every change, small or large, reaches `main` the same way:
 ```
 feature/markov-simulator
           ↓
-     Pull Request   ← CI must pass, 1 approval
+     Pull Request   ← CI must pass
           ↓
         main
 ```
@@ -42,8 +42,9 @@ git push -u origin feature/markov-simulator
    well on its own: it becomes the commit message on `main`.
 2. **Wait for CI.** The check **CI passed** has to be green (see below). A red check blocks the merge: open the failing job,
    fix it, push again; the checks run again by themselves.
-3. **Get one approval** from someone else on the team. Answer every comment and mark the conversation resolved. A new push
-   after the approval removes it, so the reviewer sees what they approved.
+3. **Answer every comment and mark the conversation resolved.** No approval is required, so you can merge your own pull
+   request once CI is green (GitHub does not let an author approve their own). A review is still welcome; a new push after an
+   approval removes it, so the reviewer sees what they approved.
 4. **Keep the branch up to date.** If `main` has moved on, press *Update branch* on the pull request (or merge `main` into
    your branch) and let CI run once more.
 5. **Squash and merge.** All commits on the branch become one commit on `main`, so a whole feature can be reverted in one
@@ -71,6 +72,10 @@ python -m pytest api/tests     # the Python engine's API (install api/requiremen
   `PASS`/`FAIL` lines and exits non-zero on a failure. A new one is picked up by `npm run verify` from its name alone.
   Run one with `npx tsx src/lib/translate/translate.verify.mjs`, or the ones whose path contains a word with
   `npm run verify -- translate`.
+- **Colours** come from the master variables in `frontend/src/styles/_variables.scss`: write `bg-ka-cream`, `text-ka-green-700`,
+  `border-ka-line-strong` (the `ka-*` colours), or a `$variable` in a stylesheet - never `bg-green-600`, `text-neutral-500`,
+  `bg-[#12271D]` or a hex value in a style. A new brand colour goes into that file first. `npm run colours` lists every
+  place that breaks this (it is not part of CI yet; see `PROJECT_STATE.md`).
 - **Visible text** is written once per language, never inside a component: add it to `frontend/src/i18n/messages/sv/` **and**
   `…/en/`. `npm run i18n:check` fails if the two differ. See `frontend/src/i18n/README.md`.
 - **Not covered yet:** ESLint (it still reports errors from before CI existed), the root `tests/` folder and
@@ -91,7 +96,7 @@ are switched on to catch the common cases, not all of them.
 
 ## The rules behind this
 
-`main` is protected by a GitHub ruleset: no direct pushes, no force pushes, a pull request with 1 approval and every
-conversation resolved, the check **CI passed**, the branch up to date, squash merges only. Repository admins can merge in an
-emergency without waiting for approval and CI, but still from the pull request, never by pushing, and should say why in
+`main` is protected by a GitHub ruleset: no direct pushes, no force pushes, a pull request (no approval required)
+with every conversation resolved, the check **CI passed**, the branch up to date, squash merges only. Repository admins can
+merge in an emergency without waiting for CI, but still from the pull request, never by pushing, and should say why in
 the pull request. The rules are kept as importable files in `.github/rulesets/` (see the README there).

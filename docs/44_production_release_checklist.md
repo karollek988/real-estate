@@ -1,5 +1,7 @@
 # 44. Production Release Checklist — Köpanalys
 
+> **STATUS: HISTORICAL.** Kept at this path because code comments link to it. **REASON:** Launch audit from 2026-07-20, partly updated later; open items that still matter are listed in `PROJECT_STATE.md`. Current documentation starts at `docs/README.md`.
+
 **Date:** 2026-07-20. **Scope:** launch-readiness audit only — no architecture
 changes. Every item below was verified against the current code (file/line
 citations), not against design docs or PROJECT_STATUS.md narrative, which in

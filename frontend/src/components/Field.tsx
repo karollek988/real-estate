@@ -1,5 +1,5 @@
 const inputClasses =
-  "rounded-xl border border-white/10 bg-black/40 px-4 py-3 text-sm text-white placeholder:text-neutral-500 outline-none transition focus:border-green-500/60 focus:ring-4 focus:ring-green-500/10";
+  "rounded-xl border border-white/10 bg-ka-ink/40 px-4 py-3 text-sm text-white placeholder:text-white/45 outline-none transition focus:border-ka-mint/60 focus:ring-4 focus:ring-ka-mint/10";
 
 interface FieldProps extends React.InputHTMLAttributes<HTMLInputElement> {
   label: string;
@@ -10,12 +10,12 @@ interface FieldProps extends React.InputHTMLAttributes<HTMLInputElement> {
 export function Field({ label, id, required, hint, ...inputProps }: FieldProps) {
   return (
     <div className="flex flex-col gap-2">
-      <label htmlFor={id} className="text-sm font-medium text-neutral-200">
+      <label htmlFor={id} className="text-sm font-medium text-white/80">
         {label}
-        {required && <span className="ml-0.5 text-red-400">*</span>}
+        {required && <span className="ml-0.5 text-ka-coral-300">*</span>}
       </label>
       <input id={id} required={required} {...inputProps} className={inputClasses} />
-      {hint && <p className="text-xs text-neutral-500">{hint}</p>}
+      {hint && <p className="text-xs text-white/45">{hint}</p>}
     </div>
   );
 }
@@ -49,15 +49,15 @@ export function SelectField({
   const controlled = onChange !== undefined;
   return (
     <div className="flex flex-col gap-2">
-      <label htmlFor={id} className="text-sm font-medium text-neutral-200">
+      <label htmlFor={id} className="text-sm font-medium text-white/80">
         {label}
-        {required && <span className="ml-0.5 text-red-400">*</span>}
+        {required && <span className="ml-0.5 text-ka-coral-300">*</span>}
       </label>
       <select
         id={id}
         name={name}
         required={required}
-        className={`${inputClasses} bg-[#0d1114]`}
+        className={`${inputClasses} bg-ka-green-950`}
         {...(controlled
           ? { value: value ?? "", onChange: (e: React.ChangeEvent<HTMLSelectElement>) => onChange(e.target.value) }
           : { defaultValue: defaultValue ?? "" })}

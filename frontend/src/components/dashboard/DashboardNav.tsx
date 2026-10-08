@@ -42,7 +42,7 @@ export function DashboardNav() {
   }, [pathname]);
 
   return (
-    <nav className="border-b border-white/10 bg-[#0A0F0D]">
+    <nav className="border-b border-ka-line bg-ka-paper">
       <div
         ref={listRef}
         className="relative mx-auto flex max-w-[1400px] items-center gap-1 overflow-x-auto px-5 lg:gap-2 lg:px-6"
@@ -56,17 +56,17 @@ export function DashboardNav() {
               href={href}
               data-active={isActive ? "true" : undefined}
               className={`dash-tab relative flex shrink-0 items-center gap-2 px-3.5 py-3.5 text-sm font-medium ${
-                isActive ? "text-white" : "text-neutral-400 hover:text-neutral-200"
+                isActive ? "text-ka-ink" : "text-ka-muted hover:text-ka-ink"
               }`}
             >
-              <Icon className={`dash-tab-icon h-[17px] w-[17px] ${isActive ? "text-green-400" : ""}`} />
+              <Icon className={`dash-tab-icon h-[17px] w-[17px] ${isActive ? "text-ka-green-700" : ""}`} />
               {t(id)}
             </Link>
           );
         })}
         <span
           aria-hidden
-          className={`dash-nav-indicator absolute bottom-0 left-0 h-[2px] rounded-full bg-green-500 shadow-[0_0_8px_rgba(74,222,128,0.4)] ${
+          className={`dash-nav-indicator absolute bottom-0 left-0 h-[2px] rounded-full bg-ka-green-700 ${
             indicator ? "opacity-100" : "opacity-0"
           }`}
           style={indicator ? { width: indicator.width, transform: `translateX(${indicator.left}px)` } : undefined}

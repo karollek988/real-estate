@@ -1,5 +1,7 @@
 # User Input Flow
 
+> **STATUS: HISTORICAL.** Kept at this path because code comments link to it. **REASON:** UX design from July 2026; input is now manual entry and screenshots (`docs/architecture/overview.md`). Current documentation starts at `docs/README.md`.
+
 **Date:** 2026-07-15 · **Milestone:** 1 (Build Phase) · **Status:** UX/flow design only — no business logic, no analysis engine, no APIs
 
 ## Purpose

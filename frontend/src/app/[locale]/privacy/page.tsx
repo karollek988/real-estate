@@ -14,13 +14,13 @@ export async function generateMetadata({ params }: LocaleParams): Promise<Metada
 
 type RichTranslator = { rich(key: string, tags: typeof legalRich): React.ReactNode };
 
-const H3 = "mb-2 text-[15px] font-semibold text-white";
-const LIST = "list-disc space-y-1 pl-5 text-neutral-300";
+const H3 = "mb-2 text-[15px] font-semibold text-ka-ink";
+const LIST = "list-disc space-y-1 pl-5 text-ka-text";
 
 function Section({ n, title, children }: { n: number; title: string; children: React.ReactNode }) {
   return (
     <section>
-      <h2 className="mb-3 text-[17px] font-semibold tracking-tight text-white">{`${n}. ${title}`}</h2>
+      <h2 className="mb-3 text-[17px] font-semibold tracking-tight text-ka-ink">{`${n}. ${title}`}</h2>
       {children}
     </section>
   );
@@ -35,19 +35,19 @@ export default async function PrivacyPage({ params }: LocaleParams) {
 
   return (
     <>
-      <SiteHeader />
-      <main id="main" className="min-h-screen bg-[#111927]">
+      <SiteHeader variant="light" />
+      <main id="main" className="min-h-screen bg-ka-cream">
         <div className="mx-auto max-w-3xl px-6 py-16 sm:py-24">
-          <h1 className="text-[32px] font-bold leading-tight tracking-tight text-white sm:text-[36px]">{t("privacy.title")}</h1>
+          <h1 className="text-[32px] font-bold leading-tight tracking-tight text-ka-ink sm:text-[36px]">{t("privacy.title")}</h1>
 
-          <p className="mt-6 text-[15px] leading-relaxed text-neutral-400">{t("privacy.updated")}</p>
+          <p className="mt-6 text-[15px] leading-relaxed text-ka-muted">{t("privacy.updated")}</p>
           {locale !== "sv" && (
-            <p className="mt-4 rounded-md border border-white/10 bg-white/[0.04] px-4 py-3 text-[14px] leading-relaxed text-neutral-300">
+            <p className="mt-4 rounded-md border border-ka-line-strong bg-ka-cream px-4 py-3 text-[14px] leading-relaxed text-ka-text">
               {t("translationNotice")}
             </p>
           )}
 
-          <div className="mt-10 flex flex-col gap-8 text-[15px] leading-relaxed text-neutral-200">
+          <div className="mt-10 flex flex-col gap-8 text-[15px] leading-relaxed text-ka-text">
             <Section n={1} title={t("privacy.controller.title")}>
               <p>{p("controller.text")}</p>
             </Section>
@@ -91,7 +91,7 @@ export default async function PrivacyPage({ params }: LocaleParams) {
                 <li>{p("recipients.openai")}</li>
                 <li>{p("recipients.resend")}</li>
               </ul>
-              <p className="mt-3 text-neutral-400">{t("privacy.recipients.safeguards")}</p>
+              <p className="mt-3 text-ka-muted">{t("privacy.recipients.safeguards")}</p>
             </Section>
 
             <Section n={5} title={t("privacy.retention.title")}>

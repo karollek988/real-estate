@@ -19,9 +19,9 @@ interface CouponsResponse {
 }
 
 const STATUS_STYLE: Record<DiscountCode["status"], string> = {
-  active: "bg-green-400/10 text-green-400 border-green-400/20",
-  reserved: "bg-amber-400/10 text-amber-400 border-amber-400/20",
-  redeemed: "bg-white/5 text-neutral-400 border-white/10",
+  active: "bg-ka-sage/60 text-ka-green-700 border-ka-green-700/25",
+  reserved: "bg-ka-amber-100 text-ka-amber-700 border-ka-amber-300",
+  redeemed: "bg-ka-cream text-ka-muted border-ka-line-strong",
 };
 
 function CouponCard({ code, index }: { code: DiscountCode; index: number }) {
@@ -36,37 +36,37 @@ function CouponCard({ code, index }: { code: DiscountCode; index: number }) {
 
   return (
     <div
-      className="dash-enter rounded-2xl border border-white/10 bg-[#0F1417]/85 p-5 backdrop-blur-xl"
+      className="dash-enter rounded-2xl border border-ka-line-strong bg-white p-5 backdrop-blur-xl"
       style={stagger(index + 1)}
     >
       <div className="flex items-start justify-between gap-3">
         <div>
-          <p className="text-sm font-semibold text-white">{t(`kind.${code.kind}`)}</p>
+          <p className="text-sm font-semibold text-ka-ink">{t(`kind.${code.kind}`)}</p>
           <span
             className={`mt-2 inline-flex items-center rounded-full border px-2.5 py-1 text-xs font-medium tracking-tight ${STATUS_STYLE[code.status]}`}
           >
             {t(`status.${code.status}`)}
           </span>
         </div>
-        <TicketIcon className="h-5 w-5 shrink-0 text-green-400" />
+        <TicketIcon className="h-5 w-5 shrink-0 text-ka-green-700" />
       </div>
 
       <div className="mt-4 flex items-center gap-2">
-        <code className="flex-1 rounded-xl border border-white/10 bg-black/40 px-4 py-2.5 text-sm font-semibold tracking-wide text-white">
+        <code className="flex-1 rounded-xl border border-ka-line-strong bg-white px-4 py-2.5 text-sm font-semibold tracking-wide text-ka-ink">
           {code.code}
         </code>
         <button
           type="button"
           onClick={handleCopy}
           disabled={code.status !== "active"}
-          className="flex h-[42px] w-[42px] shrink-0 items-center justify-center rounded-xl border border-white/10 bg-black/40 text-neutral-300 transition hover:border-green-500/60 hover:text-green-400 disabled:cursor-not-allowed disabled:opacity-40"
+          className="flex h-[42px] w-[42px] shrink-0 items-center justify-center rounded-xl border border-ka-line-strong bg-white text-ka-text transition hover:border-ka-green-700 hover:text-ka-green-700 disabled:cursor-not-allowed disabled:opacity-40"
           aria-label={t("copy")}
         >
-          {copied ? <CheckIcon className="h-4 w-4 text-green-400" /> : <ClipboardIcon className="h-4 w-4" />}
+          {copied ? <CheckIcon className="h-4 w-4 text-ka-green-700" /> : <ClipboardIcon className="h-4 w-4" />}
         </button>
       </div>
-      {code.status === "reserved" && <p className="mt-2 text-xs text-neutral-500">{t("reservedNote")}</p>}
-      {code.status === "redeemed" && <p className="mt-2 text-xs text-neutral-500">{t("redeemedNote")}</p>}
+      {code.status === "reserved" && <p className="mt-2 text-xs text-ka-muted">{t("reservedNote")}</p>}
+      {code.status === "redeemed" && <p className="mt-2 text-xs text-ka-muted">{t("redeemedNote")}</p>}
     </div>
   );
 }
@@ -87,11 +87,11 @@ export default function CouponsPage() {
   return (
     <div className="mx-auto flex max-w-3xl flex-col gap-6">
       <div className="dash-enter" style={stagger(0)}>
-        <h1 className="flex items-center gap-2.5 text-2xl font-semibold tracking-tight text-white">
-          <TicketIcon className="h-6 w-6 text-neutral-300" />
+        <h1 className="flex items-center gap-2.5 text-2xl font-semibold tracking-tight text-ka-ink">
+          <TicketIcon className="h-6 w-6 text-ka-text" />
           {t("title")}
         </h1>
-        <p className="mt-1 text-sm text-neutral-400">{t("lead")}</p>
+        <p className="mt-1 text-sm text-ka-muted">{t("lead")}</p>
       </div>
 
       {loading ? null : (data?.codes?.length ?? 0) > 0 ? (

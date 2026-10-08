@@ -6,7 +6,7 @@ export const dynamic = "force-dynamic";
 
 function StatusChip({ item, now }: { item: BrfReviewListItem; now: number }) {
   if (item.status === "pending" && item.customerCount === 0) {
-    return <span className="inline-flex rounded-full bg-neutral-100 px-2.5 py-0.5 text-xs font-semibold text-neutral-600">Ingen aktiv kund</span>;
+    return <span className="inline-flex rounded-full bg-ka-sand px-2.5 py-0.5 text-xs font-semibold text-ka-muted">Ingen aktiv kund</span>;
   }
   if (item.status === "pending") {
     const overdue = new Date(item.dueAt).getTime() < now;
@@ -14,7 +14,7 @@ function StatusChip({ item, now }: { item: BrfReviewListItem; now: number }) {
     return (
       <span
         className={`inline-flex rounded-full px-2.5 py-0.5 text-xs font-semibold ${
-          overdue ? "bg-red-100 text-red-800" : hoursLeft <= 6 ? "bg-amber-100 text-amber-800" : "bg-sky-100 text-sky-800"
+          overdue ? "bg-ka-coral-100 text-ka-coral-700" : hoursLeft <= 6 ? "bg-ka-amber-100 text-ka-amber-700" : "bg-ka-sky-100 text-ka-sky-700"
         }`}
       >
         {overdue ? "Försenad" : `${hoursLeft} h kvar`}
@@ -23,9 +23,9 @@ function StatusChip({ item, now }: { item: BrfReviewListItem; now: number }) {
     );
   }
   if (item.status === "not_applicable") {
-    return <span className="inline-flex rounded-full bg-neutral-100 px-2.5 py-0.5 text-xs font-semibold text-neutral-600">Ej aktuell</span>;
+    return <span className="inline-flex rounded-full bg-ka-sand px-2.5 py-0.5 text-xs font-semibold text-ka-muted">Ej aktuell</span>;
   }
-  return <span className="inline-flex rounded-full bg-green-100 px-2.5 py-0.5 text-xs font-semibold text-green-800">Publicerad</span>;
+  return <span className="inline-flex rounded-full bg-ka-sage px-2.5 py-0.5 text-xs font-semibold text-ka-green-800">Publicerad</span>;
 }
 
 export default async function BrfReviewQueuePage() {
@@ -36,32 +36,32 @@ export default async function BrfReviewQueuePage() {
   const done = items.filter((i) => i.status !== "pending" || i.customerCount === 0);
 
   const Row = ({ item }: { item: BrfReviewListItem }) => (
-    <tr className="border-t border-black/[0.06] align-top">
+    <tr className="border-t border-ka-line align-top">
       <td className="py-3 pr-4">
-        <Link href={`/admin/brf/${item.propertyId}`} className="font-medium text-[#12271D] hover:underline">
+        <Link href={`/admin/brf/${item.propertyId}`} className="font-medium text-ka-ink hover:underline">
           {item.address}
         </Link>
-        <p className="text-xs text-neutral-500">{item.housingAssociation ?? "Förening okänd"}</p>
+        <p className="text-xs text-ka-muted">{item.housingAssociation ?? "Förening okänd"}</p>
       </td>
       <td className="py-3 pr-4">
         <StatusChip item={item} now={now} />
       </td>
-      <td className="py-3 pr-4 text-sm text-neutral-700">
+      <td className="py-3 pr-4 text-sm text-ka-text">
         {item.status === "pending" ? dueSv(item.dueAt) : daySv(item.publishedAt) ?? "—"}
       </td>
-      <td className="py-3 pr-4 text-sm text-neutral-700">{item.brfReportId ? "Uppladdad" : <span className="text-amber-700">Saknas</span>}</td>
-      <td className="py-3 text-sm text-neutral-700">{item.customerCount}</td>
+      <td className="py-3 pr-4 text-sm text-ka-text">{item.brfReportId ? "Uppladdad" : <span className="text-ka-amber-700">Saknas</span>}</td>
+      <td className="py-3 text-sm text-ka-text">{item.customerCount}</td>
     </tr>
   );
 
   const Table = ({ rows, empty, dateLabel }: { rows: BrfReviewListItem[]; empty: string; dateLabel: string }) =>
     rows.length === 0 ? (
-      <p className="rounded-lg border border-black/10 bg-white px-4 py-6 text-sm text-neutral-500">{empty}</p>
+      <p className="rounded-lg border border-ka-line-strong bg-white px-4 py-6 text-sm text-ka-muted">{empty}</p>
     ) : (
-      <div className="overflow-x-auto rounded-lg border border-black/10 bg-white px-4">
+      <div className="overflow-x-auto rounded-lg border border-ka-line-strong bg-white px-4">
         <table className="w-full min-w-[640px] text-left">
           <thead>
-            <tr className="text-xs uppercase tracking-wide text-neutral-500">
+            <tr className="text-xs uppercase tracking-wide text-ka-muted">
               <th className="py-2.5 pr-4 font-medium">Bostad</th>
               <th className="py-2.5 pr-4 font-medium">Status</th>
               <th className="py-2.5 pr-4 font-medium">{dateLabel}</th>
@@ -81,8 +81,8 @@ export default async function BrfReviewQueuePage() {
   return (
     <div className="flex flex-col gap-8">
       <div>
-        <h1 className="text-2xl font-semibold tracking-tight text-[#12271D]">BRF-granskningar</h1>
-        <p className="mt-1 max-w-2xl text-sm text-neutral-600">
+        <h1 className="text-2xl font-semibold tracking-tight text-ka-ink">BRF-granskningar</h1>
+        <p className="mt-1 max-w-2xl text-sm text-ka-muted">
           Varje Trygghetspaket för en bostadsrätt får en BRF-analys som en person granskar innan kunden ser den. Kunden har
           utlovats analysen inom 24 timmar. Ta fram årsredovisningen (från mäklaren, föreningen eller annonsen) om kunden inte
           har laddat upp den, kontrollera nyckeltalen och publicera.
@@ -90,12 +90,12 @@ export default async function BrfReviewQueuePage() {
       </div>
 
       <section className="flex flex-col gap-3">
-        <h2 className="text-sm font-semibold uppercase tracking-wide text-neutral-600">Att granska ({open.length})</h2>
+        <h2 className="text-sm font-semibold uppercase tracking-wide text-ka-muted">Att granska ({open.length})</h2>
         <Table rows={open} empty="Inga granskningar väntar just nu." dateLabel="Klar senast" />
       </section>
 
       <section className="flex flex-col gap-3">
-        <h2 className="text-sm font-semibold uppercase tracking-wide text-neutral-600">Klara ({done.length})</h2>
+        <h2 className="text-sm font-semibold uppercase tracking-wide text-ka-muted">Klara ({done.length})</h2>
         <Table rows={done} empty="Inget publicerat än." dateLabel="Publicerad" />
       </section>
     </div>

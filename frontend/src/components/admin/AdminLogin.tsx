@@ -68,8 +68,11 @@ export function AdminLogin() {
           credentials could never end up in the URL. */}
       <form className="admin-login-card" method="post" action="/api/admin-portal/login" onSubmit={onSubmit} aria-describedby={error ? errorId : undefined}>
         <div className="admin-login-brand">
-          <Image src="/kopanalys-bostad-logo.png" alt="" width={32} height={32} priority />
-          <span>Köpanalys Admin</span>
+          <Image src="/images/kopanalys-logo-mark.png" alt="" width={32} height={32} priority />
+          <span className="admin-login-wordmark">
+            Köpanalys<span>.se</span>
+          </span>
+          <span className="admin-login-badge">Admin</span>
         </div>
         <h1>Logga in</h1>
         <p className="admin-login-lead">Endast för behöriga användare.</p>

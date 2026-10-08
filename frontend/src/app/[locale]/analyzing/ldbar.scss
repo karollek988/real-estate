@@ -4,6 +4,11 @@
 .ldBar {
   position: relative;
 
+  // The ring's gradient. The page reads these two when it creates the ring (the library takes colours as
+  // text), so the colours stay with the master variables.
+  --ring-from: #{$ka-green-400};
+  --ring-to: #{$ka-green-800};
+
   > .ldBar-label {
     display: none;
   }

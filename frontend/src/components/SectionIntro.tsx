@@ -47,7 +47,7 @@ export function SectionIntro({
 
       <Reveal variant="right" className="hidden lg:block">
         <div aria-hidden className="relative flex h-28 w-28 items-center justify-center rounded-[28px] border border-ka-line bg-white shadow-[0_24px_48px_-32px_rgba(15,31,24,0.5)]">
-          <div className="absolute inset-0 rounded-[28px] bg-[radial-gradient(circle_at_center,rgba(42,120,84,0.13),transparent_72%)]" />
+          <div className="absolute inset-0 rounded-[28px] bg-radial from-ka-green-600/15 to-transparent to-70%" />
           <Icon className="relative h-10 w-10 text-ka-green-700" />
         </div>
       </Reveal>

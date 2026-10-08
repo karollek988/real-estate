@@ -8,7 +8,7 @@ export function DashboardSection({ title, action, children }: DashboardSectionPr
   return (
     <section>
       <div className="mb-4 flex items-center justify-between">
-        <h2 className="text-lg font-semibold tracking-tight text-white">{title}</h2>
+        <h2 className="text-lg font-semibold tracking-tight text-ka-ink">{title}</h2>
         {action}
       </div>
       {children}

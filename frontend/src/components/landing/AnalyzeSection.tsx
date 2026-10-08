@@ -17,7 +17,6 @@ import {
   MapPinIcon,
   PencilIcon,
   ShieldIcon,
-  StarFilledIcon,
   UploadCloudIcon,
   WalletIcon,
 } from "@/components/icons";
@@ -36,10 +35,10 @@ function ManualEntryNotice() {
   const t = useTranslations("landing.analyze.card");
   return (
     <div className="flex flex-col items-center gap-3 rounded-2xl border border-white/10 bg-white/[0.03] px-6 py-10 text-center">
-      <span className="flex h-11 w-11 items-center justify-center rounded-full bg-white/5 text-neutral-400">
+      <span className="flex h-11 w-11 items-center justify-center rounded-full bg-white/5 text-white/60">
         <InfoIcon className="h-5 w-5" />
       </span>
-      <p className="max-w-sm text-[15px] leading-relaxed text-neutral-300">
+      <p className="max-w-sm text-[15px] leading-relaxed text-white/80">
         {t("manualNotice")}
       </p>
     </div>
@@ -107,7 +106,7 @@ export function AnalyzeCard({ initialMethod = "screenshot" }: { initialMethod?: 
   return (
     <div
       id="analyze"
-      className="scroll-mt-28 rounded-[24px] bg-ka-green-950 p-5 text-white shadow-[0_40px_80px_-40px_rgba(12,42,31,0.85)] ring-1 ring-black/5 sm:p-7 lg:p-8"
+      className="scroll-mt-28 rounded-[24px] bg-ka-green-950 p-5 text-white shadow-ka-panel ring-1 ring-ka-ink/5 sm:p-7 lg:p-8"
     >
       <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
         <h3 className="text-[20px] font-semibold tracking-tight">{t("title")}</h3>
@@ -140,19 +139,19 @@ export function AnalyzeCard({ initialMethod = "screenshot" }: { initialMethod?: 
               onClick={() => setMethod(key)}
               onKeyDown={(e) => onTabKeyDown(e, i)}
               className={`relative flex flex-1 cursor-pointer items-center justify-center gap-2 rounded-t-md pb-3.5 pt-1 text-[14px] font-semibold transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ka-mint sm:text-[15px] ${
-                disabled ? "text-neutral-600" : active ? "text-white" : "text-neutral-400 hover:text-neutral-200"
+                disabled ? "text-white/30" : active ? "text-white" : "text-white/60 hover:text-white"
               }`}
             >
-              <Icon className={`h-[18px] w-[18px] ${active && !disabled ? "text-green-400" : ""}`} />
+              <Icon className={`h-[18px] w-[18px] ${active && !disabled ? "text-ka-mint" : ""}`} />
               <span className="sm:hidden">{t(`methods.${key}.short`)}</span>
               <span className="hidden sm:inline">{t(`methods.${key}.label`)}</span>
               {disabled && (
-                <span className="flex items-center gap-1 rounded-full bg-white/5 px-2 py-0.5 text-[11px] font-medium text-neutral-500">
+                <span className="flex items-center gap-1 rounded-full bg-white/5 px-2 py-0.5 text-[11px] font-medium text-white/45">
                   <LockIcon className="h-3 w-3" />
                   {t("soonBadge")}
                 </span>
               )}
-              {active && !disabled && <span className="absolute inset-x-0 -bottom-px h-[2px] rounded-full bg-green-500" />}
+              {active && !disabled && <span className="absolute inset-x-0 -bottom-px h-[2px] rounded-full bg-ka-mint-bright" />}
             </button>
           );
         })}
@@ -240,14 +239,6 @@ export function AnalyzeSection({
               <h3 className="text-[16px] font-bold leading-snug text-ka-ink">
                 {t("trust.title")}
               </h3>
-              <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1">
-                <div className="flex items-center gap-1">
-                  {Array.from({ length: 5 }).map((_, i) => (
-                    <StarFilledIcon key={i} className="h-[18px] w-[18px] text-ka-green-600" />
-                  ))}
-                </div>
-                <p className="text-[13.5px] text-ka-muted">{t("trust.rating")}</p>
-              </div>
             </div>
           </aside>
         </div>

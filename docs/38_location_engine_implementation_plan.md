@@ -1,5 +1,7 @@
 # 38 — Location Intelligence Engine: Implementation Plan
 
+> **STATUS: REFERENCE.** Kept at this path because code comments link to it. **REASON:** Implementation plan for `src/location_intelligence/`; current state in its README. Current documentation starts at `docs/README.md`.
+
 **Date:** 2026-07-20 · **Status:** implementation plan — design only, no code in this doc.
 **Predecessors:** `docs/36` (source research), `docs/37` (platform architecture), `docs/28` (proven `DataProvider` pattern + live-verified sources).
 

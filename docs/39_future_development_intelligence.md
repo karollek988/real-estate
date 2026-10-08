@@ -1,5 +1,7 @@
 # 39 — Future Area Development Intelligence
 
+> **STATUS: REFERENCE.** Kept at this path because code comments link to it. **REASON:** Source survey for future-development data; one provider implemented. Current documentation starts at `docs/README.md`.
+
 **Date:** 2026-07-20 · **Status:** implemented (one provider) + source survey for the rest.
 **Predecessors:** `docs/36` (original source catalog, §2.1/§2.10), `docs/38`
 (provider catalog P7/P8/P13/P14), and the shared proximity framework in

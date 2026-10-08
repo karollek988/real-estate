@@ -16,21 +16,21 @@ export function PackageContents() {
   const t = useTranslations("buy.contents");
   return (
     <section>
-      <h2 className="text-2xl font-bold tracking-tight text-white">{t("title")}</h2>
-      <p className="mt-1 text-sm text-neutral-400">{t("text")}</p>
+      <h2 className="text-2xl font-bold tracking-tight text-ka-ink">{t("title")}</h2>
+      <p className="mt-1 text-sm text-ka-muted">{t("text")}</p>
 
       <div className="mt-6 grid grid-cols-1 gap-5 md:grid-cols-3">
         {ANALYSES.map(({ icon: Icon, id, points }) => (
-          <div key={id} className="rounded-2xl border border-white/10 bg-[#0F1417]/85 p-5 backdrop-blur-xl">
-            <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-green-400/10 text-green-400">
+          <div key={id} className="rounded-2xl border border-ka-line-strong bg-white p-5 backdrop-blur-xl">
+            <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-ka-sage/60 text-ka-green-700">
               <Icon className="h-5 w-5" />
             </span>
-            <h3 className="mt-4 text-base font-semibold text-white">{t(`${id}.name`)}</h3>
-            <p className="mt-1 text-sm font-medium text-green-300">{t(`${id}.question`)}</p>
+            <h3 className="mt-4 text-base font-semibold text-ka-ink">{t(`${id}.name`)}</h3>
+            <p className="mt-1 text-sm font-medium text-ka-green-700">{t(`${id}.question`)}</p>
             <ul className="mt-4 flex flex-col gap-2">
               {points.map((point) => (
-                <li key={point} className="flex items-start gap-2 text-sm text-neutral-300">
-                  <CheckIcon className="mt-0.5 h-3.5 w-3.5 shrink-0 text-green-400" />
+                <li key={point} className="flex items-start gap-2 text-sm text-ka-text">
+                  <CheckIcon className="mt-0.5 h-3.5 w-3.5 shrink-0 text-ka-green-700" />
                   {t(point)}
                 </li>
               ))}
@@ -39,13 +39,13 @@ export function PackageContents() {
         ))}
       </div>
 
-      <div className="mt-5 rounded-2xl border border-white/10 bg-white/[0.03] p-5">
-        <p className="text-xs font-semibold uppercase tracking-wide text-neutral-500">{t("compare.label")}</p>
-        <p className="mt-2 text-lg font-semibold text-white">{t("compare.price", { price: HUSBESIKTNING_REFERENCE_PRICE_SEK })}</p>
-        <p className="mt-2 max-w-2xl text-sm leading-relaxed text-neutral-400">
+      <div className="mt-5 rounded-2xl border border-ka-line-strong bg-ka-cream p-5">
+        <p className="text-xs font-semibold uppercase tracking-wide text-ka-muted">{t("compare.label")}</p>
+        <p className="mt-2 text-lg font-semibold text-ka-ink">{t("compare.price", { price: HUSBESIKTNING_REFERENCE_PRICE_SEK })}</p>
+        <p className="mt-2 max-w-2xl text-sm leading-relaxed text-ka-muted">
           {t("compare.text", { packagePrice: TRYGGHETSPAKET_PRICE_SEK })}
         </p>
-        <p className="mt-2 text-xs text-neutral-500">{t("compare.source")}</p>
+        <p className="mt-2 text-xs text-ka-muted">{t("compare.source")}</p>
       </div>
     </section>
   );

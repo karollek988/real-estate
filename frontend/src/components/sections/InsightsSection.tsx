@@ -17,9 +17,9 @@ import type { MarketStats } from "@/lib/marketStats";
 const PLOT = { left: 40, right: 428, top: 14, bottom: 112 };
 
 /* Chart colours on the light cards. */
-const LINE = "#2a7854";
-const LABEL = "#6b726d";
-const VALUE = "#1f2622";
+const LINE = "var(--color-ka-green-600)";
+const LABEL = "var(--color-ka-muted)";
+const VALUE = "var(--color-ka-text)";
 const LABEL_Y = 138;
 
 function xAt(i: number, n: number) {
@@ -74,7 +74,7 @@ function GridLine({ y, label }: { y: number; label: string }) {
         x2={PLOT.right}
         y1={y}
         y2={y}
-        stroke="rgba(15,31,24,0.09)"
+        stroke="var(--color-ka-line)"
         strokeDasharray="3 4"
       />
       <text x={PLOT.left - 7} y={y + 3} textAnchor="end" fontSize="8.5" fill={LABEL}>
@@ -174,8 +174,8 @@ function HousePriceChart({ values, quarterLabels, words, label }: { values: numb
     >
       <defs>
         <linearGradient id="hox-area" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0%" stopColor="rgba(42,120,84,0.22)" />
-          <stop offset="100%" stopColor="rgba(42,120,84,0)" />
+          <stop offset="0%" stopColor={LINE} stopOpacity={0.22} />
+          <stop offset="100%" stopColor={LINE} stopOpacity={0} />
         </linearGradient>
       </defs>
       {gridSteps.map((v) => (
@@ -279,7 +279,8 @@ function InflationChart({ values, monthLabels, words, label, targetLabel }: { va
         x2={PLOT.right}
         y1={targetY}
         y2={targetY}
-        stroke="rgba(42,120,84,0.5)"
+        stroke={LINE}
+        strokeOpacity={0.5}
         strokeDasharray="5 4"
       />
       <text x={PLOT.left - 7} y={targetY + 3} textAnchor="end" fontSize="8.5" fill={LABEL}>

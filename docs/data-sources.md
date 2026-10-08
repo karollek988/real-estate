@@ -1,5 +1,7 @@
 # Data-Source Research: Swedish Real-Estate Valuation Platform
 
+> **STATUS: RESEARCH.** Kept at this path because code comments link to it. **REASON:** Data-source research from 2026-07-13; still cited by code comments. Current documentation starts at `docs/README.md`.
+
 **Date:** 2026-07-13 · **Status:** v1, pre-implementation research
 **Market assumption:** Sweden, Stockholm first (the BRF and subway-expansion
 requirements only exist in the Swedish market). Verified facts carry a

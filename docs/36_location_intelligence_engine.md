@@ -1,5 +1,7 @@
 # 36 — Location Intelligence Engine (Research & Architecture)
 
+> **STATUS: REFERENCE.** Kept at this path because code comments link to it. **REASON:** Research and design behind `src/location_intelligence/`; current state in `src/location_intelligence/README.md`. Current documentation starts at `docs/README.md`.
+
 Status: **Research and architecture design only — no code written, no implementation.**
 
 ## 1. Executive summary

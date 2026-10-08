@@ -10,7 +10,8 @@
     "admin:hash": "tsx scripts/hash-admin-password.ts",
     "i18n:check": "tsx scripts/i18n-check.ts",
     "typecheck": "tsc --noEmit",
-    "verify": "node scripts/run-verify.mjs"
+    "verify": "node scripts/run-verify.mjs",
+    "colours": "node scripts/check-colours.mjs"
   },
   "dependencies": {
     "@sparticuz/chromium": "^149.0.0",

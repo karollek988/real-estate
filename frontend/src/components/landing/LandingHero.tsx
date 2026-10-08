@@ -70,7 +70,7 @@ const STEP_CARD =
 const STEP_CARD_LIGHT =
   "group bg-ka-paper shadow-[0_22px_44px_-26px_rgba(15,31,24,0.6)] hover:shadow-[0_28px_52px_-26px_rgba(15,31,24,0.7)] focus-visible:scale-[1.06] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ka-green-700";
 const STEP_CARD_HIGHLIGHTED =
-  "bg-gradient-to-b from-ka-green-800 to-ka-green-900 shadow-[0_22px_44px_-24px_rgba(6,40,28,0.85),0_0_24px_-4px_rgba(76,232,166,0.35)]";
+  "bg-gradient-to-b from-ka-green-800 to-ka-green-900 shadow-[0_22px_44px_-24px_rgba(12,42,31,0.85),0_0_24px_-4px_rgba(76,232,166,0.35)]";
 
 const BUTTON_BASE =
   "group inline-flex h-14 items-center justify-center gap-3 rounded-[14px] px-8 text-[17px] font-semibold transition-all duration-200 hover:-translate-y-0.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ka-green-700 focus-visible:ring-offset-2 focus-visible:ring-offset-ka-cream active:translate-y-0 xl:h-[65px] xl:text-[19px] short:h-14 short:text-[17px]";
@@ -204,7 +204,7 @@ export async function LandingHero() {
                   height={930}
                   preload
                   sizes="(min-width: 1772px) 1010px, (min-width: 1280px) 57vw, (min-width: 640px) 86vw, 100vw"
-                  className="h-auto w-full origin-bottom [transform:rotateX(9deg)] drop-shadow-[0_34px_44px_rgba(10,22,16,0.32)]"
+                  className="h-auto w-full origin-bottom [transform:rotateX(9deg)] drop-shadow-[0_34px_44px_rgba(15,31,24,0.32)]"
                 />
               </div>
             </div>

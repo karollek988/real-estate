@@ -30,7 +30,7 @@ type OpenPopover = string | "search" | "language" | "user" | null;
  * (on the map), "Skapa analys" and the profile button. From xl down the
  * navigation moves into a full-screen menu (MobileNav).
  */
-export function SiteHeader({ variant = "dark" }: { variant?: SiteHeaderVariant }) {
+export function SiteHeader({ variant = "light" }: { variant?: SiteHeaderVariant }) {
   const t = useTranslations("nav");
   const theme = HEADER_THEME[variant];
   const router = useRouter();
@@ -60,6 +60,12 @@ export function SiteHeader({ variant = "dark" }: { variant?: SiteHeaderVariant }
     onScroll();
     window.addEventListener("scroll", onScroll, { passive: true });
     return () => window.removeEventListener("scroll", onScroll);
+  }, []);
+
+  // A protected page (dashboard, report, admin) sends a signed-out visitor to the start page with ?auth=required
+  // (lib/supabase/middleware.ts): open the sign-in dialog they were sent to sign in with.
+  useEffect(() => {
+    if (new URLSearchParams(window.location.search).get("auth") === "required") setAuthOpen(true);
   }, []);
 
   // "Hur går det till?" next to the analysis form opens the step-by-step dialog.

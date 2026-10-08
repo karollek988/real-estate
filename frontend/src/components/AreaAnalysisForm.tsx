@@ -56,7 +56,7 @@ export function AreaAnalysisForm() {
 
   return (
     <form className="flex flex-col gap-5" onSubmit={handleSubmit}>
-      <p className="text-sm leading-relaxed text-neutral-400">
+      <p className="text-sm leading-relaxed text-white/60">
         {t("intro", { price: OMRADESANALYS_PRICE_SEK })}
       </p>
       <Field

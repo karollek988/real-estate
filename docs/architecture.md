@@ -1,5 +1,7 @@
 # Real-Estate Platform — Architecture & Roadmap
 
+> **STATUS: ARCHIVED.** Kept at this path because code comments link to it. **REASON:** The July 2026 monorepo skeleton plan ("no implementation yet"); the root `pyproject.toml` still points here. Current architecture: `docs/architecture/overview.md`. Current documentation starts at `docs/README.md`.
+
 **Date:** 2026-07-13 · **Status:** skeleton; no implementation yet
 
 ## What we are building (eventually)

@@ -68,7 +68,7 @@ function Field({
   evidence: string | undefined;
 }) {
   const input =
-    "w-full rounded-md border border-black/15 bg-white px-3 py-2 text-sm text-[#1B1F27] outline-none focus:border-[#3B5F7A] focus:ring-2 focus:ring-[#3B5F7A]/20";
+    "w-full rounded-md border border-ka-line-strong bg-white px-3 py-2 text-sm text-ka-text outline-none focus:border-ka-sky-700 focus:ring-2 focus:ring-ka-sky-700/20";
   let control: React.ReactNode;
   if (spec.kind === "boolean") {
     control = (
@@ -98,7 +98,7 @@ function Field({
           maxLength={spec.maxLength}
           onChange={(e) => onChange(e.target.value)}
         />
-        {spec.unit && <span className="shrink-0 text-xs text-neutral-500">{spec.unit}</span>}
+        {spec.unit && <span className="shrink-0 text-xs text-ka-muted">{spec.unit}</span>}
       </div>
     );
   }
@@ -107,11 +107,11 @@ function Field({
   const differs = hasPrefill && value !== "" && parseBrfFigures({ [spec.key]: value }).figures[spec.key] !== prefill;
   return (
     <label className="flex flex-col gap-1">
-      <span className="text-[13px] font-medium text-[#12271D]">{spec.label}</span>
+      <span className="text-[13px] font-medium text-ka-ink">{spec.label}</span>
       {control}
-      {spec.hint && <span className="text-[11.5px] text-neutral-500">{spec.hint}</span>}
+      {spec.hint && <span className="text-[11.5px] text-ka-muted">{spec.hint}</span>}
       {hasPrefill && (
-        <span className={`text-[11.5px] ${differs ? "text-amber-700" : "text-neutral-500"}`}>
+        <span className={`text-[11.5px] ${differs ? "text-ka-amber-700" : "text-ka-muted"}`}>
           Avläst automatiskt: {displayPrefill(prefill, spec.integer, spec.max)}
           {evidence ? ` — ${evidence}` : ""}
           {differs ? " (skiljer sig från ifyllt värde)" : ""}
@@ -193,17 +193,17 @@ export function BrfReviewForm({
     <div className="grid grid-cols-1 gap-6 xl:grid-cols-[minmax(0,560px)_minmax(0,1fr)]">
       <div className="flex flex-col gap-5">
         {hasPrefill && (
-          <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-sky-200 bg-sky-50 px-4 py-3 text-sm text-sky-900">
+          <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-ka-sky-300 bg-ka-sky-100 px-4 py-3 text-sm text-ka-sky-700">
             <span>Den automatiska avläsningen hittade {Object.keys(prefill).length} uppgifter. Kontrollera dem mot årsredovisningen.</span>
-            <button type="button" onClick={applyPrefill} className="rounded-md bg-white px-3 py-1.5 text-xs font-semibold text-sky-900 ring-1 ring-sky-200 hover:bg-sky-100">
+            <button type="button" onClick={applyPrefill} className="rounded-md bg-white px-3 py-1.5 text-xs font-semibold text-ka-sky-700 ring-1 ring-ka-sky-300 hover:bg-ka-sky-100">
               Fyll tomma fält med avläsningen
             </button>
           </div>
         )}
 
         {BRF_FIELD_GROUPS.map((group) => (
-          <fieldset key={group.title} className="rounded-lg border border-black/10 bg-white p-4">
-            <legend className="px-1 text-sm font-semibold text-[#12271D]">{group.title}</legend>
+          <fieldset key={group.title} className="rounded-lg border border-ka-line-strong bg-white p-4">
+            <legend className="px-1 text-sm font-semibold text-ka-ink">{group.title}</legend>
             <div className="mt-2 grid grid-cols-1 gap-4 sm:grid-cols-2">
               {group.fields.map((spec) => (
                 <div key={spec.key} className={spec.kind === "longtext" ? "sm:col-span-2" : ""}>
@@ -221,7 +221,7 @@ export function BrfReviewForm({
         ))}
 
         {parsed.errors.length > 0 && (
-          <ul className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">
+          <ul className="rounded-lg border border-ka-coral-300 bg-ka-coral-100 px-4 py-3 text-sm text-ka-coral-700">
             {parsed.errors.map((e) => (
               <li key={e}>{e}</li>
             ))}
@@ -229,7 +229,7 @@ export function BrfReviewForm({
         )}
 
         {message && (
-          <div className={`rounded-lg border px-4 py-3 text-sm ${message.kind === "ok" ? "border-green-200 bg-green-50 text-green-900" : "border-red-200 bg-red-50 text-red-800"}`}>
+          <div className={`rounded-lg border px-4 py-3 text-sm ${message.kind === "ok" ? "border-ka-sage bg-ka-sage/40 text-ka-green-800" : "border-ka-coral-300 bg-ka-coral-100 text-ka-coral-700"}`}>
             <p>{message.text}</p>
             {message.details && (
               <ul className="mt-1 list-disc pl-5">
@@ -241,12 +241,12 @@ export function BrfReviewForm({
           </div>
         )}
 
-        <div className="sticky bottom-0 flex flex-wrap items-center gap-3 border-t border-black/10 bg-[#F5F4F0]/95 py-3 backdrop-blur">
+        <div className="sticky bottom-0 flex flex-wrap items-center gap-3 border-t border-ka-line-strong bg-ka-cream/95 py-3 backdrop-blur">
           <button
             type="button"
             disabled={busy !== null}
             onClick={() => submit("publish")}
-            className="rounded-md bg-[#12271D] px-4 py-2 text-sm font-semibold text-white hover:bg-[#1B3A2C] disabled:opacity-50"
+            className="rounded-md bg-ka-green-900 px-4 py-2 text-sm font-semibold text-white hover:bg-ka-green-800 disabled:opacity-50"
           >
             {busy === "publish" ? "Publicerar…" : status === "published" ? "Publicera uppdatering" : "Publicera till kunden"}
           </button>
@@ -254,7 +254,7 @@ export function BrfReviewForm({
             type="button"
             disabled={busy !== null}
             onClick={() => submit("save")}
-            className="rounded-md border border-black/15 bg-white px-4 py-2 text-sm font-semibold text-[#12271D] hover:bg-black/[0.03] disabled:opacity-50"
+            className="rounded-md border border-ka-line-strong bg-white px-4 py-2 text-sm font-semibold text-ka-ink hover:bg-ka-sand disabled:opacity-50"
           >
             {busy === "save" ? "Sparar…" : "Spara utkast"}
           </button>
@@ -262,7 +262,7 @@ export function BrfReviewForm({
             type="button"
             disabled={busy !== null}
             onClick={() => submit("not_applicable")}
-            className="ml-auto text-xs font-medium text-neutral-500 hover:text-red-700 disabled:opacity-50"
+            className="ml-auto text-xs font-medium text-ka-muted hover:text-ka-coral-700 disabled:opacity-50"
           >
             Ingen förening (ej aktuell)
           </button>
@@ -270,8 +270,8 @@ export function BrfReviewForm({
       </div>
 
       <div className="xl:sticky xl:top-4 xl:max-h-[calc(100vh-2rem)] xl:overflow-y-auto">
-        <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-neutral-500">Förhandsvisning — så ser kunden kapitlet</p>
-        <div className="rounded-lg border border-black/10 bg-[#FBF9F4] p-5 sm:p-8">
+        <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-ka-muted">Förhandsvisning — så ser kunden kapitlet</p>
+        <div className="rounded-lg border border-ka-line-strong bg-ka-paper p-5 sm:p-8">
           <NextIntlClientProvider locale="sv" messages={SWEDISH_MESSAGES}>
             <BrfAnalysis
               state={{ kind: "published", reading, publishedAt: new Date().toISOString(), update: null }}

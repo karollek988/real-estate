@@ -76,33 +76,34 @@ export function PackageCard({
     }
   }
 
+  // The main package is the deep-green card, as on the pricing section of the site; the others are white.
   return (
     <div
-      className={`relative flex flex-col rounded-2xl border p-6 backdrop-blur-xl ${
+      className={`relative flex flex-col rounded-2xl border p-6 ${
         highlighted
-          ? "card-lift border-green-500/40 bg-[#0F1714] shadow-[0_0_0_1px_rgba(74,222,128,0.15),0_24px_60px_rgba(0,0,0,0.4)] lg:-translate-y-2"
-          : "card-interactive border-white/10 bg-[#0F1417]/85"
+          ? "card-lift border-ka-green-950 bg-ka-green-950 text-white shadow-ka-panel lg:-translate-y-2"
+          : "card-interactive border-ka-line-strong bg-white shadow-ka-card"
       }`}
     >
       {badge && (
-        <span className="absolute -top-3 right-6 rounded-full bg-green-500 px-3 py-1 text-xs font-semibold text-[#06120C] shadow-md">
+        <span className="absolute -top-3 right-6 rounded-full bg-ka-mint px-3 py-1 text-xs font-bold text-ka-green-950">
           {badge}
         </span>
       )}
 
-      <h3 className="text-lg font-semibold tracking-tight text-white">{name}</h3>
+      <h3 className={`text-lg font-semibold tracking-tight ${highlighted ? "text-white" : "text-ka-ink"}`}>{name}</h3>
 
-      <p className="mt-3 text-4xl font-bold tracking-tight text-white">{tPackages("priceInline", { price })}</p>
-      <p className="mt-1 text-sm text-neutral-400">{t("priceNote", { note: priceNote })}</p>
+      <p className={`mt-3 text-4xl font-bold tracking-tight ${highlighted ? "text-white" : "text-ka-ink"}`}>
+        {tPackages("priceInline", { price })}
+      </p>
+      <p className={`mt-1 text-sm ${highlighted ? "text-white/60" : "text-ka-muted"}`}>{t("priceNote", { note: priceNote })}</p>
 
-      <p className="mt-4 text-sm leading-relaxed text-neutral-300">{summary}</p>
+      <p className={`mt-4 text-sm leading-relaxed ${highlighted ? "text-white/80" : "text-ka-text"}`}>{summary}</p>
 
       <ul className="mt-5 flex flex-col gap-2.5">
         {includes.map((item) => (
-          <li key={item} className="flex items-start gap-2.5 text-sm text-neutral-200">
-            <CheckIcon
-              className={`mt-0.5 h-4 w-4 shrink-0 ${highlighted ? "text-green-400" : "text-neutral-500"}`}
-            />
+          <li key={item} className={`flex items-start gap-2.5 text-sm ${highlighted ? "text-white/90" : "text-ka-text"}`}>
+            <CheckIcon className={`mt-0.5 h-4 w-4 shrink-0 ${highlighted ? "text-ka-mint" : "text-ka-green-700"}`} />
             {item}
           </li>
         ))}
@@ -111,7 +112,7 @@ export function PackageCard({
       {valueNote && (
         <p
           className={`mt-5 rounded-lg px-3 py-2 text-[13px] font-medium leading-snug ${
-            highlighted ? "bg-green-500/10 text-green-300" : "bg-white/5 text-neutral-300"
+            highlighted ? "bg-white/10 text-ka-mint" : "bg-ka-cream text-ka-green-700"
           }`}
         >
           {valueNote}
@@ -119,9 +120,9 @@ export function PackageCard({
       )}
 
       <div className="mt-6 flex flex-1 flex-col justify-end gap-3">
-        {acceptsDiscountCode && <DiscountCodeInput value={discountCode} onChange={setDiscountCode} />}
+        {acceptsDiscountCode && <DiscountCodeInput value={discountCode} onChange={setDiscountCode} tone={highlighted ? "onGreen" : "light"} />}
 
-        {error && <p className="text-sm text-red-400">{error}</p>}
+        {error && <p className={`text-sm ${highlighted ? "text-ka-coral-300" : "text-ka-red-600"}`}>{error}</p>}
 
         <button
           type="button"
@@ -129,8 +130,8 @@ export function PackageCard({
           disabled={loading}
           className={`inline-flex w-full items-center justify-center gap-2 rounded-xl py-3 text-sm font-semibold transition-all duration-200 disabled:cursor-not-allowed disabled:opacity-60 ${
             highlighted
-              ? "bg-green-500 text-[#06120C] hover:bg-green-400 hover:shadow-[0_10px_30px_-8px_rgba(74,222,128,0.55)]"
-              : "border border-white/15 bg-white/5 text-white hover:bg-white/10"
+              ? "bg-ka-cream text-ka-green-950 hover:bg-white"
+              : "border border-ka-line-strong bg-ka-cream text-ka-ink hover:bg-ka-sand"
           }`}
         >
           {loading ? t("creating") : ctaLabel}

@@ -42,8 +42,8 @@ export function DocumentDropzone({
             onClick={() => setDocType(type)}
             className={`rounded-full border px-3 py-1.5 text-xs font-medium transition ${
               docType === type
-                ? "border-green-500/50 bg-green-400/10 text-green-400"
-                : "border-white/10 bg-white/5 text-neutral-300 hover:border-white/20"
+                ? "border-ka-green-700/40 bg-ka-sage/60 text-ka-green-700"
+                : "border-ka-line-strong bg-ka-cream text-ka-text hover:border-ka-line-strong"
             }`}
           >
             {tDocuments(type)}
@@ -63,19 +63,19 @@ export function DocumentDropzone({
           void handleFiles(e.dataTransfer.files);
         }}
         className={`flex flex-col items-center gap-3 rounded-2xl border-2 border-dashed px-6 py-10 text-center transition ${
-          dragOver ? "border-green-500/60 bg-green-400/[0.04]" : "border-white/10 bg-black/20"
+          dragOver ? "border-ka-green-700 bg-ka-sage/40" : "border-ka-line-strong bg-ka-cream"
         }`}
       >
-        <UploadCloudIcon className="h-8 w-8 text-neutral-500" />
+        <UploadCloudIcon className="h-8 w-8 text-ka-muted" />
         <div>
-          <p className="text-sm text-neutral-300">{t("drop")}</p>
-          <p className="mt-0.5 text-xs text-neutral-500">{t("or")}</p>
+          <p className="text-sm text-ka-text">{t("drop")}</p>
+          <p className="mt-0.5 text-xs text-ka-muted">{t("or")}</p>
         </div>
         <button
           type="button"
           onClick={() => inputRef.current?.click()}
           disabled={uploading}
-          className="rounded-xl bg-green-600 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-green-500 disabled:opacity-60"
+          className="rounded-xl bg-ka-green-900 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-ka-green-800 disabled:opacity-60"
         >
           {uploading ? t("uploading") : t("choose")}
         </button>
@@ -90,14 +90,14 @@ export function DocumentDropzone({
           }}
         />
       </div>
-      {error && <p className="text-sm text-red-400">{error}</p>}
+      {error && <p className="text-sm text-ka-red-600">{error}</p>}
 
       <div className="flex flex-col gap-1.5">
-        <p className="flex items-center gap-1.5 text-xs font-medium text-neutral-500">
+        <p className="flex items-center gap-1.5 text-xs font-medium text-ka-muted">
           <ClipboardIcon className="h-3.5 w-3.5" />
           {t("recommended")}
         </p>
-        <div className="flex flex-wrap gap-3 text-xs text-neutral-400">
+        <div className="flex flex-wrap gap-3 text-xs text-ka-muted">
           {RECOMMENDED.map((type) => (
             <span key={type}>{t("pdf", { name: tDocuments(type) })}</span>
           ))}
