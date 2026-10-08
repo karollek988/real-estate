@@ -21,7 +21,7 @@ DNS for `kopanalys.se` is at Simply.com, not at Vercel. A new subdomain needs a 
 ## How a change reaches production
 
 ```text
-feature/… | fix/… | refactor/… branch ── pull request (CI "CI passed", 1 approval, squash) ──► main
+feature/… | fix/… | refactor/… branch ── pull request (CI "CI passed", squash) ──► main
                                                                                               │
                                      ┌────────────────────────────────────────────────────────┤
                                      ▼                                                        ▼

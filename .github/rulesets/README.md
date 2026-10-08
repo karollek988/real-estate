@@ -7,7 +7,7 @@ them again; if the rules are changed on purpose, update the file here in the sam
 
 | File | What it does |
 | --- | --- |
-| `protect-main.json` | **Protect main.** Nobody pushes to `main`, deletes it or rewrites its history. Changes arrive through a pull request that has 1 approval (a new push removes the approval), every conversation resolved, the branch up to date with `main`, the check **CI passed** green, and is merged with **squash** only. Repository admins can skip the approval and CI requirement in an emergency, but only from the pull request itself, never by pushing. |
+| `protect-main.json` | **Protect main.** Nobody pushes to `main`, deletes it or rewrites its history. Changes arrive through a pull request that has every conversation resolved, the branch up to date with `main`, the check **CI passed** green, and is merged with **squash** only. No approval is required, so the author can merge their own pull request (GitHub never lets an author approve their own). Repository admins can skip the CI requirement in an emergency, but only from the pull request itself, never by pushing. |
 | `branch-names.json` | **Branch names.** Only `feature/…`, `fix/…` and `refactor/…` (and `main`) can be created. Admins can create other names (for example a one-off `backup/…`). The same rule is checked on every pull request by the **Branch name** job in `.github/workflows/ci.yml`. |
 
 ## Importing
@@ -24,7 +24,7 @@ cannot be picked in the rule's web form, which is why the workflow is merged fir
 
 ## Changing the rules
 
-- *No approval needed* → set `required_approving_review_count` to `0` (the pull request itself is still required).
+- *Require an approval again* → set `required_approving_review_count` to `1`. Someone other than the author must then approve; an admin can still bypass it from the pull request.
 - *Don't force branches to be up to date with main before merging* → `strict_required_status_checks_policy: false`.
 - *Another branch prefix* (for example `docs/`) → add it to `branch-names.json` (`exclude`) **and** to the pattern in the
   `branch-name` job in `ci.yml`, and to the table in `CONTRIBUTING.md`.
