@@ -84,7 +84,8 @@ for (const file of walk(src)) {
       if (stylesheet && !rule.notInClass) continue; // class rules do not apply to stylesheets
       for (const match of line.matchAll(rule.re)) {
         const text = match[0];
-        if (ALLOWED_LITERALS[text.toLowerCase()]) continue;
+        // a colour typed into a class comes with its brackets: [#1a0dab]
+        if (ALLOWED_LITERALS[text.replace(/^[|]$/g, "").toLowerCase()]) continue;
         if (!stylesheet && rule.notInClass && inShadow(line, match.index)) continue;
         // a hex inside a class is reported once, by the class rule
         if (!stylesheet && rule.notInClass && /\[$/.test(line.slice(Math.max(0, match.index - 1), match.index))) continue;
