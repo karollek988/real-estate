@@ -119,6 +119,11 @@ export interface AtlasOptions {
   t: (key: string, values?: Record<string, string | number>) => string
   /** The page's language code ("sv", "en"): the place-name search answers in it. */
   locale: string
+  /**
+   * Translates what visitors wrote in their own listings into the page's language (POST /api/translate). Gets the
+   * texts, gives back a translation for each, or null where there is none. Not used for Swedish.
+   */
+  translate?: (texts: string[]) => Promise<(string | null)[]>
 }
 
 export interface AtlasHandle {
@@ -163,6 +168,37 @@ export function mountAtlas(root: HTMLElement, options: AtlasOptions): AtlasHandl
   }
   let exchangePins: ExchangePin[] = loadExchangePins()
   const visibleKinds: Record<PinKind, boolean> = { sale: true, buyer: true, exchange: true }
+
+  // What visitors wrote in their own listings, translated into the page's language (the example listings come
+  // translated from the messages). translations: the wording as written -> its translation. A listing whose id is in
+  // showOriginal is shown as written, because the reader asked for that.
+  const translationStorageKey = `kopanalys-map-translations-${options.locale}`
+  const translations = new Map<string, string>()
+  try { Object.entries(JSON.parse(localStorage.getItem(translationStorageKey) ?? '{}') as Record<string, string>).forEach(([from, to]) => translations.set(from, to)) } catch { /* nothing remembered */ }
+  const triedToTranslate = new Set<string>()
+  const showOriginal = new Set<string>()
+  /** A text in the page's language when there is a translation of it, else as written. */
+  const txt = (text: string): string => translations.get(text) ?? text
+  const shown = (text: string | undefined, key: string): string | undefined => (text === undefined || showOriginal.has(key) ? text : txt(text))
+  const hasTranslation = (texts: Array<string | undefined>): boolean => texts.some((text) => text !== undefined && translations.has(text))
+  async function translateUserListings() {
+    if (!options.translate || options.locale === 'sv') return
+    const wording = new Set<string>()
+    const add = (text: string | undefined) => { if (text && text.trim() && !translations.has(text) && !triedToTranslate.has(text)) wording.add(text) }
+    // not the places (note, from, to): a name like "Södermalm" is not translated
+    for (const pin of [...pins, ...buyerPins]) if (pin.isMine) [pin.title, pin.meta, pin.details].forEach(add)
+    for (const pin of exchangePins) if (pin.isMine) [pin.title, pin.meta, pin.details].forEach(add)
+    const texts = [...wording]
+    if (texts.length === 0) return
+    texts.forEach((text) => triedToTranslate.add(text))
+    let answers: (string | null)[]
+    try { answers = await options.translate(texts) } catch { return }
+    let changed = false
+    texts.forEach((text, i) => { const answer = answers[i]; if (answer && answer !== text) { translations.set(text, answer); changed = true } })
+    if (!changed) return
+    try { localStorage.setItem(translationStorageKey, JSON.stringify(Object.fromEntries(translations))) } catch { /* storage full or blocked */ }
+    renderPins()
+  }
 
   // On /karta the site layout already has the page's <main>.
   const shellTag = isPublic ? 'div' : 'main'
@@ -345,11 +381,14 @@ export function mountAtlas(root: HTMLElement, options: AtlasOptions): AtlasHandl
     map.flyTo(map.unproject(lowered, zoom), zoom, { duration })
   }
 
-  function selectPin(pin: SavedPin, kind: 'sale' | 'buyer') {
-    closeDrawer()
-    setArcHighlight(null)
-    setSelectedMarker(`${kind}-${pin.id}`)
-    flyToPin([pin.lat, pin.lng], 15, 0.8)
+  function selectPin(pin: SavedPin, kind: 'sale' | 'buyer', redraw = false) {
+    if (!redraw) {
+      closeDrawer()
+      setArcHighlight(null)
+      setSelectedMarker(`${kind}-${pin.id}`)
+      flyToPin([pin.lat, pin.lng], 15, 0.8)
+    }
+    const key = `${kind}-${pin.id}`
     const labels: Record<'sale' | 'buyer', string> = { sale: t('kinds.sale'), buyer: t('kinds.buyer') }
     const googleMapsLink = `https://www.google.com/maps/search/?api=1&query=${pin.lat},${pin.lng}`
     const contactLink = `mailto:kontakt@kopanalys.se?subject=${encodeURIComponent(t('detail.contactSubject', { title: pin.title }))}`
@@ -362,13 +401,19 @@ export function mountAtlas(root: HTMLElement, options: AtlasOptions): AtlasHandl
       ? `<a class="detail-link" href="${esc(safeHref(pin.link) ?? 'https://www.hemnet.se/')}" target="_blank" rel="noreferrer">${e('detail.viewListing')} <span>↗</span></a>`
       : `<div class="detail-contact"><span class="contact-dot"></span><span>${e('detail.requestActive')}</span></div><a class="detail-contact-link" href="${contactLink}">${e('detail.contact')} <span>↗</span></a>`
     const createAnalysisBlock = kind === 'sale' ? `<button type="button" class="detail-create-analysis">${e('detail.createAnalysis')}</button>` : ''
-    const panelContent = `${detailClose(t('close'))}${photoBlock}${bodyOpen}${inlineTag}<h2>${esc(pin.title)}</h2><p class="detail-note">${esc(pin.note)}</p><p class="detail-meta">${esc(pin.meta ?? (kind === 'sale' ? t('detail.saleMeta') : t('detail.requestMeta')))}</p><p class="detail-description">${esc(pin.details ?? (kind === 'sale' ? t('detail.saleDetails') : t('detail.requestDetails')))}</p>${actionBlock}<a class="detail-map-link" href="${googleMapsLink}" target="_blank" rel="noreferrer">${e('detail.openInGoogleMaps')} <span>↗</span></a>${createAnalysisBlock}</div>`
+    const panelContent = `${detailClose(t('close'))}${photoBlock}${bodyOpen}${inlineTag}<h2>${esc(shown(pin.title, key))}</h2><p class="detail-note">${esc(shown(pin.note, key))}</p><p class="detail-meta">${esc(shown(pin.meta, key) ?? (kind === 'sale' ? t('detail.saleMeta') : t('detail.requestMeta')))}</p><p class="detail-description">${esc(shown(pin.details, key) ?? (kind === 'sale' ? t('detail.saleDetails') : t('detail.requestDetails')))}</p>${translationNote(key, [pin.title, pin.note, pin.meta, pin.details])}${actionBlock}<a class="detail-map-link" href="${googleMapsLink}" target="_blank" rel="noreferrer">${e('detail.openInGoogleMaps')} <span>↗</span></a>${createAnalysisBlock}</div>`
     detailPanel.innerHTML = panelContent
     detailPanel.hidden = false
     detailPanel.querySelector('#detail-close')?.addEventListener('click', closeDetail)
+    detailPanel.querySelector('.detail-translation-toggle')?.addEventListener('click', () => { if (showOriginal.has(key)) showOriginal.delete(key); else showOriginal.add(key); selectPin(pin, kind, true) })
     if (options.onCreateAnalysis) detailPanel.querySelector('.detail-create-analysis')?.addEventListener('click', options.onCreateAnalysis)
   }
   function closeDetail() { detailPanel.hidden = true; setArcHighlight(null); setSelectedMarker(null) }
+  /** "Translated automatically. Show original": under the description of a listing whose wording was translated. */
+  function translationNote(key: string, texts: Array<string | undefined>): string {
+    if (!hasTranslation(texts)) return ''
+    return `<p class="detail-translation">${e('detail.translated')} <button type="button" class="detail-translation-toggle">${showOriginal.has(key) ? e('detail.showTranslation') : e('detail.showOriginal')}</button></p>`
+  }
   function isFilterVisible(kind: PinKind) { return visibleKinds[kind] }
   function toggleKind(kind: PinKind) { visibleKinds[kind] = !visibleKinds[kind]; renderPins() }
 
@@ -440,16 +485,19 @@ export function mountAtlas(root: HTMLElement, options: AtlasOptions): AtlasHandl
     detailPanel.querySelectorAll<HTMLButtonElement>('.exchange-stop').forEach((button) => button.classList.toggle('is-active', button.dataset.nav === which))
   }
 
-  function selectExchangePin(pin: ExchangePin) {
-    closeDrawer()
-    setArcHighlight(pin.id)
-    setSelectedMarker(`exchange-${pin.id}`)
-    const bounds = L.latLngBounds([[pin.from.lat, pin.from.lng], [pin.to.lat, pin.to.lng]])
-    // Both ends stay in the upper half of the map on a phone, above the detail sheet.
-    const framing: L.FitBoundsOptions = isPhone()
-      ? { paddingTopLeft: [40, 56], paddingBottomRight: [40, Math.round(map.getSize().y * 0.5) + 24] }
-      : { padding: [90, 90] }
-    map.flyToBounds(bounds, { ...framing, maxZoom: 13, duration: 0.8 })
+  function selectExchangePin(pin: ExchangePin, redraw = false) {
+    const key = `exchange-${pin.id}`
+    if (!redraw) {
+      closeDrawer()
+      setArcHighlight(pin.id)
+      setSelectedMarker(key)
+      const bounds = L.latLngBounds([[pin.from.lat, pin.from.lng], [pin.to.lat, pin.to.lng]])
+      // Both ends stay in the upper half of the map on a phone, above the detail sheet.
+      const framing: L.FitBoundsOptions = isPhone()
+        ? { paddingTopLeft: [40, 56], paddingBottomRight: [40, Math.round(map.getSize().y * 0.5) + 24] }
+        : { padding: [90, 90] }
+      map.flyToBounds(bounds, { ...framing, maxZoom: 13, duration: 0.8 })
+    }
     const fromMapsLink = `https://www.google.com/maps/search/?api=1&query=${pin.from.lat},${pin.from.lng}`
     const toMapsLink = `https://www.google.com/maps/search/?api=1&query=${pin.to.lat},${pin.to.lng}`
     const contactLink = `mailto:kontakt@kopanalys.se?subject=${encodeURIComponent(t('detail.contactSubject', { title: pin.title }))}`
@@ -457,11 +505,12 @@ export function mountAtlas(root: HTMLElement, options: AtlasOptions): AtlasHandl
     const photoBlock = pin.image ? `<div class="detail-photo-wrap"><img class="detail-photo" src="${esc(safeImage(pin.image))}" alt="${e('detail.photoOf', { title: pin.title })}">${tag}</div>` : ''
     const bodyOpen = pin.image ? '<div class="detail-body">' : '<div class="detail-body detail-body-compact">'
     const inlineTag = pin.image ? '' : tag
-    detailPanel.innerHTML = `${detailClose(t('close'))}${photoBlock}${bodyOpen}${inlineTag}<h2>${esc(pin.title)}</h2><div class="exchange-route"><button type="button" class="exchange-stop" data-nav="from"><span class="exchange-dot exchange-dot-from"></span><div><small>${e('detail.livesNow')}</small><strong>${esc(pin.from.note)}</strong></div></button><div class="exchange-route-arrow">→</div><button type="button" class="exchange-stop" data-nav="to"><span class="exchange-dot exchange-dot-to"></span><div><small>${e('detail.wantsToLive')}</small><strong>${esc(pin.to.note)}</strong></div></button></div><p class="detail-meta">${esc(pin.meta)}</p><p class="detail-description">${esc(pin.details ?? t('detail.requestDetails'))}</p><div class="detail-contact"><span class="contact-dot"></span><span>${e('detail.requestActive')}</span></div><a class="detail-contact-link" href="${contactLink}">${e('detail.contact')} <span>↗</span></a><a class="detail-map-link" href="${fromMapsLink}" target="_blank" rel="noreferrer">${e('detail.currentPlace')} <span>↗</span></a><a class="detail-map-link" href="${toMapsLink}" target="_blank" rel="noreferrer">${e('detail.wantedPlace')} <span>↗</span></a></div>`
+    detailPanel.innerHTML = `${detailClose(t('close'))}${photoBlock}${bodyOpen}${inlineTag}<h2>${esc(shown(pin.title, key))}</h2><div class="exchange-route"><button type="button" class="exchange-stop" data-nav="from"><span class="exchange-dot exchange-dot-from"></span><div><small>${e('detail.livesNow')}</small><strong>${esc(shown(pin.from.note, key))}</strong></div></button><div class="exchange-route-arrow">→</div><button type="button" class="exchange-stop" data-nav="to"><span class="exchange-dot exchange-dot-to"></span><div><small>${e('detail.wantsToLive')}</small><strong>${esc(shown(pin.to.note, key))}</strong></div></button></div><p class="detail-meta">${esc(shown(pin.meta, key))}</p><p class="detail-description">${esc(shown(pin.details, key) ?? t('detail.requestDetails'))}</p>${translationNote(key, [pin.title, pin.from.note, pin.to.note, pin.meta, pin.details])}<div class="detail-contact"><span class="contact-dot"></span><span>${e('detail.requestActive')}</span></div><a class="detail-contact-link" href="${contactLink}">${e('detail.contact')} <span>↗</span></a><a class="detail-map-link" href="${fromMapsLink}" target="_blank" rel="noreferrer">${e('detail.currentPlace')} <span>↗</span></a><a class="detail-map-link" href="${toMapsLink}" target="_blank" rel="noreferrer">${e('detail.wantedPlace')} <span>↗</span></a></div>`
     detailPanel.hidden = false
     detailPanel.querySelector('#detail-close')?.addEventListener('click', closeDetail)
     detailPanel.querySelector('[data-nav="from"]')?.addEventListener('click', () => focusExchangeStop(pin, 'from'))
     detailPanel.querySelector('[data-nav="to"]')?.addEventListener('click', () => focusExchangeStop(pin, 'to'))
+    detailPanel.querySelector('.detail-translation-toggle')?.addEventListener('click', () => { if (showOriginal.has(key)) showOriginal.delete(key); else showOriginal.add(key); selectExchangePin(pin, true) })
   }
 
   function downscaleImage(file: File, maxDim = 1280, quality = 0.82): Promise<string> {
@@ -610,22 +659,22 @@ export function mountAtlas(root: HTMLElement, options: AtlasOptions): AtlasHandl
       toggle.classList.toggle('is-off', !active)
       toggle.setAttribute('aria-pressed', String(active))
     })
-    list.innerHTML = pins.length ? pins.map((pin, index) => `<button class="pin-item" data-id="${pin.id}">${thumbMarkup(pin.image, index + 1)}<span class="pin-item-text"><strong>${esc(pin.title)}</strong><small>${esc(pin.note || `${pin.lat.toFixed(4)}, ${pin.lng.toFixed(4)}`)}</small></span><span class="item-arrow">›</span></button>`).join('') : `<div class="empty-state">${e('empty.sale')}<br>${e('empty.saleHint')}</div>`
-    buyerList.innerHTML = buyerPins.length ? buyerPins.map((pin, index) => `<button class="pin-item buyer-item" data-id="${pin.id}">${thumbMarkup(pin.image, index + 1)}<span class="pin-item-text"><strong>${esc(pin.title)}</strong><small>${esc(pin.note || `${pin.lat.toFixed(4)}, ${pin.lng.toFixed(4)}`)}</small></span><span class="item-arrow">›</span></button>`).join('') : `<div class="empty-state">${e('empty.buyer')}</div>`
-    exchangeList.innerHTML = exchangePins.length ? exchangePins.map((pin, index) => `<button class="pin-item exchange-item" data-id="${pin.id}">${thumbMarkup(pin.image, index + 1)}<span class="pin-item-text"><strong>${esc(pin.title)}</strong><small>${esc(pin.from.note)} → ${esc(pin.to.note)}</small></span><span class="item-arrow">›</span></button>`).join('') : `<div class="empty-state">${e('empty.exchange')}</div>`
+    list.innerHTML = pins.length ? pins.map((pin, index) => `<button class="pin-item" data-id="${pin.id}">${thumbMarkup(pin.image, index + 1)}<span class="pin-item-text"><strong>${esc(txt(pin.title))}</strong><small>${esc(pin.note ? txt(pin.note) : `${pin.lat.toFixed(4)}, ${pin.lng.toFixed(4)}`)}</small></span><span class="item-arrow">›</span></button>`).join('') : `<div class="empty-state">${e('empty.sale')}<br>${e('empty.saleHint')}</div>`
+    buyerList.innerHTML = buyerPins.length ? buyerPins.map((pin, index) => `<button class="pin-item buyer-item" data-id="${pin.id}">${thumbMarkup(pin.image, index + 1)}<span class="pin-item-text"><strong>${esc(txt(pin.title))}</strong><small>${esc(pin.note ? txt(pin.note) : `${pin.lat.toFixed(4)}, ${pin.lng.toFixed(4)}`)}</small></span><span class="item-arrow">›</span></button>`).join('') : `<div class="empty-state">${e('empty.buyer')}</div>`
+    exchangeList.innerHTML = exchangePins.length ? exchangePins.map((pin, index) => `<button class="pin-item exchange-item" data-id="${pin.id}">${thumbMarkup(pin.image, index + 1)}<span class="pin-item-text"><strong>${esc(txt(pin.title))}</strong><small>${esc(txt(pin.from.note))} → ${esc(txt(pin.to.note))}</small></span><span class="item-arrow">›</span></button>`).join('') : `<div class="empty-state">${e('empty.exchange')}</div>`
     root.querySelector('#pin-count')!.textContent = String(pins.length)
     root.querySelector('#buyer-count')!.textContent = String(buyerPins.length)
     root.querySelector('#exchange-count')!.textContent = String(exchangePins.length)
-    if (isFilterVisible('sale')) pins.forEach((pin, index) => { const marker = L.marker([pin.lat, pin.lng], { icon: pinIcon }).addTo(map).bindTooltip(`${index + 1}. ${esc(pin.title)}`, { direction: 'top', offset: [0, -28] }).on('click', () => selectPin(pin, 'sale')); markers.set(pin.id, marker) })
-    if (isFilterVisible('buyer')) buyerPins.forEach((pin, index) => { const marker = L.marker([pin.lat, pin.lng], { icon: buyerPinIcon }).addTo(map).bindTooltip(e('tooltips.buyer', { n: index + 1, title: pin.title }), { direction: 'top', offset: [0, -28] }).on('click', () => selectPin(pin, 'buyer')); buyerMarkers.set(pin.id, marker) })
+    if (isFilterVisible('sale')) pins.forEach((pin, index) => { const marker = L.marker([pin.lat, pin.lng], { icon: pinIcon }).addTo(map).bindTooltip(`${index + 1}. ${esc(txt(pin.title))}`, { direction: 'top', offset: [0, -28] }).on('click', () => selectPin(pin, 'sale')); markers.set(pin.id, marker) })
+    if (isFilterVisible('buyer')) buyerPins.forEach((pin, index) => { const marker = L.marker([pin.lat, pin.lng], { icon: buyerPinIcon }).addTo(map).bindTooltip(e('tooltips.buyer', { n: index + 1, title: txt(pin.title) }), { direction: 'top', offset: [0, -28] }).on('click', () => selectPin(pin, 'buyer')); buyerMarkers.set(pin.id, marker) })
     if (isFilterVisible('exchange')) exchangePins.forEach((pin, index) => {
       const path = buildArc(pin.from.lat, pin.from.lng, pin.to.lat, pin.to.lng)
       // Added first, so it lies under the arc. Colours are the stylesheet's (see .exchange-arc in the workspace mixin).
       const casing = L.polyline(path, { className: 'exchange-arc-casing', weight: 7, opacity: 0.9, lineCap: 'round', lineJoin: 'round', interactive: false }).addTo(map)
       // dashArray: 9 + 8 = the 17 px period the stylesheet's flow animation loops over
       const arc = L.polyline(path, { className: 'exchange-arc', weight: 3.5, opacity: 1, dashArray: '9 8', lineCap: 'butt' }).addTo(map)
-      const fromMarker = L.marker([pin.from.lat, pin.from.lng], { icon: exchangeFromIcon }).addTo(map).bindTooltip(e('tooltips.exchange', { n: index + 1, title: pin.title }), { direction: 'top', offset: [0, -28] }).on('click', () => selectExchangePin(pin))
-      const toMarker = L.marker([pin.to.lat, pin.to.lng], { icon: exchangeToIcon }).addTo(map).bindTooltip(e('tooltips.exchangeTo', { n: index + 1, place: pin.to.note }), { direction: 'top', offset: [0, -28] }).on('click', () => selectExchangePin(pin))
+      const fromMarker = L.marker([pin.from.lat, pin.from.lng], { icon: exchangeFromIcon }).addTo(map).bindTooltip(e('tooltips.exchange', { n: index + 1, title: txt(pin.title) }), { direction: 'top', offset: [0, -28] }).on('click', () => selectExchangePin(pin))
+      const toMarker = L.marker([pin.to.lat, pin.to.lng], { icon: exchangeToIcon }).addTo(map).bindTooltip(e('tooltips.exchangeTo', { n: index + 1, place: txt(pin.to.note) }), { direction: 'top', offset: [0, -28] }).on('click', () => selectExchangePin(pin))
       exchangeMarkers.set(pin.id, { from: fromMarker, to: toMarker, arc, casing })
     })
     list.querySelectorAll<HTMLButtonElement>('.pin-item').forEach((item) => item.addEventListener('click', () => { const index = pins.findIndex((candidate) => candidate.id === Number(item.dataset.id)); if (index >= 0) selectPin(pins[index], 'sale') }))
@@ -875,6 +924,7 @@ export function mountAtlas(root: HTMLElement, options: AtlasOptions): AtlasHandl
       saveExchangePins()
     }
     renderPins()
+    void translateUserListings()
     closeModal()
   })
   root.querySelector('#zoom-in')!.addEventListener('click', () => map.zoomIn())
@@ -910,6 +960,7 @@ export function mountAtlas(root: HTMLElement, options: AtlasOptions): AtlasHandl
   applyAuthState()
   updatePinSuggestions('')
   renderPins()
+  void translateUserListings()
   function search(query: string) {
     searchInput.value = query
     void searchMap(query)

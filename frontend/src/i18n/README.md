@@ -90,14 +90,41 @@ Swedish-only code (the review console, the verify scripts) uses `swedishTextKit(
   (`user_metadata.locale`, set at sign-up and updated when the customer orders from a page in another language).
   E-mails to the team are in Swedish only.
 
+## Articles and map listings: translated automatically, once
+
+The articles of Bostadsguiden, Insikter and Nyheter are written in Swedish in the editor (/admin/content) and the editor never
+writes a translation. The listings on the map are written by visitors, in any language. Both are translated by the site itself
+when they are shown in another language (src/lib/translate):
+
+- **How:** the site asks the Python engine (`POST /api/translate`, api/translation.py) - an offline open-source model (Opus-MT,
+  Apache-2.0, converted for CTranslate2) in the Docker image on Railway. No outside service, no key, no fee per word.
+  A glossary (api/translation_glossary.py) makes terms like lagfart, pantbrev, stambyte and Trygghetspaketet come out the same
+  every time, and "Köpanalys" is never translated.
+- **What is stored:** each paragraph, heading and list item (and each title and summary) is one row in `text_translations`
+  (supabase/migrations/20261008120000_text_translations.sql), found by a fingerprint of the Swedish text. Changing a paragraph
+  translates only that paragraph; the same sentence in two articles is translated once.
+- **When:** the editor's save of a published item translates it in every other language in the background
+  (`translateOnPublish`, called from lib/content/adminStore.ts), so readers normally never wait. If a text is missing (an older
+  article, a failure), the first reader's page build translates it (at most ~25 s per page; the rest follows on the next rebuild).
+- **If the translator is not there:** nothing breaks. The page shows the Swedish text, without the "translated automatically" note,
+  and is left out of search engines in that language (noindex) until it is translated.
+- **What the reader sees:** an article translated automatically says "Translated automatically from Swedish. Show the original".
+  The text of a visitor's own map listing is translated when the page is in another language, with the same two words and a way back
+  to the original; place names are never translated.
+- **Formatting survives:** bold, italics, links, lists, headings and "good to know" boxes are kept (lib/translate/markdown.ts).
+- **A new language** needs a model for it too: convert one into /models/<pair> (see the Dockerfile) and add the pair to
+  `MODEL_FOLDERS` and a glossary in api/translation.py / translation_glossary.py. Until then that language shows the articles in Swedish.
+- **To translate everything again** after improving the translator (a better model, a glossary term): bump `GLOSSARY_VERSION`
+  or the model, then `truncate public.text_translations;`. A wrong translation can also be corrected by hand: `update
+  public.text_translations set translated_text = '...' where source_text = '...' and target_language = 'en';`.
+
 ## Things that are deliberately not translated
 
-- Texts written by people in the data: listing descriptions, the reviewer's comment and planned works in a housing association
-  analysis, listings visitors add to the map. They are shown as written (marked with `lang="sv"` where it matters). Common
-  terms in the listing data are mapped to the reader's language (`report.overview.terms.*`).
-- The guides, blog articles and knowledge articles (Swedish only for now; the English address shows the Swedish text and is
-  not listed for search engines).
-- The admin portal and the review console (Swedish only).
+- Texts written by people in the data of a report: listing descriptions, the reviewer's comment and planned works in a housing
+  association analysis. They are shown as written (marked with `lang="sv"` where it matters). Common terms in the listing data are
+  mapped to the reader's language (`report.overview.terms.*`).
+- The headlines and summaries of the outside news feed (Riksbanken, SVT, Dagens industri) stay in Swedish, as in the sources.
+- The admin portal, the editor and the review console (Swedish only).
 - The legal texts have a translation, but the Swedish text is the one that applies (the pages say so).
 
 ## Checking
@@ -107,4 +134,6 @@ npm run i18n:check          every language against the Swedish master copy
 npm run i18n:check -- en    one language, with every missing key listed
 npx tsc --noEmit            a typed language (Messages) cannot miss a key
 npx tsx src/i18n/i18n.verify.mjs   addresses, the language of a request, the fall-back to Swedish
+npx tsx src/lib/translate/translate.verify.mjs   the Markdown of an article taken apart and put together again
+pytest api/tests/test_translation.py   the translator itself (the last test needs the converted model)
 ```

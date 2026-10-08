@@ -1,48 +1,52 @@
 import Image from "next/image";
-import Link from "next/link";
+import { Link, getPathname } from "@/i18n/navigation";
 import { ArrowRightIcon, ChevronDownIcon, ClockIcon } from "@/components/icons";
 import { LANDING_CONTAINER } from "@/components/landing/container";
 import { Breadcrumbs, type Crumb } from "@/components/site/Breadcrumbs";
 import { ROUTES } from "@/components/site/navigation";
+import { absoluteUrl } from "@/i18n/seo";
 import { handwriting } from "@/lib/fonts";
 import { absoluteImageUrl } from "@/lib/content/images";
 import { parseMarkdown, tableOfContents } from "@/lib/content/markdown";
-import { CONTENT_TYPE_LABELS, findCategory, formatContentDate, type ContentItem } from "@/lib/content/model";
-import { CONTENT_BASE_PATHS, categoryHref, contentHref, siteUrl } from "@/lib/content/paths";
+import { findCategory, type ContentItem } from "@/lib/content/model";
+import { categoryLink, contentLink, hubLink, siteUrl } from "@/lib/content/paths";
+import { LOCALES, type AppLocale } from "@/i18n/locales";
+import { useTranslations } from "next-intl";
 import { CategoryPill, DemoBadge } from "./CategoryPill";
 import { ContentBody } from "./ContentBody";
 import { GuideCard } from "./GuideCard";
 import { GuideCta } from "./GuideCta";
+import { useKunskap } from "./useKunskap";
 
 /**
  * A published guide, insight or news item - and the editor's preview of one.
  * One column of comfortable reading width, a table of contents beside it on
  * wide screens (in a fold-out above the text on phones), then related items
  * and the way into the product. Structured data (Article + BreadcrumbList)
- * describes the page to search engines and AI search.
+ * describes the page to search engines and AI search. An article that was
+ * translated automatically says so, with a link to the Swedish original.
+ * The words: kunskap.*
  */
 export function ContentArticle({ item, related, preview = false }: { item: ContentItem; related: ContentItem[]; preview?: boolean }) {
+  const { t, locale, date, categoryLabel } = useKunskap();
   const blocks = parseMarkdown(item.body);
   const toc = tableOfContents(blocks);
-  const labels = CONTENT_TYPE_LABELS[item.type];
   const category = findCategory(item.category);
   const published = item.publishedAt;
   const updatedLater = published && Date.parse(item.updatedAt) - Date.parse(published) > 86_400_000;
 
   const crumbs: Crumb[] = [
-    { label: labels.hub, href: CONTENT_BASE_PATHS[item.type] },
-    ...(category ? [{ label: category.label, href: categoryHref(item.type, category.slug) }] : []),
+    { label: t(`types.${item.type}.hub`), href: hubLink(item.type) },
+    ...(category ? [{ label: categoryLabel(category.slug), href: categoryLink(item.type, category.slug) }] : []),
     { label: item.title },
   ];
 
   return (
     <div className={handwriting.variable}>
-      {!preview && !item.isDemo && <ArticleJsonLd item={item} crumbs={crumbs} />}
+      {!preview && !item.isDemo && <ArticleJsonLd item={item} crumbs={crumbs} categoryName={category ? categoryLabel(category.slug) : undefined} />}
       {(preview || item.isDemo) && (
         <div className="border-b border-ka-amber-700/25 bg-ka-amber-100 px-5 py-2.5 text-center text-[14px] font-medium text-ka-amber-700">
-          {preview
-            ? `Förhandsgranskning · ${item.status === "published" ? "Publicerad" : "Utkast – syns inte på sajten"}`
-            : "Exempelinnehåll – visas bara under utveckling och i förhandsversioner, aldrig i produktion."}
+          {preview ? (item.status === "published" ? t("article.preview.published") : t("article.preview.draft")) : t("demo.banner")}
         </div>
       )}
 
@@ -58,7 +62,7 @@ export function ContentArticle({ item, related, preview = false }: { item: Conte
               <Breadcrumbs crumbs={crumbs} />
               <div className="mt-8 flex flex-wrap items-center gap-2.5 sm:mt-10">
                 <CategoryPill category={item.category} />
-                <span className="text-[12px] font-bold uppercase tracking-[0.14em] text-ka-green-700">{labels.one}</span>
+                <span className="text-[12px] font-bold uppercase tracking-[0.14em] text-ka-green-700">{t(`types.${item.type}.one`)}</span>
                 {item.isDemo && <DemoBadge />}
               </div>
               <h1
@@ -71,25 +75,27 @@ export function ContentArticle({ item, related, preview = false }: { item: Conte
               <div className="mt-7 flex flex-wrap items-center gap-x-5 gap-y-3 border-t border-ka-line-strong pt-5 text-[14.5px] text-ka-muted">
                 <span className="flex items-center gap-2.5">
                   <Image src="/images/kopanalys-logo-mark.png" alt="" width={32} height={32} className="rounded-full" />
-                  <span>
-                    Av <span className="font-semibold text-ka-ink">{item.authorName}</span>
-                  </span>
+                  <span>{t.rich("article.by", { name: item.authorName, b: (chunks) => <span className="font-semibold text-ka-ink">{chunks}</span> })}</span>
                 </span>
-                {published && (
-                  <span>
-                    Publicerad <time dateTime={published}>{formatContentDate(published)}</time>
-                  </span>
-                )}
-                {updatedLater && (
-                  <span>
-                    Uppdaterad <time dateTime={item.updatedAt}>{formatContentDate(item.updatedAt)}</time>
-                  </span>
-                )}
+                {published && <time dateTime={published}>{t("published", { date: date(published) })}</time>}
+                {updatedLater && <time dateTime={item.updatedAt}>{t("updated", { date: date(item.updatedAt) })}</time>}
                 <span className="inline-flex items-center gap-1.5">
                   <ClockIcon className="h-4 w-4" />
-                  {item.readingMinutes} min läsning
+                  {t("readingTime", { minutes: item.readingMinutes })}
                 </span>
               </div>
+              {item.translatedFrom && (
+                <p className="mt-4 text-[14px] text-ka-muted">
+                  {t("translation.notice")}{" "}
+                  {/* a plain link to the original's own address: the language-aware Link would add /sv to it */}
+                  <a
+                    href={getPathname({ locale: item.translatedFrom as AppLocale, href: contentLink(item) })}
+                    className="font-semibold text-ka-green-700 underline underline-offset-[3px] hover:text-ka-green-900"
+                  >
+                    {t("translation.showOriginal")}
+                  </a>
+                </p>
+              )}
             </div>
           </div>
         </header>
@@ -110,7 +116,7 @@ export function ContentArticle({ item, related, preview = false }: { item: Conte
                   <details className="group mb-8 rounded-[18px] border border-ka-line-strong bg-white p-5 shadow-ka-card lg:hidden">
                     <summary className="flex cursor-pointer list-none items-center justify-between gap-3 text-[15px] font-bold text-ka-ink [&::-webkit-details-marker]:hidden">
                       <span>
-                        Innehåll <span className="font-normal text-ka-muted">({toc.length} avsnitt)</span>
+                        {t("article.contents")} <span className="font-normal text-ka-muted">{t("article.sections", { count: toc.length })}</span>
                       </span>
                       <ChevronDownIcon className="h-5 w-5 text-ka-green-700 transition-transform group-open:rotate-180" strokeWidth={2.2} />
                     </summary>
@@ -120,26 +126,26 @@ export function ContentArticle({ item, related, preview = false }: { item: Conte
                 {blocks.length > 0 ? (
                   <ContentBody blocks={blocks} />
                 ) : (
-                  <p className="rounded-[18px] border border-dashed border-ka-line-strong p-6 text-ka-muted">Texten är tom ännu.</p>
+                  <p className="rounded-[18px] border border-dashed border-ka-line-strong p-6 text-ka-muted">{t("article.empty")}</p>
                 )}
               </div>
 
               <aside className="hidden lg:block">
                 <div className="sticky top-28 flex flex-col gap-5">
                   {toc.length >= 2 && (
-                    <nav aria-label="Innehåll" className="rounded-[20px] border border-ka-line-strong bg-white p-6 shadow-ka-card">
-                      <p className="text-[12px] font-bold uppercase tracking-[0.14em] text-ka-green-700">Innehåll</p>
+                    <nav aria-label={t("article.contents")} className="rounded-[20px] border border-ka-line-strong bg-white p-6 shadow-ka-card">
+                      <p className="text-[12px] font-bold uppercase tracking-[0.14em] text-ka-green-700">{t("article.contents")}</p>
                       <TocList toc={toc} />
                     </nav>
                   )}
                   <div className="rounded-[20px] bg-ka-green-950 p-6 text-white">
-                    <p className="font-display text-[21px] font-bold leading-snug">Hur står sig bostaden du tittar på?</p>
-                    <p className="mt-2 text-[14.5px] leading-relaxed text-white/75">Föreningens ekonomi, området och kostnaderna – för just den bostaden.</p>
+                    <p className="font-display text-[21px] font-bold leading-snug">{t("article.sidebar.title")}</p>
+                    <p className="mt-2 text-[14.5px] leading-relaxed text-white/75">{t("article.sidebar.text")}</p>
                     <Link
                       href={ROUTES.skapaAnalys}
                       className="group mt-5 inline-flex h-11 items-center gap-2 rounded-[11px] bg-ka-cream px-4 text-[14.5px] font-semibold text-ka-green-950 transition hover:bg-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ka-mint focus-visible:ring-offset-2 focus-visible:ring-offset-ka-green-950"
                     >
-                      Skapa analys
+                      {t("article.sidebar.cta")}
                       <ArrowRightIcon className="h-4 w-4 transition-transform group-hover:translate-x-1" />
                     </Link>
                   </div>
@@ -155,13 +161,10 @@ export function ContentArticle({ item, related, preview = false }: { item: Conte
           <div className={`${LANDING_CONTAINER} py-14 lg:py-20`}>
             <div className="flex flex-wrap items-end justify-between gap-4">
               <h2 id="related-title" className="font-display text-[28px] font-bold text-ka-ink sm:text-[36px]">
-                Läs vidare
+                {t("article.related")}
               </h2>
-              <Link
-                href={CONTENT_BASE_PATHS[item.type]}
-                className="group inline-flex items-center gap-2 text-[15px] font-semibold text-ka-green-700 hover:text-ka-green-900"
-              >
-                Till {labels.hub}
+              <Link href={hubLink(item.type)} className="group inline-flex items-center gap-2 text-[15px] font-semibold text-ka-green-700 hover:text-ka-green-900">
+                {t("article.toHub", { hub: t(`types.${item.type}.hub`) })}
                 <ArrowRightIcon className="h-4 w-4 transition-transform group-hover:translate-x-1" />
               </Link>
             </div>
@@ -200,9 +203,11 @@ function TocList({ toc }: { toc: { id: string; text: string }[] }) {
 }
 
 /** Article + BreadcrumbList for search engines and AI search (only for real, published items). */
-function ArticleJsonLd({ item, crumbs }: { item: ContentItem; crumbs: Crumb[] }) {
+function ArticleJsonLd({ item, crumbs, categoryName }: { item: ContentItem; crumbs: Crumb[]; categoryName?: string }) {
+  const { locale } = useKunskap();
+  const tCrumbs = useTranslations("common.breadcrumbs");
   const site = siteUrl();
-  const url = item.canonicalUrl ?? `${site}${contentHref(item)}`;
+  const url = (locale === "sv" && item.canonicalUrl) || absoluteUrl(locale, contentLink(item));
   const image = item.socialImage ?? item.coverImage;
   const data = {
     "@context": "https://schema.org",
@@ -214,8 +219,8 @@ function ArticleJsonLd({ item, crumbs }: { item: ContentItem; crumbs: Crumb[] })
         ...(image ? { image: [absoluteImageUrl(image, site)] } : {}),
         datePublished: item.publishedAt,
         dateModified: item.updatedAt,
-        inLanguage: "sv-SE",
-        ...(findCategory(item.category) ? { articleSection: findCategory(item.category)?.label } : {}),
+        inLanguage: LOCALES[locale].formatLocale,
+        ...(categoryName ? { articleSection: categoryName } : {}),
         author:
           item.authorName === "Köpanalys"
             ? { "@type": "Organization", name: "Köpanalys", url: site }
@@ -230,11 +235,11 @@ function ArticleJsonLd({ item, crumbs }: { item: ContentItem; crumbs: Crumb[] })
       },
       {
         "@type": "BreadcrumbList",
-        itemListElement: [{ label: "Start", href: ROUTES.home }, ...crumbs].map((crumb, i, all) => ({
+        itemListElement: [{ label: tCrumbs("home"), href: ROUTES.home as never }, ...crumbs].map((crumb, i, all) => ({
           "@type": "ListItem",
           position: i + 1,
           name: crumb.label,
-          ...(i < all.length - 1 && crumb.href ? { item: `${site}${crumb.href.split("#")[0]}` } : {}),
+          ...(i < all.length - 1 && crumb.href ? { item: absoluteUrl(locale, crumb.href) } : {}),
         })),
       },
     ],

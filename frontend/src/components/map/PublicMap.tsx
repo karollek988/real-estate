@@ -19,6 +19,26 @@ import { ROUTES } from "@/components/site/navigation";
  * ?q= is searched when the map opens and again whenever it changes, so the
  * header's search works whether or not the map is already open.
  */
+/** Asks the site for translations of listing texts; null for each text that could not be translated. */
+async function translateListings(texts: string[], target: string): Promise<(string | null)[]> {
+  const out: (string | null)[] = [];
+  for (let i = 0; i < texts.length; i += 30) {
+    const slice = texts.slice(i, i + 30);
+    try {
+      const response = await fetch("/api/translate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ texts: slice, target }),
+      });
+      const body = response.ok ? ((await response.json()) as { translations?: (string | null)[] }) : null;
+      out.push(...slice.map((_, j) => body?.translations?.[j] ?? null));
+    } catch {
+      out.push(...slice.map(() => null));
+    }
+  }
+  return out;
+}
+
 export function PublicMap() {
   const router = useRouter();
   const t = useTranslations("map");
@@ -49,6 +69,8 @@ export function PublicMap() {
           // the map is plain code that asks for its texts by key: the "map" messages, in the language of the page
           t: (key, values) => textsRef.current.t(key as never, values as never),
           locale: textsRef.current.locale,
+          // what visitors wrote in their own listings, shown in the page's language (translated by the site's server)
+          translate: (texts) => translateListings(texts, textsRef.current.locale),
         });
         setStatus("ready");
       })

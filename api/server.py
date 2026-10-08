@@ -4,6 +4,7 @@ Endpoints (all require the shared X-Internal-Secret header except GET /):
   POST /api/brf-annual-report/upload — buyer-uploaded BRF annual report (PDF/Word/photo) -> verified figures
   POST /api/brf-financials           — verified figures -> metrics + rule-based findings
   POST /api/ocr/extract-text         — listing screenshots -> raw text (Tesseract)
+  POST /api/translate                — texts of the site's own content, Swedish -> another language (offline model)
   POST /api/location-intelligence    — area data for an address
   POST /api/market-intelligence      — market data for a municipality
   POST /api/browser-fetch            — fetch one page through a real browser (Hemnet escalation)
@@ -262,6 +263,18 @@ class OcrExtractRequest(BaseModel):
     images_base64: list[str]
 
 
+# Limits of one translation request: an article is a few thousand words, a hub page's cards a few dozen
+# short texts. Bigger than this is a mistake or abuse.
+_MAX_TRANSLATE_TEXTS = 300
+_MAX_TRANSLATE_CHARS = 120_000
+
+
+class TranslateRequest(BaseModel):
+    texts: list[str]
+    source: str = "sv"
+    target: str
+
+
 # ── Routes ──────────────────────────────────────────────────────────
 
 @app.post("/api/browser-fetch")
@@ -369,6 +382,39 @@ async def brf_annual_report_upload(req: BrfAnnualReportUploadRequest):
 
 
 _MAX_OCR_IMAGES = 6
+
+
+@app.post("/api/translate")
+async def translate_texts(req: TranslateRequest):
+    """Translates the site's own content (articles, listing texts) with an offline, open-source model.
+
+    Backs frontend/src/lib/translate: the Next.js app asks for a translation the first time a page is read in
+    another language and stores the answer in its own database, so each text is translated once. Nothing is kept
+    here and nothing leaves this server. 503 when the model for the pair is not installed - the caller then
+    shows the Swedish text. Markers like [1]...[/1] around formatting come back in place.
+    """
+    import translation
+
+    if not req.texts:
+        return {"success": True, "translations": [], "engine": translation.ENGINE_VERSION}
+    if len(req.texts) > _MAX_TRANSLATE_TEXTS or sum(len(t) for t in req.texts) > _MAX_TRANSLATE_CHARS:
+        return JSONResponse(status_code=413, content={"success": False, "error": "Too much text in one request."})
+    if (req.source, req.target) not in translation.MODEL_FOLDERS:
+        return JSONResponse(status_code=400, content={
+            "success": False,
+            "error": f"No translation from {req.source} to {req.target}.",
+        })
+
+    try:
+        # The model is CPU-bound: run it off the event loop so the other endpoints keep answering.
+        translations = await asyncio.to_thread(translation.translate, req.texts, req.source, req.target)
+    except translation.ModelUnavailable as e:
+        logger.warning("Translation unavailable: %s", e)
+        return JSONResponse(status_code=503, content={"success": False, "error": str(e)})
+    except Exception as e:
+        logger.exception("Translation failed")
+        return JSONResponse(status_code=500, content={"success": False, "error": f"Translation failed: {type(e).__name__}"})
+    return {"success": True, "translations": translations, "engine": translation.ENGINE_VERSION}
 
 
 @app.post("/api/ocr/extract-text")

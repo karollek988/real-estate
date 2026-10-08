@@ -1,15 +1,17 @@
 import Image from "next/image";
-import Link from "next/link";
+import { Link } from "@/i18n/navigation";
 import { ArrowRightIcon, ClockIcon } from "@/components/icons";
-import { formatContentDate, type ContentItem } from "@/lib/content/model";
-import { contentHref } from "@/lib/content/paths";
+import type { ContentItem } from "@/lib/content/model";
+import { contentLink } from "@/lib/content/paths";
 import { CategoryPill, DemoBadge } from "./CategoryPill";
+import { useKunskap } from "./useKunskap";
 
 /**
  * One guide, insight or news item in a grid. The whole card is the link (the
  * title's link stretches over it), with a white face, a firm edge and a
  * shadow so it stands clearly off the cream page, and a round arrow that
  * fills in on hover. `featured` gives it a green edge and an "Utvald" label.
+ * The words: kunskap.*
  */
 export function GuideCard({
   item,
@@ -22,8 +24,9 @@ export function GuideCard({
   headingLevel?: 2 | 3;
   priority?: boolean;
 }) {
+  const { t, date } = useKunskap();
   const Heading = headingLevel === 2 ? "h2" : "h3";
-  const date = item.publishedAt ?? item.updatedAt;
+  const when = item.publishedAt ?? item.updatedAt;
 
   return (
     <article
@@ -44,7 +47,7 @@ export function GuideCard({
         )}
         <div className="absolute left-4 top-4 flex flex-wrap gap-2">
           {featured && (
-            <span className="rounded-full bg-ka-green-900 px-2.5 py-0.5 text-[11px] font-bold uppercase tracking-[0.08em] text-white">Utvald</span>
+            <span className="rounded-full bg-ka-green-900 px-2.5 py-0.5 text-[11px] font-bold uppercase tracking-[0.08em] text-white">{t("featuredTag")}</span>
           )}
           {item.isDemo && <DemoBadge />}
         </div>
@@ -57,7 +60,7 @@ export function GuideCard({
             item.category ? "mt-4" : "mt-6"
           }`}
         >
-          <Link href={contentHref(item)} className="outline-none after:absolute after:inset-0 after:content-['']">
+          <Link href={contentLink(item)} className="outline-none after:absolute after:inset-0 after:content-['']">
             {item.title}
           </Link>
         </Heading>
@@ -66,10 +69,10 @@ export function GuideCard({
           <p className="flex flex-wrap items-center gap-x-2 gap-y-1 text-[13.5px] text-ka-muted">
             <span className="inline-flex items-center gap-1.5">
               <ClockIcon className="h-4 w-4" />
-              {item.readingMinutes} min läsning
+              {t("readingTime", { minutes: item.readingMinutes })}
             </span>
             <span aria-hidden>·</span>
-            <time dateTime={date}>{formatContentDate(date)}</time>
+            <time dateTime={when}>{date(when)}</time>
           </p>
           <span
             aria-hidden

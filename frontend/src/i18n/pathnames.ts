@@ -43,10 +43,11 @@ export const PATHNAMES = {
   "/sa-fungerar-det": page("/sa-fungerar-det", { en: "/how-it-works" }),
   "/kontakt": page("/kontakt", { en: "/contact" }),
   "/nyheter": page("/nyheter", { en: "/news" }),
-  "/blogg": page("/blogg", { en: "/blog" }),
-  "/blogg/[slug]": page("/blogg/[slug]", { en: "/blog/[slug]" }),
-  "/guider": page("/guider", { en: "/guides" }),
-  "/guider/[slug]": page("/guider/[slug]", { en: "/guides/[slug]" }),
+  "/nyheter/[slug]": page("/nyheter/[slug]", { en: "/news/[slug]" }),
+  "/bostadsguider": page("/bostadsguider", { en: "/housing-guide" }),
+  "/bostadsguider/[slug]": page("/bostadsguider/[slug]", { en: "/housing-guide/[slug]" }),
+  "/insikter": page("/insikter", { en: "/insights" }),
+  "/insikter/[slug]": page("/insikter/[slug]", { en: "/insights/[slug]" }),
 
   // ── buying, legal and the signed-in app (these already have English names) ──
   "/buy": page("/buy"),

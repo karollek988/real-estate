@@ -23,7 +23,7 @@ const legal = {
       description: "Så behandlar Köpanalys dina personuppgifter.",
     },
     title: "Integritetspolicy",
-    updated: "Senast uppdaterad: 7 oktober 2026",
+    updated: "Senast uppdaterad: 8 oktober 2026",
 
     controller: {
       title: "Personuppgiftsansvarig",
@@ -40,6 +40,9 @@ const legal = {
         analyses:
           "Uppgifter som krävs för att generera och lagra de fastighetsanalysrapporter du begär (adresser, länkade annonser, sparade analysresultat)",
         chat: "Innehåll du skickar till vår chattassistent, samt innehållet i dokument (till exempel besiktningsprotokoll eller BRF-årsredovisningar) du laddar upp för att få dem sammanfattade — se punkt 4 om hur detta behandlas av vår AI-leverantör.",
+        /** What a visitor writes in a listing on the map is translated when it is shown in another language (src/lib/translate). */
+        translation:
+          "Text du skriver i en annons på kartan. Annonsen sparas bara i din webbläsare, men när sidan visas på ett annat språk skickas annonsens text till vår egen server för att översättas automatiskt, och översättningen sparas tillsammans med originaltexten så att den inte behöver översättas om. Den kopplas inte till ditt konto eller din IP-adress och skickas inte till någon extern översättningstjänst.",
         /** The cookie of the language picker (src/components/LanguageSwitcher.tsx); it lives for 365 days. */
         language:
           "Ditt språkval. Om du själv väljer språk med språkväljaren sparas valet i en cookie, <code>NEXT_LOCALE</code>, som bara innehåller språkkoden (till exempel \"en\"). Den sparas i ett år på din enhet, sätts först när du gör ett val och används inte för analys eller marknadsföring.",
@@ -92,6 +95,7 @@ const legal = {
       cookie:
         "<b>Analyscookien ka_src</b> sparas i 90 dagar på din enhet, eller tills du avböjer eller återkallar ditt samtycke. Summorna per dag, kanal och källa, som inte kan kopplas till någon enskild besökare, sparas tills vidare.",
       language: "<b>Språkcookien NEXT_LOCALE</b> sparas i ett år på din enhet, eller tills du rensar den.",
+      translation: "<b>Översatta annonstexter</b> (originaltexten och dess översättning) sparas tills vidare och kan raderas på begäran: kontakta oss.",
       other:
         "<b>Annan marknadsförings- och analysdata</b>, om sådan i framtiden samlas in, sparas i högst 24 månader från insamlingstillfället, eller tills du återkallar ditt samtycke.",
     },

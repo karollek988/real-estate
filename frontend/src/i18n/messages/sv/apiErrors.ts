@@ -109,6 +109,12 @@ const apiErrors = {
     rateLimited: "För många meddelanden – vänta en liten stund och försök igen.",
   },
 
+  /** The map's translation of what visitors wrote in a listing. */
+  translate: {
+    rateLimited: "För många översättningar – vänta en liten stund och försök igen.",
+    invalid: "Texten kunde inte översättas.",
+  },
+
   contact: {
     unavailable: "Kontakt via formulär är inte tillgänglig just nu — mejla oss direkt på kontakt@kopanalys.se istället.",
     rateLimited: "För många meddelanden skickade – försök igen senare eller mejla kontakt@kopanalys.se.",

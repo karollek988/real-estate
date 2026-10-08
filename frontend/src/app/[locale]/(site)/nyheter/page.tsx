@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { getTranslations } from "next-intl/server";
 import { Link } from "@/i18n/navigation";
 import { LANDING_CONTAINER } from "@/components/landing/container";
+import { GuideCard } from "@/components/kunskap/GuideCard";
 import { NewsSection } from "@/components/sections/NewsSection";
 import { CtaBand } from "@/components/site/CtaBand";
 import { PageHero } from "@/components/site/PageHero";
@@ -10,6 +11,11 @@ import { ArrowRightIcon, BarChartIcon, LightbulbIcon, NewspaperIcon } from "@/co
 import { ClientMessages } from "@/i18n/ClientMessages";
 import { pageLocale, type LocaleParams } from "@/i18n/page";
 import { pageMetadata } from "@/i18n/seo";
+import { listPublishedContent } from "@/lib/content/repository";
+import { localizeItems } from "@/lib/translate/content";
+
+// Our own news items (from /admin/content) appear within five minutes, at once when the editor publishes.
+export const revalidate = 300;
 
 export async function generateMetadata({ params }: LocaleParams): Promise<Metadata> {
   const locale = await pageLocale(params);
@@ -20,13 +26,15 @@ export async function generateMetadata({ params }: LocaleParams): Promise<Metada
 /** Where to go next. The words: pages.news.next.<id> */
 const NEXT_STEPS = [
   { icon: BarChartIcon, id: "prices", href: ROUTES.prisutveckling },
-  { icon: LightbulbIcon, id: "guides", href: ROUTES.guider },
+  { icon: LightbulbIcon, id: "guides", href: ROUTES.bostadsguiden },
 ] as const;
 
 export default async function NyheterPage({ params }: LocaleParams) {
-  await pageLocale(params);
+  const locale = await pageLocale(params);
   const t = await getTranslations("pages.news");
   const tNav = await getTranslations("nav");
+  const tKunskap = await getTranslations("kunskap");
+  const ownNews = await localizeItems(await listPublishedContent("news"), locale);
 
   return (
     <>
@@ -37,6 +45,22 @@ export default async function NyheterPage({ params }: LocaleParams) {
         lead={t("lead")}
         crumbs={[{ label: tNav("entries.kunskap") }, { label: tNav("menus.kunskap.nyheter.label") }]}
       />
+      {ownNews.length > 0 && (
+        <section aria-labelledby="own-news-title" className="bg-ka-cream">
+          <div className={`${LANDING_CONTAINER} pt-14 lg:pt-20`}>
+            <h2 id="own-news-title" className="font-display text-[30px] font-bold text-ka-ink sm:text-[36px]">
+              {tKunskap("newsPage.fromUs")}
+            </h2>
+            <ul className="mt-8 grid gap-6 md:grid-cols-2 lg:grid-cols-3 lg:gap-7">
+              {ownNews.slice(0, 6).map((item) => (
+                <li key={item.id}>
+                  <GuideCard item={item} />
+                </li>
+              ))}
+            </ul>
+          </div>
+        </section>
+      )}
       <ClientMessages areas={["kunskap"]}>
         <NewsSection />
       </ClientMessages>

@@ -1,12 +1,14 @@
 "use client";
 
 import { Suspense } from "react";
-import Link from "next/link";
+import { useTranslations } from "next-intl";
 import { useSearchParams } from "next/navigation";
+import { Link } from "@/i18n/navigation";
 import { CloseIcon } from "@/components/icons";
-import { CONTENT_CATEGORIES, CONTENT_TYPE_LABELS, findCategory, isCategorySlug, type ContentCategorySlug, type ContentItem } from "@/lib/content/model";
-import { CONTENT_BASE_PATHS, LIBRARY_ANCHOR } from "@/lib/content/paths";
+import { CONTENT_CATEGORIES, findCategory, isCategorySlug, type ContentCategorySlug, type ContentItem } from "@/lib/content/model";
+import { LIBRARY_ANCHOR, hubLink } from "@/lib/content/paths";
 import { GuideCard } from "./GuideCard";
+import { useKunskap } from "./useKunskap";
 
 /**
  * The hub's full list: category chips, the search from the hero, and the cards
@@ -15,7 +17,7 @@ import { GuideCard } from "./GuideCard";
  * stays static and a filtered view can be linked to.
  *
  * Before the address is read (the first paint, or without JavaScript) the
- * full list is shown.
+ * full list is shown. The words: kunskap.library, kunskap.categories
  */
 interface LibraryProps {
   items: ContentItem[];
@@ -52,27 +54,19 @@ function normalize(text: string): string {
     .replace(/[̀-ͯ]/g, "");
 }
 
-function matches(item: ContentItem, query: string): boolean {
-  const haystack = normalize(`${item.title} ${item.excerpt} ${findCategory(item.category)?.label ?? ""}`);
+function matches(item: ContentItem, categoryLabel: string, query: string): boolean {
+  const haystack = normalize(`${item.title} ${item.excerpt} ${categoryLabel}`);
   return normalize(query)
     .split(/\s+/)
     .filter(Boolean)
     .every((word) => haystack.includes(word));
 }
 
-/** "1 träff", "4 träffar" while filtering; "6 guider", "1 insikt" otherwise. */
-function countLabel(n: number, type: ContentItem["type"] | null): string {
-  if (!type) return n === 1 ? "1 träff" : `${n} träffar`;
-  const { one, many } = CONTENT_TYPE_LABELS[type];
-  return `${n} ${(n === 1 ? one : many).toLowerCase()}`;
-}
-
-function filterHref(basePath: string, category: ContentCategorySlug | null, query: string): string {
-  const params = new URLSearchParams();
-  if (category) params.set("kategori", category);
-  if (query) params.set("q", query);
-  const qs = params.toString();
-  return `${basePath}${qs ? `?${qs}` : ""}#${LIBRARY_ANCHOR}`;
+function filterLink(type: ContentItem["type"], category: ContentCategorySlug | null, query: string) {
+  const search: Record<string, string> = {};
+  if (category) search.kategori = category;
+  if (query) search.q = query;
+  return { pathname: hubLink(type) as string, query: search, hash: LIBRARY_ANCHOR } as never;
 }
 
 function LibraryView({
@@ -85,41 +79,43 @@ function LibraryView({
   category,
   query,
 }: LibraryProps & { category: ContentCategorySlug | null; query: string }) {
-  const basePath = CONTENT_BASE_PATHS[type];
+  const t = useTranslations("kunskap");
+  const { categoryLabel } = useKunskap();
   const filtering = Boolean(category || query);
-  const searched = query ? items.filter((item) => matches(item, query)) : items;
+  const searched = query ? items.filter((item) => matches(item, item.category ? categoryLabel(item.category) : "", query)) : items;
   const shown = searched.filter((item) => {
     if (category) return item.category === category;
     return filtering || item.id !== hideWhenUnfiltered;
   });
   const countIn = (slug: ContentCategorySlug) => searched.filter((item) => item.category === slug).length;
   const activeCategory = findCategory(category);
+  const count = filtering ? shown.length : items.length;
 
   return (
     <section id={LIBRARY_ANCHOR} aria-labelledby="library-title" className="scroll-mt-24">
       <div className="flex flex-wrap items-end justify-between gap-x-6 gap-y-2">
         <h2 id="library-title" className="font-display text-[30px] font-bold leading-tight tracking-[-0.015em] text-ka-ink sm:text-[38px]">
-          {activeCategory ? activeCategory.label : title}
+          {activeCategory ? categoryLabel(activeCategory.slug) : title}
         </h2>
         {items.length > 0 && (
           <p aria-live="polite" className="text-[14.5px] text-ka-muted">
-            {countLabel(filtering ? shown.length : items.length, filtering ? null : type)}
+            {filtering ? t("library.hits", { count }) : t(`types.${type}.count`, { count })}
           </p>
         )}
       </div>
 
       {items.length > 0 && showCategories && (
-        <nav aria-label="Filtrera efter ämne" className="-mx-5 mt-6 overflow-x-auto px-5 pb-1 sm:mx-0 sm:overflow-visible sm:px-0">
+        <nav aria-label={t("library.filterLabel")} className="-mx-5 mt-6 overflow-x-auto px-5 pb-1 sm:mx-0 sm:overflow-visible sm:px-0">
           <ul className="flex w-max gap-2 sm:w-auto sm:flex-wrap">
             <li>
-              <Chip href={filterHref(basePath, null, query)} active={!category}>
-                Alla
+              <Chip href={filterLink(type, null, query)} active={!category}>
+                {t("library.all")}
               </Chip>
             </li>
             {CONTENT_CATEGORIES.map((c) => (
               <li key={c.slug}>
-                <Chip href={filterHref(basePath, c.slug, query)} active={category === c.slug}>
-                  {c.label}
+                <Chip href={filterLink(type, c.slug, query)} active={category === c.slug}>
+                  {categoryLabel(c.slug)}
                   <span className={`ml-1.5 tabular-nums ${category === c.slug ? "text-white/75" : "text-ka-muted"}`}>{countIn(c.slug)}</span>
                 </Chip>
               </li>
@@ -130,16 +126,14 @@ function LibraryView({
 
       {query && (
         <p className="mt-5 flex flex-wrap items-center gap-3 text-[15px] text-ka-text">
-          <span>
-            Sökresultat för <strong className="font-semibold text-ka-ink">”{query}”</strong>
-          </span>
+          <span>{t.rich("library.searchResultsFor", { query, b: (chunks) => <strong className="font-semibold text-ka-ink">{chunks}</strong> })}</span>
           <Link
-            href={filterHref(basePath, category, "")}
+            href={filterLink(type, category, "")}
             scroll={false}
             className="inline-flex items-center gap-1.5 rounded-full border border-ka-line-strong bg-white px-3 py-1 text-[13.5px] font-semibold text-ka-green-800 transition hover:border-ka-green-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ka-green-700"
           >
             <CloseIcon className="h-3.5 w-3.5" strokeWidth={2.4} />
-            Rensa sökningen
+            {t("library.clearSearch")}
           </Link>
         </p>
       )}
@@ -149,16 +143,14 @@ function LibraryView({
           empty
         ) : shown.length === 0 ? (
           <div className="flex flex-col items-start gap-4 rounded-[24px] border border-dashed border-ka-line-strong bg-white/70 p-7 sm:p-9">
-            <p className="text-[18px] font-semibold text-ka-ink">Inget matchar {query ? `”${query}”` : "det här ämnet"} ännu.</p>
-            <p className="max-w-[560px] text-[15.5px] leading-relaxed text-ka-muted">
-              Prova ett annat ord eller ett annat ämne. Vi fyller på med fler guider löpande.
-            </p>
+            <p className="text-[18px] font-semibold text-ka-ink">{query ? t("library.noMatch.query", { query }) : t("library.noMatch.topic")}</p>
+            <p className="max-w-[560px] text-[15.5px] leading-relaxed text-ka-muted">{t("library.noMatch.text")}</p>
             <Link
-              href={filterHref(basePath, null, "")}
+              href={filterLink(type, null, "")}
               scroll={false}
               className="inline-flex h-11 items-center rounded-[12px] bg-ka-green-900 px-5 text-[15px] font-semibold text-white transition hover:bg-ka-green-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ka-green-700 focus-visible:ring-offset-2"
             >
-              Visa allt
+              {t("library.noMatch.showAll")}
             </Link>
           </div>
         ) : (
@@ -175,7 +167,7 @@ function LibraryView({
   );
 }
 
-function Chip({ href, active, children }: { href: string; active: boolean; children: React.ReactNode }) {
+function Chip({ href, active, children }: { href: ReturnType<typeof filterLink>; active: boolean; children: React.ReactNode }) {
   return (
     <Link
       href={href}

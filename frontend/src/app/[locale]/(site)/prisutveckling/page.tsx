@@ -6,6 +6,7 @@ import { InsightsSection } from "@/components/sections/InsightsSection";
 import { CtaBand } from "@/components/site/CtaBand";
 import { PageHero } from "@/components/site/PageHero";
 import { ROUTES } from "@/components/site/navigation";
+import { categoryLink } from "@/lib/content/paths";
 import { ArrowRightIcon, BarChartIcon, BuildingIcon, ChartIcon, PercentIcon, TrendingUpIcon } from "@/components/icons";
 import { ClientMessages } from "@/i18n/ClientMessages";
 import { pageLocale, type LocaleParams } from "@/i18n/page";
@@ -19,7 +20,7 @@ export async function generateMetadata({ params }: LocaleParams): Promise<Metada
 
 /** What the figures mean. The words: pages.priceTrends.meaning.<id>.title / .text */
 const MEANINGS = [
-  { icon: PercentIcon, id: "policyRate", link: { pathname: "/blogg/[slug]", params: { slug: "rantekanslighet" } } },
+  { icon: PercentIcon, id: "policyRate", link: categoryLink("guide", "brf-ekonomi") },
   { icon: TrendingUpIcon, id: "prices" },
   { icon: BuildingIcon, id: "squareMetre" },
   { icon: ChartIcon, id: "inflation" },

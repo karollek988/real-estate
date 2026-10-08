@@ -24,9 +24,9 @@ const footer: Messages["footer"] = {
     },
     knowledge: {
       title: "Knowledge",
-      blogg: "Blog",
+      bostadsguiden: "Housing guide",
+      insikter: "Insights",
       nyheter: "News",
-      guider: "Guides",
     },
     support: {
       title: "Support",

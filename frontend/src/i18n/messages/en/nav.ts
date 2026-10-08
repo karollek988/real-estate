@@ -26,9 +26,9 @@ const nav: Messages["nav"] = {
       prisutveckling: { label: "Price trends", description: "See price development and trends" },
     },
     kunskap: {
-      blogg: { label: "Blog", description: "Tips, guides and analyses" },
-      nyheter: { label: "News", description: "The latest updates" },
-      guider: { label: "Guides", description: "Step by step to a safer purchase" },
+      bostadsguiden: { label: "Housing guide", description: "Understand the home purchase" },
+      insikter: { label: "Insights", description: "Data from the housing market" },
+      nyheter: { label: "News", description: "The latest right now" },
     },
   },
 

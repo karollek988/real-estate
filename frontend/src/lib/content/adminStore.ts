@@ -1,7 +1,11 @@
 import { revalidatePath } from "next/cache";
+import { after } from "next/server";
+import { LOCALE_CODES } from "@/i18n/locales";
+import { getPathname } from "@/i18n/navigation";
+import { translateOnPublish } from "@/lib/translate/content";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { readingMinutesFor, type ContentInput, type ContentItem } from "./model";
-import { CONTENT_BASE_PATHS, contentHref } from "./paths";
+import { contentHref, contentLink, hubLink } from "./paths";
 import { inputToColumns, LIST_COLUMNS, PAGE_COLUMNS, rowToItem, type ContentRow } from "./rows";
 
 /**
@@ -92,15 +96,20 @@ export async function updateContent(
   return item;
 }
 
-/** Rebuilds the pages an item appears on (its hub, its own page, the sitemap) - and its old address if the slug changed. */
+/**
+ * Rebuilds the pages an item appears on (its hub, its own page, the sitemap) in every language - and its old
+ * address if the slug changed. A published item is translated into the other languages in the background
+ * (lib/translate/content.ts), so the translated pages are ready before the first reader asks for them.
+ */
 function revalidateContent(item: ContentItem, before?: ContentItem) {
-  revalidatePath(CONTENT_BASE_PATHS[item.type]);
-  revalidatePath(contentHref(item));
+  const pagesOf = (it: Pick<ContentItem, "type" | "slug">) =>
+    LOCALE_CODES.flatMap((locale) => [getPathname({ locale, href: hubLink(it.type) }), getPathname({ locale, href: contentLink(it) })]);
+  for (const path of pagesOf(item)) revalidatePath(path);
   if (before && (before.slug !== item.slug || before.type !== item.type)) {
-    revalidatePath(CONTENT_BASE_PATHS[before.type]);
-    revalidatePath(contentHref(before));
+    for (const path of pagesOf(before)) revalidatePath(path);
   }
   revalidatePath("/sitemap.xml");
+  if (item.status === "published") after(() => translateOnPublish(item));
 }
 
 /** Deletes a draft for good. Published items are taken off the site first (unpublish), so nothing live disappears by mistake. */

@@ -44,7 +44,7 @@ const sections: Messages["sections"] = {
   knowledge: {
     eyebrow: "Knowledge",
     title: "Feel safer before your purchase",
-    text: "Guides, tips and news about the housing market.",
+    text: "Guides, insights and news about the housing market.",
   },
 
   contact: {

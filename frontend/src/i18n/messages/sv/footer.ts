@@ -24,9 +24,9 @@ const footer = {
     },
     knowledge: {
       title: "Kunskap",
-      blogg: "Blogg",
+      bostadsguiden: "Bostadsguiden",
+      insikter: "Insikter",
       nyheter: "Nyheter",
-      guider: "Guider",
     },
     support: {
       title: "Support",

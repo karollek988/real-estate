@@ -61,6 +61,7 @@ export default async function PrivacyPage({ params }: LocaleParams) {
                 <li>{t("privacy.data.necessary.analyses")}</li>
                 <li>{t("privacy.data.necessary.chat")}</li>
                 <li>{p("data.necessary.language")}</li>
+                <li>{p("data.necessary.translation")}</li>
               </ul>
 
               <h3 className={`${H3} mt-5`}>{t("privacy.data.stats.title")}</h3>
@@ -100,6 +101,7 @@ export default async function PrivacyPage({ params }: LocaleParams) {
                 <li>{p("retention.stats")}</li>
                 <li>{p("retention.cookie")}</li>
                 <li>{p("retention.language")}</li>
+                <li>{p("retention.translation")}</li>
                 <li>{p("retention.other")}</li>
               </ul>
             </Section>

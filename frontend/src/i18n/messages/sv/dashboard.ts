@@ -91,21 +91,6 @@ const dashboard = {
     title: "Köp & saldo",
     lead: "Se hur många analyser du har kvar och vad som finns på kontot. Köp en Områdesanalys eller ett Trygghetspaket när du behöver fler.",
     packages: "Se paketen",
-    /** Only shown for an account that has an older subscription. */
-    subscription: {
-      title: "Ditt abonnemang",
-      ultra: "Ultra",
-      premium: "Premium",
-      active: "Aktivt",
-      pastDue: "Förfallen",
-      ended: "Avslutat",
-      nextPayment: "Nästa betalning: {date}",
-      notSold: "Vi säljer inga nya abonnemang. Du kan avsluta det här när du vill.",
-      manage: "Hantera abonnemang",
-      opening: "Öppnar portal...",
-      portalError: "Kunde inte öppna betalningsportalen.",
-      genericError: "Något gick fel. Försök igen.",
-    },
   },
 
   coupons: {

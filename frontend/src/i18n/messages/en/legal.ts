@@ -18,7 +18,7 @@ const legal: Messages["legal"] = {
       description: "How Köpanalys processes your personal data.",
     },
     title: "Privacy policy",
-    updated: "Last updated: 7 October 2026",
+    updated: "Last updated: 8 October 2026",
 
     controller: {
       title: "Data controller",
@@ -35,6 +35,8 @@ const legal: Messages["legal"] = {
         analyses:
           "Data needed to generate and store the property analysis reports you request (addresses, linked listings, saved analysis results)",
         chat: "Content you send to our chat assistant, and the content of documents (for example survey reports or housing association annual reports) you upload to have them summarised — see section 4 on how this is handled by our AI provider.",
+        translation:
+          "Text you write in a listing on the map. The listing is only saved in your browser, but when the page is shown in another language the text of the listing is sent to our own server to be translated automatically, and the translation is saved together with the original text so that it does not have to be translated again. It is not linked to your account or your IP address and is not sent to any external translation service.",
         language:
           "Your choice of language. If you choose a language yourself with the language picker, the choice is saved in a cookie, <code>NEXT_LOCALE</code>, which contains only the language code (for example \"en\"). It is kept for one year on your device, is only set once you make a choice, and is not used for analytics or marketing.",
       },
@@ -86,6 +88,7 @@ const legal: Messages["legal"] = {
       cookie:
         "<b>The analytics cookie ka_src</b> is kept for 90 days on your device, or until you decline or withdraw your consent. The totals per day, channel and source, which cannot be linked to any individual visitor, are kept until further notice.",
       language: "<b>The language cookie NEXT_LOCALE</b> is kept for one year on your device, or until you clear it.",
+      translation: "<b>Translated listing texts</b> (the original text and its translation) are kept until further notice and can be deleted on request: contact us.",
       other:
         "<b>Other marketing and analytics data</b>, if any is collected in future, is kept for at most 24 months from the time of collection, or until you withdraw your consent.",
     },

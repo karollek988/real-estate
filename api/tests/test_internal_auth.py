@@ -39,6 +39,7 @@ PROTECTED_ENDPOINTS = [
     "/api/browser-fetch",
     "/api/brf-annual-report/upload",
     "/api/ocr/extract-text",
+    "/api/translate",
     "/api/brf-financials",
     "/api/location-intelligence",
     "/api/market-intelligence",

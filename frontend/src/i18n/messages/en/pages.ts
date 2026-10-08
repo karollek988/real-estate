@@ -41,7 +41,7 @@ const pages: Messages["pages"] = {
       lead: "From the home you find to the decision you make.",
       find: { title: "Find", text: "Explore homes, buyers and swaps on the map.", cta: "To the map", note: "Preview" },
       analyse: { title: "Analyse", text: "The association's finances, the area and the costs – in plain language.", cta: "Create analysis" },
-      inspect: { title: "Inspect", text: "The questions to ask and what to look for at the viewing.", cta: "Read the guide" },
+      inspect: { title: "Inspect", text: "The questions to ask and what to look for at the viewing.", cta: "Go to the Housing guide" },
       decide: { title: "Decide", text: "One overview with everything that affects the purchase.", cta: "See the example report" },
     },
   },
@@ -149,7 +149,7 @@ const pages: Messages["pages"] = {
       policyRate: {
         title: "The policy rate",
         text: "The Riksbank's policy rate affects the banks' interest rates – both on your mortgage and on the association's loans. That is why the association's interest rate sensitivity is worth knowing about.",
-        link: "Read about interest rate sensitivity",
+        link: "Guides about the association and finances",
       },
       prices: {
         title: "House prices",
@@ -180,44 +180,10 @@ const pages: Messages["pages"] = {
     moreLabel: "More to read",
     next: {
       prices: { title: "Price trends", text: "The policy rate, house prices and inflation in figures." },
-      guides: { title: "Guides", text: "Step by step to a safer purchase." },
+      guides: { title: "The Housing guide", text: "Understand the home purchase – finances, costs, areas and risks." },
     },
   },
 
-  blog: {
-    meta: {
-      title: "Blog – tips, guides and analyses",
-      description:
-        "What is good to know when you are going to buy a home: the housing association's finances, the costs that are not in the listing and how interest rates affect the fee.",
-    },
-    eyebrow: "Blog",
-    title: "Tips, guides and analyses",
-    lead: "What is good to know when you are going to buy a home – the housing association's finances, the costs that are not in the listing and how interest rates affect your fee.",
-    articlesHeading: "Articles",
-    guides: { title: "Guides", text: "Step by step to a safer purchase.", all: "All guides" },
-    news: {
-      title: "Housing market news",
-      text: "Interest rates, prices and decisions that affect your next home.",
-      cta: "To the news",
-    },
-  },
-
-  guides: {
-    meta: {
-      title: "Guides – step by step to a safer purchase",
-      description:
-        "Guides for anyone about to buy a home: the buying process step by step, the housing association's finances and what to look for at the viewing.",
-    },
-    eyebrow: "Guides",
-    title: "Step by step to a safer purchase",
-    lead: "From mortgage promise to taking possession: guides that help you understand the association, the area and the costs before you place a bid.",
-    allGuidesHeading: "All guides",
-    fromBlog: {
-      title: "From the blog",
-      text: "Tips and analyses about associations, interest rates and costs.",
-      cta: "To the blog",
-    },
-  },
 };
 
 export default pages;

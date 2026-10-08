@@ -27,7 +27,7 @@ check("/sv/... counts as Swedish", splitLocale("/sv/priser"), { locale: "sv", pr
 check("an unknown prefix is not a language", splitLocale("/xx/priser"), { locale: "sv", prefixed: false, rest: "/xx/priser" });
 
 check("a page by its Swedish name", resolveInternal("/priser"), { pathname: "/priser", params: {} });
-check("a dynamic page gives its parameter", resolveInternal("/guider/infor-visningen"), { pathname: "/guider/[slug]", params: { slug: "infor-visningen" } });
+check("a dynamic page gives its parameter", resolveInternal("/bostadsguider/skuldsattning"), { pathname: "/bostadsguider/[slug]", params: { slug: "skuldsattning" } });
 check("no page of that name", resolveInternal("/finns-inte"), null);
 
 check("the API has no language", isLanguageNeutral("/api/chat"), true);
@@ -37,7 +37,7 @@ check("a page has one", isLanguageNeutral("/priser"), false);
 check("Swedish stays as it is", localizeUrl(new URL("https://kopanalys.se/priser"), "sv").pathname, "/priser");
 check("a page gets its English name", localizeUrl(new URL("https://kopanalys.se/priser"), "en").pathname, "/en/pricing");
 check("the query stays", localizeUrl(new URL("https://kopanalys.se/skapa-analys?q=abc"), "en").search, "?q=abc");
-check("a dynamic page keeps its parameter", localizeUrl(new URL("https://kopanalys.se/guider/infor-visningen"), "en").pathname, "/en/guides/infor-visningen");
+check("a dynamic page keeps its parameter", localizeUrl(new URL("https://kopanalys.se/bostadsguider/skuldsattning"), "en").pathname, "/en/housing-guide/skuldsattning");
 check("an unknown address is left alone", localizeUrl(new URL("https://kopanalys.se/finns-inte"), "en").pathname, "/finns-inte");
 
 // ── the language of an API request ───────────────────────────────────────────

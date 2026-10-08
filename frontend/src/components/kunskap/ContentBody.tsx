@@ -1,12 +1,14 @@
 import { Fragment } from "react";
-import Link from "next/link";
+import { Link, type Href } from "@/i18n/navigation";
 import { CheckIcon, LightbulbIcon } from "@/components/icons";
+import { resolveInternal } from "@/i18n/path";
 import type { ContentBlock, Inline } from "@/lib/content/markdown";
 
 /**
  * The body of a guide, insight or news item, from the blocks markdown.ts
- * parses: React elements only, never raw HTML. Links inside the site use
- * next/link; links elsewhere open in a new tab.
+ * parses: React elements only, never raw HTML. Links inside the site go
+ * through the language-aware Link (a link to "/priser" lands on /en/pricing for an
+ * English reader); links elsewhere open in a new tab.
  */
 export function ContentBody({ blocks }: { blocks: ContentBlock[] }) {
   return (
@@ -77,6 +79,22 @@ function Block({ block }: { block: ContentBlock }) {
 
 const LINK = "font-semibold text-ka-green-700 underline decoration-ka-green-700/35 underline-offset-[3px] transition hover:text-ka-green-900 hover:decoration-ka-green-900";
 
+/** The page of the site that an address like "/priser#vad-kostar-det?x=1" points at, as the language-aware Link takes it; null for any other address. */
+function siteHref(href: string): Href | null {
+  if (!href.startsWith("/")) return null;
+  const [beforeHash, hash] = href.split("#");
+  const [path, queryString] = beforeHash.split("?");
+  const page = resolveInternal(path);
+  if (!page) return null;
+  const query = queryString ? Object.fromEntries(new URLSearchParams(queryString)) : undefined;
+  return {
+    pathname: page.pathname,
+    ...(Object.keys(page.params).length > 0 ? { params: page.params } : {}),
+    ...(query ? { query } : {}),
+    ...(hash ? { hash } : {}),
+  } as Href;
+}
+
 function Inlines({ nodes }: { nodes: Inline[] }) {
   return (
     <>
@@ -96,16 +114,26 @@ function Inlines({ nodes }: { nodes: Inline[] }) {
                 <Inlines nodes={node.children} />
               </em>
             );
-          case "link":
-            return node.href.startsWith("/") || node.href.startsWith("#") ? (
-              <Link key={i} href={node.href} className={LINK}>
+          case "link": {
+            const internal = siteHref(node.href);
+            if (internal) {
+              return (
+                <Link key={i} href={internal} className={LINK}>
+                  <Inlines nodes={node.children} />
+                </Link>
+              );
+            }
+            // an anchor on the same page (#avsnitt) stays a plain link
+            return node.href.startsWith("#") || node.href.startsWith("/") ? (
+              <a key={i} href={node.href} className={LINK}>
                 <Inlines nodes={node.children} />
-              </Link>
+              </a>
             ) : (
               <a key={i} href={node.href} target="_blank" rel="noopener noreferrer" className={LINK}>
                 <Inlines nodes={node.children} />
               </a>
             );
+          }
         }
       })}
     </>

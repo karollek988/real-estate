@@ -35,9 +35,9 @@ const nav = {
       prisutveckling: { label: "Prisutveckling", description: "Se prisutveckling och trender" },
     },
     kunskap: {
-      blogg: { label: "Blogg", description: "Tips, guider och analyser" },
-      nyheter: { label: "Nyheter", description: "Senaste uppdateringarna" },
-      guider: { label: "Guider", description: "Steg för steg till ett tryggare köp" },
+      bostadsguiden: { label: "Bostadsguiden", description: "Förstå bostadsköpet" },
+      insikter: { label: "Insikter", description: "Data från bostadsmarknaden" },
+      nyheter: { label: "Nyheter", description: "Det senaste just nu" },
     },
   },
 

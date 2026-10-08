@@ -1,5 +1,6 @@
-import Link from "next/link";
+import { Link, type Href } from "@/i18n/navigation";
 import { ArrowRightIcon, BookOpenIcon } from "@/components/icons";
+import { hrefKey } from "@/components/site/navigation";
 
 /**
  * A hub with nothing published yet: says so plainly and offers somewhere
@@ -12,7 +13,7 @@ export function ContentEmptyState({
 }: {
   title: string;
   text: string;
-  links: { label: string; href: string }[];
+  links: { label: string; href: Href }[];
 }) {
   return (
     <div className="relative overflow-hidden rounded-[28px] border border-ka-line-strong bg-white p-7 shadow-ka-card sm:p-10 lg:p-12">
@@ -27,7 +28,7 @@ export function ContentEmptyState({
       <p className="relative mt-3 max-w-[620px] text-[16.5px] leading-relaxed text-ka-muted">{text}</p>
       <ul className="relative mt-7 flex flex-col gap-3 sm:flex-row sm:flex-wrap">
         {links.map(({ label, href }) => (
-          <li key={href}>
+          <li key={hrefKey(href)}>
             <Link
               href={href}
               className="group inline-flex h-12 items-center gap-2 rounded-[12px] border-[1.5px] border-ka-green-900/25 bg-ka-cream px-5 text-[15px] font-semibold text-ka-ink transition hover:border-ka-green-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ka-green-700 focus-visible:ring-offset-2"

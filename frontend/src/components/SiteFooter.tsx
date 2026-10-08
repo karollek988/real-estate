@@ -1,54 +1,67 @@
-import Link from "next/link";
+import { getLocale, getTranslations } from "next-intl/server";
+import { Link } from "@/i18n/navigation";
 import { BrandLogo } from "@/components/BrandLogo";
 import { CookieSettingsLinkInline } from "@/components/CookieSettingsLinkInline";
-import { FacebookIcon, InstagramIcon, MailIcon } from "@/components/icons";
+import { FacebookIcon, GlobeIcon, InstagramIcon, MailIcon } from "@/components/icons";
+import { LanguageLinks } from "@/components/LanguageSwitcher";
 import { LANDING_CONTAINER } from "@/components/landing/container";
 import { ROUTES } from "@/components/site/navigation";
+import { LOCALES, type AppLocale } from "@/i18n/locales";
 
-const COLUMNS: { title: string; links: { label: string; href: string }[] }[] = [
+/** The footer's link columns. Each text is named by its key in the "footer" messages. */
+const COLUMNS = [
   {
-    title: "Köpanalys",
+    id: "company",
+    title: "columns.company.title",
     links: [
-      { label: "Så fungerar det", href: ROUTES.saFungerarDet },
-      { label: "Exempelrapport", href: ROUTES.exempelrapport },
-      { label: "Kontakt", href: ROUTES.kontakt },
+      { key: "columns.company.saFungerarDet", href: ROUTES.saFungerarDet },
+      { key: "columns.company.exempelrapport", href: ROUTES.exempelrapport },
+      { key: "columns.company.kontakt", href: ROUTES.kontakt },
     ],
   },
   {
-    title: "Bostadsanalys",
+    id: "analysis",
+    title: "columns.analysis.title",
     links: [
-      { label: "Karta", href: ROUTES.karta },
-      { label: "Skapa analys", href: ROUTES.skapaAnalys },
-      { label: "Områden", href: ROUTES.omraden },
-      { label: "Prisutveckling", href: ROUTES.prisutveckling },
-      { label: "Priser", href: ROUTES.priser },
+      { key: "columns.analysis.karta", href: ROUTES.karta },
+      { key: "columns.analysis.skapaAnalys", href: ROUTES.skapaAnalys },
+      { key: "columns.analysis.omraden", href: ROUTES.omraden },
+      { key: "columns.analysis.prisutveckling", href: ROUTES.prisutveckling },
+      { key: "columns.analysis.priser", href: ROUTES.priser },
     ],
   },
   {
-    title: "Kunskap",
+    id: "knowledge",
+    title: "columns.knowledge.title",
     links: [
-      { label: "Bostadsguiden", href: ROUTES.bostadsguiden },
-      { label: "Insikter", href: ROUTES.insikter },
-      { label: "Nyheter", href: ROUTES.nyheter },
+      { key: "columns.knowledge.bostadsguiden", href: ROUTES.bostadsguiden },
+      { key: "columns.knowledge.insikter", href: ROUTES.insikter },
+      { key: "columns.knowledge.nyheter", href: ROUTES.nyheter },
     ],
   },
   {
-    title: "Support",
+    id: "support",
+    title: "columns.support.title",
     links: [
-      { label: "Vanliga frågor", href: ROUTES.faq },
-      { label: "Mitt konto", href: "/dashboard" },
-      { label: "Köp analyser", href: ROUTES.kop },
+      { key: "columns.support.faq", href: ROUTES.faq },
+      { key: "columns.support.konto", href: ROUTES.konto },
+      { key: "columns.support.kop", href: ROUTES.kop },
     ],
   },
-];
+] as const;
 
 const LEGAL_LINKS = [
-  { label: "Integritetspolicy", href: ROUTES.integritetspolicy },
-  { label: "Användarvillkor", href: ROUTES.villkor },
-];
+  { key: "legal.privacy", href: ROUTES.integritetspolicy },
+  { key: "legal.terms", href: ROUTES.villkor },
+] as const;
+
+const ORG_NUMBER = "9811048793";
 
 /** Global footer (every page). Deep green, so it closes both the cream public pages and the dark app pages. */
-export function SiteFooter() {
+export async function SiteFooter() {
+  const t = await getTranslations("footer");
+  const tLanguage = await getTranslations("common.languageSwitcher");
+  const locale = (await getLocale()) as AppLocale;
   const year = new Date().getFullYear();
 
   return (
@@ -58,13 +71,13 @@ export function SiteFooter() {
           <div className="col-span-2 sm:col-span-4 lg:col-span-1">
             <Link
               href={ROUTES.home}
-              aria-label="Köpanalys – till startsidan"
+              aria-label={t("homeLabel")}
               className="inline-flex rounded-lg transition-opacity hover:opacity-85 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ka-mint"
             >
               <BrandLogo className="text-[22px]" markClassName="h-11 w-11" markSizes="44px" />
             </Link>
             <p className="mt-5 max-w-[300px] text-[14px] leading-relaxed text-white/65">
-              Köpa bostad? Vi visar vad du faktiskt köper – föreningens ekonomi, området och alla kostnader.
+              {t("tagline")}
             </p>
             <a
               href="mailto:kontakt@kopanalys.se"
@@ -75,10 +88,10 @@ export function SiteFooter() {
             </a>
             <div className="mt-5 flex items-center gap-2">
               <a
-                href="https://www.facebook.com/profile.php?id=61592039229644&locale=sv_SE"
+                href={`https://www.facebook.com/profile.php?id=61592039229644&locale=${LOCALES[locale].ogLocale}`}
                 target="_blank"
                 rel="noopener noreferrer"
-                aria-label="Köpanalys på Facebook"
+                aria-label={t("facebookLabel")}
                 className="flex h-9 w-9 items-center justify-center rounded-full border border-white/15 text-white/70 transition hover:border-ka-mint/50 hover:text-ka-mint"
               >
                 <FacebookIcon className="h-4 w-4" />
@@ -87,7 +100,7 @@ export function SiteFooter() {
                 href="https://www.instagram.com/kopanalys/"
                 target="_blank"
                 rel="noopener noreferrer"
-                aria-label="Köpanalys på Instagram"
+                aria-label={t("instagramLabel")}
                 className="flex h-9 w-9 items-center justify-center rounded-full border border-white/15 text-white/70 transition hover:border-ka-mint/50 hover:text-ka-mint"
               >
                 <InstagramIcon className="h-4 w-4" />
@@ -95,14 +108,14 @@ export function SiteFooter() {
             </div>
           </div>
 
-          {COLUMNS.map(({ title, links }) => (
-            <nav key={title} aria-label={title}>
-              <h2 className="mb-4 text-[12px] font-semibold uppercase tracking-[0.12em] text-ka-mint/85">{title}</h2>
+          {COLUMNS.map(({ id, title, links }) => (
+            <nav key={id} aria-label={t(title)}>
+              <h2 className="mb-4 text-[12px] font-semibold uppercase tracking-[0.12em] text-ka-mint/85">{t(title)}</h2>
               <ul className="flex flex-col gap-3">
-                {links.map(({ label, href }) => (
-                  <li key={label}>
-                    <Link href={href} className="text-[14.5px] text-white/75 transition hover:text-white">
-                      {label}
+                {links.map((link) => (
+                  <li key={link.key}>
+                    <Link href={link.href} className="text-[14.5px] text-white/75 transition hover:text-white">
+                      {t(link.key)}
                     </Link>
                   </li>
                 ))}
@@ -112,19 +125,29 @@ export function SiteFooter() {
         </div>
 
         <div className="flex flex-col gap-4 border-t border-white/10 py-6 sm:flex-row sm:items-center sm:justify-between">
-          <p className="text-[12.5px] text-white/55">&copy; {year} Köpanalys. Org.nr 9811048793</p>
-          <ul className="flex flex-wrap items-center gap-x-5 gap-y-2">
-            {LEGAL_LINKS.map(({ label, href }) => (
-              <li key={label}>
-                <Link href={href} className="text-[12.5px] text-white/55 underline-offset-2 transition hover:text-white hover:underline">
-                  {label}
-                </Link>
+          <p className="text-[12.5px] text-white/55">{t("copyright", { year, orgNumber: ORG_NUMBER })}</p>
+          <div className="flex flex-col gap-x-8 gap-y-3 sm:flex-row sm:items-center">
+            <div className="flex items-center gap-2 text-[12.5px] text-white/55">
+              <GlobeIcon className="h-4 w-4 text-ka-mint" aria-hidden />
+              <span className="sr-only">{tLanguage("label")}</span>
+              <LanguageLinks
+                itemClassName="text-white/55 underline-offset-2 transition hover:text-white hover:underline"
+                currentClassName="font-semibold text-white/85"
+              />
+            </div>
+            <ul className="flex flex-wrap items-center gap-x-5 gap-y-2">
+              {LEGAL_LINKS.map(({ key, href }) => (
+                <li key={key}>
+                  <Link href={href} className="text-[12.5px] text-white/55 underline-offset-2 transition hover:text-white hover:underline">
+                    {t(key)}
+                  </Link>
+                </li>
+              ))}
+              <li>
+                <CookieSettingsLinkInline />
               </li>
-            ))}
-            <li>
-              <CookieSettingsLinkInline />
-            </li>
-          </ul>
+            </ul>
+          </div>
         </div>
       </div>
     </footer>

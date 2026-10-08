@@ -79,6 +79,8 @@ export interface ContentItem {
   socialImage: string | null;
   /** Temporary development content (demo.ts). Never served in production. */
   isDemo?: boolean;
+  /** Set when title, summary and text were translated automatically (src/lib/translate/content.ts): the language they were written in. */
+  translatedFrom?: string;
 }
 
 /** What the editor can set; everything else (id, dates, who) the server decides. */

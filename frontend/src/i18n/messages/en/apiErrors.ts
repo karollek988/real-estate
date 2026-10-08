@@ -93,6 +93,11 @@ const apiErrors: Messages["apiErrors"] = {
     rateLimited: "Too many messages – wait a moment and try again.",
   },
 
+  translate: {
+    rateLimited: "Too many translations – wait a moment and try again.",
+    invalid: "The text could not be translated.",
+  },
+
   contact: {
     unavailable: "The contact form is not available right now — e-mail us directly at kontakt@kopanalys.se instead.",
     rateLimited: "Too many messages sent – try again later or e-mail kontakt@kopanalys.se.",

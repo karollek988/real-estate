@@ -52,7 +52,7 @@ const pages = {
       lead: "Från bostaden du hittar till beslutet du fattar.",
       find: { title: "Hitta", text: "Utforska bostäder, köpare och byten på kartan.", cta: "Till kartan", note: "Förhandsversion" },
       analyse: { title: "Analysera", text: "Föreningens ekonomi, området och kostnaderna – i klartext.", cta: "Skapa analys" },
-      inspect: { title: "Inspektera", text: "Frågorna att ställa och vad du ska titta efter på visningen.", cta: "Läs guiden" },
+      inspect: { title: "Inspektera", text: "Frågorna att ställa och vad du ska titta efter på visningen.", cta: "Till Bostadsguiden" },
       decide: { title: "Besluta", text: "Ett samlat underlag med allt som påverkar köpet.", cta: "Se exempelrapporten" },
     },
   },
@@ -165,7 +165,7 @@ const pages = {
       policyRate: {
         title: "Styrräntan",
         text: "Riksbankens styrränta påverkar bankernas räntor – både på ditt bolån och på föreningens lån. Därför är föreningens räntekänslighet värd att känna till.",
-        link: "Läs om räntekänslighet",
+        link: "Guider om BRF & ekonomi",
       },
       prices: {
         title: "Bostadspriserna",
@@ -197,46 +197,10 @@ const pages = {
     moreLabel: "Mer att läsa",
     next: {
       prices: { title: "Prisutveckling", text: "Styrränta, bostadspriser och inflation i siffror." },
-      guides: { title: "Guider", text: "Steg för steg till ett tryggare köp." },
+      guides: { title: "Bostadsguiden", text: "Förstå bostadsköpet – ekonomi, kostnader, områden och risker." },
     },
   },
 
-  blog: {
-    meta: {
-      title: "Blogg – tips, guider och analyser",
-      description:
-        "Det som är bra att veta när du ska köpa bostad: föreningens ekonomi, kostnaderna som inte står i annonsen och hur räntan påverkar avgiften.",
-    },
-    eyebrow: "Blogg",
-    title: "Tips, guider och analyser",
-    lead: "Det som är bra att veta när du ska köpa bostad – föreningens ekonomi, kostnaderna som inte står i annonsen och hur räntan påverkar din avgift.",
-    /** A heading only screen readers hear, above the articles. */
-    articlesHeading: "Artiklar",
-    guides: { title: "Guider", text: "Steg för steg till ett tryggare köp.", all: "Alla guider" },
-    news: {
-      title: "Nyheter om bostadsmarknaden",
-      text: "Räntor, priser och beslut som påverkar din nästa bostad.",
-      cta: "Till nyheterna",
-    },
-  },
-
-  guides: {
-    meta: {
-      title: "Guider – steg för steg till ett tryggare köp",
-      description:
-        "Guider för dig som ska köpa bostad: köpprocessen steg för steg, föreningens ekonomi och vad du ska titta efter på visningen.",
-    },
-    eyebrow: "Guider",
-    title: "Steg för steg till ett tryggare köp",
-    lead: "Från lånelöfte till tillträde: guider som hjälper dig att förstå föreningen, området och kostnaderna innan du lägger bud.",
-    /** A heading only screen readers hear, above the guides. */
-    allGuidesHeading: "Alla guider",
-    fromBlog: {
-      title: "Från bloggen",
-      text: "Tips och analyser om föreningar, räntor och kostnader.",
-      cta: "Till bloggen",
-    },
-  },
 };
 
 export default pages;

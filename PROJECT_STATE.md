@@ -17,6 +17,65 @@
   password hash: `ADMIN_PASSWORD_HASH` is required wherever admin login should work. A scan of every commit found no
   API keys or other secrets. Anyone with an older clone must re-clone and must not push old branches.
 
+**Languages (2026-10-08) — the site in Swedish and English; articles and map listings translated on the fly (branch `i18n-restore`, not merged or pushed).**
+Design choices by the user: Swedish stays unprefixed and English lives under `/en` with English page names (every page is
+written once; the message files supply the words, so a new page needs no per-language copy); scope = all pages and app
+screens, FAQ, privacy policy and terms, e-mails, the AI chat, the payment page's language, the analysis report with its PDF
+and the BRF analysis; the articles and the map listings are translated automatically (see below); the language is chosen with a switcher only (no detection from
+the browser) and remembered in a functional cookie `NEXT_LOCALE` set only when the visitor picks; next-intl with a commented
+TypeScript file per area per language, Swedish as the fallback. **Read `frontend/src/i18n/README.md` first** (how to add a
+language/page/text, message syntax, what is deliberately not translated).
+- **Structure:** `src/app/[locale]/...` holds every page once; `src/proxy.ts` composes admin-host routing, Supabase session
+  refresh, the remembered-language redirect and next-intl routing; `src/i18n/` = `locales.ts` (the list of languages),
+  `pathnames.ts` (page addresses per language), `messages/{sv,en}/<area>.ts` (sv is the master, `Messages = typeof sv`; en is typed
+  against it so a missing key does not compile), `apiText.ts`, `textKit.ts`, `seo.ts` (canonical/hreflang). Pages with client
+  components wrap them in `<ClientMessages areas={[...]}>`. The next-intl plugin is NOT used (its swc module fails on this Windows
+  machine): `next.config.ts` sets the `next-intl/config` aliases by hand.
+- **Words in code that is not a React component** (report builders, BRF interpretation, viewing guide, e-mails): they take a text
+  kit (`serverTextKit(locale)`, `useTextKit()`, `swedishTextKit()`), and numbers/dates go through `createFormat(kit)`. Swedish output
+  is unchanged (the `*.verify.mjs` scripts run against the Swedish kit and pass; the Swedish report page and the Swedish privacy,
+  terms, map, ... pages were compared word for word with the original site).
+- **API/e-mails/payment:** error messages shown to visitors are in the `apiErrors` messages (`apiError(...)` in routes; language from
+  the `Referer`, the language cookie, or a `locale` the page sends: the chat and the payment do). E-mails to customers (`emails`
+  messages) follow `user_metadata.locale` (set at sign-up, refreshed by `rememberCustomerLanguage` when an analysis is ordered
+  from a page in another language); team e-mails stay Swedish. Stripe Checkout opens in the page's language and returns to
+  `/en/buy` etc. The PDF is the report page printed (`?locale=`).
+- **Search engines:** `sitemap.ts` lists every page in both languages with hreflang alternates; articles only in Swedish (the
+  English address of an article shows the Swedish text and is `noindex`); `robots.ts` blocks the signed-in pages under both
+  prefixes.
+- **Legal texts:** `legal` messages; the English pages say the Swedish text is the one that applies. **The Swedish policy was
+  changed**: a bullet and a retention line for the language cookie, "last updated" 7 October 2026 (the user should read it), and a
+  typo fix in the terms. The report's reviewer comment, planned works and listing descriptions stay as written (Swedish).
+- **Re-applied after the merge with the content system (`i18n-restore`).** The other user's Kunskap redesign (DB-backed content,
+  /bostadsguider, /insikter, /nyheter/[slug], the editor at /admin/content) replaced the old article module, and the language
+  packs had been dropped from the files that conflicted. They were put back on top of it: `next.config.ts` (next-intl aliases,
+  redirects `/en/blog`, `/en/guides` -> `/en/housing-guide`), `package.json`, the admin layout (own <html>), navigation/footer/nav
+  messages (Bostadsguiden, Insikter, Nyheter), `pathnames.ts` (`/bostadsguider` = `/en/housing-guide`, `/insikter` = `/en/insights`,
+  `/nyheter/[slug]` = `/en/news/[slug]`), `components/kunskap/*` on the `kunskap` messages, the hubs and article routes under
+  `[locale]/(site)`, the sitemap (every page and article in both languages with hreflang), the subscriptions page (now just the
+  balance), `Breadcrumbs`. The admin console and the editor's preview stay Swedish.
+- **Articles and map listings are translated on the fly.** `frontend/src/lib/translate/*`: `translateTexts` (cache table
+  `text_translations`, **migration `20261008120000_text_translations.sql` is not applied anywhere**; slices of ~3500 characters, a
+  25 s budget per page build), `markdown.ts` (an article is taken apart into headings, paragraphs, list items; bold/italic/links
+  travel as numbered markers), `content.ts` (`localizeItem(s)`, `translateOnPublish` called from `adminStore.ts` through `after()`
+  when the editor saves a published item). `POST /api/translate` on the Next side (public, 20 requests a minute per IP, Swedish-looking
+  text only, used by the map for what visitors wrote; place names are not translated) and on the Python engine
+  (`api/translation.py`: Opus-MT sv-en (Apache-2.0) with CTranslate2, glossary in `translation_glossary.py`, numbers and
+  "m²" fixed, tests in `api/tests/test_translation.py`). **The root Dockerfile is now multi-stage**: the first stage converts the
+  model (PyTorch only there), the engine image gets ~75 MB of model and needs ~300 MB more memory; the Railway build is longer.
+  A translated article says "Translated automatically from Swedish. Show the original"; with the translator down the page shows
+  the Swedish text and is `noindex` in that language. The privacy policy says listing texts are translated on our own server and
+  stored (updated 8 October). Details: `frontend/src/i18n/README.md`.
+- **Verified:** `tsc` clean, `npm run i18n:check` (2161 texts), `translate.verify.mjs`, `i18n.verify.mjs`, 24 Python tests for the translator
+  (also against the model the Dockerfile stage builds), the real engine in Docker + the site in dev: hubs and an article in
+  English (headings, lists, links, boxes kept), a visitor's Swedish map listing translated with a way back to the original, and the
+  Swedish fall-back with the engine stopped. **Not verified:** the Railway build and memory, Vercel, the migration against a real
+  Supabase, the translator's quality on real articles (machine translation: readable, with occasional odd wording).
+- **Known leftovers:** a few existing English strings remain in the Swedish UI as before (status badges, the analysing stage list,
+  "Hej there!"; some English API messages whose Swedish value is the old English text); `housingCost.ts` text that is not yet rendered
+  is still Swedish; the admin portal, the editor and the review console are Swedish only; the outside news feed's headlines stay
+  Swedish; a second language needs its own model for the translator (`MODEL_FOLDERS`).
+
 **Seventeenth session, second round (2026-10-07, at the user's request; pushed to `origin/styleRedesign` → Vercel Preview).**
 - The six AI articles (`lib/kunskap/articles.ts`) were **deleted**.
 - **Picture upload** in the editor: `POST /api/admin/content/images` (admins, same origin, ≤ 12 MB) →

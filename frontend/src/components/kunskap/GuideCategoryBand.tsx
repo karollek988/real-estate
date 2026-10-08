@@ -1,17 +1,19 @@
-import Link from "next/link";
+import { useTranslations } from "next-intl";
+import { Link } from "@/i18n/navigation";
 import { ChevronRightIcon } from "@/components/icons";
 import { LANDING_CONTAINER } from "@/components/landing/container";
 import { CONTENT_CATEGORIES, type ContentType } from "@/lib/content/model";
-import { categoryHref } from "@/lib/content/paths";
+import { categoryLink } from "@/lib/content/paths";
 import { CATEGORY_ICONS, TONE_CLASSES } from "./categoryStyle";
 
 /**
  * "Utforska guider inom": the five subjects on a deep green band with soft,
  * wavy edges. Each subject is a tile that filters the list below
  * (?kategori=...#guider). Phones get a tappable list, tablets two columns,
- * desktops one row of five beside the heading.
+ * desktops one row of five beside the heading. The words: kunskap.guides.band, kunskap.categories
  */
 export function GuideCategoryBand({ type = "guide" }: { type?: ContentType }) {
+  const t = useTranslations("kunskap");
   return (
     <section aria-labelledby="kategorier-title" className="relative">
       <Wave className="block h-6 w-full sm:h-10" />
@@ -26,7 +28,7 @@ export function GuideCategoryBand({ type = "guide" }: { type?: ContentType }) {
         />
         <div className={`${LANDING_CONTAINER} relative grid gap-6 py-9 sm:gap-8 sm:py-11 xl:grid-cols-[210px_minmax(0,1fr)] xl:items-center xl:gap-10`}>
           <h2 id="kategorier-title" className="font-display text-[27px] font-bold leading-[1.1] tracking-[-0.01em] text-white sm:text-[32px]">
-            Utforska guider inom
+            {t("guides.band.title")}
           </h2>
           <ul className="grid gap-2.5 sm:grid-cols-2 sm:gap-3 lg:grid-cols-5">
             {CONTENT_CATEGORIES.map((category) => {
@@ -34,7 +36,7 @@ export function GuideCategoryBand({ type = "guide" }: { type?: ContentType }) {
               return (
                 <li key={category.slug} className="sm:last:col-span-2 lg:last:col-span-1">
                   <Link
-                    href={categoryHref(type, category.slug)}
+                    href={categoryLink(type, category.slug)}
                     className="group flex h-full items-center gap-4 rounded-[18px] border border-white/12 bg-white/[0.05] p-4 transition duration-200 hover:-translate-y-0.5 hover:border-ka-mint/45 hover:bg-white/[0.1] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ka-mint focus-visible:ring-offset-2 focus-visible:ring-offset-ka-green-950 motion-reduce:hover:translate-y-0 lg:flex-col lg:items-start lg:gap-3 lg:p-5"
                   >
                     <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-[14px] bg-white/[0.08] ring-1 ring-white/10">
@@ -42,10 +44,10 @@ export function GuideCategoryBand({ type = "guide" }: { type?: ContentType }) {
                     </span>
                     <span className="min-w-0 flex-1">
                       <span className="flex items-center gap-1 text-[16.5px] font-bold text-white">
-                        {category.label}
+                        {t(`categories.${category.slug}.label`)}
                         <ChevronRightIcon className="hidden h-4 w-4 text-white/60 transition-transform duration-200 group-hover:translate-x-0.5 lg:block" strokeWidth={2.2} />
                       </span>
-                      <span className="mt-0.5 block text-[14px] leading-snug text-white/70">{category.description}</span>
+                      <span className="mt-0.5 block text-[14px] leading-snug text-white/70">{t(`categories.${category.slug}.description`)}</span>
                     </span>
                     <ChevronRightIcon className="h-5 w-5 shrink-0 text-white/60 transition-transform duration-200 group-hover:translate-x-0.5 lg:hidden" strokeWidth={2.2} />
                   </Link>

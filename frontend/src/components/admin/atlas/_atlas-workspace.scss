@@ -1378,6 +1378,26 @@
     line-height: 1.65;
   }
 
+  // "Translated automatically. Show original": under a listing a visitor wrote in another language
+  .detail-translation {
+    margin: -8px 0 16px;
+    color: $map-text-muted;
+    font-size: 11px;
+    line-height: 1.5;
+  }
+
+  .detail-translation-toggle {
+    padding: 0;
+    color: $map-accent;
+    background: none;
+    border: 0;
+    font: inherit;
+    font-weight: 700;
+    text-decoration: underline;
+    text-underline-offset: 2px;
+    cursor: pointer;
+  }
+
   .detail-link,
   .detail-map-link {
     display: flex;

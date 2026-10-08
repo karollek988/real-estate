@@ -1,30 +1,44 @@
 "use client";
 
 import { Suspense, useState } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useTranslations } from "next-intl";
+import { useSearchParams } from "next/navigation";
+import { useRouter } from "@/i18n/navigation";
 import { SearchIcon } from "@/components/icons";
-import { LIBRARY_ANCHOR } from "@/lib/content/paths";
+import { LIBRARY_ANCHOR, hubLink } from "@/lib/content/paths";
+import type { ContentType } from "@/lib/content/model";
 
 /**
  * The hub's search field. Searching filters the list further down the page
  * (?q=...#guider) - the list does the matching, so this only sets the
  * address. Without JavaScript it is a plain GET form and does the same.
+ * The words: kunskap.search (the label and the placeholder come from the page)
  */
-export function GuideSearch({ action, placeholder, label }: { action: string; placeholder: string; label: string }) {
+interface SearchProps {
+  /** Which hub the search belongs to. */
+  type: ContentType;
+  /** The hub's address as a visitor sees it in the language they read (the form's action without JavaScript). */
+  action: string;
+  placeholder: string;
+  label: string;
+}
+
+export function GuideSearch(props: SearchProps) {
   return (
-    <Suspense fallback={<SearchForm action={action} placeholder={placeholder} label={label} initialQuery="" />}>
-      <SearchFormFromAddress action={action} placeholder={placeholder} label={label} />
+    <Suspense fallback={<SearchForm {...props} initialQuery="" />}>
+      <SearchFormFromAddress {...props} />
     </Suspense>
   );
 }
 
-function SearchFormFromAddress(props: { action: string; placeholder: string; label: string }) {
+function SearchFormFromAddress(props: SearchProps) {
   const query = useSearchParams()?.get("q") ?? "";
   // Remount when the address changes (a cleared search), so the field follows it.
   return <SearchForm key={query} {...props} initialQuery={query} />;
 }
 
-function SearchForm({ action, placeholder, label, initialQuery }: { action: string; placeholder: string; label: string; initialQuery: string }) {
+function SearchForm({ type, action, placeholder, label, initialQuery }: SearchProps & { initialQuery: string }) {
+  const t = useTranslations("kunskap.search");
   const router = useRouter();
   const [query, setQuery] = useState(initialQuery);
 
@@ -36,7 +50,7 @@ function SearchForm({ action, placeholder, label, initialQuery }: { action: stri
       onSubmit={(e) => {
         e.preventDefault();
         const q = query.trim();
-        router.push(`${action}${q ? `?q=${encodeURIComponent(q)}` : ""}#${LIBRARY_ANCHOR}`);
+        router.push({ pathname: hubLink(type) as string, ...(q ? { query: { q } } : {}), hash: LIBRARY_ANCHOR } as never);
       }}
     >
       <label htmlFor="guide-search" className="sr-only">
@@ -59,7 +73,7 @@ function SearchForm({ action, placeholder, label, initialQuery }: { action: stri
           type="submit"
           className="h-12 shrink-0 cursor-pointer rounded-[13px] bg-ka-green-900 px-5 text-[15.5px] font-semibold text-white transition hover:bg-ka-green-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ka-green-700 focus-visible:ring-offset-2 sm:px-7"
         >
-          Sök
+          {t("button")}
         </button>
       </div>
     </form>

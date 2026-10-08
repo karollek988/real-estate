@@ -52,7 +52,7 @@ const sections = {
   knowledge: {
     eyebrow: "Kunskap",
     title: "Bli tryggare inför ditt köp",
-    text: "Guider, tips och nyheter om bostadsmarknaden.",
+    text: "Guider, insikter och nyheter om bostadsmarknaden.",
   },
 
   contact: {

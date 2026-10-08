@@ -59,6 +59,9 @@ const map: Messages["map"] = {
     wantsToLive: "Wants to live",
     currentPlace: "Current location",
     wantedPlace: "Wanted location",
+    translated: "Translated automatically.",
+    showOriginal: "Show the original",
+    showTranslation: "Show the translation",
   },
 
   form: {

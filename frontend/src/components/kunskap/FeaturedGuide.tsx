@@ -1,19 +1,20 @@
 import Image from "next/image";
-import Link from "next/link";
+import { Link } from "@/i18n/navigation";
 import { ArrowRightIcon, ClockIcon } from "@/components/icons";
-import { CONTENT_TYPE_LABELS, formatContentDate, type ContentItem } from "@/lib/content/model";
-import { contentHref } from "@/lib/content/paths";
+import type { ContentItem } from "@/lib/content/model";
+import { contentLink } from "@/lib/content/paths";
 import { CategoryPill, DemoBadge } from "./CategoryPill";
+import { useKunskap } from "./useKunskap";
 
 /**
  * The item a hub leads with: a wide card, picture on one side and the story
  * on the other (stacked on phones). Fed by any ContentItem - the hub picks the
- * newest one marked "featured" (repository.ts pickFeatured).
+ * newest one marked "featured" (repository.ts pickFeatured). The words: kunskap.*
  */
-export function FeaturedGuide({ item, label = "Utvald guide", cta }: { item: ContentItem; label?: string; cta?: string }) {
+export function FeaturedGuide({ item, label }: { item: ContentItem; label: string }) {
+  const { t, date } = useKunskap();
   const published = item.publishedAt ?? item.updatedAt;
   const updatedLater = item.publishedAt && Date.parse(item.updatedAt) - Date.parse(item.publishedAt) > 86_400_000;
-  const ctaLabel = cta ?? `Läs ${CONTENT_TYPE_LABELS[item.type].the}`;
 
   return (
     <article className="group relative grid overflow-hidden rounded-[28px] border border-ka-line-strong bg-white shadow-ka-card transition duration-300 hover:shadow-ka-card-hover focus-within:ring-2 focus-within:ring-ka-green-700 focus-within:ring-offset-2 focus-within:ring-offset-ka-cream lg:grid-cols-[minmax(0,1.15fr)_minmax(0,1fr)]">
@@ -36,7 +37,7 @@ export function FeaturedGuide({ item, label = "Utvald guide", cta }: { item: Con
           <CategoryPill category={item.category} />
         </div>
         <h3 className="mt-5 font-display text-[30px] font-bold leading-[1.08] tracking-[-0.02em] text-ka-ink sm:text-[38px] xl:text-[44px]">
-          <Link href={contentHref(item)} className="outline-none after:absolute after:inset-0 after:content-['']">
+          <Link href={contentLink(item)} className="outline-none after:absolute after:inset-0 after:content-['']">
             {item.title}
           </Link>
         </h3>
@@ -44,22 +45,20 @@ export function FeaturedGuide({ item, label = "Utvald guide", cta }: { item: Con
         <p className="mt-6 flex flex-wrap items-center gap-x-3 gap-y-1 text-[14px] text-ka-muted">
           <span className="inline-flex items-center gap-1.5">
             <ClockIcon className="h-4 w-4" />
-            {item.readingMinutes} min läsning
+            {t("readingTime", { minutes: item.readingMinutes })}
           </span>
           <span aria-hidden>·</span>
           {updatedLater ? (
-            <span>
-              Uppdaterad <time dateTime={item.updatedAt}>{formatContentDate(item.updatedAt)}</time>
-            </span>
+            <time dateTime={item.updatedAt}>{t("updated", { date: date(item.updatedAt) })}</time>
           ) : (
-            <time dateTime={published}>{formatContentDate(published)}</time>
+            <time dateTime={published}>{date(published)}</time>
           )}
         </p>
         <span
           aria-hidden
           className="mt-8 inline-flex h-[52px] w-fit items-center gap-2.5 rounded-[12px] bg-ka-green-900 px-6 text-[15.5px] font-semibold text-white shadow-[0_14px_30px_-16px_rgba(12,42,31,0.9)] transition duration-200 group-hover:bg-ka-green-800"
         >
-          {ctaLabel}
+          {t(`types.${item.type}.read`)}
           <ArrowRightIcon className="h-5 w-5 transition-transform duration-200 group-hover:translate-x-1" />
         </span>
       </div>

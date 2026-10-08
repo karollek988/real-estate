@@ -68,6 +68,10 @@ const map = {
     wantsToLive: "Vill bo",
     currentPlace: "Nuvarande plats",
     wantedPlace: "Önskad plats",
+    /** Under a listing that a visitor wrote in another language, shown translated. */
+    translated: "Översatt automatiskt.",
+    showOriginal: "Visa originalet",
+    showTranslation: "Visa översättningen",
   },
 
   /** The form for adding or changing a listing. */

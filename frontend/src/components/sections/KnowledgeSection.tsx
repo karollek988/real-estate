@@ -1,13 +1,16 @@
-import Link from "next/link";
+import { useTranslations } from "next-intl";
+import { Link } from "@/i18n/navigation";
 import { LANDING_CONTAINER } from "@/components/landing/container";
-import { KUNSKAP_MENU } from "@/components/site/navigation";
+import { KUNSKAP_MENU, hrefKey } from "@/components/site/navigation";
 import { ArrowRightIcon, BookOpenIcon } from "@/components/icons";
 
 /**
- * A small pointer to the Kunskap pages (Bostadsguiden, Insikter, Nyheter). The articles
+ * A small pointer to the Kunskap pages (Blogg, Nyheter, Guider). The articles
  * themselves live on their own pages, not on the landing page.
  */
 export function KnowledgeSection() {
+  const t = useTranslations("sections.knowledge");
+  const tNav = useTranslations("nav");
   return (
     <section aria-labelledby="kunskap-title" className="bg-ka-cream">
       <div className={`${LANDING_CONTAINER} py-16 lg:py-20`}>
@@ -15,26 +18,26 @@ export function KnowledgeSection() {
           <div>
             <p className="inline-flex items-center gap-2 text-[12px] font-semibold uppercase tracking-[0.08em] text-ka-green-700">
               <BookOpenIcon className="h-4 w-4" />
-              Kunskap
+              {t("eyebrow")}
             </p>
             <h2 id="kunskap-title" className="mt-3 font-display text-[28px] font-bold leading-[1.12] tracking-[-0.01em] text-ka-ink sm:text-[32px]">
-              Bli tryggare inför ditt köp
+              {t("title")}
             </h2>
-            <p className="mt-2 text-[15px] leading-relaxed text-ka-muted">Guider, insikter och nyheter om bostadsmarknaden.</p>
+            <p className="mt-2 text-[15px] leading-relaxed text-ka-muted">{t("text")}</p>
           </div>
           <ul className="grid gap-3 sm:grid-cols-3">
-            {KUNSKAP_MENU.map(({ label, description, href, icon: Icon }) => (
-              <li key={href}>
+            {KUNSKAP_MENU.map(({ key, href, icon: Icon }) => (
+              <li key={hrefKey(href)}>
                 <Link
                   href={href}
                   className="group flex h-full flex-col rounded-[18px] border border-ka-line bg-ka-cream/60 p-5 transition hover:-translate-y-0.5 hover:border-ka-green-700/30 hover:bg-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ka-green-700"
                 >
                   <Icon className="h-7 w-7 text-ka-green-800" strokeWidth={1.5} />
                   <span className="mt-4 flex items-center gap-1.5 text-[16.5px] font-bold text-ka-ink">
-                    {label}
+                    {tNav(`${key}.label`)}
                     <ArrowRightIcon className="h-4 w-4 text-ka-green-700 transition-transform duration-200 group-hover:translate-x-1" />
                   </span>
-                  <span className="mt-1 text-[14px] leading-snug text-ka-muted">{description}</span>
+                  <span className="mt-1 text-[14px] leading-snug text-ka-muted">{tNav(`${key}.description`)}</span>
                 </Link>
               </li>
             ))}

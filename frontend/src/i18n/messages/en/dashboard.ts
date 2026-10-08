@@ -80,20 +80,6 @@ const dashboard: Messages["dashboard"] = {
     title: "Purchases & balance",
     lead: "See how many analyses you have left and what is on the account. Buy an Area analysis or a Peace of Mind Package when you need more.",
     packages: "See the packages",
-    subscription: {
-      title: "Your subscription",
-      ultra: "Ultra",
-      premium: "Premium",
-      active: "Active",
-      pastDue: "Overdue",
-      ended: "Ended",
-      nextPayment: "Next payment: {date}",
-      notSold: "We no longer sell subscriptions. You can cancel this one whenever you like.",
-      manage: "Manage subscription",
-      opening: "Opening portal...",
-      portalError: "Could not open the payment portal.",
-      genericError: "Something went wrong. Please try again.",
-    },
   },
 
   coupons: {
