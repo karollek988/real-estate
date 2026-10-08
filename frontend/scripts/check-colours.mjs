@@ -53,7 +53,7 @@ const RULES = [
   { name: "a Tailwind colour", re: new RegExp(`(?<![\\w-])(?:${UTILITIES})-(?:${TAILWIND_PALETTES})-\\d{2,3}(?![\\w-])`, "g") },
   { name: "a colour typed into a class", re: /\[(?:#[0-9a-fA-F]{3,8}|(?:rgb|rgba|hsl|hsla)\([^\]]*\))\]/g },
   { name: "a hex colour", re: /(?<![\w&\[-])#[0-9a-fA-F]{6}\b|(?<![\w&\[-])#[0-9a-fA-F]{3}\b(?![\w-])/g, notInClass: true },
-  { name: "an rgb()/hsl() colour", re: /\b(?:rgba?|hsla?)\(\s*\d/g, notInClass: true },
+  { name: "an rgb()/hsl() colour", re: /(?<![A-Za-z0-9-])(?:rgba?|hsla?)\(\s*\d/g, notInClass: true }, // Tailwind writes spaces as _, so no \b
 ];
 
 function* walk(dir) {
