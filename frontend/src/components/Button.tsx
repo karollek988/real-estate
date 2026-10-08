@@ -12,3 +12,4 @@ export function Button({ variant = "primary", className = "", ...props }: Button
 
   return <button className={`${base} ${styles} ${className}`} {...props} />;
 }
+ 
