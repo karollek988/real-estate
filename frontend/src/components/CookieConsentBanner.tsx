@@ -4,10 +4,13 @@ import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
 import { Link } from "@/i18n/navigation";
 import { getCookieConsent, setCookieConsent, REOPEN_CONSENT_EVENT } from "@/lib/consent";
+import { CookieSettingsDialog } from "./CookieSettingsDialog";
 
 export function CookieConsentBanner() {
   const t = useTranslations("consent");
   const [visible, setVisible] = useState(false);
+  // "Anpassa val": the dialog with a switch for each cookie. While it is open the banner is not shown.
+  const [customizing, setCustomizing] = useState(false);
 
   useEffect(() => {
     const existing = getCookieConsent();
@@ -16,23 +19,24 @@ export function CookieConsentBanner() {
     }
 
     function onReopen() {
+      setCustomizing(false);
       setVisible(true);
     }
     window.addEventListener(REOPEN_CONSENT_EVENT, onReopen);
     return () => window.removeEventListener(REOPEN_CONSENT_EVENT, onReopen);
   }, []);
 
-  function acceptAll() {
-    setCookieConsent(true);
-    setVisible(false);
-  }
-
-  function declineAll() {
-    setCookieConsent(false);
+  function decide(marketing: boolean) {
+    setCookieConsent(marketing);
+    setCustomizing(false);
     setVisible(false);
   }
 
   if (!visible) return null;
+
+  if (customizing) {
+    return <CookieSettingsDialog onSave={({ marketing }) => decide(marketing)} onBack={() => setCustomizing(false)} />;
+  }
 
   return (
     <div className="fixed bottom-0 left-0 right-0 z-[90] p-4 sm:p-6">
@@ -52,17 +56,24 @@ export function CookieConsentBanner() {
         <div className="mt-4 flex flex-col gap-2 sm:flex-row sm:justify-end">
           <button
             type="button"
-            onClick={declineAll}
+            onClick={() => decide(false)}
             className="cursor-pointer rounded-xl border border-white/10 bg-white/5 px-5 py-2.5 text-sm font-semibold text-neutral-200 transition hover:border-white/20 hover:bg-white/10"
           >
-            {t("decline")}
+            {t("necessaryOnly")}
           </button>
           <button
             type="button"
-            onClick={acceptAll}
+            onClick={() => setCustomizing(true)}
+            className="cursor-pointer rounded-xl border border-white/10 bg-white/5 px-5 py-2.5 text-sm font-semibold text-neutral-200 transition hover:border-white/20 hover:bg-white/10"
+          >
+            {t("customize")}
+          </button>
+          <button
+            type="button"
+            onClick={() => decide(true)}
             className="cursor-pointer rounded-xl bg-green-600 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-green-500"
           >
-            {t("accept")}
+            {t("acceptAll")}
           </button>
         </div>
       </div>

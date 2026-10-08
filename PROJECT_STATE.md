@@ -188,8 +188,11 @@ The user asked that the acquisition model start from real statistics (how many c
 with scenarios still possible, using cookies and therefore consent. Design choices (all the recommended ones): the
 cookie remembers **only the first source**; consenting visitors are **scaled up using the banner choices**; boxes
 are **prefilled and any box can be typed over**; **growth defaults to 0 %**.
-- **The cookie:** `ka_src`, set by `components/analytics/SourceTracker.tsx` only after "Acceptera alla" (the banner's
-  `marketing` flag, which is the analysis consent), 90 days, first-party, `SameSite=Lax`, `Secure` on https, value
+- **The cookie:** `ka_src`, set by `components/analytics/SourceTracker.tsx` only after "Godkänn alla", or after "Anpassa val" with
+  "Analys och marknadsföring" switched on (the stored `marketing` flag, which is the analysis consent; the banner has
+  three buttons - "Endast nödvändiga", "Anpassa val", "Godkänn alla" - and "Anpassa val" opens
+  `components/CookieSettingsDialog.tsx`, one switch per cookie with a description, the necessary ones locked on; today
+  `marketing` is the only optional one, a second would also need a place in `lib/consent.ts`), 90 days, first-party, `SameSite=Lax`, `Secure` on https, value
   `channel.source` (e.g. `seo.google`) and nothing else. Not set, and nothing counted, with Do Not Track / Global
   Privacy Control. Removed on decline and on "Cookie-inställningar". Where the visitor came from is worked out in
   the browser (`lib/analytics/source.ts`: paid campaign tag/click id → ads; named `utm_source` (ChatGPT adds
