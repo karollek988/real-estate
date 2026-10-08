@@ -71,6 +71,10 @@ python -m pytest api/tests     # the Python engine's API (install api/requiremen
   `PASS`/`FAIL` lines and exits non-zero on a failure. A new one is picked up by `npm run verify` from its name alone.
   Run one with `npx tsx src/lib/translate/translate.verify.mjs`, or the ones whose path contains a word with
   `npm run verify -- translate`.
+- **Colours** come from the master variables in `frontend/src/styles/_variables.scss`: write `bg-ka-cream`, `text-ka-green-700`,
+  `border-ka-line-strong` (the `ka-*` colours), or a `$variable` in a stylesheet - never `bg-green-600`, `text-neutral-500`,
+  `bg-[#12271D]` or a hex value in a style. A new brand colour goes into that file first. `npm run colours` lists every
+  place that breaks this (it is not part of CI yet; see `PROJECT_STATE.md`).
 - **Visible text** is written once per language, never inside a component: add it to `frontend/src/i18n/messages/sv/` **and**
   `…/en/`. `npm run i18n:check` fails if the two differ. See `frontend/src/i18n/README.md`.
 - **Not covered yet:** ESLint (it still reports errors from before CI existed), the root `tests/` folder and

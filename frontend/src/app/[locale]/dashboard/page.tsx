@@ -133,10 +133,10 @@ export default function DashboardPage() {
         <div className="flex flex-col gap-8 lg:flex-row">
           <div className="flex min-w-0 flex-1 flex-col gap-8">
             <div className="dash-enter" style={stagger(0)}>
-              <h1 className="text-2xl font-semibold tracking-tight text-white">
+              <h1 className="text-2xl font-semibold tracking-tight text-ka-ink">
                 {t("greeting", { name: fullName.split(" ")[0] || t("nameFallback") })}
               </h1>
-              <p className="mt-1 text-sm text-neutral-400">{t("lead")}</p>
+              <p className="mt-1 text-sm text-ka-muted">{t("lead")}</p>
             </div>
 
             <div className="dash-enter grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4" style={stagger(2)}>
@@ -231,10 +231,10 @@ function OwnedAnalysisItem({
     analysis.status !== "complete" || !review || review.status === "not_applicable"
       ? null
       : review.status === "published"
-        ? { text: t("brf.published"), tone: "text-green-300" }
+        ? { text: t("brf.published"), tone: "text-ka-green-700" }
         : review.dueAt && new Date(review.dueAt).getTime() > Date.now()
-          ? { text: t("brf.dueBy", { when: formats.due.format(new Date(review.dueAt)) }), tone: "text-amber-200" }
-          : { text: t("brf.pending"), tone: "text-amber-200" };
+          ? { text: t("brf.dueBy", { when: formats.due.format(new Date(review.dueAt)) }), tone: "text-ka-amber-700" }
+          : { text: t("brf.pending"), tone: "text-ka-amber-700" };
 
   const status: "ready" | "processing" | "expired" =
     analysis.status === "complete" ? "ready" : analysis.status === "pending" ? "processing" : "expired";
@@ -263,7 +263,7 @@ function OwnedAnalysisItem({
             <button
               type="button"
               onClick={() => router.push({ pathname: "/dashboard/inspection", query: { propertyId: analysis.propertyId } })}
-              className="mb-2.5 flex w-fit items-center gap-1.5 rounded-lg border border-green-400/30 bg-green-400/10 px-3 py-1.5 text-xs font-semibold text-green-300 transition hover:bg-green-400/20"
+              className="mb-2.5 flex w-fit items-center gap-1.5 rounded-lg border border-ka-green-700/30 bg-ka-sage/60 px-3 py-1.5 text-xs font-semibold text-ka-green-700 transition hover:bg-ka-sage/60"
             >
               <ShieldIcon className="h-3.5 w-3.5" />
               {t("continueInspection")}
@@ -272,7 +272,7 @@ function OwnedAnalysisItem({
           )}
           <div className="flex items-center gap-4 text-xs">
             {isFull && review?.status !== "not_applicable" && (
-              <label className="cursor-pointer font-medium text-green-400 transition hover:text-green-300">
+              <label className="cursor-pointer font-medium text-ka-green-700 transition hover:text-ka-green-800">
                 {uploading ? t("uploading") : t("uploadReport")}
                 <input type="file" accept={BRF_REPORT_ACCEPT} className="hidden" onChange={handleFileChange} disabled={uploading} />
               </label>
@@ -281,13 +281,13 @@ function OwnedAnalysisItem({
               type="button"
               onClick={onDelete}
               disabled={deleting}
-              className="font-medium text-neutral-400 transition hover:text-red-400 disabled:opacity-50"
+              className="font-medium text-ka-muted transition hover:text-ka-red-600 disabled:opacity-50"
             >
               {deleting ? t("deleting") : t("delete")}
             </button>
           </div>
-          {uploaded && <p className="text-xs text-green-300">{t("uploadThanks")}</p>}
-          {uploadError && <p className="text-xs text-red-400">{uploadError}</p>}
+          {uploaded && <p className="text-xs text-ka-green-700">{t("uploadThanks")}</p>}
+          {uploadError && <p className="text-xs text-ka-red-600">{uploadError}</p>}
         </>
       }
     />

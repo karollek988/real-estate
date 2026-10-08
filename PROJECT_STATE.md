@@ -33,6 +33,30 @@
   the repo) and `BRF-Scraper/tests`. Branches that do not follow the prefixes (`mapDemoIntegration`, `styleRedesign`,
   `backup/main-before-merge-2026-10-07`) were left alone; rename or delete them when they are next touched.
 
+**One palette everywhere (2026-10-08, at the user's request; three branches, not merged or pushed yet).** The site used the new cream-and-green
+palette (`ka-*` in `frontend/src/styles/_variables.scss`) on the landing page, the guides, the pricing and the map, but the legal pages, the
+popups, the logged-in area, `/buy`, the admin portal and the e-mails were still the old dark theme with hard-coded values (`#111927`, `#0A0F0D`,
+Tailwind's `green-600`/`neutral-500`, a separate `$admin-*` palette). Done in three branches that do not depend on each other (merge in any order;
+`Button.tsx` has the same change in two of them on purpose, so it merges cleanly):
+- `refactor/admin-light-theme`: the admin portal (admin.kopanalys.se: login, statistics, Markov simulator) is light - the `$admin-*` tokens are now
+  roles built on `$ka-*` (chart colours nudged so each is at least 3:1 on white), serif headings and the site's logo mark; the `/admin` console
+  (BRF reviews, content editor) lost its 184 hard-coded colours.
+- `refactor/public-light-theme`: privacy, terms, /analyzing, e-mail confirmed, the login window, onboarding, chat, the cookie banner and its dialog;
+  the forms on the deep-green analysis card keep that look but use mint/white tokens (`Button` has a `tone`: "onGreen" default, "light"); the
+  Insights charts and the confirmation e-mails read/copy the master variables (`lib/email/colours.ts`, checked by `colours.verify.mjs`).
+  **Bug fixed on the way:** `proxy.ts` sent `/vendor/*` and `*.mp4` through the language handling (404), so /analyzing had lost its loading video and
+  progress ring since the language work.
+- `refactor/dashboard-light-theme`: the dashboard (6 pages), `/buy` (the main package is the deep-green card, as on the pricing section), the
+  inspection guide, the nav and cards; the dark header variant, `DashboardBackground` and `$dash-tab-glow` are gone. Adds `npm run colours`
+  (`scripts/check-colours.mjs`): lists every colour that is not a master variable. Exceptions, each with its reason, are in the script: the report
+  (`app/[locale]/report`, `components/report`, the example-report picture - a document with its own palette, left alone on purpose), other
+  companies' logos in `icons.tsx`, the e-mail colours, the admin portal's theme-color tag, two Google-snippet colours in the editor's preview.
+- **Verified:** the three merged on a scratch branch without conflicts: `npm run colours` clean (423 files), `tsc`, `next build`, i18n check,
+  27 verify scripts, ESLint unchanged (12 errors from before). Looked at in a browser: every page above (the signed-in ones with a stand-in login).
+  **Not checked:** the `/admin` console (needs a real admin login), the e-mails as received, Safari/Firefox.
+- **Not wired into CI yet:** `npm run colours` fails on a branch that has not got the other two, so add it to `ci.yml` (a job listed in the `needs`
+  of `ci-passed`) once all three are on `main`.
+
 **Languages (2026-10-08) — the site in Swedish and English; articles and map listings translated on the fly (merged to `main`; the work was done on the branch `i18n-restore`).**
 Design choices by the user: Swedish stays unprefixed and English lives under `/en` with English page names (every page is
 written once; the message files supply the words, so a new page needs no per-language copy); scope = all pages and app

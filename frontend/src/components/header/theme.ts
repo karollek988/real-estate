@@ -1,10 +1,9 @@
 /**
- * "light" is the redesigned header (cream, deep green) used by every public
- * page. "dark" keeps the same header in the dark palette for the pages that
- * have not been redesigned yet (/buy, the dashboard, the legal pages), so the
- * header never clashes with the page under it.
+ * The header's colours: cream, deep green, as on every page of the site. (There used to be a "dark" variant for the
+ * pages that had not been redesigned yet; none is left. The variant is kept as a name so a page may still say
+ * variant="light".)
  */
-export type SiteHeaderVariant = "light" | "dark";
+export type SiteHeaderVariant = "light";
 
 export const HEADER_THEME = {
   light: {
@@ -33,33 +32,6 @@ export const HEADER_THEME = {
     drawerActive: "font-semibold text-ka-green-700",
     danger: "text-ka-red-600 hover:bg-ka-red-600/[0.07]",
     focusRing: "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ka-green-700 focus-visible:ring-offset-2 focus-visible:ring-offset-ka-cream",
-  },
-  dark: {
-    bar: "border-white/10 bg-[#0A1212]/90 text-white",
-    barScrolled: "shadow-[0_10px_30px_-15px_rgba(0,0,0,0.6)]",
-    logo: "text-white",
-    nav: "text-neutral-300 hover:bg-white/[0.06] hover:text-white",
-    navOpen: "bg-white/[0.08] text-white",
-    navActive: "bg-white/[0.06] font-semibold text-white",
-    navIcon: "text-green-400",
-    panel: "border-white/10 bg-[#0F1417] shadow-[0_24px_50px_-20px_rgba(0,0,0,0.7)]",
-    panelItem: "hover:bg-white/[0.05] focus-visible:bg-white/[0.05]",
-    panelItemActive: "bg-white/[0.05]",
-    panelIcon: "text-green-400",
-    panelTitle: "text-white",
-    panelText: "text-neutral-400",
-    panelDivider: "border-white/10",
-    iconButton: "text-neutral-200 hover:bg-white/[0.06]",
-    divider: "bg-white/15",
-    cta: "bg-green-600 text-white hover:bg-green-500",
-    avatar: "border-green-500/30 bg-green-400/10 text-green-400 hover:border-green-500/50",
-    input: "border-white/15 bg-white/[0.04] text-white placeholder:text-neutral-500 focus:border-green-500",
-    drawer: "bg-[#0A1212] text-white",
-    drawerRow: "border-white/10 text-white",
-    drawerSecondary: "border-white/10 bg-white/5 text-white hover:bg-white/10",
-    drawerActive: "font-semibold text-green-400",
-    danger: "text-red-400 hover:bg-red-500/10",
-    focusRing: "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-green-400 focus-visible:ring-offset-2 focus-visible:ring-offset-[#0A1212]",
   },
 } as const;
 

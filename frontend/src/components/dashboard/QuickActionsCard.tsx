@@ -12,19 +12,19 @@ export function QuickActionsCard() {
   const t = useTranslations("dashboard.quickActions");
   const router = useRouter();
   return (
-    <div className="card-interactive rounded-2xl border border-white/10 bg-[#0F1417]/85 p-5 backdrop-blur-xl">
-      <h3 className="text-sm font-semibold text-white">{t("title")}</h3>
+    <div className="card-interactive rounded-2xl border border-ka-line-strong bg-white p-5 backdrop-blur-xl">
+      <h3 className="text-sm font-semibold text-ka-ink">{t("title")}</h3>
       <div className="mt-3 flex flex-col gap-1">
         <button
           type="button"
           onClick={() => router.push(ROUTES.skapaAnalys)}
-          className="flex items-center justify-between rounded-xl px-2.5 py-2.5 text-sm text-neutral-300 transition hover:bg-white/5 hover:text-white active:scale-[0.98]"
+          className="flex items-center justify-between rounded-xl px-2.5 py-2.5 text-sm text-ka-text transition hover:bg-ka-cream hover:text-ka-ink active:scale-[0.98]"
         >
           <span className="flex items-center gap-2.5">
-            <TrendingUpIcon className="h-4 w-4 text-neutral-500" />
+            <TrendingUpIcon className="h-4 w-4 text-ka-muted" />
             {t("newAnalysis")}
           </span>
-          <ChevronRightIcon className="h-4 w-4 text-neutral-600" />
+          <ChevronRightIcon className="h-4 w-4 text-ka-muted" />
         </button>
       </div>
     </div>

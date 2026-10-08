@@ -304,7 +304,7 @@ $city-tags-end: 0.393; // the lowest tag beside the laptop (Östermalm) ends
     position: absolute;
     inset: 6px 0;
     border-radius: 10px;
-    background: radial-gradient(70% 90% at 50% 100%, rgba($dash-tab-glow, 0.12), transparent 70%);
+    background: radial-gradient(70% 90% at 50% 100%, rgba($ka-green-700, 0.1), transparent 70%);
     opacity: 0;
     transition: opacity 0.3s ease;
     pointer-events: none;
@@ -341,9 +341,9 @@ $city-tags-end: 0.393; // the lowest tag beside the laptop (Östermalm) ends
   animation: dash-icon-pop 0.35s ease-in-out;
 }
 
-// Interactive cards: lift, brighten and deepen shadow on hover.
+// Interactive cards: lift, tint and deepen shadow on hover.
 // card-lift keeps a card's own border/shadow (for highlighted variants);
-// card-interactive also brightens the border and strengthens the shadow.
+// card-interactive also greens the border and strengthens the shadow.
 .card-lift,
 .card-interactive {
   position: relative;
@@ -357,7 +357,7 @@ $city-tags-end: 0.393; // the lowest tag beside the laptop (Östermalm) ends
     position: absolute;
     inset: 0;
     border-radius: inherit;
-    background: rgba($white, 0.03);
+    background: rgba($ka-green-700, 0.03);
     opacity: 0;
     transition: opacity 0.25s ease;
     pointer-events: none;
@@ -373,8 +373,8 @@ $city-tags-end: 0.393; // the lowest tag beside the laptop (Östermalm) ends
 }
 
 .card-interactive:hover {
-  border-color: rgba($white, 0.18);
-  box-shadow: 0 12px 32px -12px rgba($black, 0.55);
+  border-color: rgba($ka-green-700, 0.35);
+  box-shadow: $ka-shadow-card-hover;
 }
 
 @include reduced-motion {

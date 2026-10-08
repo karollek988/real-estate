@@ -40,26 +40,26 @@ function GapRow({
   return (
     <div
       className={`flex items-center justify-between gap-3 rounded-xl border px-4 py-3 ${
-        gap.missing ? "border-amber-400/20 bg-amber-400/[0.04]" : "border-white/10 bg-white/[0.02]"
+        gap.missing ? "border-ka-amber-300 bg-ka-amber-100" : "border-ka-line-strong bg-white"
       }`}
     >
       <div className="flex items-center gap-3">
         <span
           className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-lg ${
-            gap.missing ? "bg-amber-400/10 text-amber-400" : "bg-green-400/10 text-green-400"
+            gap.missing ? "bg-ka-amber-100 text-ka-amber-700" : "bg-ka-sage/60 text-ka-green-700"
           }`}
         >
           {gap.missing ? <WarningIcon className="h-4 w-4" /> : <CheckIcon className="h-4 w-4" />}
         </span>
         <div>
-          <p className="text-sm font-medium text-white">{t(gap.id)}</p>
-          <p className="text-xs text-neutral-400">
+          <p className="text-sm font-medium text-ka-ink">{t(gap.id)}</p>
+          <p className="text-xs text-ka-muted">
             {gap.missing ? t("missing") : gap.known ? t(`known.${gap.known}`) : gap.knownValue}
           </p>
         </div>
       </div>
       {gap.missing && gap.resolvableByDocType && (
-        <label className="shrink-0 cursor-pointer rounded-lg border border-amber-400/30 px-3 py-1.5 text-xs font-semibold text-amber-300 transition hover:bg-amber-400/10">
+        <label className="shrink-0 cursor-pointer rounded-lg border border-ka-amber-300 px-3 py-1.5 text-xs font-semibold text-ka-amber-700 transition hover:bg-ka-amber-100">
           {t("upload")}
           <input type="file" accept="application/pdf,image/*" className="hidden" onChange={handleFile} />
         </label>
