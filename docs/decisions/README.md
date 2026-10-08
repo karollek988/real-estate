@@ -8,7 +8,7 @@
 |---|---|---|
 | 2026-10-09 | `main` needs **no approval** to merge: the ruleset asks for 0 approvals, so the author can merge their own pull request. A pull request and the green check CI passed are still required. (GitHub never lets an author approve their own pull request.) | `.github/rulesets/README.md`, `CONTRIBUTING.md` |
 | 2026-10-08 | Claude Code context rebuilt: project `CLAUDE.md`, path-scoped rules, skills, canonical docs; history archived | `docs/archive/claude-context-migration-2026-10-08.md` |
-| 2026-10-08 | `main` changes only through pull requests from `feature/`, `fix/`, `refactor/` branches with CI and one approval (the approval part was dropped on 2026-10-09, see above). The GitHub ruleset is written but **not imported yet** | `CONTRIBUTING.md`, `.github/rulesets/README.md` |
+| 2026-10-08 | `main` changes only through pull requests from `feature/`, `fix/`, `refactor/` branches with CI and one approval (the approval part was dropped on 2026-10-09, see above). The GitHub ruleset is active (rules API, 2026-10-09) | `CONTRIBUTING.md`, `.github/rulesets/README.md` |
 | 2026-10-08 | The site is Swedish (master) and English (`/en`); articles and map listings are machine-translated on our own server (Opus-MT), not by a third party | `frontend/src/i18n/README.md`, `api/README.md` |
 | 2026-10-08 | One light cream-and-green palette everywhere; colours only from `_variables.scss` (checked by `npm run colours`) | `CONTRIBUTING.md` |
 | 2026-10-08 | The native C++ rewrite of the Python engine is dropped; the engine stays Python | `docs/archive/project-state-history-2026-10-08.md` |

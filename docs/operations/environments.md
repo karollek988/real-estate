@@ -33,9 +33,9 @@ feature/… | fix/… | refactor/… branch ── pull request (CI "CI passed",
   code that needs them is merged (see [`database.md`](database.md)).
 - **An environment variable change only reaches deployments built after it**: redeploy afterwards
   (Vercel → Deployments → ⋯ → Redeploy).
-- **GitHub branch protection is not active** (checked 2026-10-08: the rules API returns no rules for `main`; the
-  importable rules are in `.github/rulesets/`). Until it is, `main` technically accepts direct pushes — the rule in
-  [`CONTRIBUTING.md`](../../CONTRIBUTING.md) still applies.
+- **`main` is protected by a GitHub ruleset** (checked 2026-10-09 with the rules API: no deletion, no force-push, a
+  pull request, the check "CI passed", squash only, **0 approvals** so the author can merge their own). The rules are
+  kept as importable files in `.github/rulesets/`; the live settings are in GitHub (Settings → Rules).
 - How to check what is live: the `deploy-check` skill (`.claude/skills/deploy-check/SKILL.md`).
 
 ## Environment variables
