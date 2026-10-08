@@ -2,6 +2,7 @@ import type { AppProps } from "next/app";
 import { Inter } from "next/font/google";
 import "@/components/admin/atlas/atlas.scss";
 import "@/components/admin/admin.scss";
+import { displaySerif } from "@/lib/fonts";
 
 const inter = Inter({ subsets: ["latin"], display: "swap" });
 
@@ -18,7 +19,7 @@ const inter = Inter({ subsets: ["latin"], display: "swap" });
  */
 export default function AdminApp({ Component, pageProps }: AppProps) {
   return (
-    <div className={inter.className}>
+    <div className={`${inter.className} ${displaySerif.variable}`}>
       <Component {...pageProps} />
     </div>
   );

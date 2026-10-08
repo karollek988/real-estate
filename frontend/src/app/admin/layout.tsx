@@ -34,25 +34,25 @@ export default async function AdminLayout({ children }: { children: React.ReactN
   return (
     <html lang="sv">
       <body className={`${inter.variable} antialiased`} suppressHydrationWarning>
-        <div className="min-h-screen bg-[#F5F4F0] text-[#1B1F27]">
-          <header className="border-b border-black/10 bg-white">
+        <div className="min-h-screen bg-ka-cream text-ka-text">
+          <header className="border-b border-ka-line-strong bg-white">
             <div className="mx-auto flex max-w-[1400px] items-center justify-between gap-4 px-4 py-3 sm:px-6">
               <div className="flex items-center gap-3">
-                <Link href="/admin/brf" className="text-sm font-semibold text-[#12271D]">
+                <Link href="/admin/brf" className="text-sm font-semibold text-ka-ink">
                   Köpanalys · Admin
                 </Link>
                 <nav aria-label="Admin" className="flex items-center gap-1.5">
-                  <Link href="/admin/brf" className="rounded-full bg-[#12271D]/[0.06] px-2.5 py-0.5 text-xs font-medium text-[#12271D] hover:bg-[#12271D]/[0.12]">
+                  <Link href="/admin/brf" className="rounded-full bg-ka-ink/[0.06] px-2.5 py-0.5 text-xs font-medium text-ka-ink hover:bg-ka-ink/[0.12]">
                     BRF-analyser
                   </Link>
-                  <Link href="/admin/content" className="rounded-full bg-[#12271D]/[0.06] px-2.5 py-0.5 text-xs font-medium text-[#12271D] hover:bg-[#12271D]/[0.12]">
+                  <Link href="/admin/content" className="rounded-full bg-ka-ink/[0.06] px-2.5 py-0.5 text-xs font-medium text-ka-ink hover:bg-ka-ink/[0.12]">
                     Innehåll
                   </Link>
                 </nav>
               </div>
-              <div className="flex items-center gap-4 text-xs text-neutral-500">
+              <div className="flex items-center gap-4 text-xs text-ka-muted">
                 <span>{user.email}</span>
-                <Link href="/dashboard" className="font-medium text-[#12271D] hover:underline">
+                <Link href="/dashboard" className="font-medium text-ka-ink hover:underline">
                   Till kontot
                 </Link>
               </div>
