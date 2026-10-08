@@ -280,7 +280,7 @@ function InspectionPageContent() {
   if (loading) {
     return (
       <div className="mx-auto flex max-w-3xl flex-col gap-6">
-        <p className="text-sm text-neutral-400">{t("loading")}</p>
+        <p className="text-sm text-ka-muted">{t("loading")}</p>
       </div>
     );
   }
@@ -289,11 +289,11 @@ function InspectionPageContent() {
     return (
       <div className="mx-auto flex max-w-3xl flex-col gap-6">
         <div className="dash-enter" style={stagger(0)}>
-          <h1 className="flex items-center gap-2.5 text-2xl font-semibold tracking-tight text-white">
-            <ShieldIcon className="h-6 w-6 text-green-400" />
+          <h1 className="flex items-center gap-2.5 text-2xl font-semibold tracking-tight text-ka-ink">
+            <ShieldIcon className="h-6 w-6 text-ka-green-700" />
             {t("title")}
           </h1>
-          <p className="mt-1 text-sm text-neutral-400">{t("lead")}</p>
+          <p className="mt-1 text-sm text-ka-muted">{t("lead")}</p>
         </div>
         <div className="dash-enter" style={stagger(1)}>
           {candidates && candidates.length > 0 ? (
@@ -343,13 +343,13 @@ function InspectionPageContent() {
     <div className="mx-auto flex max-w-[1400px] flex-col gap-6">
       <div className="dash-enter flex items-center justify-between gap-4" style={stagger(0)}>
         <div>
-          <h1 className="flex items-center gap-2.5 text-2xl font-semibold tracking-tight text-white">
-            <ShieldIcon className="h-6 w-6 text-green-400" />
+          <h1 className="flex items-center gap-2.5 text-2xl font-semibold tracking-tight text-ka-ink">
+            <ShieldIcon className="h-6 w-6 text-ka-green-700" />
             {t("title")}
           </h1>
-          <p className="mt-1 text-sm text-neutral-400">{t("header", { address: data.property.address })}</p>
+          <p className="mt-1 text-sm text-ka-muted">{t("header", { address: data.property.address })}</p>
         </div>
-        {savedAt && <span className="shrink-0 text-xs text-neutral-500">{t("saved")}</span>}
+        {savedAt && <span className="shrink-0 text-xs text-ka-muted">{t("saved")}</span>}
       </div>
 
       <div className="dash-enter" style={stagger(1)}>
@@ -372,10 +372,10 @@ function InspectionPageContent() {
               {data.documents.length > 0 && (
                 <ul className="mt-4 flex flex-col gap-2">
                   {data.documents.map((d) => (
-                    <li key={d.id} className="flex items-center gap-2.5 text-sm text-neutral-300">
-                      <CheckIcon className="h-4 w-4 shrink-0 text-green-400" />
+                    <li key={d.id} className="flex items-center gap-2.5 text-sm text-ka-text">
+                      <CheckIcon className="h-4 w-4 shrink-0 text-ka-green-700" />
                       {d.originalFilename ?? tDocuments(d.docType)}
-                      <span className="text-xs text-neutral-500">({tDocuments(d.docType)})</span>
+                      <span className="text-xs text-ka-muted">({tDocuments(d.docType)})</span>
                     </li>
                   ))}
                 </ul>
@@ -386,27 +386,27 @@ function InspectionPageContent() {
               <button
                 type="button"
                 onClick={downloadChecklist}
-                className="flex w-fit items-center gap-2 rounded-xl border border-green-500/30 px-4 py-2.5 text-sm font-semibold text-green-300 transition hover:bg-green-500/10"
+                className="flex w-fit items-center gap-2 rounded-xl border border-ka-green-700/30 px-4 py-2.5 text-sm font-semibold text-ka-green-700 transition hover:bg-ka-sage/40"
               >
                 {t("step1.download")}
                 <DownloadIcon className="h-4 w-4" />
               </button>
             </Card>
 
-            <div className="flex items-center justify-between gap-4 rounded-2xl border border-green-500/20 bg-green-500/[0.05] p-5">
+            <div className="flex items-center justify-between gap-4 rounded-2xl border border-ka-green-700/25 bg-ka-sage/40 p-5">
               <div className="flex items-center gap-3">
-                <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-green-500/15 text-green-400">
+                <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-ka-sage text-ka-green-700">
                   <CheckIcon className="h-5 w-5" />
                 </span>
                 <div>
-                  <p className="text-sm font-semibold text-white">{t("step1.ready.title")}</p>
-                  <p className="text-xs text-neutral-400">{t("step1.ready.text")}</p>
+                  <p className="text-sm font-semibold text-ka-ink">{t("step1.ready.title")}</p>
+                  <p className="text-xs text-ka-muted">{t("step1.ready.text")}</p>
                 </div>
               </div>
               <button
                 type="button"
                 onClick={() => advanceStep(2)}
-                className="flex shrink-0 items-center gap-2 rounded-xl bg-green-600 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-green-500"
+                className="flex shrink-0 items-center gap-2 rounded-xl bg-ka-green-900 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-ka-green-800"
               >
                 {t("step1.ready.action")}
                 <ArrowRightIcon className="h-4 w-4" />
@@ -415,50 +415,50 @@ function InspectionPageContent() {
           </div>
 
           <div className="flex flex-col gap-6">
-            <Card title={t("step1.brf.title")} icon={<WarningIcon className="h-4 w-4 text-amber-400" />}>
+            <Card title={t("step1.brf.title")} icon={<WarningIcon className="h-4 w-4 text-ka-amber-700" />}>
               {data.brf.status === "published" ? (
                 data.brf.concerns.length > 0 ? (
                   <ul className="flex flex-col gap-2.5">
                     {data.brf.concerns.map((c) => (
-                      <li key={c} className="text-sm text-neutral-300">
+                      <li key={c} className="text-sm text-ka-text">
                         {c}
                       </li>
                     ))}
                   </ul>
                 ) : (
-                  <p className="text-sm text-neutral-400">{t("step1.brf.noConcerns")}</p>
+                  <p className="text-sm text-ka-muted">{t("step1.brf.noConcerns")}</p>
                 )
               ) : data.brf.status === "awaiting" ? (
-                <p className="text-sm text-neutral-400">
+                <p className="text-sm text-ka-muted">
                   {data.brf.dueLabel ? t("step1.brf.awaitingDue", { due: data.brf.dueLabel }) : t("step1.brf.awaiting")}
                 </p>
               ) : (
-                <p className="text-sm text-neutral-400">{t("step1.brf.notBrf")}</p>
+                <p className="text-sm text-ka-muted">{t("step1.brf.notBrf")}</p>
               )}
             </Card>
 
-            <Card title={t("step1.brokerQuestions")} icon={<QuestionIcon className="h-4 w-4 text-neutral-300" />}>
+            <Card title={t("step1.brokerQuestions")} icon={<QuestionIcon className="h-4 w-4 text-ka-text" />}>
               <ul className="flex flex-col gap-2">
                 {data.brokerQuestions.map((q, i) => (
-                  <li key={i} className="text-sm text-neutral-300">
+                  <li key={i} className="text-sm text-ka-text">
                     {q}
                   </li>
                 ))}
               </ul>
             </Card>
 
-            <Card title={t("step1.brfQuestions")} icon={<QuestionIcon className="h-4 w-4 text-neutral-300" />}>
+            <Card title={t("step1.brfQuestions")} icon={<QuestionIcon className="h-4 w-4 text-ka-text" />}>
               <ul className="flex flex-col gap-2">
                 {data.brfQuestions.map((q, i) => (
-                  <li key={i} className="text-sm text-neutral-300">
+                  <li key={i} className="text-sm text-ka-text">
                     {q}
                   </li>
                 ))}
               </ul>
             </Card>
 
-            <Card title={t("step1.tips.title")} icon={<LightbulbIcon className="h-4 w-4 text-amber-300" />}>
-              <p className="text-sm leading-relaxed text-neutral-400">{t("step1.tips.text")}</p>
+            <Card title={t("step1.tips.title")} icon={<LightbulbIcon className="h-4 w-4 text-ka-amber-700" />}>
+              <p className="text-sm leading-relaxed text-ka-muted">{t("step1.tips.text")}</p>
             </Card>
           </div>
         </div>
@@ -487,20 +487,20 @@ function InspectionPageContent() {
             </Card>
           </div>
           <div className="flex flex-col gap-6">
-            <Card title={t("step2.observationsTitle")} icon={<ClipboardIcon className="h-4 w-4 text-neutral-300" />}>
+            <Card title={t("step2.observationsTitle")} icon={<ClipboardIcon className="h-4 w-4 text-ka-text" />}>
               <ObservationsPanel
                 observations={inspection.observations}
                 onAdd={addObservation}
                 onRemove={removeObservation}
               />
             </Card>
-            <div className="rounded-2xl border border-green-500/20 bg-green-500/[0.05] p-5">
-              <p className="text-sm font-semibold text-white">{t("step2.done.title")}</p>
-              <p className="mt-1 text-xs text-neutral-400">{t("step2.done.text")}</p>
+            <div className="rounded-2xl border border-ka-green-700/25 bg-ka-sage/40 p-5">
+              <p className="text-sm font-semibold text-ka-ink">{t("step2.done.title")}</p>
+              <p className="mt-1 text-xs text-ka-muted">{t("step2.done.text")}</p>
               <button
                 type="button"
                 onClick={() => advanceStep(3, { requestSummary: true })}
-                className="mt-4 flex w-full items-center justify-center gap-2 rounded-xl bg-green-600 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-green-500"
+                className="mt-4 flex w-full items-center justify-center gap-2 rounded-xl bg-ka-green-900 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-ka-green-800"
               >
                 {t("step2.done.action")}
                 <ArrowRightIcon className="h-4 w-4" />
@@ -548,12 +548,12 @@ function Card({
   children: React.ReactNode;
 }) {
   return (
-    <div className="rounded-2xl border border-white/10 bg-[#0F1417]/85 p-5 backdrop-blur-xl">
-      <h2 className="flex items-center gap-2 text-sm font-semibold text-white">
+    <div className="rounded-2xl border border-ka-line-strong bg-white p-5 backdrop-blur-xl">
+      <h2 className="flex items-center gap-2 text-sm font-semibold text-ka-ink">
         {icon}
         {title}
       </h2>
-      {subtitle && <p className="mt-1 text-sm text-neutral-400">{subtitle}</p>}
+      {subtitle && <p className="mt-1 text-sm text-ka-muted">{subtitle}</p>}
       <div className="mt-4">{children}</div>
     </div>
   );

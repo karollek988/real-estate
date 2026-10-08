@@ -82,13 +82,13 @@ function ProfileEditCard({ user }: { user: ReturnType<typeof useAuth>["user"] })
   }
 
   return (
-    <div className="dash-enter rounded-2xl border border-white/10 bg-[#0F1417]/85 p-5 backdrop-blur-xl" style={stagger(1)}>
-      <h2 className="text-sm font-semibold text-white">{t("title")}</h2>
-      <p className="mt-1 text-sm text-neutral-400">{t("lead")}</p>
+    <div className="dash-enter rounded-2xl border border-ka-line-strong bg-white p-5 backdrop-blur-xl" style={stagger(1)}>
+      <h2 className="text-sm font-semibold text-ka-ink">{t("title")}</h2>
+      <p className="mt-1 text-sm text-ka-muted">{t("lead")}</p>
 
       <form onSubmit={handleSave} className="mt-5 flex flex-col gap-4">
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-          <label className="flex flex-col gap-2 text-sm text-neutral-300">
+          <label className="flex flex-col gap-2 text-sm text-ka-text">
             {t("name")}
             <input
               type="text"
@@ -97,14 +97,14 @@ function ProfileEditCard({ user }: { user: ReturnType<typeof useAuth>["user"] })
                 setName(e.target.value);
                 setSuccess(false);
               }}
-              className="rounded-xl border border-white/10 bg-black/40 px-4 py-2.5 text-sm text-white placeholder:text-neutral-500 outline-none transition focus:border-green-500/60 focus:ring-4 focus:ring-green-500/10"
+              className="rounded-xl border border-ka-line-strong bg-white px-4 py-2.5 text-sm text-ka-ink placeholder:text-ka-muted outline-none transition focus:border-ka-green-700 focus:ring-4 focus:ring-ka-green-700/15"
               placeholder={t("namePlaceholder")}
             />
           </label>
-          <label className="flex flex-col gap-2 text-sm text-neutral-300">
+          <label className="flex flex-col gap-2 text-sm text-ka-text">
             {t("email")}
             <div className="relative">
-              <MailIcon className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-neutral-500" />
+              <MailIcon className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-ka-muted" />
               <input
                 type="email"
                 value={email}
@@ -112,7 +112,7 @@ function ProfileEditCard({ user }: { user: ReturnType<typeof useAuth>["user"] })
                   setEmail(e.target.value);
                   setSuccess(false);
                 }}
-                className="w-full rounded-xl border border-white/10 bg-black/40 py-2.5 pl-10 pr-4 text-sm text-white placeholder:text-neutral-500 outline-none transition focus:border-green-500/60 focus:ring-4 focus:ring-green-500/10"
+                className="w-full rounded-xl border border-ka-line-strong bg-white py-2.5 pl-10 pr-4 text-sm text-ka-ink placeholder:text-ka-muted outline-none transition focus:border-ka-green-700 focus:ring-4 focus:ring-ka-green-700/15"
                 placeholder={t("emailPlaceholder")}
               />
             </div>
@@ -120,10 +120,10 @@ function ProfileEditCard({ user }: { user: ReturnType<typeof useAuth>["user"] })
         </div>
 
         {dirty && (
-          <label className="flex flex-col gap-2 text-sm text-neutral-300">
+          <label className="flex flex-col gap-2 text-sm text-ka-text">
             {t("currentPassword")}
             <div className="relative">
-              <LockIcon className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-neutral-500" />
+              <LockIcon className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-ka-muted" />
               <input
                 type="password"
                 value={password}
@@ -131,25 +131,25 @@ function ProfileEditCard({ user }: { user: ReturnType<typeof useAuth>["user"] })
                   setPassword(e.target.value);
                   setSuccess(false);
                 }}
-                className="w-full rounded-xl border border-white/10 bg-black/40 py-2.5 pl-10 pr-4 text-sm text-white placeholder:text-neutral-500 outline-none transition focus:border-green-500/60 focus:ring-4 focus:ring-green-500/10"
+                className="w-full rounded-xl border border-ka-line-strong bg-white py-2.5 pl-10 pr-4 text-sm text-ka-ink placeholder:text-ka-muted outline-none transition focus:border-ka-green-700 focus:ring-4 focus:ring-ka-green-700/15"
                 placeholder="••••••••"
                 autoComplete="current-password"
               />
             </div>
-            <span className="text-xs text-neutral-500">{t("passwordNote")}</span>
+            <span className="text-xs text-ka-muted">{t("passwordNote")}</span>
           </label>
         )}
 
-        {error && <p className="text-sm text-red-400">{error}</p>}
+        {error && <p className="text-sm text-ka-red-600">{error}</p>}
         {success && (
-          <p className="flex items-center gap-1.5 text-sm text-green-400">
+          <p className="flex items-center gap-1.5 text-sm text-ka-green-700">
             <CheckIcon className="h-4 w-4" />
             {t("saved")}
           </p>
         )}
 
         <div>
-          <Button type="submit" disabled={!dirty || saving} className="disabled:cursor-not-allowed disabled:opacity-50">
+          <Button tone="light" type="submit" disabled={!dirty || saving} className="disabled:cursor-not-allowed disabled:opacity-50">
             {saving ? t("saving") : t("save")}
           </Button>
         </div>
@@ -194,58 +194,61 @@ export default function SettingsPage() {
   return (
     <div className="mx-auto flex max-w-3xl flex-col gap-6">
       <div className="dash-enter" style={stagger(0)}>
-        <h1 className="flex items-center gap-2.5 text-2xl font-semibold tracking-tight text-white">
-          <SettingsIcon className="h-6 w-6 text-neutral-300" />
+        <h1 className="flex items-center gap-2.5 text-2xl font-semibold tracking-tight text-ka-ink">
+          <SettingsIcon className="h-6 w-6 text-ka-text" />
           {t("title")}
         </h1>
-        <p className="mt-1 text-sm text-neutral-400">{t("lead")}</p>
+        <p className="mt-1 text-sm text-ka-muted">{t("lead")}</p>
       </div>
 
       <ProfileEditCard user={user} />
 
       <div
-        className="dash-enter rounded-2xl border border-red-500/20 bg-red-500/[0.04] p-5 backdrop-blur-xl"
+        className="dash-enter rounded-2xl border border-ka-coral-300 bg-ka-coral-100/60 p-5 backdrop-blur-xl"
         style={stagger(4)}
       >
         <div className="flex items-center gap-2.5">
-          <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-red-500/10 text-red-400">
+          <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-ka-coral-100 text-ka-red-600">
             <WarningIcon className="h-4 w-4" />
           </span>
-          <h2 className="text-sm font-semibold text-red-300">{t("delete.title")}</h2>
+          <h2 className="text-sm font-semibold text-ka-red-600">{t("delete.title")}</h2>
         </div>
-        <p className="mt-3 text-sm leading-relaxed text-neutral-400">{t("delete.text")}</p>
+        <p className="mt-3 text-sm leading-relaxed text-ka-muted">{t("delete.text")}</p>
 
         {!confirming ? (
           <Button
+            tone="light"
             variant="secondary"
-            className="mt-4 border-red-500/30 text-red-300 hover:bg-red-500/10"
+            className="mt-4 border-ka-coral-300 text-ka-red-600 hover:bg-ka-coral-100"
             onClick={() => setConfirming(true)}
           >
             {t("delete.button")}
           </Button>
         ) : (
           <div className="mt-4 flex flex-col gap-3">
-            <label className="text-sm text-neutral-300">
+            <label className="text-sm text-ka-text">
               {t("delete.confirm", { email: user?.email ?? "" })}
               <input
                 type="email"
                 value={confirmEmail}
                 onChange={(e) => setConfirmEmail(e.target.value)}
-                className="mt-2 w-full rounded-xl border border-white/10 bg-black/40 px-4 py-2.5 text-sm text-white placeholder:text-neutral-500 outline-none transition focus:border-red-500/60 focus:ring-4 focus:ring-red-500/10"
+                className="mt-2 w-full rounded-xl border border-ka-line-strong bg-white px-4 py-2.5 text-sm text-ka-ink placeholder:text-ka-muted outline-none transition focus:border-ka-coral-300 focus:ring-4 focus:ring-ka-coral-300/30"
                 placeholder={user?.email ?? ""}
               />
             </label>
-            {error && <p className="text-sm text-red-400">{error}</p>}
+            {error && <p className="text-sm text-ka-red-600">{error}</p>}
             <div className="flex gap-3">
               <Button
+                tone="light"
                 variant="secondary"
-                className="border-red-500/40 bg-red-500/10 text-red-300 hover:bg-red-500/20"
+                className="border-ka-coral-300 bg-ka-coral-100 text-ka-red-600 hover:bg-ka-coral-100"
                 onClick={handleDelete}
                 disabled={deleting}
               >
                 {deleting ? t("delete.deleting") : t("delete.permanent")}
               </Button>
               <Button
+                tone="light"
                 variant="secondary"
                 onClick={() => {
                   setConfirming(false);

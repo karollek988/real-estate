@@ -31,15 +31,15 @@ function Row({
   return (
     <div className="flex items-center justify-between gap-3 py-2.5">
       <div className="flex min-w-0 items-center gap-2.5">
-        <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-green-400/10 text-green-400 [&>svg]:h-4 [&>svg]:w-4">
+        <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-ka-sage/60 text-ka-green-700 [&>svg]:h-4 [&>svg]:w-4">
           {icon}
         </span>
         <div className="min-w-0">
-          <p className="text-sm text-neutral-200">{label}</p>
-          {hint && <p className="text-xs text-neutral-500">{hint}</p>}
+          <p className="text-sm text-ka-text">{label}</p>
+          {hint && <p className="text-xs text-ka-muted">{hint}</p>}
         </div>
       </div>
-      <span className="text-lg font-semibold tabular-nums text-white">{value}</span>
+      <span className="text-lg font-semibold tabular-nums text-ka-ink">{value}</span>
     </div>
   );
 }
@@ -70,21 +70,21 @@ export function AnalysisBalanceCard({ showBuyLink = true }: { showBuyLink?: bool
   const num = (value: number | undefined) => (devAdmin ? "∞" : value !== undefined ? String(value) : "—");
 
   return (
-    <div className="rounded-2xl border border-white/10 bg-[#0F1417]/85 p-5 backdrop-blur-xl">
+    <div className="rounded-2xl border border-ka-line-strong bg-white p-5 backdrop-blur-xl">
       <div className="flex items-center justify-between">
-        <span className="text-sm font-semibold text-white">{t("title")}</span>
-        <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-green-400/10 text-green-400">
+        <span className="text-sm font-semibold text-ka-ink">{t("title")}</span>
+        <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-ka-sage/60 text-ka-green-700">
           <WalletIcon className="h-[18px] w-[18px]" />
         </span>
       </div>
 
       {signedOut ? (
-        <p className="mt-4 text-sm text-neutral-400">{t("signedOut")}</p>
+        <p className="mt-4 text-sm text-ka-muted">{t("signedOut")}</p>
       ) : (
         <>
-          {devAdmin && <p className="mt-2 text-xs font-medium text-amber-300">{t("unlimited")}</p>}
+          {devAdmin && <p className="mt-2 text-xs font-medium text-ka-amber-700">{t("unlimited")}</p>}
 
-          <p className="mt-4 text-xs font-semibold uppercase tracking-wide text-neutral-500">{t("remaining")}</p>
+          <p className="mt-4 text-xs font-semibold uppercase tracking-wide text-ka-muted">{t("remaining")}</p>
           <div className="divide-y divide-white/5">
             <Row
               icon={<BuildingIcon />}
@@ -95,7 +95,7 @@ export function AnalysisBalanceCard({ showBuyLink = true }: { showBuyLink?: bool
             <Row icon={<MapPinIcon />} label={t("areaCredits")} value={num(summary?.credits.area)} />
           </div>
 
-          <p className="mt-4 text-xs font-semibold uppercase tracking-wide text-neutral-500">{t("yours")}</p>
+          <p className="mt-4 text-xs font-semibold uppercase tracking-wide text-ka-muted">{t("yours")}</p>
           <div className="divide-y divide-white/5">
             <Row icon={<BuildingIcon />} label={t("brf")} value={String(summary?.analyses.brf ?? "—")} />
             <Row icon={<MapPinIcon />} label={t("area")} value={String(summary?.analyses.area ?? "—")} />
@@ -105,7 +105,7 @@ export function AnalysisBalanceCard({ showBuyLink = true }: { showBuyLink?: bool
           {showBuyLink && (
             <Link
               href="/buy"
-              className="mt-4 flex items-center gap-1 text-sm font-medium text-green-400 transition hover:text-green-300"
+              className="mt-4 flex items-center gap-1 text-sm font-medium text-ka-green-700 transition hover:text-ka-green-800"
             >
               {t("buyMore")}
               <ArrowRightIcon className="h-3.5 w-3.5" />

@@ -30,7 +30,7 @@ type OpenPopover = string | "search" | "language" | "user" | null;
  * (on the map), "Skapa analys" and the profile button. From xl down the
  * navigation moves into a full-screen menu (MobileNav).
  */
-export function SiteHeader({ variant = "dark" }: { variant?: SiteHeaderVariant }) {
+export function SiteHeader({ variant = "light" }: { variant?: SiteHeaderVariant }) {
   const t = useTranslations("nav");
   const theme = HEADER_THEME[variant];
   const router = useRouter();

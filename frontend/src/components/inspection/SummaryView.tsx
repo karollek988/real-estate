@@ -17,16 +17,16 @@ function SummarySection({
 }) {
   if (items.length === 0) return null;
   const dot =
-    tone === "positive" ? "bg-green-400" : tone === "negative" ? "bg-red-400" : "bg-neutral-400";
+    tone === "positive" ? "bg-ka-green-700" : tone === "negative" ? "bg-ka-red-600" : "bg-ka-muted";
   return (
-    <div className="rounded-2xl border border-white/10 bg-[#0F1417]/85 p-5">
-      <h3 className="flex items-center gap-2 text-sm font-semibold text-white">
+    <div className="rounded-2xl border border-ka-line-strong bg-white p-5">
+      <h3 className="flex items-center gap-2 text-sm font-semibold text-ka-ink">
         {icon}
         {title}
       </h3>
       <ul className="mt-3 flex flex-col gap-2">
         {items.map((item, i) => (
-          <li key={i} className="flex items-start gap-2.5 text-sm text-neutral-300">
+          <li key={i} className="flex items-start gap-2.5 text-sm text-ka-text">
             <span className={`mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full ${dot}`} />
             <span>{item}</span>
           </li>
@@ -40,44 +40,44 @@ export function SummaryView({ summary }: { summary: InspectionSummary }) {
   const t = useTranslations("inspection.summary");
   return (
     <div className="flex flex-col gap-5">
-      <div className="rounded-2xl border border-green-500/30 bg-green-500/[0.05] p-5">
-        <h3 className="flex items-center gap-2 text-sm font-semibold text-green-300">
+      <div className="rounded-2xl border border-ka-green-700/30 bg-ka-sage/40 p-5">
+        <h3 className="flex items-center gap-2 text-sm font-semibold text-ka-green-700">
           <ShieldIcon className="h-4 w-4" />
           {t("recommendation")}
         </h3>
-        <p className="mt-2 text-sm leading-relaxed text-neutral-200">{summary.overallRecommendation}</p>
+        <p className="mt-2 text-sm leading-relaxed text-ka-text">{summary.overallRecommendation}</p>
       </div>
 
       <div className="grid grid-cols-1 gap-5 lg:grid-cols-2">
         <SummarySection
-          icon={<CheckIcon className="h-4 w-4 text-green-400" />}
+          icon={<CheckIcon className="h-4 w-4 text-ka-green-700" />}
           title={t("strengths")}
           items={summary.strengths}
           tone="positive"
         />
         <SummarySection
-          icon={<WarningIcon className="h-4 w-4 text-amber-400" />}
+          icon={<WarningIcon className="h-4 w-4 text-ka-amber-700" />}
           title={t("weaknesses")}
           items={summary.weaknesses}
           tone="negative"
         />
         <SummarySection
-          icon={<TrendingUpIcon className="h-4 w-4 text-amber-400" />}
+          icon={<TrendingUpIcon className="h-4 w-4 text-ka-amber-700" />}
           title={t("futureCosts")}
           items={summary.futureCosts}
         />
         <SummarySection
-          icon={<ClipboardIcon className="h-4 w-4 text-neutral-300" />}
+          icon={<ClipboardIcon className="h-4 w-4 text-ka-text" />}
           title={t("followUpTitle")}
           items={summary.followUp}
         />
         <SummarySection
-          icon={<WarningIcon className="h-4 w-4 text-amber-400" />}
+          icon={<WarningIcon className="h-4 w-4 text-ka-amber-700" />}
           title={t("missingDocumentation")}
           items={summary.missingDocumentation}
         />
         <SummarySection
-          icon={<QuestionIcon className="h-4 w-4 text-neutral-300" />}
+          icon={<QuestionIcon className="h-4 w-4 text-ka-text" />}
           title={t("openQuestions")}
           items={summary.openQuestions}
         />
@@ -85,7 +85,7 @@ export function SummaryView({ summary }: { summary: InspectionSummary }) {
 
       {summary.strengths.length === 0 &&
         summary.weaknesses.length === 0 && (
-          <p className="text-sm text-neutral-400">{t("empty")}</p>
+          <p className="text-sm text-ka-muted">{t("empty")}</p>
         )}
     </div>
   );

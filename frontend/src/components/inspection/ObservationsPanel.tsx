@@ -41,12 +41,12 @@ export function ObservationsPanel({
             }
           }}
           placeholder={t("placeholder")}
-          className="flex-1 rounded-xl border border-white/10 bg-black/30 px-4 py-2.5 text-sm text-white placeholder:text-neutral-500 outline-none transition focus:border-green-500/60 focus:ring-4 focus:ring-green-500/10"
+          className="flex-1 rounded-xl border border-ka-line-strong bg-white px-4 py-2.5 text-sm text-ka-ink placeholder:text-ka-muted outline-none transition focus:border-ka-green-700 focus:ring-4 focus:ring-ka-green-700/15"
         />
         <button
           type="button"
           onClick={submit}
-          className="rounded-xl bg-green-600 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-green-500"
+          className="rounded-xl bg-ka-green-900 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-ka-green-800"
         >
           {t("add")}
         </button>
@@ -58,7 +58,7 @@ export function ObservationsPanel({
             key={example}
             type="button"
             onClick={() => setText(t(`examples.${example}`))}
-            className="rounded-full border border-white/10 px-2.5 py-1 text-[11px] text-neutral-500 transition hover:border-white/20 hover:text-neutral-300"
+            className="rounded-full border border-ka-line-strong px-2.5 py-1 text-[11px] text-ka-muted transition hover:border-ka-green-700/40 hover:text-ka-text"
           >
             {t(`examples.${example}`)}
           </button>
@@ -70,14 +70,14 @@ export function ObservationsPanel({
           {observations.map((o) => (
             <li
               key={o.id}
-              className="flex items-center justify-between gap-3 rounded-lg border border-white/10 bg-white/[0.02] px-3 py-2 text-sm text-neutral-200"
+              className="flex items-center justify-between gap-3 rounded-lg border border-ka-line-strong bg-white px-3 py-2 text-sm text-ka-text"
             >
               <span>{o.text}</span>
               <button
                 type="button"
                 onClick={() => onRemove(o.id)}
                 aria-label={t("remove")}
-                className="shrink-0 text-neutral-500 transition hover:text-red-400"
+                className="shrink-0 text-ka-muted transition hover:text-ka-red-600"
               >
                 <CloseIcon className="h-3.5 w-3.5" />
               </button>

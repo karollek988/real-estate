@@ -36,27 +36,27 @@ export function InspectionStepTabs({
               <span
                 className={`flex h-9 w-9 items-center justify-center rounded-full border text-sm font-semibold transition ${
                   active
-                    ? "border-green-400 bg-green-400/15 text-green-400"
+                    ? "border-ka-green-700 bg-ka-sage/50 text-ka-green-700"
                     : done
-                      ? "border-green-500/40 bg-green-500/10 text-green-400"
+                      ? "border-ka-green-700/40 bg-ka-sage/40 text-ka-green-700"
                       : unlocked
-                        ? "border-white/20 text-neutral-300"
-                        : "border-white/10 text-neutral-600"
+                        ? "border-ka-line-strong text-ka-text"
+                        : "border-ka-line-strong text-ka-muted"
                 }`}
               >
                 {step}
               </span>
               <span className="text-center">
-                <span className={`block text-sm font-semibold ${active || done ? "text-white" : "text-neutral-500"}`}>
+                <span className={`block text-sm font-semibold ${active || done ? "text-ka-ink" : "text-ka-muted"}`}>
                   {t(`${id}.title`)}
                 </span>
-                <span className="block text-xs text-neutral-500">{t(`${id}.subtitle`)}</span>
+                <span className="block text-xs text-ka-muted">{t(`${id}.subtitle`)}</span>
               </span>
             </button>
             {i < STEPS.length - 1 && (
-              <div className="mx-3 mt-[-20px] h-px flex-1 bg-white/10">
+              <div className="mx-3 mt-[-20px] h-px flex-1 bg-ka-sand">
                 <div
-                  className="h-px bg-green-500 transition-all"
+                  className="h-px bg-ka-green-700 transition-all"
                   style={{ width: step < current ? "100%" : "0%" }}
                 />
               </div>
