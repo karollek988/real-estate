@@ -17,8 +17,9 @@
 //   components/admin/admin.scss         admin portal: login + session bar
 //   components/admin/atlas/atlas-public.scss  public map /karta (the $map-* roles)
 //
-// Not covered: colours written straight into components (Tailwind's own
-// palette such as zinc-900, or arbitrary values such as text-[#...]).
+// Kept to by `npm run colours` (scripts/check-colours.mjs): no component or stylesheet writes a colour
+// of its own - not Tailwind's palette (zinc-900), not a typed value (text-[#...]), not a hex or rgb()
+// in a style. The few places that must (the report, other companies' logos, e-mail) are listed there.
 // =============================================================================
 
 // -----------------------------------------------------------------------------
