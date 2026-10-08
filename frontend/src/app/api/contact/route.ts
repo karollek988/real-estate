@@ -58,13 +58,18 @@ export async function POST(request: Request) {
   const resend = new Resend(apiKey);
 
   try {
-    await resend.emails.send({
+    // The Resend SDK does not throw when Resend refuses an e-mail; it returns { error }.
+    const { error } = await resend.emails.send({
       from: "onboarding@resend.dev",
       to: "kopanalys@gmail.com",
       replyTo: email!,
       subject: `Nytt meddelande från kopanalys.se — ${name!.trim()}`,
       text: `Namn: ${name!.trim()}\nE-post: ${email!.trim()}\n\nMeddelande:\n${message!.trim()}`,
     });
+    if (error) {
+      console.error("Resend API error:", error);
+      return apiError(503, "contact_unavailable", "contact.unavailable", undefined, { request });
+    }
 
     return NextResponse.json({ success: true });
   } catch (err) {
