@@ -62,6 +62,12 @@ export function SiteHeader({ variant = "light" }: { variant?: SiteHeaderVariant 
     return () => window.removeEventListener("scroll", onScroll);
   }, []);
 
+  // A protected page (dashboard, report, admin) sends a signed-out visitor to the start page with ?auth=required
+  // (lib/supabase/middleware.ts): open the sign-in dialog they were sent to sign in with.
+  useEffect(() => {
+    if (new URLSearchParams(window.location.search).get("auth") === "required") setAuthOpen(true);
+  }, []);
+
   // "Hur går det till?" next to the analysis form opens the step-by-step dialog.
   useEffect(() => {
     const onOpenOnboarding = () => setOnboardingOpen(true);
