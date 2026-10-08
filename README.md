@@ -16,6 +16,11 @@ klientrapporter per mäklare) — dagens konto-/betalmodell är byggd för en
 enskild användare i taget. Se `notion-project-plan-prompt.md` för
 projektplan mot lansering hos mäklare.
 
+## Att arbeta i repot
+
+`main` är alltid produktionsklar och ändras bara via pull request från en `feature/`-, `fix/`- eller
+`refactor/`-gren, med godkänd CI och ett godkännande. Rutinen finns i [CONTRIBUTING.md](CONTRIBUTING.md) (på engelska).
+
 ## Layout
 
 Produkten är byggd som en Next.js-app plus ett par fristående Python-motorer

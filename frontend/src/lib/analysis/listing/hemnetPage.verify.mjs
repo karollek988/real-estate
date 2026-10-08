@@ -157,10 +157,11 @@ check("storage from relevantAmenities", parsed.storage, true);
 check("patio explicitly false from relevantAmenities wins over labels' PATIO presence", parsed.patio, false);
 check("parking filled from a FEATURE label when relevantAmenities has no PARKING entry at all", parsed.parking, true);
 check("condition inferred from isNewConstruction", parsed.condition, "Nyproduktion");
+check("fireplace is its own boolean (the report shows it as a row of its own, not as a feature)", parsed.fireplace, true);
 check(
-  "features combine an unmapped amenity kind (fireplace) and an unmapped FEATURE label (move-in-ready), deduped against boolean-backed labels",
+  "features keep only what has no boolean of its own: the unmapped FEATURE label (move-in-ready), deduped against boolean-backed labels",
   parsed.features,
-  ["Öppen spis", "Inflyttningsklar"]
+  ["Inflyttningsklar"]
 );
 check(
   "description prefers Apollo's full text over the JSON-LD teaser",

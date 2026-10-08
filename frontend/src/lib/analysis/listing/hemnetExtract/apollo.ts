@@ -256,7 +256,7 @@ function populateAmenities(data: HemnetPageData, listing: Record<string, unknown
       if (setter) {
         setter(data, isAvailable);
       } else if (isAvailable && typeof title === "string" && title.trim()) {
-        // An amenity kind we don't track as its own boolean (e.g. fireplace) —
+        // An amenity kind we don't track as its own boolean (the kinds in AMENITY_KIND_SETTER are) —
         // surface it in the free-form features list instead of dropping it.
         data.features.push(title.trim());
       }
