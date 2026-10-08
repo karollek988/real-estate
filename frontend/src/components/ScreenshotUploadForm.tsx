@@ -92,11 +92,11 @@ export function ScreenshotUploadForm() {
     return (
       <div className="flex flex-col gap-4">
         {extraction.texts.length > 0 && (
-          <details className="rounded-xl border border-white/10 bg-white/[0.02] px-4 py-3 text-sm text-neutral-400">
-            <summary className="cursor-pointer select-none font-medium text-neutral-300">
+          <details className="rounded-xl border border-white/10 bg-white/[0.02] px-4 py-3 text-sm text-white/60">
+            <summary className="cursor-pointer select-none font-medium text-white/80">
               {t("ocrDebug")}
             </summary>
-            <pre className="mt-3 max-h-64 overflow-auto whitespace-pre-wrap text-xs text-neutral-400">
+            <pre className="mt-3 max-h-64 overflow-auto whitespace-pre-wrap text-xs text-white/60">
               {extraction.texts.join("\n\n---\n\n")}
             </pre>
           </details>
@@ -116,13 +116,13 @@ export function ScreenshotUploadForm() {
       <button
         type="button"
         onClick={() => inputRef.current?.click()}
-        className="flex flex-col items-center gap-3 rounded-2xl border border-dashed border-white/15 bg-white/[0.02] px-6 py-10 text-center transition hover:border-green-500/40 hover:bg-white/[0.04]"
+        className="flex flex-col items-center gap-3 rounded-2xl border border-dashed border-white/15 bg-white/[0.02] px-6 py-10 text-center transition hover:border-ka-mint/40 hover:bg-white/[0.04]"
       >
-        <span className="flex h-11 w-11 items-center justify-center rounded-full bg-white/5 text-green-400">
+        <span className="flex h-11 w-11 items-center justify-center rounded-full bg-white/5 text-ka-mint">
           <UploadCloudIcon className="h-5 w-5" />
         </span>
         <span className="text-[15px] font-semibold text-white">{t("dropTitle")}</span>
-        <span className="max-w-xs text-sm text-neutral-400">
+        <span className="max-w-xs text-sm text-white/60">
           {t("dropHint", { maxFiles: MAX_FILES, maxMb: MAX_MB })}
         </span>
       </button>
@@ -143,14 +143,14 @@ export function ScreenshotUploadForm() {
           {files.map((file, i) => (
             <li
               key={`${file.name}-${i}`}
-              className="flex items-center gap-2 rounded-lg border border-white/10 bg-white/5 py-1.5 pl-3 pr-1.5 text-xs text-neutral-200"
+              className="flex items-center gap-2 rounded-lg border border-white/10 bg-white/5 py-1.5 pl-3 pr-1.5 text-xs text-white/80"
             >
               <span className="max-w-[140px] truncate">{file.name}</span>
               <button
                 type="button"
                 onClick={() => removeFile(i)}
                 aria-label={t("removeFile", { name: file.name })}
-                className="flex h-5 w-5 items-center justify-center rounded-full text-neutral-400 hover:bg-white/10 hover:text-white"
+                className="flex h-5 w-5 items-center justify-center rounded-full text-white/60 hover:bg-white/10 hover:text-white"
               >
                 <CloseIcon className="h-3 w-3" />
               </button>
@@ -159,7 +159,7 @@ export function ScreenshotUploadForm() {
         </ul>
       )}
 
-      {error && <p className="text-sm text-red-400">{error}</p>}
+      {error && <p className="text-sm text-ka-coral-300">{error}</p>}
 
       <div className="flex flex-wrap items-center gap-4">
         <Button type="button" onClick={handleExtract} disabled={files.length === 0 || uploading} className="self-start">
@@ -169,7 +169,7 @@ export function ScreenshotUploadForm() {
         <button
           type="button"
           onClick={() => setExtraction({ fields: {}, foundKeys: [], texts: [] })}
-          className="text-sm font-medium text-neutral-400 underline-offset-4 hover:text-neutral-200 hover:underline"
+          className="text-sm font-medium text-white/60 underline-offset-4 hover:text-white hover:underline"
         >
           {t("manualInstead")}
         </button>

@@ -5,7 +5,7 @@ import type { ReactNode } from "react";
  * Pass it to `t.rich("privacy.controller.text", legalRich)`.
  */
 
-const LINK_CLASS = "text-green-400 underline underline-offset-4 transition hover:text-green-300";
+const LINK_CLASS = "text-ka-green-700 underline underline-offset-4 transition hover:text-ka-green-800";
 
 /** The address people write to about the legal texts. */
 export const LEGAL_EMAIL = "kontakt@kopanalys.se";

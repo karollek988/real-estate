@@ -264,6 +264,8 @@ $map-shadow-primary: 0 8px 18px -10px rgba($ka-green-950, 0.8); // main buttons
 // $ka-line-strong edge to stand off the page.
 $ka-shadow-card: 0 1px 2px rgba($ka-ink, 0.06), 0 16px 36px -20px rgba($ka-ink, 0.32);
 $ka-shadow-card-hover: 0 2px 4px rgba($ka-ink, 0.07), 0 30px 56px -26px rgba($ka-ink, 0.42);
+// The deep-green analysis card (landing page) and the panels like it
+$ka-shadow-panel: 0 40px 80px -40px rgba($ka-green-950, 0.85);
 
 // -----------------------------------------------------------------------------
 // Mixins

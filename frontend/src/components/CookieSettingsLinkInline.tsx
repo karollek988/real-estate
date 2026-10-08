@@ -11,7 +11,7 @@ export function CookieSettingsLinkInline() {
     <button
       type="button"
       onClick={reopenCookieConsent}
-      className="cursor-pointer text-[12.5px] text-white/50 underline underline-offset-2 transition hover:text-white"
+      className="cursor-pointer text-[12.5px] text-white/50 underline underline-offset-2 transition hover:text-ka-ink"
     >
       {t("settings")}
     </button>

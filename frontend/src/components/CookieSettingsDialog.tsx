@@ -43,7 +43,7 @@ function Switch({
   labelledBy: string;
   describedBy: string;
 }) {
-  const colour = locked ? "cursor-not-allowed bg-neutral-500/50" : checked ? "cursor-pointer bg-green-600" : "cursor-pointer bg-white/20";
+  const colour = locked ? "cursor-not-allowed bg-ka-muted/40" : checked ? "cursor-pointer bg-ka-green-900" : "cursor-pointer bg-ka-line-strong";
   return (
     <button
       type="button"
@@ -53,11 +53,11 @@ function Switch({
       aria-labelledby={labelledBy}
       aria-describedby={describedBy}
       onClick={locked ? undefined : onToggle}
-      className={`relative inline-flex h-6 w-11 shrink-0 items-center rounded-full transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-green-400 focus-visible:ring-offset-2 focus-visible:ring-offset-[#0F1417] ${colour}`}
+      className={`relative inline-flex h-6 w-11 shrink-0 items-center rounded-full transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-ka-green-700 focus-visible:ring-offset-2 focus-visible:ring-offset-white ${colour}`}
     >
       <span
         aria-hidden="true"
-        className={`inline-block h-5 w-5 rounded-full shadow transition-transform ${locked ? "bg-neutral-300" : "bg-white"} ${checked ? "translate-x-[22px]" : "translate-x-0.5"}`}
+        className={`inline-block h-5 w-5 rounded-full shadow transition-transform bg-white ${checked ? "translate-x-[22px]" : "translate-x-0.5"}`}
       />
     </button>
   );
@@ -106,7 +106,7 @@ export function CookieSettingsDialog({ onSave, onBack }: Props) {
 
   return (
     <div className="fixed inset-0 z-[110] overflow-y-auto" role="dialog" aria-modal="true" aria-labelledby={titleId}>
-      <div className="fixed inset-0 animate-overlay-fade-in bg-black/70 backdrop-blur-sm" aria-hidden="true" />
+      <div className="fixed inset-0 animate-overlay-fade-in bg-ka-ink/70 backdrop-blur-sm" aria-hidden="true" />
       <div
         className="relative flex min-h-full items-center justify-center p-4 lg:p-8"
         onMouseDown={(event) => {
@@ -116,27 +116,27 @@ export function CookieSettingsDialog({ onSave, onBack }: Props) {
         <div
           ref={dialogRef}
           tabIndex={-1}
-          className="animate-modal-pop-in relative w-full max-w-[560px] overflow-hidden rounded-[24px] border border-white/10 bg-[#0F1417] shadow-[0_24px_60px_rgba(0,0,0,0.5)] focus:outline-none"
+          className="animate-modal-pop-in relative w-full max-w-[560px] overflow-hidden rounded-[24px] border border-ka-line-strong bg-white shadow-ka-card-hover focus:outline-none"
         >
           <button
             type="button"
             onClick={onBack}
             aria-label={t("dialog.close")}
-            className="absolute right-4 top-4 z-10 flex h-9 w-9 cursor-pointer items-center justify-center rounded-full text-neutral-400 transition hover:bg-white/10 hover:text-white"
+            className="absolute right-4 top-4 z-10 flex h-9 w-9 cursor-pointer items-center justify-center rounded-full text-ka-muted transition hover:bg-ka-sand hover:text-ka-ink"
           >
             <CloseIcon className="h-5 w-5" />
           </button>
 
           <div className="px-6 pb-6 pt-8 lg:px-8">
-            <h2 id={titleId} className="pr-8 text-xl font-semibold tracking-tight text-white">
+            <h2 id={titleId} className="pr-8 text-xl font-semibold tracking-tight text-ka-ink">
               {t("dialog.title")}
             </h2>
-            <p className="mt-1.5 text-sm leading-relaxed text-neutral-400">
+            <p className="mt-1.5 text-sm leading-relaxed text-ka-muted">
               {t.rich("dialog.intro", {
                 link: (chunks) => (
                   <Link
                     href="/privacy"
-                    className="font-medium text-green-400 underline underline-offset-4 transition hover:text-green-300"
+                    className="font-medium text-ka-green-700 underline underline-offset-4 transition hover:text-ka-green-800"
                   >
                     {chunks}
                   </Link>
@@ -179,14 +179,14 @@ export function CookieSettingsDialog({ onSave, onBack }: Props) {
               <button
                 type="button"
                 onClick={onBack}
-                className="cursor-pointer rounded-xl border border-white/10 bg-white/5 px-5 py-2.5 text-sm font-semibold text-neutral-200 transition hover:border-white/20 hover:bg-white/10"
+                className="cursor-pointer rounded-xl border border-ka-line-strong bg-ka-cream px-5 py-2.5 text-sm font-semibold text-ka-text transition hover:border-ka-green-700/40 hover:bg-ka-sand"
               >
                 {t("dialog.back")}
               </button>
               <button
                 type="button"
                 onClick={() => onSave({ marketing: on.marketing })}
-                className="cursor-pointer rounded-xl bg-green-600 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-green-500"
+                className="cursor-pointer rounded-xl bg-ka-green-900 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-ka-green-800"
               >
                 {t("dialog.save")}
               </button>
@@ -201,8 +201,8 @@ export function CookieSettingsDialog({ onSave, onBack }: Props) {
 function Group({ heading, lead, children }: { heading: string; lead: string; children: React.ReactNode }) {
   return (
     <section className="mt-5 first:mt-0">
-      <h3 className="text-sm font-semibold uppercase tracking-wide text-neutral-300">{heading}</h3>
-      <p className="mt-0.5 text-xs text-neutral-500">{lead}</p>
+      <h3 className="text-sm font-semibold uppercase tracking-wide text-ka-text">{heading}</h3>
+      <p className="mt-0.5 text-xs text-ka-muted">{lead}</p>
       <ul className="mt-2 flex flex-col gap-2">{children}</ul>
     </section>
   );
@@ -228,21 +228,21 @@ function Row({
   onToggle?: () => void;
 }) {
   return (
-    <li className={`rounded-xl border border-white/10 p-4 ${locked ? "bg-white/[0.02]" : "bg-white/5"}`}>
+    <li className={`rounded-xl border border-ka-line-strong p-4 ${locked ? "bg-white" : "bg-ka-cream"}`}>
       <div className="flex items-center justify-between gap-4">
-        <h4 id={`${id}-title`} className="text-sm font-semibold text-white">
+        <h4 id={`${id}-title`} className="text-sm font-semibold text-ka-ink">
           {title}
         </h4>
         <div className="flex shrink-0 items-center gap-2.5">
-          <span className={`text-xs ${locked ? "text-neutral-500" : checked ? "text-green-400" : "text-neutral-400"}`}>{status}</span>
+          <span className={`text-xs ${locked ? "text-ka-muted" : checked ? "text-ka-green-700" : "text-ka-muted"}`}>{status}</span>
           <Switch checked={checked} locked={locked} onToggle={onToggle} labelledBy={`${id}-title`} describedBy={`${id}-description`} />
         </div>
       </div>
-      <p id={`${id}-description`} className="mt-1.5 text-xs leading-relaxed text-neutral-400">
+      <p id={`${id}-description`} className="mt-1.5 text-xs leading-relaxed text-ka-muted">
         {description}
       </p>
-      <p className="mt-1.5 text-[11px] text-neutral-500">
-        <code className="rounded bg-white/5 px-1.5 py-0.5 font-mono text-neutral-400">{stored}</code>
+      <p className="mt-1.5 text-[11px] text-ka-muted">
+        <code className="rounded bg-ka-cream px-1.5 py-0.5 font-mono text-ka-muted">{stored}</code>
       </p>
     </li>
   );

@@ -15,9 +15,10 @@
     --color-ka-#{$name}: #{$color};
   }
 
-  // shadow-ka-card, shadow-ka-card-hover
+  // shadow-ka-card, shadow-ka-card-hover, shadow-ka-panel
   --shadow-ka-card: #{$ka-shadow-card};
   --shadow-ka-card-hover: #{$ka-shadow-card-hover};
+  --shadow-ka-panel: #{$ka-shadow-panel};
 }
 
 // Wide but short viewports (most laptops): the landing hero tightens so the
