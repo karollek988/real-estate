@@ -39,7 +39,6 @@ const landing: Messages["landing"] = {
     },
     trust: {
       title: "Trusted by property investors across Sweden",
-      rating: "4.8/5 based on 256 reviews",
     },
     card: {
       title: "Analyse a home",

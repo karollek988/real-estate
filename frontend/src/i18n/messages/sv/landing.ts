@@ -48,7 +48,6 @@ const landing = {
     },
     trust: {
       title: "Betrodd av fastighetsinvesterare över hela Sverige",
-      rating: "4.8/5 baserat på 256 omdömen",
     },
     /** The dark card where the analysis is started. */
     card: {

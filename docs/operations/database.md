@@ -119,6 +119,12 @@ from the history, and nothing is missing any more. Whether it does is **not conf
   hook off in the file (the hook of the hosted project is set in the Dashboard and is not touched), after which the CLI loads
   the file as it is; until it is merged, to query the linked project run the CLI from a scratch folder that contains only a minimal `config.toml` and a copy of
   `supabase/.temp/` (details in the `prod-db-readonly` skill).
+- The same config error makes the **Supabase GitHub integration** fail on every push to `main` (check "Supabase Preview",
+  first failure 2026-10-07 on `bf0562e`; skipped on pull requests). Its message: `auth.hook.send_email.secrets must be
+  formatted as "v1,whsec_<base64_encoded_secret>"` — `config.toml` reads it from `env(SEND_EMAIL_HOOK_SECRET)`, which the
+  integration does not have. Whether the integration would apply migrations to production once the config loads:
+  UNKNOWN — check its settings in the Supabase dashboard first, because the migration history is out of sync (rule 3).
+  **REQUIRES REVIEW** before anyone "fixes" the check.
 - Storage deletes go through `supabase storage rm … --linked --experimental`, with relative paths (a `C:` path is read as
   a URL scheme). Deletes need Karol's OK like any other production change.
 - The last production cleanup (2026-10-07) has its backup in `real-estate-db-backups/2026-10-07-supabase-cleanup/`.

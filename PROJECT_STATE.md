@@ -5,8 +5,8 @@
 > [`docs/archive/project-state-history-2026-10-08.md`](docs/archive/project-state-history-2026-10-08.md); decisions are in
 > [`docs/decisions/README.md`](docs/decisions/README.md).
 
-**Last updated:** 2026-10-08 · **Production:** `main` at `02562b5`, deployed to Vercel and Railway on 2026-10-08
-(GitHub deployments API).
+**Last updated:** 2026-10-08 · **Production:** `main` at `a231b74` (PR #5, docs and Claude context only), deployed to
+Vercel and Railway on 2026-10-08 (GitHub deployments API).
 
 ## What is live
 
@@ -41,25 +41,35 @@ Items marked **REQUIRES REVIEW** need a decision by Karol (or the owner of the a
    `components/landing/AnalyzeSection.tsx`): "4.8/5 baserat på 256 omdömen" (recorded as a placeholder without a
    source; kept on Karol's decision of 2026-10-02 until it is replaced) and "Betrodd av fastighetsinvesterare över hela
    Sverige" (no source found). **REQUIRES REVIEW** (marketing law risk).
-4. **Privacy policy inaccuracy:** `legal` messages say OpenAI interprets uploaded BRF annual reports; only the FAQ chat
+4. **Production migration history is out of sync**, `20261007000000_acquisition_analytics` (source tracking for the
+   Markov tab) and `20261008120000_text_translations` (translation cache) are **not applied**. What the translation
+   feature does without its cache table in production: UNKNOWN. Details: `docs/operations/database.md`. **REQUIRES REVIEW**
+5. **Unverified claim on the landing page** (`frontend/src/i18n/messages/{sv,en}/landing.ts`, shown by
+   `components/landing/AnalyzeSection.tsx`): "Betrodd av fastighetsinvesterare över hela Sverige" (no source found).
+   **REQUIRES REVIEW** (marketing law risk). The false rating "4.8/5 baserat på 256 omdömen" and its stars were removed
+   on 2026-10-08.
+6. **Privacy policy inaccuracy:** `legal` messages say OpenAI interprets uploaded BRF annual reports; only the FAQ chat
    uses OpenAI, and the policy does not say that Köpanalys staff read uploaded documents. Legal text — **REQUIRES REVIEW**.
-5. **Hemnet scraping is still reachable** (`POST /api/analyses` with a Hemnet URL → Camoufox `/api/browser-fetch`) although
+7. **Hemnet scraping is still reachable** (`POST /api/analyses` with a Hemnet URL → Camoufox `/api/browser-fetch`) although
    the UI no longer submits URLs; the plan to replace it (`docs/legal-data-migration-plan.md`) is an open draft.
    **REQUIRES REVIEW**
-6. **Booli has no credentials** anywhere known, so sold-price data is missing from the reports.
-7. **The 24-hour BRF promise depends on people** watching `/admin/brf`; nothing escalates a late review.
-8. **Not verified in production by a logged-in person** (as of the last record, 2026-10-02): a real checkout with the new
+8. **Booli has no credentials** anywhere known, so sold-price data is missing from the reports.
+9. **The 24-hour BRF promise depends on people** watching `/admin/brf`; nothing escalates a late review.
+10. **Not verified in production by a logged-in person** (as of the last record, 2026-10-02): a real checkout with the new
    prices, the reviewer flow with e-mails, the PDF download. Status since then: UNKNOWN.
-9. **Not verified after the language release:** the Railway build and memory with the translation model, and the
+11. **Not verified after the language release:** the Railway build and memory with the translation model, and the
    translator on real articles.
-10. New accounts start with 0 credits; how someone can try the product without paying is undecided (2026-10-02).
-11. Rate limiting is in memory per server instance, not shared.
-12. Not in CI: ESLint (~12 old errors), `npm run colours`, `analysis_engine/tests`, `BRF-Scraper/tests`, root `tests/`
+12. New accounts start with 0 credits; how someone can try the product without paying is undecided (2026-10-02).
+13. Rate limiting is in memory per server instance, not shared.
+14. Not in CI: ESLint (~12 old errors), `npm run colours`, `analysis_engine/tests`, `BRF-Scraper/tests`, root `tests/`
     (needs a path dependency outside this repository).
-13. The automatic `brfFinancials` provider still runs when a report is uploaded but nothing customer-facing reads it.
-14. Branches that don't follow the naming rule (`styleRedesign`, `mapDemoIntegration`, `backup/main-before-merge-2026-10-07`)
+15. The automatic `brfFinancials` provider still runs when a report is uploaded but nothing customer-facing reads it.
+16. Branches that don't follow the naming rule (`styleRedesign`, `mapDemoIntegration`, `backup/main-before-merge-2026-10-07`)
     are kept; delete or rename only with Karol's OK.
-15. Vestigial code is listed at the end of `docs/architecture/overview.md` (**REQUIRES REVIEW** before deletion).
+17. Vestigial code is listed at the end of `docs/architecture/overview.md` (**REQUIRES REVIEW** before deletion).
+18. **The "Supabase Preview" check fails on every push to `main`** since the Supabase GitHub integration was connected
+    (first run 2026-10-07 on `bf0562e`): `supabase/config.toml` is rejected because of the send-email hook secret format.
+    On pull requests it is skipped. Not caused by any one PR. Details: `docs/operations/database.md`. **REQUIRES REVIEW**
 
 ## Ongoing and next
 

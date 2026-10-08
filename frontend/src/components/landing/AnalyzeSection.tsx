@@ -17,7 +17,6 @@ import {
   MapPinIcon,
   PencilIcon,
   ShieldIcon,
-  StarFilledIcon,
   UploadCloudIcon,
   WalletIcon,
 } from "@/components/icons";
@@ -240,14 +239,6 @@ export function AnalyzeSection({
               <h3 className="text-[16px] font-bold leading-snug text-ka-ink">
                 {t("trust.title")}
               </h3>
-              <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1">
-                <div className="flex items-center gap-1">
-                  {Array.from({ length: 5 }).map((_, i) => (
-                    <StarFilledIcon key={i} className="h-[18px] w-[18px] text-ka-green-600" />
-                  ))}
-                </div>
-                <p className="text-[13.5px] text-ka-muted">{t("trust.rating")}</p>
-              </div>
             </div>
           </aside>
         </div>
