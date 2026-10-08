@@ -1,5 +1,7 @@
 # 40 — Location Intelligence Engine: Validation Report
 
+> **STATUS: HISTORICAL.** Kept at this path because code comments link to it. **REASON:** Validation of the location engine on 2026-07-20. Current documentation starts at `docs/README.md`.
+
 **Date:** 2026-07-20 · **Status:** validation complete, one bug found and fixed.
 **Method:** live runs of `python -m location_intelligence "<address>"` (the
 engine's own existing CLI entry point, doc 38 F-08) against real Swedish

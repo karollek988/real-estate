@@ -1,85 +1,60 @@
-# Real Estate — analysrapporter för bostadsköp
+# Köpanalys
 
-En tjänst som genererar analysrapporter för bostadsannonser (initial marknad:
-Sverige). Rapporten kombinerar Hemnet-annonsdata, BRF-årsredovisningar samt
-plats- och marknadsdata till en pris-, område-, risk- och
-förhandlingsanalys, levererad som PDF.
+Köpanalys ([kopanalys.se](https://kopanalys.se)) är en oberoende granskning av bostaden du vill köpa: föreningens
+ekonomi i klartext, området och kostnaderna som inte står i annonsen. Kunden köper ett paket — Områdesanalys 99 kr,
+Trygghetspaket 499 kr eller Tre bostäder 999 kr — och får en rapport på webben och som PDF. BRF-analysen granskas av
+en person inom 24 timmar; resten tas fram automatiskt. Rapporten ger fakta med källor, aldrig betyg eller köpråd.
 
-**Primär målgrupp: mäklare** (B2B — mäklare tar fram rapporter åt sina
-kunder). **Sekundär målgrupp: privatpersoner** (B2C — köper enstaka
-rapporter eller prenumeration själva).
+Sajten finns på svenska och engelska. Aktuellt läge och kända problem: [PROJECT_STATE.md](PROJECT_STATE.md).
 
-**Status:** Kärnflödet fungerar end-to-end för privatpersoner — annons in,
-analys, PDF-rapport ut, betalning via Stripe. Det som **saknas** för att
-sälja till mäklare är ett mäklarkonto (organisation/team, flera
-klientrapporter per mäklare) — dagens konto-/betalmodell är byggd för en
-enskild användare i taget. Se `notion-project-plan-prompt.md` för
-projektplan mot lansering hos mäklare.
+## Hur det hänger ihop
+
+```text
+frontend/  Next.js-appen (sajt, kundkonto, rapport, admin)  ──► Vercel
+api/ + analysis_engine/ + BRF-Scraper/ + src/  Python-motorn  ──► Railway (Dockerfile i roten)
+supabase/  databasschemat (migrationer)                       ──► Supabase (samma databas för Preview och Production)
+```
+
+En merge till `main` går ut på alla domäner och till Railway på en gång. Databasen ändras aldrig av en deploy.
+Mer: [docs/architecture/overview.md](docs/architecture/overview.md) och
+[docs/operations/environments.md](docs/operations/environments.md).
+
+## Mappar
+
+| Mapp | Innehåll |
+|---|---|
+| `frontend/` | Next.js 16 (App Router), React 19, Sass, next-intl. Se [frontend/README.md](frontend/README.md) |
+| `api/` | FastAPI-tjänsten som appen anropar. Se [api/README.md](api/README.md) |
+| `analysis_engine/` | BRF-nyckeltal och regelbaserade iakttagelser (Python) |
+| `BRF-Scraper/` | Läser en **uppladdad** årsredovisning (PDF, Word, foto). Hämtar inget själv — namnet är historiskt. Se [BRF-Scraper/README.md](BRF-Scraper/README.md) |
+| `src/location_intelligence/`, `src/market_intelligence/` | Område- och marknadsdata (Python) |
+| `supabase/` | Migrationer och konfiguration för den lokala databasen |
+| `docs/` | Dokumentation. Börja i [docs/README.md](docs/README.md) |
+
+## Kom igång lokalt (Windows)
+
+Krav: Node.js 24, Docker Desktop, Supabase CLI och — för Python-motorn — Python 3.13.
+
+```powershell
+./start-local.ps1
+```
+
+Skriptet startar den lokala Supabase-databasen i Docker, läser dess nycklar och startar appen på
+<http://localhost:3001>. Utan skriptet: kopiera `frontend/.env.example` till `frontend/.env.local`, fyll i värdena och
+kör `npm ci` och `npm run dev` i `frontend/`. Python-motorn startas enligt [api/README.md](api/README.md).
+Lägg aldrig riktiga nycklar i något annat än `.env.local` — repot är publikt.
+
+## Tester
+
+Samma kontroller som CI kör (detaljer i [CONTRIBUTING.md](CONTRIBUTING.md)):
+
+```bash
+cd frontend && npm run typecheck && npm run i18n:check && npm run verify
+python -m pytest api/tests
+```
 
 ## Att arbeta i repot
 
 `main` är alltid produktionsklar och ändras bara via pull request från en `feature/`-, `fix/`- eller
 `refactor/`-gren, med godkänd CI och ett godkännande. Rutinen finns i [CONTRIBUTING.md](CONTRIBUTING.md) (på engelska).
-
-## Layout
-
-Produkten är byggd som en Next.js-app plus ett par fristående Python-motorer
-för tunga datapipelines, inte som ett enda monolitiskt Python-paket.
-
-```
-frontend/                     Huvudprodukten (Next.js + Supabase)
-  src/app/                    Sidor + API-routes (auth, Stripe, analyser, rapporter, inspektion)
-  src/lib/analysis/           Annons-extraktion (Hemnet) + analysmotor (pris/område/BRF/risk/förhandling)
-  src/lib/analysis/providers/ Datakällor: Booli, SCB, OSM, Riksbanken, SMHI, Trafikverket, BRF-finans, m.fl.
-  src/lib/report/             Sammanställning av rapport-data + PDF-rendering
-  src/lib/stripe/, src/lib/auth/  Betalning (checkout/portal/webhook) och Supabase-auth
-  src/lib/inspection/         Bostadsinspektionsmodul (rum-för-rum-observationer)
-
-BRF-Scraper/                  Fristående Python-pipeline: hittar, laddar ner och tolkar BRF-årsredovisningar
-analysis_engine/              Python: finansiell kalkylator + LLM-narration för BRF-data
-src/location_intelligence/    Platsdata-providers (geokodning, SCB, Kolada, skola/brott/kollektivtrafik där tillgängligt) — v1.0.0, validerad
-src/market_intelligence/      Marknadsdata-providers (ränta, energipriser, bostadsprisindex m.m.)
-api/                          FastAPI-wrapper som exponerar location/market intelligence
-supabase/                     DB-schema via SQL-migrationer (profiles, properties, analyses, quotas, Stripe, inspections)
-docs/                         Design- och researchdokument (~45 filer)
-notion-project-plan-prompt.md Prompt att klistra in i Notion för att bygga projektplanen mot mäklarlansering
-
-src/real_estate/               Ursprunglig Python-skeleton — ersätt av ovanstående, betrakta som inaktuell/vestigial
-```
-
-## Vad fungerar idag
-
-- **Hemnet-scraping**: flerstegs extraktion (Apollo-state, JSON-LD, semantisk
-  HTML, regex-fallback) som slås ihop med en confidence-modell, plus manuell
-  inmatning som alternativ när scraping inte räcker till.
-- **Analysmotor**: pris-, område-, marknad-, risk-, förhandlings- och
-  BRF-analys, med explicit confidence-hantering per datakälla.
-- **BRF-årsrapportanalys**: egen Python-pipeline (`BRF-Scraper/`) som hittar
-  och tolkar årsredovisningar, plus finansiell kalkylator och
-  LLM-narration (`analysis_engine/`).
-- **PDF-rapport**: renderas från appens egen rapportsida via Puppeteer.
-- **Konto & betalning**: Supabase-auth, Stripe-prenumeration + engångsköp,
-  quota-system (gratis- och premiumkrediter) — men enanvändarmodell, inget
-  mäklar-/team-koncept ännu.
-- **Platsintelligens & marknadsdata**: fristående, validerade Python-motorer
-  (12 platsdata-providers, flera marknadsdata-providers).
-- **Bostadsinspektion**: separat modul för rum-för-rum-observationer med
-  foton/dokument.
-
-## Kända, medvetna luckor
-
-Flera datakällor är explicit markerade som ej anslutna
-(`src/lib/analysis/providers/placeholders.ts`): Lantmäteriet,
-BRF-register, skolbetyg (utöver Skolverkets egen skolenhetsstatistik),
-miljödata (flödesrisk, buller). Dessa prioriteras **efter** lansering mot
-mäklare, inte innan — se projektplanen. Brottsstatistik (Polisen/Kolada,
-kommun-/länsnivå) och kollektivtrafik (Trafiklab) är däremot redan
-anslutna, se `docs/data-sources.md` och
-`docs/46_price_and_civic_data_source_research.md`.
-
-## Utveckling
-
-Frontend: se `frontend/README.md`/`package.json` för scripts (Next.js-app).
-Fristående Python-motorer (`BRF-Scraper/`, `analysis_engine/`,
-`src/location_intelligence/`, `src/market_intelligence/`) har egna
-beroenden/tester — se respektive mapp.
+Instruktioner för Claude Code finns i [CLAUDE.md](CLAUDE.md).

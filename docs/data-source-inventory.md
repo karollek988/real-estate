@@ -1,5 +1,7 @@
 # Data Source Inventory — Swedish Real Estate (Stockholm-first)
 
+> **STATUS: RESEARCH.** Kept at this path because code comments link to it. **REASON:** Data-source inventory from 2026-07-13; code comments cite its entry numbers. Current documentation starts at `docs/README.md`.
+
 **Date:** 2026-07-13 · **Sprint:** 2 · **Status:** inventory only — no
 evaluation of sufficiency, no algorithm design, no code.
 

@@ -1,5 +1,7 @@
 # 48. Person-reviewed BRF analysis, report without scores, deck-aligned site — HANDOFF (2026-10-02)
 
+> **STATUS: PARTLY CURRENT.** Kept at this path because code comments link to it. **REASON:** §1 (the BRF review flow and reviewer runbook) and §3 (benchmarks and their sources) are current and referenced from `docs/product/overview.md`; the rest is the 2026-10-02 handoff. Current documentation starts at `docs/README.md`.
+
 Continues and **supersedes** `docs/47_business_model_handoff_2026-10-02.md` (its to-do items 1–7 are done; its
 flags are carried over below). Template: `Kopanalys_Fororten_2026_Pitch_Deck_v7_MALL.pdf`.
 
