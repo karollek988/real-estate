@@ -31,6 +31,16 @@ const EXCEPTIONS = {
   "lib/email/colours.ts": "e-mail clients cannot read the stylesheet; lib/email/colours.verify.mjs checks each value against it",
   "pages/admin-portal/index.tsx": "the browser's theme-color tag takes a literal; it is $ka-cream",
 };
+/** The tints a shadow or gradient may use: black, white and the brand colours they are made from (r,g,b). */
+const ALLOWED_TINTS = {
+  "0,0,0": "black",
+  "255,255,255": "white",
+  "15,31,24": "$ka-ink",
+  "12,42,31": "$ka-green-950",
+  "42,120,84": "$ka-green-600",
+  "76,232,166": "$ka-mint-bright",
+};
+
 /** Single colours that are fine where they appear, with the reason. */
 const ALLOWED_LITERALS = {
   "#1a0dab": "the title colour of a Google result, in the editor's search preview",
@@ -86,7 +96,11 @@ for (const file of walk(src)) {
         const text = match[0];
         // a colour typed into a class comes with its brackets: [#1a0dab]
         if (ALLOWED_LITERALS[text.replace(/^\[|\]$/g, "").toLowerCase()]) continue;
-        if (!stylesheet && rule.notInClass && inShadow(line, match.index)) continue;
+        if (!stylesheet && rule.notInClass && inShadow(line, match.index)) {
+          // a shadow may be tinted with black, white or a brand colour, but not with a colour of its own
+          const rgb = line.slice(match.index).match(/^rgba?\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)/);
+          if (!rgb || ALLOWED_TINTS[`${rgb[1]},${rgb[2]},${rgb[3]}`]) continue;
+        }
         // a hex inside a class is reported once, by the class rule
         if (!stylesheet && rule.notInClass && /\[$/.test(line.slice(Math.max(0, match.index - 1), match.index))) continue;
         found.push({ rel, line: i + 1, what: rule.name, text });
