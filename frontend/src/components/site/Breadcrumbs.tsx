@@ -1,20 +1,22 @@
-import Link from "next/link";
+import { getTranslations } from "next-intl/server";
 import { ChevronRightIcon } from "@/components/icons";
 import { ROUTES } from "@/components/site/navigation";
+import { Link, type Href } from "@/i18n/navigation";
 
 export interface Crumb {
   label: string;
-  href?: string;
+  href?: Href;
 }
 
-/** "Start › Kunskap › Bostadsguiden": the trail after Start; the last crumb is the current page. */
-export function Breadcrumbs({ crumbs, className = "" }: { crumbs: Crumb[]; className?: string }) {
+/** "Start › Kunskap › Bostadsguiden": the trail after Start; the last crumb is the current page. The words: common.breadcrumbs */
+export async function Breadcrumbs({ crumbs, className = "" }: { crumbs: Crumb[]; className?: string }) {
+  const t = await getTranslations("common.breadcrumbs");
   return (
-    <nav aria-label="Brödsmulor" className={className}>
+    <nav aria-label={t("label")} className={className}>
       <ol className="flex flex-wrap items-center gap-1.5 text-[13.5px] text-ka-muted">
         <li>
           <Link href={ROUTES.home} className="transition hover:text-ka-green-800 hover:underline">
-            Start
+            {t("home")}
           </Link>
         </li>
         {crumbs.map((crumb, i) => {

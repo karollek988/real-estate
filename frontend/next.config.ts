@@ -1,4 +1,11 @@
 import type { NextConfig } from "next";
+import path from "node:path";
+
+// Where next-intl finds the function that supplies each request's language and texts.
+// This is all that createNextIntlPlugin("./src/i18n/request.ts") from next-intl/plugin would set up for us; the
+// plugin itself is not used because it loads @swc/core (a native module, for message extraction which this
+// site does not use), and that fails to load on some Windows setups.
+const REQUEST_CONFIG = "./src/i18n/request.ts";
 
 // Baseline security headers (2026-09 production-readiness pass). No
 // Content-Security-Policy here on purpose — this app loads Stripe.js,
@@ -71,6 +78,14 @@ const nextConfig: NextConfig = {
     dangerouslyAllowLocalIP:
       process.env.NODE_ENV === "development" && (SUPABASE_URL?.hostname === "127.0.0.1" || SUPABASE_URL?.hostname === "localhost"),
   },
+  turbopack: {
+    resolveAlias: { "next-intl/config": REQUEST_CONFIG },
+  },
+  webpack(config) {
+    config.resolve = config.resolve ?? {};
+    config.resolve.alias = { ...config.resolve.alias, "next-intl/config": path.resolve(config.context ?? process.cwd(), REQUEST_CONFIG) };
+    return config;
+  },
   // Dev server only (ignored by `next build`). By default it refuses every request that comes from
   // another origin than localhost, including its hot-reload socket, and a page opened that way then
   // reloads itself in a loop and never gets as far as mounting the map. Allowed here:
@@ -87,6 +102,11 @@ const nextConfig: NextConfig = {
       { source: "/blogg/:slug*", destination: "/bostadsguider", permanent: true },
       { source: "/guider", destination: "/bostadsguider", permanent: true },
       { source: "/guider/:slug*", destination: "/bostadsguider", permanent: true },
+      // the same two for the English addresses the site had for them before the change (/en/blog, /en/guides)
+      { source: "/en/blog", destination: "/en/housing-guide", permanent: true },
+      { source: "/en/blog/:slug*", destination: "/en/housing-guide", permanent: true },
+      { source: "/en/guides", destination: "/en/housing-guide", permanent: true },
+      { source: "/en/guides/:slug*", destination: "/en/housing-guide", permanent: true },
     ];
   },
   async headers() {
