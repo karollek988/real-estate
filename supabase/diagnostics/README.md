@@ -17,21 +17,13 @@ The lines are compared with what the migrations in `supabase/migrations` should 
 migrations the database really has - which is not always what `supabase_migrations.schema_migrations` says: several
 migrations were applied by hand in the SQL Editor, and a migration applied that way is not recorded in that table.
 
-## `repair/` - the one-time repair of the migration history (2026-10-08)
+## The repair of the migration history (done 2026-10-08/09)
 
-Made after the inventory of production (results: `docs/operations/database.md`). **Steps 1 and 2 were run on production
-on 2026-10-08, step 3 on 2026-10-09.** Each step changes production, so each needed Karol's OK and the backup of rule 4 (the export
-of `select * from supabase_migrations.schema_migrations order by version` to `real-estate-db-backups/`). Order:
-
-1. `01-record-applied-migrations.sql` - six history rows for migrations production already has. Touches only the history table.
-2. `02-apply-pending-migrations.sql` - the two migrations production lacks (new tables and one function), then their history rows.
-3. `03-align-field-provenance-default.sql` - one column default (`properties.field_provenance`). Without it a new property
-   is refused: `insertProperty` creates the row without that column.
-
-Tested on a throwaway Postgres built to look like production (identical to the real inventory line for line): run twice each,
-then `supabase migration list` shows 29 migrations in both places and `supabase db push --dry-run` says "Remote database is
-up to date". After running on production, `inventory.sql` was run again: 29 history rows, no migration missing. All three
-steps have been run; the files are kept here as the record of what was run. Delete the folder when it is no longer useful.
+After the first inventory of production, three one-time SQL steps brought the history back in line with the database: six
+history rows for migrations that had been applied by hand, the two migrations production lacked, and the missing default of
+`properties.field_provenance`. They were run by Karol (with a backup first) and checked afterwards (an inventory: 29 history rows, no migration
+missing; a query: the default is in place), and then deleted from the repository. What each step changed is in
+`docs/operations/database.md`. A repair is not a routine: run `inventory.sql`, compare, and write the steps for what it shows.
 
 ## Why it matters
 

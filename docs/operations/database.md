@@ -42,7 +42,8 @@ How it got there: before 2026-10-08 six migrations had been applied by hand (`20
 (`20261007000000_acquisition_analytics`, `20261008120000_text_translations`). On 2026-10-08 the six were recorded and the
 two were applied and recorded (steps 1 and 2 below), and a second inventory confirmed it: 29 history rows, no migration
 missing, and the only differences from Git are the ones explained below. The one remaining difference,
-`properties.field_provenance` having no default, was put right by step 3 on 2026-10-09.
+`properties.field_provenance` having no default, was put right by step 3 on 2026-10-09 (checked afterwards: the column
+default is `'{}'::jsonb`).
 
 A new migration is applied to production **by hand first** (rule 5) and then recorded in the history - or run through the
 GitHub integration once that has been checked; either way, the history table must list it, or the next deploy tries it again.
@@ -72,17 +73,21 @@ like production: with the history as it is, the CLI reports 21 migrations in bot
 `supabase db push` refuses ("Found local migration files to be inserted before the last migration on remote
 database"); after the three steps below it reports 29 of 29 and "Remote database is up to date".
 
-### The repair (`supabase/diagnostics/repair/`) - steps 1 and 2 applied 2026-10-08, step 3 on 2026-10-09
+### The repair - done in three steps, 2026-10-08 and 2026-10-09
 
-Every step needs Karol's explicit OK first (rule 2) and the backup of rule 4. They were run in this order, in the SQL
-Editor of production; each is safe to repeat and runs as one transaction. The state before is kept in
-`real-estate-db-backups/2026-10-08-migration-history/`, the state after steps 1 and 2 is the second inventory there.
+Each step had Karol's explicit OK first (rule 2) and the backup of rule 4, and was run by Karol in the SQL Editor of
+production as one transaction. The one-time SQL files were deleted afterwards (2026-10-09): they are finished, and
+running them again would do nothing. The state before is kept in `real-estate-db-backups/2026-10-08-migration-history/`;
+the state after steps 1 and 2 is the second inventory there.
 
-| Step | File | What changes in production |
-|---|---|---|
-| 1 - done | `01-record-applied-migrations.sql` | **Only the history table:** 6 rows (`20260906000000`, `20261002000000/100/200`, `20261006000000`, `20261007120000`). No migration is run. |
-| 2 - done | `02-apply-pending-migrations.sql` | **Adds** `analytics_arrivals_daily`, `analytics_consent_daily`, `record_acquisition()` and `text_translations`, then records both in the history. Changes nothing that exists. |
-| 3 - done 2026-10-09 | `03-align-field-provenance-default.sql` | One column default on `properties.field_provenance`. No data. |
+| Step | What it changed in production |
+|---|---|
+| 1 (2026-10-08) | **Only the history table:** 6 rows (`20260906000000`, `20261002000000/100/200`, `20261006000000`, `20261007120000`). No migration was run. |
+| 2 (2026-10-08) | **Added** `analytics_arrivals_daily`, `analytics_consent_daily`, `record_acquisition()` and `text_translations`, then recorded both migrations in the history. Changed nothing that existed. |
+| 3 (2026-10-09) | One column default: `properties.field_provenance` default `'{}'::jsonb`, as its migration says. No data. |
+
+The next time the history and the database might disagree, run `supabase/diagnostics/inventory.sql` first (read-only) and
+repair from what it shows, not from this table.
 
 Production's `record_acquisition()` is the file's text with Windows line endings, like the older functions (pasted from
 Windows into the SQL Editor): the same function. The arrival counting (`/api/analytics/arrival`) and the translation cache
