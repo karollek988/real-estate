@@ -35,10 +35,10 @@ Items marked **REQUIRES REVIEW** need a decision by Karol (or the owner of the a
 2. **Production migration history is out of sync**, `20261007000000_acquisition_analytics` (source tracking for the
    Markov tab) and `20261008120000_text_translations` (translation cache) are **not applied**. What the translation
    feature does without its cache table in production: UNKNOWN. Details: `docs/operations/database.md`. **REQUIRES REVIEW**
-3. **Unverified claims on the landing page** (`frontend/src/i18n/messages/{sv,en}/landing.ts`, shown by
-   `components/landing/AnalyzeSection.tsx`): "4.8/5 baserat på 256 omdömen" (recorded as a placeholder without a
-   source; kept on Karol's decision of 2026-10-02 until it is replaced) and "Betrodd av fastighetsinvesterare över hela
-   Sverige" (no source found). **REQUIRES REVIEW** (marketing law risk).
+3. **Unverified claim on the landing page** (`frontend/src/i18n/messages/{sv,en}/landing.ts`, shown by
+   `components/landing/AnalyzeSection.tsx`): "Betrodd av fastighetsinvesterare över hela Sverige" (no source found).
+   **REQUIRES REVIEW** (marketing law risk). The false rating "4.8/5 baserat på 256 omdömen" and its stars were removed
+   on 2026-10-08.
 4. **Privacy policy inaccuracy:** `legal` messages say OpenAI interprets uploaded BRF annual reports; only the FAQ chat
    uses OpenAI, and the policy does not say that Köpanalys staff read uploaded documents. Legal text — **REQUIRES REVIEW**.
 5. **Hemnet scraping is still reachable** (`POST /api/analyses` with a Hemnet URL → Camoufox `/api/browser-fetch`) although
