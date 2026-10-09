@@ -17,6 +17,9 @@ that are easy to get wrong:
   e-mail code gets its words from a text kit, not from literals.
 - **Two admin areas:** `src/app/admin/**` (BRF review, content editor; Supabase login + `KOPANALYS_ADMIN_EMAILS`) and
   `src/pages/admin-portal/` (`admin.kopanalys.se`; own password login, strict CSP). Don't mix their auth.
+  The Swedish-only `src/app/admin/` has no language provider except the one in its `layout.tsx`: a client component that
+  calls `useTranslations` there needs its message area in that provider (or its own provider), or the page goes blank with an
+  empty `Uncaught Error` in production. `npm run verify -- adminProvider` checks it.
 - **A full report is shown to a customer only after a reviewer has released it** (`analyses.released_at`, decision
   2026-10-09). Read analyses for a customer through `getReportForViewer` (`lib/analysis/access.ts`); anything that reads
   `analyses` directly and hands report content on must use `latestCompleteAnalysis(..., { releasedOnly: true })`.
