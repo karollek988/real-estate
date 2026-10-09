@@ -66,6 +66,15 @@ const emails = {
   },
 
   /** Sent when the reviewed housing association analysis has been published. {address} is the home's address. */
+  /** Sent when a reviewer releases a customer's report for the first time. {address} is the home's address. */
+  reportReady: {
+    subject: "Din rapport för {address} är klar",
+    preheader: "Rapporten är granskad av Köpanalys och finns nu att läsa.",
+    heading: "Din rapport är klar",
+    intro: "En person på Köpanalys har granskat rapporten för {address}.",
+    body: "Öppna rapporten med knappen nedan. Du hittar den också under Mitt konto.",
+    cta: "Öppna rapporten",
+  },
   brfReady: {
     subject: "Din BRF-analys för {address} är klar",
     preheader: "Föreningens ekonomi är granskad och finns nu i din rapport.",

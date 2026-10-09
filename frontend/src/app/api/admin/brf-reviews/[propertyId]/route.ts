@@ -2,7 +2,7 @@ import { after, NextResponse } from "next/server";
 import { requireAdmin } from "@/lib/auth/admin";
 import { hasAnyBrfFigure, parseBrfFigures } from "@/lib/brf/figures";
 import { getBrfReview, markBrfReviewNotApplicable, publishBrfReview, saveBrfReviewDraft } from "@/lib/brf/reviews";
-import { notifyCustomersOfPublishedBrf } from "@/lib/brf/notify";
+import { notifyCustomersOfReview } from "@/lib/brf/notify";
 import { latestPendingAnalysis, releaseWaitingAnalyses } from "@/lib/analysis/store";
 
 function errorResponse(status: number, code: string, message: string, details?: string[]) {
@@ -47,7 +47,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ pro
     if (await latestPendingAnalysis(propertyId)) return reportNotReady();
     const updated = await markBrfReviewNotApplicable(propertyId, user.id);
     const released = await releaseWaitingAnalyses(propertyId, user.id);
-    if (released.length > 0) notifyAfterRelease(propertyId);
+    if (released.length > 0) notifyAfterRelease(propertyId, released.map((a) => a.id), false);
     return NextResponse.json({ review: updated, released: released.length });
   }
 
@@ -71,7 +71,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ pro
   if (await latestPendingAnalysis(propertyId)) return reportNotReady();
   const updated = await publishBrfReview(propertyId, figures, user.id);
   const released = await releaseWaitingAnalyses(propertyId, user.id);
-  notifyAfterRelease(propertyId);
+  notifyAfterRelease(propertyId, released.map((a) => a.id), true);
   return NextResponse.json({ review: updated, released: released.length });
 }
 
@@ -83,10 +83,10 @@ function reportNotReady() {
   );
 }
 
-/** The customers hear that their report is ready; a failed e-mail never fails the publish. */
-function notifyAfterRelease(propertyId: string) {
+/** The customers hear that their report (or the BRF analysis) is ready; a failed e-mail never fails the publish. */
+function notifyAfterRelease(propertyId: string, releasedIds: string[], brfPublished: boolean) {
   after(() =>
-    notifyCustomersOfPublishedBrf(propertyId)
+    notifyCustomersOfReview(propertyId, { releasedIds, brfPublished })
       .then((sent) => console.info(`Review published for property ${propertyId}; ${sent} customer(s) notified.`))
       .catch((err) => console.error(`Review publish notification failed for property ${propertyId}:`, err))
   );

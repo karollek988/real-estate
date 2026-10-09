@@ -7,11 +7,14 @@ import { getPathname } from "@/i18n/navigation";
 import { latestCompleteAnalysis } from "@/lib/analysis/store";
 import { dueSv } from "@/lib/report/brfChapter";
 import type { BrfReviewRecord, EnsureReviewReason } from "./reviews";
+import { reviewMailRecipients } from "./recipients";
 
 /**
- * The two emails the BRF review needs so the 24-hour promise can be kept:
- *  - to the team when a review round opens (a purchase, or a new annual report);
- *  - to every customer who owns the full analysis when the review is published.
+ * The two emails the review needs so the 24-hour promise can be kept:
+ *  - to the team when a review round opens (a purchase, a new report version or a new annual report);
+ *  - to the customers when a reviewer publishes: "your report is ready" for a report that was just
+ *    released, "your housing association analysis is ready" for new BRF figures on a report they already had
+ *    (who gets which: recipients.ts).
  *
  * Sent only in production (or with BRF_REVIEW_EMAILS=on), so local testing
  * never emails real people; otherwise the email is logged instead. A failed
@@ -82,8 +85,15 @@ export async function notifyTeamOfBrfReview(review: BrfReviewRecord, reason: Ens
   );
 }
 
-/** Emails each customer who owns the full analysis of this property. Returns how many were emailed. */
-export async function notifyCustomersOfPublishedBrf(propertyId: string): Promise<number> {
+/**
+ * Emails the customers who own the full analysis of this property after a reviewer published.
+ * `releasedIds` are the reports released just now, `brfPublished` says whether BRF figures were
+ * published too. Returns how many were emailed.
+ */
+export async function notifyCustomersOfReview(
+  propertyId: string,
+  options: { releasedIds: string[]; brfPublished: boolean }
+): Promise<number> {
   const client = createAdminClient();
   const { data: requests, error } = await client
     .from("analysis_requests")
@@ -91,7 +101,7 @@ export async function notifyCustomersOfPublishedBrf(propertyId: string): Promise
     .eq("property_id", propertyId)
     .eq("analysis_type", "full")
     .is("refunded_at", null);
-  if (error) throw new Error(`notifyCustomersOfPublishedBrf failed: ${error.message}`);
+  if (error) throw new Error(`notifyCustomersOfReview failed: ${error.message}`);
   const rows = (requests ?? []) as Array<{ user_id: string; analysis_id: string }>;
   if (rows.length === 0) return 0;
 
@@ -101,10 +111,13 @@ export async function notifyCustomersOfPublishedBrf(propertyId: string): Promise
     .select("id")
     .in("id", [...new Set(rows.map((r) => r.analysis_id))])
     .is("released_at", null);
-  if (waitingError) throw new Error(`notifyCustomersOfPublishedBrf failed: ${waitingError.message}`);
+  if (waitingError) throw new Error(`notifyCustomersOfReview failed: ${waitingError.message}`);
   const stillWaiting = new Set(((waiting ?? []) as Array<{ id: string }>).map((a) => a.id));
-  const userIds = [...new Set(rows.filter((r) => !stillWaiting.has(r.analysis_id)).map((r) => r.user_id))];
-  if (userIds.length === 0) return 0;
+  const recipients = reviewMailRecipients(
+    rows.map((r) => ({ userId: r.user_id, analysisId: r.analysis_id })),
+    { releasedIds: new Set(options.releasedIds), stillWaitingIds: stillWaiting, brfPublished: options.brfPublished }
+  );
+  if (recipients.size === 0) return 0;
 
   const analysis = await latestCompleteAnalysis(propertyId, ["full"], { releasedOnly: true });
   const { address } = await propertyLabel(propertyId);
@@ -113,13 +126,13 @@ export async function notifyCustomersOfPublishedBrf(propertyId: string): Promise
     `${siteUrl()}${getPathname({ locale, href: analysis ? { pathname: "/report", query: { id: analysis.id } } : "/dashboard" })}`;
 
   let sent = 0;
-  for (const userId of userIds) {
+  for (const [userId, kind] of recipients) {
     const { data, error: userError } = await client.auth.admin.getUserById(userId);
     const email = data?.user?.email;
     if (userError || !email) continue;
     const stored = data?.user?.user_metadata?.locale;
     const locale: AppLocale = isLocale(stored) ? stored : DEFAULT_LOCALE;
-    const t = await getTranslations({ locale, namespace: "emails.brfReady" });
+    const t = await getTranslations({ locale, namespace: kind === "report" ? "emails.reportReady" : "emails.brfReady" });
     await send(
       [email],
       t("subject", { address }),
