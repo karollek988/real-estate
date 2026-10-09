@@ -56,5 +56,10 @@ python -m pytest api/tests
 ## Att arbeta i repot
 
 `main` är alltid produktionsklar och ändras bara via pull request från en `feature/`-, `fix/`- eller
-`refactor/`-gren, med godkänd CI och ett godkännande. Rutinen finns i [CONTRIBUTING.md](CONTRIBUTING.md) (på engelska).
+`refactor/`-gren, med godkänd CI (inget godkännande krävs). Rutinen finns i [CONTRIBUTING.md](CONTRIBUTING.md) (på engelska).
 Instruktioner för Claude Code finns i [CLAUDE.md](CLAUDE.md).
+
+## Licens
+
+Koden är **inte öppen källkod**. Den är synlig för att kunna läsas, men får inte kopieras, ändras, driftsättas eller
+erbjudas som tjänst utan skriftligt tillstånd. Villkoren finns i [LICENSE](LICENSE) (på engelska).
