@@ -27,8 +27,8 @@ function errorResponse(status: number, code: string, message: string) {
 
 /**
  * Confirms the caller owns the full analysis (Trygghetspaketet) of this
- * property and returns its latest complete full analysis, which the viewing
- * guide reads from (PART 5). The guide builds on the whole report — the
+ * property and returns its latest complete, released full analysis, which the viewing
+ * guide reads from (PART 5). A report still waiting for a reviewer is not handed out. The guide builds on the whole report — the
  * listing facts, the housing association, the risks — so an area-only
  * analysis does not qualify.
  */
@@ -42,7 +42,7 @@ async function requireOwnedProperty(userId: string, propertyId: string) {
     };
   }
 
-  const analysis = await latestCompleteAnalysis(propertyId);
+  const analysis = await latestCompleteAnalysis(propertyId, ["full"], { releasedOnly: true });
   if (!analysis || !analysis.report) {
     return { error: await apiError(409, "analysis_incomplete", "inspections.analysisIncomplete") };
   }
@@ -148,7 +148,7 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ pr
   let updated = await updateInspection(existing.id, rest);
 
   if (requestSummary) {
-    const analysis = await latestCompleteAnalysis(propertyId);
+    const analysis = await latestCompleteAnalysis(propertyId, ["full"], { releasedOnly: true });
     const property = await findPropertyById(propertyId);
     if (analysis?.report && property) {
       const documents = await listDocuments(existing.id);

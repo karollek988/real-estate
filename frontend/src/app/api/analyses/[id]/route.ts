@@ -33,6 +33,8 @@ export async function GET(
       analysis: analysisForClient,
       property: found.property,
       analysisType: found.access.viewScope,
+      // true while a reviewer has not released the full report: the analysis then carries no report
+      held: found.access.held,
     });
   } catch (err) {
     console.error(`GET /api/analyses/${id} failed:`, err);

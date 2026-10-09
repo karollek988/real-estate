@@ -140,6 +140,31 @@ export function redactAnalysisRecord(analysis: AnalysisRecord, scope: AnalysisSc
 }
 
 /**
+ * The property record as a customer may see it while the report waits for a
+ * reviewer (release.ts): the address they ordered, and nothing else. Not even
+ * the area attributes, which belong to the report. An allowlist, like the rest.
+ */
+export function redactPropertyForHold(property: PropertyRecord): PropertyRecord {
+  return {
+    id: property.id,
+    normalizedKey: "",
+    address: property.address,
+    hemnetUrl: null,
+    latitude: null,
+    longitude: null,
+    municipality: property.municipality,
+    postalCode: property.postalCode,
+    propertyType: null,
+    apartmentNumber: null,
+    floor: null,
+    attributes: {},
+    fieldProvenance: {},
+    createdAt: property.createdAt,
+    updatedAt: property.updatedAt,
+  } satisfies PropertyRecord;
+}
+
+/**
  * The property record as an area-only viewer may see it: where it is, and
  * the area attributes — not the listing (price, fee, size, images, the Hemnet
  * URL, apartment number, the housing association, user-entered form fields).

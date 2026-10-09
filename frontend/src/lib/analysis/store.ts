@@ -52,6 +52,7 @@ interface AnalysisRow {
   failure_reason: AnalysisFailureReason | null;
   created_at: string;
   completed_at: string | null;
+  released_at: string | null;
 }
 
 function mapProperty(row: PropertyRow): PropertyRecord {
@@ -88,6 +89,8 @@ function mapAnalysis(row: AnalysisRow): AnalysisRecord {
     failureReason: row.failure_reason,
     createdAt: row.created_at,
     completedAt: row.completed_at,
+    // A missing column or value means "not released": a report is held back, never shown by mistake.
+    releasedAt: row.released_at ?? null,
   };
 }
 
@@ -207,17 +210,24 @@ export async function updateProperty(
  * think about scope (e.g. the viewing guide, which reads the whole report)
  * can never be handed an area-only analysis. An area request may pass both
  * scopes: a full analysis contains everything an area analysis would.
+ *
+ * `releasedOnly` skips full reports that no reviewer has released yet. Anything
+ * that hands report content to a customer (the viewing guide, the link in the
+ * "ready" e-mail) must pass it; the review console and the cache check do not.
  */
 export async function latestCompleteAnalysis(
   propertyId: string,
-  scopes: AnalysisScope[] = ["full"]
+  scopes: AnalysisScope[] = ["full"],
+  options: { releasedOnly?: boolean } = {}
 ): Promise<AnalysisRecord | null> {
-  const { data, error } = await createAdminClient()
+  let query = createAdminClient()
     .from("analyses")
     .select("*")
     .eq("property_id", propertyId)
     .eq("status", "complete")
-    .in("scope", scopes)
+    .in("scope", scopes);
+  if (options.releasedOnly) query = query.not("released_at", "is", null);
+  const { data, error } = await query
     .order("created_at", { ascending: false })
     .limit(1)
     .maybeSingle();
@@ -277,7 +287,14 @@ export async function insertPendingAnalysis(
 
     const { data, error } = await client
       .from("analyses")
-      .insert({ property_id: propertyId, version, engine_version: engineVersion, scope })
+      // A full report starts unreleased and waits for a reviewer (release.ts); the standalone area analysis is automatic.
+      .insert({
+        property_id: propertyId,
+        version,
+        engine_version: engineVersion,
+        scope,
+        ...(scope === "area" ? { released_at: new Date().toISOString() } : {}),
+      })
       .select("*")
       .single();
     if (!error) return mapAnalysis(data as AnalysisRow);
@@ -322,6 +339,40 @@ export async function failAnalysis(
     })
     .eq("id", id);
   if (error) throw new Error(`failAnalysis failed: ${error.message}`);
+}
+
+/**
+ * Releases every finished full report of this property that is still waiting:
+ * the customers who own them can see them from now on. Returns what was
+ * released (none when everything was already out). Older versions that are
+ * still waiting are released with the newest one: each customer's request
+ * points at the version they bought.
+ */
+export async function releaseWaitingAnalyses(propertyId: string, reviewerId: string): Promise<AnalysisRecord[]> {
+  const { data, error } = await createAdminClient()
+    .from("analyses")
+    .update({ released_at: new Date().toISOString(), released_by: reviewerId })
+    .eq("property_id", propertyId)
+    .eq("scope", "full")
+    .eq("status", "complete")
+    .is("released_at", null)
+    .select("*");
+  if (error) throw new Error(`releaseWaitingAnalyses failed: ${error.message}`);
+  return ((data ?? []) as AnalysisRow[]).map(mapAnalysis);
+}
+
+/** The finished full reports of this property that wait for a reviewer, newest first. */
+export async function listWaitingAnalyses(propertyId: string): Promise<AnalysisRecord[]> {
+  const { data, error } = await createAdminClient()
+    .from("analyses")
+    .select("*")
+    .eq("property_id", propertyId)
+    .eq("scope", "full")
+    .eq("status", "complete")
+    .is("released_at", null)
+    .order("created_at", { ascending: false });
+  if (error) throw new Error(`listWaitingAnalyses failed: ${error.message}`);
+  return ((data ?? []) as AnalysisRow[]).map(mapAnalysis);
 }
 
 export async function getAnalysisWithProperty(

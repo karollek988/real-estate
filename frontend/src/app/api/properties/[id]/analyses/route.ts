@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { rerunAnalysisForProperty } from "@/lib/analysis/pipeline";
+import { openReviewForAnalysis } from "@/lib/brf/openReview";
 import { listAnalysesForProperty } from "@/lib/analysis/store";
 import { getBestEntitlementForProperty } from "@/lib/analysis/ownership";
 import { requireUser } from "@/lib/auth/requireUser";
@@ -67,6 +68,8 @@ export async function POST(
 
     const result = await rerunAnalysisForProperty(id, entitlement);
     if (!result) return notFound();
+    // The new version is a new report: a reviewer releases it like any other (the customer keeps the earlier one meanwhile).
+    await openReviewForAnalysis(result.property, result.analysis);
     return NextResponse.json({
       analysisId: result.analysis.id,
       propertyId: result.property.id,

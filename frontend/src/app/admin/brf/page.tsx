@@ -83,9 +83,9 @@ export default async function BrfReviewQueuePage() {
       <div>
         <h1 className="text-2xl font-semibold tracking-tight text-ka-ink">BRF-granskningar</h1>
         <p className="mt-1 max-w-2xl text-sm text-ka-muted">
-          Varje Trygghetspaket för en bostadsrätt får en BRF-analys som en person granskar innan kunden ser den. Kunden har
-          utlovats analysen inom 24 timmar. Ta fram årsredovisningen (från mäklaren, föreningen eller annonsen) om kunden inte
-          har laddat upp den, kontrollera nyckeltalen och publicera.
+          Varje Trygghetspaket granskas av en person innan kunden ser rapporten — också en villa, som då saknar BRF-analys.
+          Kunden har utlovats rapporten inom 24 timmar. Läs rapporten, ta fram årsredovisningen (från mäklaren, föreningen
+          eller annonsen) om kunden inte har laddat upp den, kontrollera nyckeltalen och publicera. Då släpps hela rapporten.
         </p>
       </div>
 

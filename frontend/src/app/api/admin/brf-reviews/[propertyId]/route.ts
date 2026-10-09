@@ -2,7 +2,8 @@ import { after, NextResponse } from "next/server";
 import { requireAdmin } from "@/lib/auth/admin";
 import { hasAnyBrfFigure, parseBrfFigures } from "@/lib/brf/figures";
 import { getBrfReview, markBrfReviewNotApplicable, publishBrfReview, saveBrfReviewDraft } from "@/lib/brf/reviews";
-import { notifyCustomersOfPublishedBrf } from "@/lib/brf/notify";
+import { notifyCustomersOfReview } from "@/lib/brf/notify";
+import { latestPendingAnalysis, releaseWaitingAnalyses } from "@/lib/analysis/store";
 
 function errorResponse(status: number, code: string, message: string, details?: string[]) {
   return NextResponse.json({ error: { code, message, ...(details ? { details } : {}) } }, { status });
@@ -15,8 +16,14 @@ function errorResponse(status: number, code: string, message: string, details?: 
  * Body: { action: "save" | "publish" | "not_applicable", figures?: BrfFigures }
  *  - save:           keep the reviewer's working copy (not visible to customers)
  *  - publish:        show the figures to every customer who owns the full
- *                    analysis, and email them that the BRF analysis is ready
- *  - not_applicable: the home has no housing association
+ *                    analysis, release the finished report(s) of the home that
+ *                    wait for a reviewer, and email the customers
+ *  - not_applicable: the home has no housing association (or is freehold);
+ *                    the waiting report(s) are released the same way
+ *
+ * A report reaches its customer only through here (lib/analysis/release.ts), so
+ * publishing is refused while the analysis is still being made: the reviewer
+ * must have a finished report to read.
  *
  * Figures are validated against lib/brf/figures.ts on every action, so a
  * typing error (a fee of 69 000 kr/kvm) is refused before it is saved.
@@ -37,8 +44,11 @@ export async function POST(request: Request, { params }: { params: Promise<{ pro
   }
 
   if (body.action === "not_applicable") {
+    if (await latestPendingAnalysis(propertyId)) return reportNotReady();
     const updated = await markBrfReviewNotApplicable(propertyId, user.id);
-    return NextResponse.json({ review: updated });
+    const released = await releaseWaitingAnalyses(propertyId, user.id);
+    if (released.length > 0) notifyAfterRelease(propertyId, released.map((a) => a.id), false);
+    return NextResponse.json({ review: updated, released: released.length });
   }
 
   if (body.action !== "save" && body.action !== "publish") {
@@ -58,11 +68,26 @@ export async function POST(request: Request, { params }: { params: Promise<{ pro
   if (!hasAnyBrfFigure(figures)) {
     return errorResponse(422, "empty_review", "Fyll i minst ett nyckeltal eller en kommentar innan du publicerar.");
   }
+  if (await latestPendingAnalysis(propertyId)) return reportNotReady();
   const updated = await publishBrfReview(propertyId, figures, user.id);
-  after(() =>
-    notifyCustomersOfPublishedBrf(propertyId)
-      .then((sent) => console.info(`BRF review published for property ${propertyId}; ${sent} customer(s) notified.`))
-      .catch((err) => console.error(`BRF review publish notification failed for property ${propertyId}:`, err))
+  const released = await releaseWaitingAnalyses(propertyId, user.id);
+  notifyAfterRelease(propertyId, released.map((a) => a.id), true);
+  return NextResponse.json({ review: updated, released: released.length });
+}
+
+function reportNotReady() {
+  return errorResponse(
+    409,
+    "analysis_not_ready",
+    "Rapporten håller fortfarande på att tas fram. Vänta tills den är klar, läs den och publicera sedan."
   );
-  return NextResponse.json({ review: updated });
+}
+
+/** The customers hear that their report (or the BRF analysis) is ready; a failed e-mail never fails the publish. */
+function notifyAfterRelease(propertyId: string, releasedIds: string[], brfPublished: boolean) {
+  after(() =>
+    notifyCustomersOfReview(propertyId, { releasedIds, brfPublished })
+      .then((sent) => console.info(`Review published for property ${propertyId}; ${sent} customer(s) notified.`))
+      .catch((err) => console.error(`Review publish notification failed for property ${propertyId}:`, err))
+  );
 }

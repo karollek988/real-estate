@@ -1,7 +1,8 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { findPropertyById, latestCompleteAnalysis } from "@/lib/analysis/store";
+import { findPropertyById, latestCompleteAnalysis, latestPendingAnalysis, listWaitingAnalyses } from "@/lib/analysis/store";
+import { tenureOfProperty } from "@/lib/report/tenure";
 import { BRF_REPORTS_BUCKET, EXTRACTION_FAILED, getBrfReportById } from "@/lib/analysis/brfReports";
 import { getBrfReview } from "@/lib/brf/reviews";
 import { hasAnyBrfFigure, parseBrfFigures } from "@/lib/brf/figures";
@@ -31,6 +32,9 @@ export default async function BrfReviewPage({ params }: { params: Promise<{ prop
   const extractionFailed = document?.annualReport?.verification_status === EXTRACTION_FAILED;
 
   const analysis = await latestCompleteAnalysis(propertyId);
+  const waiting = await listWaitingAnalyses(propertyId);
+  const building = (await latestPendingAnalysis(propertyId)) !== null;
+  const freehold = tenureOfProperty(property) === "freehold";
   const p = analysis?.report?.property;
   const a = property.attributes;
   const apartment = {
@@ -80,6 +84,16 @@ export default async function BrfReviewPage({ params }: { params: Promise<{ prop
           {review.status === "pending" && review.published && (
             <p className="mt-0.5 text-xs text-ka-muted">Ny årsredovisning — kunden ser den tidigare publicerade analysen tills du publicerar.</p>
           )}
+          {building ? (
+            <p className="mt-1.5 text-xs font-medium text-ka-amber-700">Rapporten tas fram — du kan publicera när den är klar.</p>
+          ) : waiting.length > 0 ? (
+            <p className="mt-1.5 text-xs font-medium text-ka-ink">
+              Rapporten väntar på dig ({waiting.length > 1 ? `${waiting.length} versioner` : "1 version"}). Läs den, sedan släpper du den
+              genom att publicera{freehold ? " (friköpt bostad: välj \"Ingen förening\")" : ""}.
+            </p>
+          ) : analysis ? (
+            <p className="mt-1.5 text-xs text-ka-muted">Rapporten är släppt till kunden.</p>
+          ) : null}
           <div className="mt-1.5 flex flex-wrap gap-3 text-xs">
             {analysis && (
               <Link href={`/report?id=${analysis.id}`} className="font-medium text-ka-sky-700 hover:underline" target="_blank">
@@ -139,6 +153,8 @@ export default async function BrfReviewPage({ params }: { params: Promise<{ prop
         apartment={apartment}
         associationName={associationName}
         status={review.status}
+        reportWaiting={waiting.length}
+        reportBuilding={building}
       />
     </div>
   );

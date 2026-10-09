@@ -455,6 +455,13 @@ const report = {
       error: "Something went wrong. Please try again.",
     },
     /** A failed analysis. */
+    /** A full report that no Köpanalys reviewer has released yet. {address} is the home's address, {when} a date and time (brf.dueTime). */
+    awaiting: {
+      title: "Din rapport granskas",
+      text: "En person på Köpanalys går igenom rapporten för {address} innan du får den. Du får ett mejl så fort den är klar.",
+      due: "Klar senast {when}.",
+      within24: "Klar inom 24 timmar från beställningen.",
+    },
     failed: {
       titleInsufficient: "Vi kunde tyvärr inte slutföra analysen",
       title: "Analysen kunde inte slutföras",

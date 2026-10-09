@@ -57,6 +57,14 @@ const emails: Messages["emails"] = {
     },
   },
 
+  reportReady: {
+    subject: "Your report for {address} is ready",
+    preheader: "The report has been reviewed by Köpanalys and is ready to read.",
+    heading: "Your report is ready",
+    intro: "A person at Köpanalys has reviewed the report for {address}.",
+    body: "Open the report with the button below. You can also find it under My account.",
+    cta: "Open the report",
+  },
   brfReady: {
     subject: "Your housing association analysis for {address} is ready",
     preheader: "The association's finances have been reviewed and are now in your report.",

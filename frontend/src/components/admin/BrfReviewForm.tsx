@@ -129,6 +129,8 @@ export function BrfReviewForm({
   apartment,
   associationName,
   status,
+  reportWaiting,
+  reportBuilding,
 }: {
   propertyId: string;
   initial: BrfFigures;
@@ -137,6 +139,10 @@ export function BrfReviewForm({
   apartment: BrfApartmentContext;
   associationName: string | null;
   status: "pending" | "published" | "not_applicable";
+  /** How many finished report versions wait for release; publishing (or "no association") releases them. */
+  reportWaiting: number;
+  /** The report is still being made: publishing is refused until it is finished. */
+  reportBuilding: boolean;
 }) {
   const router = useRouter();
   const [values, setValues] = useState<FormValues>(() => toFormValues(initial));
@@ -157,8 +163,24 @@ export function BrfReviewForm({
   }
 
   async function submit(action: "save" | "publish" | "not_applicable") {
-    if (action === "publish" && !window.confirm("Publicera BRF-analysen? Den visas direkt i kundens rapport och kunden får ett mejl.")) return;
-    if (action === "not_applicable" && !window.confirm("Markera att bostaden inte ingår i någon förening? BRF-kapitlet visar då det.")) return;
+    if (
+      action === "publish" &&
+      !window.confirm(
+        reportWaiting > 0
+          ? "Publicera och släpp rapporten? Hela rapporten blir synlig för kunden och kunden får ett mejl."
+          : "Publicera BRF-analysen? Den visas direkt i kundens rapport och kunden får ett mejl."
+      )
+    )
+      return;
+    if (
+      action === "not_applicable" &&
+      !window.confirm(
+        reportWaiting > 0
+          ? "Markera att bostaden inte ingår i någon förening och släpp rapporten? Hela rapporten blir synlig för kunden och kunden får ett mejl."
+          : "Markera att bostaden inte ingår i någon förening? BRF-kapitlet visar då det."
+      )
+    )
+      return;
     setBusy(action);
     setMessage(null);
     try {
@@ -176,10 +198,14 @@ export function BrfReviewForm({
         kind: "ok",
         text:
           action === "publish"
-            ? "Publicerad. Kunden ser BRF-analysen nu och får ett mejl."
+            ? data?.released > 0
+              ? "Publicerad. Rapporten är släppt till kunden, som får ett mejl."
+              : "Publicerad. Kunden ser BRF-analysen nu och får ett mejl."
             : action === "save"
               ? "Utkastet är sparat (syns inte för kunden)."
-              : "Markerad som ej aktuell.",
+              : data?.released > 0
+                ? "Markerad som ej aktuell. Rapporten är släppt till kunden, som får ett mejl."
+                : "Markerad som ej aktuell.",
       });
       router.refresh();
     } finally {
@@ -244,11 +270,17 @@ export function BrfReviewForm({
         <div className="sticky bottom-0 flex flex-wrap items-center gap-3 border-t border-ka-line-strong bg-ka-cream/95 py-3 backdrop-blur">
           <button
             type="button"
-            disabled={busy !== null}
+            disabled={busy !== null || reportBuilding}
             onClick={() => submit("publish")}
             className="rounded-md bg-ka-green-900 px-4 py-2 text-sm font-semibold text-white hover:bg-ka-green-800 disabled:opacity-50"
           >
-            {busy === "publish" ? "Publicerar…" : status === "published" ? "Publicera uppdatering" : "Publicera till kunden"}
+            {busy === "publish"
+              ? "Publicerar…"
+              : reportWaiting > 0
+                ? "Publicera och släpp rapporten"
+                : status === "published"
+                  ? "Publicera uppdatering"
+                  : "Publicera till kunden"}
           </button>
           <button
             type="button"
@@ -260,11 +292,11 @@ export function BrfReviewForm({
           </button>
           <button
             type="button"
-            disabled={busy !== null}
+            disabled={busy !== null || reportBuilding}
             onClick={() => submit("not_applicable")}
             className="ml-auto text-xs font-medium text-ka-muted hover:text-ka-coral-700 disabled:opacity-50"
           >
-            Ingen förening (ej aktuell)
+            {reportWaiting > 0 ? "Ingen förening — släpp rapporten" : "Ingen förening (ej aktuell)"}
           </button>
         </div>
       </div>

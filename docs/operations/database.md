@@ -35,7 +35,14 @@ There is no staging database.
 
 | Migration | In production? | Recorded in `schema_migrations`? |
 |---|---|---|
-| All 29 files in `supabase/migrations` | yes | **yes - 29 of 29** |
+| The 29 files up to `20261008120000_text_translations` | yes | **yes - 29 of 29** |
+| `20261009182000_analysis_release` (adds `analyses.released_at` / `released_by`) | **not yet - apply by hand BEFORE the code that reads it is merged** | no |
+
+`20261009182000_analysis_release`: existing analyses count as released (so every report customers can see today stays
+visible); new full analyses start unreleased. It is safe to run twice - only the run that adds the columns releases the
+existing rows. The code fails closed: with the column missing every full report would be held back and a new area
+analysis could not be created, so the order is: backup of `analyses` (rule 4) → run the file in the SQL Editor → add
+its row to `supabase_migrations.schema_migrations` → merge.
 
 How it got there: before 2026-10-08 six migrations had been applied by hand (`20260906000000`, `20261002000000/100/200`,
 `20261006000000`, `20261007120000`) and were missing from the history, and two had never been run

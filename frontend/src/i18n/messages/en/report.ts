@@ -401,6 +401,12 @@ const report: Messages["report"] = {
       updating: "Updating…",
       error: "Something went wrong. Please try again.",
     },
+    awaiting: {
+      title: "Your report is being reviewed",
+      text: "A person at Köpanalys goes through the report for {address} before you get it. We will email you as soon as it is ready.",
+      due: "Ready by {when}.",
+      within24: "Ready within 24 hours of your order.",
+    },
     failed: {
       titleInsufficient: "Unfortunately we could not complete the analysis",
       title: "The analysis could not be completed",
