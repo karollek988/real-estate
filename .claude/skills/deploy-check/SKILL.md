@@ -12,7 +12,8 @@ are changed by Karol. Background: `docs/operations/environments.md`.
 
 - **Vercel** builds `frontend/` and serves it on every production domain at once (`kopanalys.se`, `www`,
   `admin.kopanalys.se`, the `vercel.app` alias).
-- **Railway** rebuilds the root `Dockerfile` and restarts `kopanalys-python-api`.
+- **Railway** rebuilds the root `Dockerfile` and restarts `kopanalys-python-api` - only when the merge changes engine files
+  (`watchPatterns` in `railway.json`). A frontend- or docs-only merge makes no Railway deployment; that is normal.
 - **Supabase is not touched.** Migrations are applied by hand.
 
 ## Before the merge
@@ -32,7 +33,9 @@ are changed by Karol. Background: `docs/operations/environments.md`.
   `curl -s "https://api.github.com/repos/karollek988/real-estate/deployments?per_page=6"` → `environment`, `sha`,
   `creator` (`vercel[bot]` = Vercel Production/Preview, `railway-app[bot]` = Railway).
   Status of one: `…/deployments/<id>/statuses` (`state: success`).
-- Compare with `git rev-parse origin/main`.
+- Compare with `git rev-parse origin/main`. Railway's newest deployment may be an older commit: if the merge changed no engine
+  file, none is made. A Railway `failure` is worth reading in the dashboard; one seen on 2026-10-09 was Docker Hub answering
+  `429` for the base image (see `docs/operations/environments.md`).
 - Railway, if the CLI is linked and logged in: `railway status` (read-only). Note: the CLI may be logged in with a
   different account than Karol's usual one — check the workspace it names.
 - The site: load `https://kopanalys.se` and the changed page (built-in browser), check the console for errors. The

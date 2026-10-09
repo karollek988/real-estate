@@ -15,7 +15,8 @@ api/ + analysis_engine/ + BRF-Scraper/ + src/  Python-motorn  ──► Railway 
 supabase/  databasschemat (migrationer)                       ──► Supabase (samma databas för Preview och Production)
 ```
 
-En merge till `main` går ut på alla domäner och till Railway på en gång. Databasen ändras aldrig av en deploy.
+En merge till `main` går ut på alla domäner på en gång, och till Railway när den ändrar motorn (`watchPatterns` i `railway.json`).
+Databasen ändras aldrig av en deploy.
 Mer: [docs/architecture/overview.md](docs/architecture/overview.md) och
 [docs/operations/environments.md](docs/operations/environments.md).
 
