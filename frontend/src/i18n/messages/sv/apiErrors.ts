@@ -40,6 +40,7 @@ const apiErrors = {
     notFoundCompleted: "No completed analysis with that id.",
     pdfRateLimited: "Vänta en liten stund innan du laddar ner fler PDF:er.",
     pdfFailed: "Could not generate the PDF report.",
+    pdfAwaitingReview: "Rapporten granskas fortfarande och kan inte laddas ner än. Du får ett mejl när den är klar.",
   },
 
   /** What a listing needs in order to be analysed; written in the sentence insufficientManualData. */

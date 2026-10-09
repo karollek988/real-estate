@@ -27,6 +27,7 @@ const apiErrors: Messages["apiErrors"] = {
     notFoundCompleted: "No completed analysis with that id.",
     pdfRateLimited: "Please wait a moment before downloading more PDFs.",
     pdfFailed: "Could not generate the PDF report.",
+    pdfAwaitingReview: "The report is still being reviewed and cannot be downloaded yet. We will email you when it is ready.",
   },
 
   essentialFields: {

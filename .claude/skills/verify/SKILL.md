@@ -39,7 +39,8 @@ running them locally first saves a red PR.
 
 - ESLint reports ~12 errors from before CI existed; it is not part of CI. Only judge the files you changed.
 - `parseBotCoverage.verify.ts` cannot run outside a request scope (it is `.ts`, so `npm run verify` skips it).
-- The PDF download (Puppeteer + `@sparticuz/chromium`) does not run on this Windows host — verify on a Vercel preview.
+- The PDF download (Puppeteer + `@sparticuz/chromium`) does not run on this Windows host — verify on a Vercel preview, or
+  locally with `PDF_CHROME_PATH` set to a Chrome/Edge (`frontend/.env.example`); it proves the route's logic, not Vercel's Chromium.
 - E-mails are only sent in production (`BRF_REVIEW_EMAILS=on` sends them from `next dev` to real addresses — don't).
 - Anything that needs a logged-in production account cannot be verified by Claude; say so and describe the manual check.
 
