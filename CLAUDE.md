@@ -54,7 +54,8 @@ Read [`docs/README.md`](docs/README.md) for the full map. The short version:
 - Leave other people's branches, worktrees (`../real-estate-mapdemo`) and uncommitted files alone. Old branches with
   other names (`styleRedesign`, `mapDemoIntegration`, `backup/…`) are kept on purpose — don't delete or reuse them.
 
-**Deployment** — every merge to `main` goes live on all domains (Vercel) and on Railway at once; there is no staging.
+**Deployment** — every merge to `main` goes live on all domains (Vercel) at once, and on Railway too when it changes the
+engine (`watchPatterns` in `railway.json`); there is no staging.
 Treat a merge as a production release. Use the `deploy-check` skill before and after.
 
 **Database** — never edit, rename or delete a migration; a schema change is a new migration file. Nothing touches

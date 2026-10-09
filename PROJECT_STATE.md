@@ -5,8 +5,9 @@
 > [`docs/archive/project-state-history-2026-10-08.md`](docs/archive/project-state-history-2026-10-08.md); decisions are in
 > [`docs/decisions/README.md`](docs/decisions/README.md).
 
-**Last updated:** 2026-10-09 · **Production:** `main` at `c56afc5` (PR #10), deployed to Vercel and Railway on
-2026-10-09 (GitHub deployments API).
+**Last updated:** 2026-10-10 · **Production:** Vercel at `ab51da5` (PR #15, 2026-10-09). The engine on Railway still runs
+`8275130`: its two newer builds failed on Docker Hub's rate limit (`429`) before building anything; the base image now
+comes from AWS's mirror and Railway only builds when engine files change (GitHub deployments API).
 
 ## What is live
 

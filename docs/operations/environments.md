@@ -28,7 +28,14 @@ feature/… | fix/… | refactor/… branch ── pull request (CI "CI passed",
                          Vercel builds frontend/ → every domain               Railway builds the root Dockerfile
 ```
 
-- **Every push to `main` goes live on every domain and on Railway at once.** There is no staging step.
+- **Every push to `main` goes live on every domain at once; it goes live on Railway too when it changes the engine.**
+  Railway only builds when a changed file matches `build.watchPatterns` in `railway.json`: `api/`, `analysis_engine/`, `BRF-Scraper/`, `src/`, `Dockerfile`, `railway.json` and `.dockerignore`.
+  A frontend-only or docs-only merge creates no Railway deployment - that is expected, and the engine keeps running its last
+  build. If the engine ever reads a new folder, add it to the watch paths or changes there will not deploy.
+  There is no staging step.
+- **The engine image is built from the AWS public mirror of the official Python image**, not from Docker Hub: Docker Hub's
+  anonymous limit failed two Railway builds with `429 Too Many Requests` on 2026-10-09 (the log said "failed to resolve
+  source metadata for docker.io/library/python:3.13-slim"). A deploy that fails like that did nothing wrong - redeploy it.
 - **The database is never changed by a deploy.** Migrations are applied by hand, with Karol's approval, before the
   code that needs them is merged (see [`database.md`](database.md)).
 - **An environment variable change only reaches deployments built after it**: redeploy afterwards

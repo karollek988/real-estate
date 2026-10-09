@@ -14,8 +14,9 @@ paths:
 
 Routes, local running and the translation model: `api/README.md`. Architecture: `docs/architecture/overview.md`.
 
-- **Merging to `main` redeploys Railway.** The image is built from the root `Dockerfile`, which copies the whole
-  repository; `api/server.py` imports `analysis_engine/`, `BRF-Scraper/src` and `src/` by adding them to `sys.path`.
+- **Merging to `main` redeploys Railway when it changes the engine** (`watchPatterns` in `railway.json`: `api/`,
+  `analysis_engine/`, `BRF-Scraper/`, `src/` and the build files; add a folder there if the engine starts reading it). The
+  image is built from the root `Dockerfile`, which copies the whole repository; `api/server.py` imports `analysis_engine/`, `BRF-Scraper/src` and `src/` by adding them to `sys.path`.
   Don't move or rename those folders, and don't rely on files that `.dockerignore` excludes.
 - Every route except `GET /` must stay behind `X-Internal-Secret` (`require_internal_secret` in `server.py`);
   `api/tests/test_internal_auth.py` checks this and that the removed BRF-acquisition routes stay gone.

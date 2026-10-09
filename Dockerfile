@@ -4,7 +4,11 @@
 # that runs. api/translation.py uses the result for POST /api/translate (the site's articles and map listings in
 # the reader's language). Another language = another model converted into /models/<pair> and a line in
 # api/translation.py MODEL_FOLDERS.
-FROM python:3.13-slim AS translation-model
+# Both stages use the official Python image from AWS's public mirror, not from Docker Hub. Railway's builders share
+# addresses, and Docker Hub answered "429 Too Many Requests" when they asked for the image's metadata, which failed
+# the build before it began (2026-10-09, two deploys). It is the same image: the mirror's digest for
+# python:3.13-slim equals Docker Hub's.
+FROM public.ecr.aws/docker/library/python:3.13-slim AS translation-model
 
 RUN pip install --no-cache-dir torch --index-url https://download.pytorch.org/whl/cpu \
     && pip install --no-cache-dir transformers ctranslate2 sentencepiece
@@ -16,7 +20,7 @@ RUN ct2-transformers-converter \
     --output_dir /models/sv-en --quantization int8 --copy_files source.spm target.spm
 
 # ---- Stage 2: the engine -----------------------------------------------------------------------------
-FROM python:3.13-slim
+FROM public.ecr.aws/docker/library/python:3.13-slim
 
 WORKDIR /app
 COPY . .

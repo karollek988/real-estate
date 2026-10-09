@@ -123,7 +123,7 @@ storage buckets and the rules for touching production: [`docs/operations/databas
 | What | Where | Trigger |
 |---|---|---|
 | `frontend/` | Vercel project `real-estate` | Push to `main` → Production (all domains); other branches → Preview |
-| Python engine | Railway `kopanalys-python-api` | Push to `main` |
+| Python engine | Railway `kopanalys-python-api` | Push to `main` that changes engine files (`watchPatterns` in `railway.json`); a frontend- or docs-only push does not rebuild it |
 | Database | Supabase | **Manual only** — migrations are never applied by a deploy |
 | CI | GitHub Actions `ci.yml` | Pull requests and pushes to `main` |
 
