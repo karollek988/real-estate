@@ -19,7 +19,7 @@ starts with 0 credits. A 50 % discount code mechanism exists (one Stripe coupon,
 | Package | Price | What the buyer gets |
 |---|---|---|
 | Områdesanalys | 99 kr | Cover + the area chapter for an address. Fully automatic, minutes. |
-| Trygghetspaket | 499 kr | The complete report for one home (the main product). |
+| Trygghetspaket | 499 kr | The complete report for one home (the main product). Read and released by a person, within 24 hours. |
 | Tre bostäder | 999 kr | Three Trygghetspaket credits. |
 
 **Where the truth lives:** amounts in `frontend/src/lib/pricing.ts`; package definitions and the "lanseras snart"
@@ -31,7 +31,8 @@ switch in `frontend/src/lib/packages.ts`; what a purchase credits in `frontend/s
 Cover → Sammanfattning → Fastighetsinformation → **Boendekalkyl** (placeholder "lanseras inom kort" until
 `HOUSING_COST_LIVE` in `packages.ts` is `true`; groundwork in `lib/report/housingCost.ts`) → **Bostadsrättsförening**
 (person-reviewed; left out for a freehold house) → Områdesanalys → Möjliga risker → Framtidsutsikter →
-Frågor inför visningen. Also a viewing/inspection guide in the dashboard and a PDF of the report.
+Frågor inför visningen. Also a viewing/inspection guide in the dashboard and a PDF of the report. The customer sees none
+of it until a reviewer has released the report (rule 3).
 
 ## Product rules (apply to every change)
 
@@ -42,12 +43,16 @@ Frågor inför visningen. Also a viewing/inspection guide in the dashboard and a
    (decision 2026-07-22, scores removed 2026-10-02). Detail for code: `.claude/rules/report-objectivity.md`.
 2. **No invented data.** A source that is not connected reports `not_connected` and the report says so; counters and
    statistics show real numbers. Example and demo content must be labelled as such (`Exempel`, `Demodata`).
-3. **The BRF analysis is reviewed by a person** before the customer sees it. The customer gets the rest of the report
-   at once; the BRF chapter says it is being reviewed and is ready **within 24 hours**. Automatically extracted BRF
-   figures are only a prefill for the reviewer — never shown to a customer without a published review.
-4. **The area analysis and everything else is automatic.** Never describe those parts as manual handling.
-5. **Entitlement:** whoever owns a full analysis sees the whole report; an area analysis shows the cover and the area
-   chapter only — enforced server-side (`src/lib/analysis/redact.ts`). No entitlement = 404, there is no free preview.
+3. **A Trygghetspaket report is reviewed by a person before the customer sees any of it** (decision 2026-10-09). When
+   the automatic analysis is done the customer gets a page saying the report is being reviewed and is ready **within 24
+   hours**; a reviewer reads it in `/admin/brf` and releases it (`analyses.released_at`). A home with a housing
+   association also gets the person-reviewed BRF analysis; a freehold house is reviewed too, without that chapter.
+   Automatically extracted BRF figures are only a prefill for the reviewer — never shown to a customer without a
+   published review. Reports that existed before the change stay visible.
+4. **The standalone Områdesanalys is automatic** and shown at once. Never describe automatic parts as manual handling.
+5. **Entitlement:** whoever owns a full analysis sees the whole report once it is released; an area analysis shows the
+   cover and the area chapter only — enforced server-side (`src/lib/analysis/access.ts`, `redact.ts`, `release.ts`).
+   No entitlement = 404, there is no free preview, and a report that is not released returns no content.
 6. **Content (Bostadsguiden, Insikter, Nyheter)** is written by the team in `/admin/content`, not added through code.
    Guides may explain concepts but must not reveal engine internals such as weights or thresholds (Karol, 2026-10-07).
 
@@ -57,6 +62,12 @@ The reviewer runbook (queue, getting the annual report, what to check, publishin
 sources are in [`docs/48_brf_review_and_deck_alignment_2026-10-02.md`](../48_brf_review_and_deck_alignment_2026-10-02.md)
 §1 and §3. The benchmarks used by the code are in `frontend/src/lib/brf/interpret.ts`; review them yearly
 (they are FY2023 averages, checked 2026-10-02). Reviewers are the emails in `KOPANALYS_ADMIN_EMAILS`.
+
+**Release (2026-10-09):** the review page in `/admin/brf` also holds the customer's report ("Kundens rapport"). The
+reviewer reads it, then presses *Publicera och släpp rapporten*; for a freehold house or a home without an association
+*Ingen förening — släpp rapporten*. That releases every finished report of the home that waits and e-mails the
+customers. Publishing is refused while the analysis is still being made. A new report version ("Update analysis") or a
+new annual report opens a new 24-hour round; the customer keeps the report that was already released meanwhile.
 
 ## Open product questions
 

@@ -55,6 +55,7 @@ const REASON_SV: Record<EnsureReviewReason, string> = {
   purchase: "En kund har köpt ett Trygghetspaket.",
   document: "En ny årsredovisning har laddats upp.",
   report_view: "En kund har öppnat en rapport som saknade granskning.",
+  analysis: "En rapport väntar på att granskas och släppas till kunden.",
 };
 
 export async function notifyTeamOfBrfReview(review: BrfReviewRecord, reason: EnsureReviewReason): Promise<void> {
@@ -86,15 +87,26 @@ export async function notifyCustomersOfPublishedBrf(propertyId: string): Promise
   const client = createAdminClient();
   const { data: requests, error } = await client
     .from("analysis_requests")
-    .select("user_id")
+    .select("user_id, analysis_id")
     .eq("property_id", propertyId)
     .eq("analysis_type", "full")
     .is("refunded_at", null);
   if (error) throw new Error(`notifyCustomersOfPublishedBrf failed: ${error.message}`);
-  const userIds = [...new Set(((requests ?? []) as Array<{ user_id: string }>).map((r) => r.user_id))];
+  const rows = (requests ?? []) as Array<{ user_id: string; analysis_id: string }>;
+  if (rows.length === 0) return 0;
+
+  // Whoever still waits for a report that has not been released yet hears from us when that one is released.
+  const { data: waiting, error: waitingError } = await client
+    .from("analyses")
+    .select("id")
+    .in("id", [...new Set(rows.map((r) => r.analysis_id))])
+    .is("released_at", null);
+  if (waitingError) throw new Error(`notifyCustomersOfPublishedBrf failed: ${waitingError.message}`);
+  const stillWaiting = new Set(((waiting ?? []) as Array<{ id: string }>).map((a) => a.id));
+  const userIds = [...new Set(rows.filter((r) => !stillWaiting.has(r.analysis_id)).map((r) => r.user_id))];
   if (userIds.length === 0) return 0;
 
-  const analysis = await latestCompleteAnalysis(propertyId);
+  const analysis = await latestCompleteAnalysis(propertyId, ["full"], { releasedOnly: true });
   const { address } = await propertyLabel(propertyId);
   // the link and the words are in each customer's own language
   const link = (locale: AppLocale) =>

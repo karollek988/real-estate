@@ -123,6 +123,10 @@ export interface OwnedAnalysisSummary {
  *
  * A property bought both ways (area first, then full) is listed once, as
  * the full analysis — the area analysis is part of it.
+ *
+ * A finished full version that no reviewer has released yet (an update that
+ * waits for review) does not replace a released one: the card keeps opening
+ * the report the customer can already read until the new one is released.
  */
 export async function listAnalysisRequestsForUser(userId: string): Promise<OwnedAnalysisSummary[]> {
   const client = createAdminClient();
@@ -149,7 +153,7 @@ export async function listAnalysisRequestsForUser(userId: string): Promise<Owned
       client.from("properties").select("id, address").in("id", propertyIds),
       client
         .from("analyses")
-        .select("id, property_id, scope, status, created_at")
+        .select("id, property_id, scope, status, created_at, released_at")
         .in("property_id", propertyIds)
         .order("created_at", { ascending: false }),
     ]);
@@ -160,15 +164,30 @@ export async function listAnalysisRequestsForUser(userId: string): Promise<Owned
     (properties as Array<{ id: string; address: string }>).map((p) => [p.id, p.address])
   );
 
-  type AnalysisStub = { id: string; property_id: string; scope: AnalysisScope; status: "pending" | "complete" | "failed" };
+  type AnalysisStub = {
+    id: string;
+    property_id: string;
+    scope: AnalysisScope;
+    status: "pending" | "complete" | "failed";
+    released_at: string | null;
+  };
   // Rows arrived ordered newest-created first, so the first one seen per
   // (property, scope-kind) is the latest version of that kind.
   const latestAnyByProperty = new Map<string, AnalysisStub>();
   const latestFullByProperty = new Map<string, AnalysisStub>();
+  const latestReleasedFullByProperty = new Map<string, AnalysisStub>();
   for (const a of analyses as AnalysisStub[]) {
     if (!latestAnyByProperty.has(a.property_id)) latestAnyByProperty.set(a.property_id, a);
     if (a.scope === "full" && !latestFullByProperty.has(a.property_id)) latestFullByProperty.set(a.property_id, a);
+    if (a.scope === "full" && a.status === "complete" && a.released_at && !latestReleasedFullByProperty.has(a.property_id)) {
+      latestReleasedFullByProperty.set(a.property_id, a);
+    }
   }
+  const fullCardFor = (propertyId: string): AnalysisStub | undefined => {
+    const latest = latestFullByProperty.get(propertyId);
+    const released = latestReleasedFullByProperty.get(propertyId);
+    return latest && latest.status === "complete" && !latest.released_at && released ? released : latest;
+  };
 
   const analysisById = new Map((analyses as AnalysisStub[]).map((a) => [a.id, a]));
   // A refunded request no longer entitles its owner to anything, so it never
@@ -184,7 +203,7 @@ export async function listAnalysisRequestsForUser(userId: string): Promise<Owned
       const analysis = row.refunded_at
         ? analysisById.get(row.analysis_id)
         : row.analysis_type === "full"
-          ? latestFullByProperty.get(row.property_id)
+          ? fullCardFor(row.property_id)
           : latestAnyByProperty.get(row.property_id);
       const address = addressByProperty.get(row.property_id);
       if (!analysis || !address) return null;

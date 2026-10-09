@@ -63,8 +63,14 @@
    (`store.ts`). Analyzers only collect facts (`engine/collectFactors.ts`); there is **no score or verdict**.
 4. **Report** — `src/lib/report/build.ts` builds the chapters; `src/app/[locale]/report` renders them;
    `/api/analyses/[id]/pdf` prints the page to PDF (`puppeteer-core` + `@sparticuz/chromium`).
-   `src/lib/analysis/redact.ts` limits an area analysis to the area chapter.
-5. **BRF chapter** — person-reviewed, not automatic: the annual report is uploaded (by the customer or the team) →
+   `src/lib/analysis/redact.ts` limits an area analysis to the area chapter. `src/lib/analysis/access.ts`
+   (`getReportForViewer`) is the one place that decides what a viewer sees: a full report whose `analyses.released_at`
+   is empty comes back **without content** (`release.ts`) and the page shows "being reviewed". Anything else that hands
+   report content to a customer must read released reports only (`latestCompleteAnalysis(..., { releasedOnly: true })`).
+5. **Review and release** — every Trygghetspaket is read by a person before the customer sees it: a purchase (or a new
+   report version) opens a review round (`src/lib/brf/openReview.ts`, 24 h, team e-mail) and the reviewer's publish in
+   `/admin/brf` sets `released_at` (`releaseWaitingAnalyses`). **BRF chapter** — person-reviewed, not automatic: the
+   annual report is uploaded (by the customer or the team) →
    the engine reads key figures as a **prefill** → a reviewer checks and publishes in `/admin/brf` →
    `src/lib/brf/interpret.ts` turns the figures into plain Swedish. Product rules: [`docs/product/overview.md`](../product/overview.md).
 

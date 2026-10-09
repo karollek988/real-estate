@@ -1,6 +1,7 @@
 import { getAnalysisWithProperty } from "./store";
 import { getBestEntitlementForProperty, hasRefundedRequestForAnalysis, type AnalysisType } from "./ownership";
-import { redactAnalysisRecord, redactPropertyForScope } from "./redact";
+import { redactAnalysisRecord, redactPropertyForHold, redactPropertyForScope } from "./redact";
+import { isHeldForReview, withoutContent } from "./release";
 import type { AnalysisRecord, AnalysisScope, PropertyRecord } from "./types";
 
 /**
@@ -13,6 +14,11 @@ import type { AnalysisRecord, AnalysisScope, PropertyRecord } from "./types";
  * A viewer with no purchase for the analysis's property gets nothing at all:
  * there is no free or preview tier any more, so an analysis id alone — from a
  * stale link, another account, or a guess — never returns report content.
+ *
+ * A viewer who bought the full report gets it only once a Köpanalys reviewer
+ * has released it (release.ts). Until then `access.held` is true and the
+ * analysis comes back without its report — the one place that decides, so the
+ * page, the JSON API and the PDF cannot disagree.
  */
 
 export interface ReportAccess {
@@ -25,6 +31,8 @@ export interface ReportAccess {
    * property.
    */
   viewScope: AnalysisScope;
+  /** True while a full report waits for a reviewer: the analysis carries no content and the page shows "being reviewed". */
+  held: boolean;
 }
 
 export function resolveViewScope(entitlement: AnalysisType, analysisScope: AnalysisScope): AnalysisScope {
@@ -35,7 +43,7 @@ export async function getReportForViewer(
   analysisId: string,
   userId: string | null,
   options: {
-    /** A Köpanalys reviewer (lib/auth/admin.ts) sees every report in full — the review console links to them. */
+    /** A Köpanalys reviewer (lib/auth/admin.ts) sees every report in full, released or not — the review console links to them. */
     isReviewer?: boolean;
   } = {}
 ): Promise<{
@@ -60,9 +68,18 @@ export async function getReportForViewer(
   }
 
   const viewScope = resolveViewScope(entitlement, found.analysis.scope);
+
+  if (!options.isReviewer && isHeldForReview(found.analysis, viewScope)) {
+    return {
+      analysis: withoutContent(found.analysis),
+      property: redactPropertyForHold(found.property),
+      access: { entitlement, viewScope, held: true },
+    };
+  }
+
   return {
     analysis: redactAnalysisRecord(found.analysis, viewScope),
     property: redactPropertyForScope(found.property, viewScope),
-    access: { entitlement, viewScope },
+    access: { entitlement, viewScope, held: false },
   };
 }

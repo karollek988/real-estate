@@ -4,16 +4,19 @@ import { EMPTY_BRF_FIGURES, parseBrfFigures, type BrfFigures } from "./figures";
 /**
  * The person-reviewed BRF analysis (supabase/migrations/20261002000200_brf_reviews.sql).
  *
- * The rest of the report is automatic and shown the moment the analysis is
- * done. The BRF analysis is different: a Köpanalys reviewer reads the
- * association's annual report, records its figures in the review console
- * (/admin/brf), and publishes them — within 24 hours of the purchase. The
- * report shows "under review, ready by <due>" until then.
+ * A Trygghetspaket report is built automatically but reaches its customer only
+ * after a Köpanalys reviewer has read it and released it (lib/analysis/release.ts).
+ * The review console (/admin/brf) is where that happens: the reviewer reads the
+ * association's annual report, records its figures, and publishes — within 24
+ * hours of the purchase. Publishing also releases every finished report of the
+ * property that is waiting; a home without an association is released with
+ * "not applicable". Until then the customer sees "under review, ready by <due>".
  *
  * One review per property. A new annual report arriving after publication
- * (uploaded by the customer or by the reviewer) opens a new review round with
- * a new 24-hour deadline; the earlier published figures stay visible until the
- * new ones are published.
+ * (uploaded by the customer or by the reviewer), or a new report version that
+ * needs releasing, opens a new review round with a new 24-hour deadline; the
+ * earlier published figures and the reports already released stay visible
+ * until the new round is published.
  */
 
 export const BRF_REVIEW_HOURS = 24;
@@ -83,7 +86,7 @@ export async function getBrfReview(propertyId: string): Promise<BrfReviewRecord 
   return data ? mapRow(data as BrfReviewRow) : null;
 }
 
-export type EnsureReviewReason = "purchase" | "document" | "report_view";
+export type EnsureReviewReason = "purchase" | "document" | "report_view" | "analysis";
 
 /**
  * Makes sure a review exists for this property, and opens a new review round
@@ -119,6 +122,25 @@ export async function ensureBrfReview(
 
   const existing = await getBrfReview(propertyId);
   if (!existing) throw new Error("ensureBrfReview failed: review vanished after insert conflict");
+
+  // A report version that waits for release needs an open round whatever state
+  // the property's review is in; a round that is already open keeps its deadline.
+  if (reason === "analysis") {
+    if (existing.status === "pending") return { review: existing, opened: false };
+    const { data: reopened, error: reopenError } = await client
+      .from("brf_reviews")
+      .update({
+        status: "pending",
+        requested_at: now.toISOString(),
+        due_at: dueFrom(now),
+        updated_at: now.toISOString(),
+      })
+      .eq("property_id", propertyId)
+      .select("*")
+      .single();
+    if (reopenError) throw new Error(`ensureBrfReview failed: ${reopenError.message}`);
+    return { review: mapRow(reopened as BrfReviewRow), opened: true };
+  }
 
   if (reason !== "document" || !brfReportId || brfReportId === existing.brfReportId) {
     return { review: existing, opened: false };

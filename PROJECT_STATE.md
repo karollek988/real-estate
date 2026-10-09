@@ -18,8 +18,9 @@
 - **Analyses:** input by manual entry or listing screenshots (OCR). The pipeline gathers area, market and listing data
   from the providers in `docs/architecture/overview.md`; the report has no scores or advice; Boendekalkyl is a
   "lanseras inom kort" placeholder; PDF download from the report page.
-- **BRF analysis:** person-reviewed within 24 h in `/admin/brf`; key figures are read from the uploaded annual report as
-  a prefill; team and customer e-mails via Resend.
+- **Review before release:** a Trygghetspaket report is read and released by a person within 24 h in `/admin/brf`; until then
+  the customer sees a waiting page and nothing of the report. The BRF analysis is part of that review; key figures are read
+  from the uploaded annual report as a prefill; team and customer e-mails via Resend.
 - **Content editor** `/admin/content` with picture upload; **admin portal** `admin.kopanalys.se` with visitor/purchase
   statistics and the Markov simulator (model with example numbers until real traffic data exists).
 - **Python engine** on Railway: annual-report extraction, OCR, location/market data, sv→en translation, Hemnet
@@ -53,7 +54,12 @@ Items marked **REQUIRES REVIEW** need a decision by Karol (or the owner of the a
 12. Branches that don't follow the naming rule (`styleRedesign`, `mapDemoIntegration`, `backup/main-before-merge-2026-10-07`)
     are kept; delete or rename only with Karol's OK.
 13. Vestigial code is listed at the end of `docs/architecture/overview.md` (**REQUIRES REVIEW** before deletion).
-14. **What the Supabase GitHub integration does when a migration is merged: UNKNOWN.** The project's settings show no
+14. **Customer texts that promise "ready in minutes" for the Trygghetspaket are no longer true** now that the whole report
+    waits for a reviewer (2026-10-09). New waiting-page text (`report.page.awaiting` in `messages/{sv,en}/report.ts`) is a
+    proposal. To review and rewrite: `faq.ts`, `onboarding.ts`, `packages.ts` (`reviewPromise`, `instant`), `landing.ts`,
+    `brf.ts` (`within24`), `buy.ts`, `analyzing.ts`, `common.ts` and the e-mail `emails.brfReady`, in both languages.
+    **REQUIRES REVIEW** (Karol)
+15. **What the Supabase GitHub integration does when a migration is merged: UNKNOWN.** The project's settings show no
     "Deploy to production" option (2026-10-09). The migration history now matches production (29 of 29) and the "Supabase
     Preview" check passed on `main` after PRs #8 and #9, so today a merge changes nothing in the database. The first pull
     request with a new migration shows what the integration does - apply that migration by hand first
@@ -63,7 +69,8 @@ Items marked **REQUIRES REVIEW** need a decision by Karol (or the owner of the a
 
 - **Boendekalkyl** (hidden costs per home): start from `lib/report/housingCost.ts`, then set `HOUSING_COST_LIVE = true`.
 - Replace the social proof (item 1) and review the legal texts (item 2).
-- Watch what the Supabase integration does with the next migration (item 14).
+- Rewrite the Trygghetspaket delivery texts (item 14).
+- Watch what the Supabase integration does with the next migration (item 15) - `20261009182000_analysis_release` is the next one.
 - Possible later: reuse a published BRF review for other homes in the same association; a reminder before a review is
   late; read the loan notes of an annual report automatically.
 

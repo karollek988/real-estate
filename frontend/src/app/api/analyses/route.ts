@@ -1,8 +1,5 @@
-import { after, NextResponse } from "next/server";
-import type { PropertyRecord } from "@/lib/analysis/types";
-import { ensureBrfReview } from "@/lib/brf/reviews";
-import { notifyTeamOfBrfReview } from "@/lib/brf/notify";
-import { tenureOfProperty } from "@/lib/report/tenure";
+import { NextResponse } from "next/server";
+import { openReviewForAnalysis } from "@/lib/brf/openReview";
 import { classifyListingUrl } from "@/lib/analysis/listing/classify";
 import { HemnetUrlError } from "@/lib/analysis/listing/hemnet";
 import { extractFromManualFields, type ManualListingFields } from "@/lib/analysis/listing/manual";
@@ -169,7 +166,7 @@ export async function POST(request: Request) {
       analysisType,
       quotaConsumed: creditTaken,
     });
-    if (analysisType === "full") await openBrfReview(result.property);
+    if (analysisType === "full") await openReviewForAnalysis(result.property, result.analysis);
     // the e-mails about this analysis (the housing association analysis being ready) come in the language it was ordered in
     const orderedIn = statedLocaleOfRequest(request);
     if (orderedIn) await rememberCustomerLanguage(user, orderedIn);
@@ -185,29 +182,6 @@ export async function POST(request: Request) {
     }
     console.error("POST /api/analyses failed:", err);
     return await apiError(500, "analysis_failed", "analyses.failed");
-  }
-}
-
-/**
- * A Trygghetspaket for a home with a housing association includes the BRF
- * analysis, which a Köpanalys reviewer publishes within 24 hours
- * (lib/brf/reviews.ts) — the clock starts here, and the team is emailed.
- * Never fails the purchase: the report page opens the review too if this
- * didn't get to.
- */
-async function openBrfReview(property: PropertyRecord): Promise<void> {
-  if (tenureOfProperty(property) === "freehold") return;
-  try {
-    const { review, opened } = await ensureBrfReview(property.id, "purchase");
-    if (opened) {
-      after(() =>
-        notifyTeamOfBrfReview(review, "purchase").catch((err) =>
-          console.error(`BRF review notification failed for property ${property.id}:`, err)
-        )
-      );
-    }
-  } catch (err) {
-    console.error(`POST /api/analyses: could not open the BRF review for property ${property.id}:`, err);
   }
 }
 

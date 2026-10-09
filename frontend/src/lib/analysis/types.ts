@@ -185,4 +185,10 @@ export interface AnalysisRecord {
   failureReason: AnalysisFailureReason | null;
   createdAt: string;
   completedAt: string | null;
+  /**
+   * Since when the customer may see this analysis. null = a full report that
+   * waits for a Köpanalys reviewer to release it (lib/analysis/release.ts);
+   * an Områdesanalys is released the moment it is created.
+   */
+  releasedAt: string | null;
 }

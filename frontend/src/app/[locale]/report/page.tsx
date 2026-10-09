@@ -42,7 +42,7 @@ import {
   type CommuteInfo,
   type OverviewRow,
 } from "@/lib/report/build";
-import { brfChapterState, brfIntroParagraphs, type BrfChapterState, type BrfReviewView } from "@/lib/report/brfChapter";
+import { brfChapterState, brfIntroParagraphs, formatDue, type BrfChapterState, type BrfReviewView } from "@/lib/report/brfChapter";
 import { buildQuestions } from "@/lib/report/questions";
 import { tenureOf } from "@/lib/report/tenure";
 import { createFormat } from "@/lib/report/format";
@@ -822,6 +822,30 @@ function FullReportBody({
   );
 }
 
+/**
+ * The review round of a report that waits for release. The round is opened when
+ * the report is ordered; this is the safety net for when that didn't get to
+ * (and it reopens a finished round if a new report version arrived after it).
+ * A database hiccup shows the waiting page without a time rather than breaking it.
+ */
+async function loadHeldReview(propertyId: string): Promise<BrfReviewRecord | null> {
+  try {
+    const ensured = await ensureBrfReview(propertyId, "analysis");
+    if (ensured.opened) {
+      after(() =>
+        notifyTeamOfBrfReview(ensured.review, "analysis").catch((err) =>
+          console.error(`Review notification failed for property ${propertyId}:`, err)
+        )
+      );
+    }
+    return ensured.review;
+  } catch (err) {
+    console.error(`report: could not open the review for property ${propertyId}:`, err);
+    return null;
+  }
+}
+
+
 /** The plain review data the report needs (lib/report/brfChapter.ts). */
 function reviewView(review: BrfReviewRecord): BrfReviewView {
   return {
@@ -888,6 +912,43 @@ export default async function ReportPage({
   if (!found) redirect({ href: "/", locale });
 
   const { analysis, property, access } = found!;
+
+  // A full report no reviewer has released yet: the customer gets the address and the time it is promised, nothing else.
+  if (access.held) {
+    const review = await loadHeldReview(property.id);
+    const dueAt = review?.status === "pending" ? review.dueAt : null;
+    const due = dueAt && new Date(dueAt).getTime() > Date.now() ? formatDue(dueAt, kit) : null;
+    return (
+      <div className="flex min-h-screen flex-col items-center justify-center bg-[#F7F4EC] px-6 py-16 text-[#1B1F27]">
+        <main className="flex w-full max-w-[480px] flex-col items-center rounded-[28px] border border-[#12271D]/10 bg-white/80 p-9 text-center shadow-[0_30px_70px_-30px_rgba(18,39,29,0.3)] backdrop-blur-sm sm:p-11">
+          <Image
+            src="/kopanalys-bostad-logo.png"
+            alt="Köpanalys"
+            width={56}
+            height={56}
+            className="h-12 w-12 rounded-full sm:h-14 sm:w-14"
+          />
+          <span className="mt-6 flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-[#12271D]/[0.07] text-[#12271D]">
+            <InfoIcon className="h-6 w-6" />
+          </span>
+          <h1 style={serifStyle} className="mt-5 text-[22px] font-semibold leading-snug tracking-tight sm:text-2xl">
+            {tPage("awaiting.title")}
+          </h1>
+          <p className="mt-4 text-sm leading-relaxed text-[#5B5648]">{tPage("awaiting.text", { address: property.address })}</p>
+          <p className="mt-3 text-sm font-medium text-[#12271D]">
+            {due ? tPage("awaiting.due", { when: due }) : tPage("awaiting.within24")}
+          </p>
+          <Link
+            href="/dashboard"
+            className="mt-8 inline-flex w-fit items-center justify-center rounded-full bg-[#12271D] px-8 py-3 text-sm font-semibold text-white transition hover:bg-[#0D1D15]"
+          >
+            {tPage("failed.account")}
+          </Link>
+        </main>
+      </div>
+    );
+  }
+
   const isAreaOnly = access.viewScope === "area";
 
   // Visningsguiden is part of the Trygghetspaketet — it builds on the whole
