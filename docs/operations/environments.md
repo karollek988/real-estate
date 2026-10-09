@@ -66,7 +66,7 @@ Legend: **Secret** = must never be shown, logged or committed. **Public** = ends
 | `BOOLI_CALLER_ID`, `BOOLI_API_KEY` | **Secret** | Booli provider — **not configured anywhere known** | no |
 | `PARSE_API_KEY`, `PARSE_BOOLI_BASE_URL` | **Secret** | Parse.bot provider — disabled in code | – |
 | `DISABLED_PROVIDERS` | Config | Turn providers off | UNKNOWN |
-| `CONTENT_DEMO`, `BRF_REVIEW_EMAILS`, `ADMIN_STATS_DEMO`, `NEXT_PUBLIC_DEV_ADMIN_EMAIL` | Dev only | Demo content/data, dev e-mails, dev admin | – |
+| `CONTENT_DEMO`, `BRF_REVIEW_EMAILS`, `ADMIN_STATS_DEMO`, `NEXT_PUBLIC_DEV_ADMIN_EMAIL`, `PDF_CHROME_PATH` | Dev only | Demo content/data, dev e-mails, dev admin; a local Chrome for the PDF download (never set on Vercel) | – |
 | `VERCEL_ENV`, `NODE_ENV` | Set by the platform | – | – |
 
 Locally, `frontend/.env.local` also still holds some names from the removed Premium/subscription model

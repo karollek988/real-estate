@@ -59,6 +59,8 @@ Items marked **REQUIRES REVIEW** need a decision by Karol (or the owner of the a
     proposal. To review and rewrite: `faq.ts`, `onboarding.ts`, `packages.ts` (`reviewPromise`, `instant`), `landing.ts`,
     `brf.ts` (`within24`), `buy.ts`, `analyzing.ts`, `common.ts` and the e-mail `emails.brfReady`, in both languages.
     The new "report ready" e-mail (`emails.reportReady`) is a proposal too.
+    Also in `apiErrors.ts`: the new `analyses.pdfAwaitingReview` is a proposal, and `analyses.pdfFailed` and
+    `analyses.notFoundCompleted` are English in the Swedish file.
     **REQUIRES REVIEW** (Karol)
 15. **What the Supabase GitHub integration does when a migration is merged: UNKNOWN.** The project's settings show no
     "Deploy to production" option (2026-10-09). The migration history now matches production (29 of 29) and the "Supabase
