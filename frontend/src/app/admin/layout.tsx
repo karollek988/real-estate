@@ -2,9 +2,11 @@ import Link from "next/link";
 import { Inter } from "next/font/google";
 import { notFound, redirect } from "next/navigation";
 import type { Metadata } from "next";
+import { NextIntlClientProvider } from "next-intl";
 import "../globals.scss";
 import { createClient } from "@/lib/supabase/server";
 import { isAdminUser } from "@/lib/auth/admin";
+import brfSv from "@/i18n/messages/sv/brf";
 
 const inter = Inter({
   subsets: ["latin"],
@@ -22,6 +24,11 @@ export const metadata: Metadata = {
  * (/admin/content): Köpanalys admins only (lib/auth/admin.ts). Everyone else
  * gets a plain 404. It is a tool for the team and stays in Swedish, outside the language folder
  * ([locale]), so it is its own root layout with its own <html>.
+ *
+ * It also has no language provider of its own, so it supplies one: a shared client component that calls
+ * next-intl's useTranslations (the upload box on the review page does) throws an Error with no message in
+ * production when no provider is above it, and the whole page goes blank. Add the message areas such a
+ * component needs to `messages` below.
  */
 export default async function AdminLayout({ children }: { children: React.ReactNode }) {
   const supabase = await createClient();
@@ -58,7 +65,11 @@ export default async function AdminLayout({ children }: { children: React.ReactN
               </div>
             </div>
           </header>
-          <main className="mx-auto max-w-[1400px] px-4 py-6 sm:px-6">{children}</main>
+          <main className="mx-auto max-w-[1400px] px-4 py-6 sm:px-6">
+            <NextIntlClientProvider locale="sv" messages={{ brf: brfSv }} timeZone="Europe/Stockholm">
+              {children}
+            </NextIntlClientProvider>
+          </main>
         </div>
       </body>
     </html>
