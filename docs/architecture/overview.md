@@ -132,9 +132,8 @@ No test framework in the frontend: each `*.verify.mjs` next to the code it check
 
 ## Not part of the running system
 
-- `src/real_estate/` — the original Python skeleton (empty packages). Still listed in the root `pyproject.toml`.
-- `scripts/setup-stripe-products.ts` — older copy of `frontend/scripts/setup-stripe-products.ts` (the one in use).
-- `start_frontend.bat` — old launcher; `start-local.ps1` is the current one.
+- `src/real_estate/` — the original Python skeleton (docstrings only, no code). Still listed in the root `pyproject.toml`, and
+  imported by `tests/test_smoke.py`, so removing it means editing both.
 - Local, untracked folders: `Future_investment_engine/`, `ai-orchestrator/`, `deepseek-tasks/` (only `__pycache__`).
 - The root `pyproject.toml` (Poetry) depends on `../../shared/probability-engine`, a folder outside this repository,
   so the root `tests/` only run on the original monorepo machine.
