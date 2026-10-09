@@ -29,6 +29,9 @@ feature/… | fix/… | refactor/… branch ── pull request (CI "CI passed",
 ```
 
 - **Every push to `main` goes live on every domain and on Railway at once.** There is no staging step.
+- **The engine image is built from the AWS public mirror of the official Python image**, not from Docker Hub: Docker Hub's
+  anonymous limit failed two Railway builds with `429 Too Many Requests` on 2026-10-09 (the log said "failed to resolve
+  source metadata for docker.io/library/python:3.13-slim"). A deploy that fails like that did nothing wrong - redeploy it.
 - **The database is never changed by a deploy.** Migrations are applied by hand, with Karol's approval, before the
   code that needs them is merged (see [`database.md`](database.md)).
 - **An environment variable change only reaches deployments built after it**: redeploy afterwards
