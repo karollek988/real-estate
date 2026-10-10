@@ -59,6 +59,10 @@ coverage.xml
 .env.*.local
 
 # Data
+# The validation corpora were moved out of the repository (README.md); keep a restored copy out of commits.
+data/allabrf_validation/
+data/production_validation/
+data/allabrf_smoke/
 data/pdfs/*
 data/exports/*
 !data/pdfs/.gitkeep

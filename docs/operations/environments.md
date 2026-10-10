@@ -32,6 +32,8 @@ feature/… | fix/… | refactor/… branch ── pull request (CI "CI passed",
   Railway only builds when a changed file matches `build.watchPatterns` in `railway.json`: `api/`, `analysis_engine/`, `BRF-Scraper/`, `src/`, `Dockerfile`, `railway.json` and `.dockerignore`.
   A frontend-only or docs-only merge creates no Railway deployment - that is expected, and the engine keeps running its last
   build. If the engine ever reads a new folder, add it to the watch paths or changes there will not deploy.
+  Every build starts from an upload of the whole repository (about 73 MB since 2026-10-10; it was 218 MB with 143 MB of
+  test PDFs in `BRF-Scraper/data`, which Railway failed to fetch on 2026-10-09/10). Keep large files out of the repository.
   There is no staging step.
 - **The engine image is built from the AWS public mirror of the official Python image**, not from Docker Hub: Docker Hub's
   anonymous limit failed two Railway builds with `429 Too Many Requests` on 2026-10-09 (the log said "failed to resolve

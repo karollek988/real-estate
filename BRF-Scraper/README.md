@@ -47,5 +47,14 @@ The OCR tests need the `tesseract` binary on `PATH` (with the `swe` language
 pack); without it they skip themselves. `scripts/validate_financial_extraction.py`
 re-runs the nine real annual reports in `../validation_reports/` through the
 extractor and reports how much of what was found is trustworthy.
-`data/allabrf_validation/pdfs`, `data/production_validation/pdfs` and
-`data/allabrf_smoke` hold real annual reports used as extraction fixtures.
+The 22 real annual reports that used to sit in `data/allabrf_validation/pdfs`, `data/production_validation/pdfs` and
+`data/allabrf_smoke` (143 MB; no test or script reads them) were moved out of the repository on 2026-10-10, because the
+source snapshot Railway uploads for every build had grown to about 218 MB. They are in git history. To get them back on
+your machine, without staging them:
+
+```bash
+git restore --source=bf1ca6f --worktree -- BRF-Scraper/data/allabrf_validation \
+  BRF-Scraper/data/production_validation BRF-Scraper/data/allabrf_smoke
+```
+
+Those three folders are git-ignored (`.gitignore` here), so a restored copy cannot be committed by accident.
