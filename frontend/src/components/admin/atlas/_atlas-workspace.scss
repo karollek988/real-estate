@@ -1398,6 +1398,92 @@
     cursor: pointer;
   }
 
+  // The lite area analysis of a sale listing: how to get around - the nearest bus stop and train station, each with
+  // its name and straight-line distance, and the source.
+  .detail-transport {
+    margin: 0 0 18px;
+    padding: 12px 14px;
+    background: $map-raised;
+    border: 1px solid $map-line;
+    border-radius: 10px;
+  }
+
+  .detail-transport h3 {
+    margin: 0 0 8px;
+    color: $map-text-strong;
+    font: 700 11px $font-sans;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+  }
+
+  .detail-transport dl {
+    display: grid;
+    gap: 8px;
+    margin: 0;
+  }
+
+  .transport-row {
+    display: grid;
+    gap: 2px;
+  }
+
+  .transport-row dt {
+    color: $map-text-muted;
+    font-size: 11px;
+  }
+
+  .transport-row dd {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 10px;
+    margin: 0;
+    color: $map-text;
+    font-size: 12px;
+    line-height: 1.5;
+  }
+
+  .transport-row dd strong {
+    color: $map-text-strong;
+    font-weight: 700;
+  }
+
+  .transport-row dd span {
+    color: $map-accent;
+    font-weight: 700;
+    white-space: nowrap;
+  }
+
+  .transport-row dd .is-missing {
+    color: $map-text-muted;
+    font-weight: 400;
+    white-space: normal;
+  }
+
+  .transport-source,
+  .transport-note {
+    margin: 8px 0 0;
+    color: $map-text-muted;
+    font-size: 11px;
+    line-height: 1.5;
+  }
+
+  .transport-note {
+    margin-top: 0;
+  }
+
+  // A pin the team hid, seen by its owner
+  .detail-hidden-note {
+    margin: 0 0 10px;
+    padding: 8px 10px;
+    color: $map-danger;
+    background: $map-raised;
+    border: 1px solid $map-line;
+    border-radius: 8px;
+    font-size: 11px;
+    line-height: 1.5;
+  }
+
   .detail-link,
   .detail-map-link {
     display: flex;

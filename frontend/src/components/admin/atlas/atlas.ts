@@ -21,11 +21,16 @@
  *    search-as-you-type against Nominatim (its usage policy does not allow autocomplete), and
  *    a preview notice in the top bar next to the search (the page itself renders the h1, so
  *    the sidebar heading is an h2). Its CSS is atlas-public.scss.
+ *  - since 2026-10-10 the public map keeps its pins in the site's database (options.store) instead of the
+ *    browser's localStorage: signed-in users post, edit and remove them, everyone sees them, and a sale
+ *    listing shows its transport info (the nearest bus stop and train station). The admin portal's map still
+ *    uses localStorage.
  *
  * Browser-only: it touches window/document/localStorage on mount and imports Leaflet, which
  * needs the DOM at import time - load it via dynamic import() from an effect, never on the server.
  */
 import L from 'leaflet'
+import type { MapListingDto, MapTransport, TransportStatus } from '@/lib/map/types'
 
 const ESCAPES: Record<string, string> = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }
 function esc(value: unknown): string { return String(value ?? '').replace(/[&<>"']/g, (char) => ESCAPES[char]) }
@@ -47,9 +52,9 @@ function readStoredPins(key: string, fallback: SavedPin[]): SavedPin[] {
 }
 
 type PinKind = 'sale' | 'buyer' | 'exchange'
-type SavedPin = { id: number; title: string; note: string; lat: number; lng: number; details?: string; meta?: string; image?: string; link?: string; isMine?: boolean }
+type SavedPin = { id: number; title: string; note: string; lat: number; lng: number; details?: string; meta?: string; image?: string; link?: string; isMine?: boolean; remoteId?: string; exampleKey?: string; hidden?: boolean; transport?: MapTransport | null; transportStatus?: TransportStatus }
 type ExchangeLocation = { note: string; lat: number; lng: number }
-type ExchangePin = { id: number; title: string; from: ExchangeLocation; to: ExchangeLocation; details?: string; meta?: string; image?: string; isMine?: boolean }
+type ExchangePin = { id: number; title: string; from: ExchangeLocation; to: ExchangeLocation; details?: string; meta?: string; image?: string; isMine?: boolean; remoteId?: string; exampleKey?: string; hidden?: boolean }
 
 const storageKey = 'kopanalys-map-pins'
 const buyerStorageKey = 'kopanalys-map-buyers'
@@ -108,6 +113,37 @@ const sampleExchanges: Array<Pick<ExchangePin, 'id'> & { from: { lat: number; ln
   { id: 215, from: { lat: 59.8586, lng: 17.6389 }, to: { lat: 59.331, lng: 18.03 } },
 ]
 
+/** What the map writes when it saves a pin; the site's API checks it again. `image` is a path from uploadImage, or null. */
+export interface ListingWrite {
+  kind: PinKind
+  title: string
+  note: string
+  details: string | null
+  meta: string | null
+  link: string | null
+  image: string | null
+  lat: number
+  lng: number
+  toNote: string | null
+  toLat: number | null
+  toLng: number | null
+}
+
+/**
+ * Where the public map's pins are kept: the site's database (components/map/PublicMap.tsx talks to /api/map). Every
+ * method rejects with an Error whose message is meant for the visitor.
+ */
+export interface ListingStore {
+  list(): Promise<MapListingDto[]>
+  create(input: ListingWrite): Promise<MapListingDto>
+  update(id: string, input: ListingWrite): Promise<MapListingDto>
+  remove(id: string): Promise<void>
+  /** Uploads a picture (a data: address from the form) and returns its path for ListingWrite.image. */
+  uploadImage(dataUrl: string): Promise<string>
+  /** Makes sure a sale listing's transport info is looked up, and gives the pin as it is now (null if it cannot be reached). */
+  ensureTransport(id: string): Promise<MapListingDto | null>
+}
+
 export interface AtlasOptions {
   /** 'admin' (default) is the admin portal's workspace; 'public' is /karta - see the header comment. */
   variant?: 'admin' | 'public'
@@ -124,17 +160,27 @@ export interface AtlasOptions {
    * texts, gives back a translation for each, or null where there is none. Not used for Swedish.
    */
   translate?: (texts: string[]) => Promise<(string | null)[]>
+  /** Where the public map's pins are kept. Without it (the admin portal's demo map) they are kept in this browser's localStorage. */
+  store?: ListingStore
+  /** With a store: whether someone is signed in. Only signed-in users can post. */
+  isSignedIn?: () => boolean
+  /** Asks the site to open its sign-in dialog. */
+  requireSignIn?: () => void
 }
 
 export interface AtlasHandle {
   /** Looks a query up among the pins, then as a place in Sweden - the search form's own search. */
   search: (query: string) => void
+  /** Fetches the pins from the store again (the visitor signed in or out). */
+  reload: () => void
   unmount: () => void
 }
 
 export function mountAtlas(root: HTMLElement, options: AtlasOptions): AtlasHandle {
   const isPublic = options.variant === 'public'
   const { t } = options
+  /** The public map's database store; undefined for the admin portal's localStorage demo. */
+  const remote = isPublic ? options.store : undefined
   /** A text of the map, ready to go inside markup. */
   const e = (key: string, values?: Record<string, string | number>) => esc(t(key, values))
 
@@ -155,8 +201,8 @@ export function mountAtlas(root: HTMLElement, options: AtlasOptions): AtlasHandl
     return stored.map((item) => (!item.isMine && byId.has(item.id) ? { ...item, ...byId.get(item.id)! } : item))
   }
 
-  let pins: SavedPin[] = inLanguage(readStoredPins(storageKey, saleDefaults()), saleDefaults())
-  let buyerPins: SavedPin[] = inLanguage(readStoredPins(buyerStorageKey, buyerDefaults()), buyerDefaults())
+  let pins: SavedPin[] = remote ? [] : inLanguage(readStoredPins(storageKey, saleDefaults()), saleDefaults())
+  let buyerPins: SavedPin[] = remote ? [] : inLanguage(readStoredPins(buyerStorageKey, buyerDefaults()), buyerDefaults())
   function loadExchangePins(): ExchangePin[] {
     try {
       const raw = localStorage.getItem(exchangeStorageKey)
@@ -166,8 +212,65 @@ export function mountAtlas(root: HTMLElement, options: AtlasOptions): AtlasHandl
       return exchangeDefaults()
     } catch { return exchangeDefaults() }
   }
-  let exchangePins: ExchangePin[] = loadExchangePins()
+  let exchangePins: ExchangePin[] = remote ? [] : loadExchangePins()
   const visibleKinds: Record<PinKind, boolean> = { sale: true, buyer: true, exchange: true }
+
+  // --- Pins from the site's database (the public map) ---------------------------------------------------
+  // The rest of this file works with numeric ids, so a pin from the database gets one: a built-in example the number
+  // its message texts use (sale-1 -> 1), anything else the next free number. The database's own id stays in remoteId.
+  let nextLocalId = 1000
+  const localIdOf = new Map<string, number>()
+  function localId(dto: MapListingDto): number {
+    if (dto.exampleKey) return Number(dto.exampleKey.split('-')[1])
+    let id = localIdOf.get(dto.id)
+    if (id === undefined) { id = nextLocalId++; localIdOf.set(dto.id, id) }
+    return id
+  }
+  /** A built-in example is shown in the visitor's language: its words come from the messages, by its number. */
+  function salePinFromDto(dto: MapListingDto, sample?: SavedPin): SavedPin {
+    return { id: localId(dto), title: dto.title || sample?.title || '', note: sample?.note ?? dto.note, details: sample?.details ?? dto.details ?? undefined, meta: sample?.meta ?? dto.meta ?? undefined, image: dto.image ?? undefined, link: dto.link ?? undefined, lat: dto.lat, lng: dto.lng, isMine: dto.isMine, remoteId: dto.id, exampleKey: dto.exampleKey ?? undefined, hidden: dto.hidden, transport: dto.transport, transportStatus: dto.transportStatus }
+  }
+  function buyerPinFromDto(dto: MapListingDto, sample?: SavedPin): SavedPin {
+    return { id: localId(dto), title: sample?.title ?? dto.title, note: sample?.note ?? dto.note, details: sample?.details ?? dto.details ?? undefined, meta: sample?.meta ?? dto.meta ?? undefined, image: dto.image ?? undefined, lat: dto.lat, lng: dto.lng, isMine: dto.isMine, remoteId: dto.id, exampleKey: dto.exampleKey ?? undefined, hidden: dto.hidden }
+  }
+  function exchangePinFromDto(dto: MapListingDto, sample?: ExchangePin): ExchangePin {
+    return { id: localId(dto), title: sample?.title ?? dto.title, details: sample?.details ?? dto.details ?? undefined, meta: sample?.meta ?? dto.meta ?? undefined, image: dto.image ?? undefined, from: { note: sample?.from.note ?? dto.note, lat: dto.lat, lng: dto.lng }, to: { note: sample?.to.note ?? dto.toNote ?? '', lat: dto.toLat ?? dto.lat, lng: dto.toLng ?? dto.lng }, isMine: dto.isMine, remoteId: dto.id, exampleKey: dto.exampleKey ?? undefined, hidden: dto.hidden }
+  }
+  function samplesById<T extends { id: number }>(samples: T[]): Map<number, T> { return new Map(samples.map((sample) => [sample.id, sample])) }
+  function applyRemote(dtos: MapListingDto[]) {
+    const sale = samplesById(saleDefaults())
+    const buyer = samplesById(buyerDefaults())
+    const exchange = samplesById(exchangeDefaults())
+    const sampleOf = <T extends { id: number }>(dto: MapListingDto, samples: Map<number, T>) => (dto.exampleKey ? samples.get(localId(dto)) : undefined)
+    pins = dtos.filter((dto) => dto.kind === 'sale').map((dto) => salePinFromDto(dto, sampleOf(dto, sale)))
+    buyerPins = dtos.filter((dto) => dto.kind === 'buyer').map((dto) => buyerPinFromDto(dto, sampleOf(dto, buyer)))
+    exchangePins = dtos.filter((dto) => dto.kind === 'exchange').map((dto) => exchangePinFromDto(dto, sampleOf(dto, exchange)))
+  }
+  /** One pin that was just saved: put it where it belongs, replacing the earlier version of it. */
+  function applyOne(dto: MapListingDto) {
+    if (dto.kind === 'sale') upsertInto(pins, localId(dto), salePinFromDto(dto), true)
+    else if (dto.kind === 'buyer') upsertInto(buyerPins, localId(dto), buyerPinFromDto(dto), true)
+    else upsertInto(exchangePins, localId(dto), exchangePinFromDto(dto), true)
+  }
+  async function loadRemote() {
+    if (!remote) return
+    try {
+      applyRemote(await remote.list())
+    } catch (error) {
+      console.error('The map could not load its listings:', error)
+      mapHint.innerHTML = `<span>⚠</span> ${e('loadFailed')}`
+    }
+    renderPins()
+    void translateUserListings()
+    if (!myListingsBackdrop.hidden) renderMyListingsDialog()
+  }
+  /** Whether this visitor may post. With a store only signed-in users may; `ask` opens the sign-in dialog if they are not. */
+  function canPost(ask: boolean): boolean {
+    if (!remote || options.isSignedIn?.()) return true
+    if (ask) options.requireSignIn?.()
+    return false
+  }
+
 
   // What visitors wrote in their own listings, translated into the page's language (the example listings come
   // translated from the messages). translations: the wording as written -> its translation. A listing whose id is in
@@ -181,13 +284,15 @@ export function mountAtlas(root: HTMLElement, options: AtlasOptions): AtlasHandl
   const txt = (text: string): string => translations.get(text) ?? text
   const shown = (text: string | undefined, key: string): string | undefined => (text === undefined || showOriginal.has(key) ? text : txt(text))
   const hasTranslation = (texts: Array<string | undefined>): boolean => texts.some((text) => text !== undefined && translations.has(text))
+  /** Whether the words of a pin were written by a visitor (so they are translated), not by us. */
+  const writtenByVisitor = (pin: { isMine?: boolean; exampleKey?: string }): boolean => (remote ? !pin.exampleKey : Boolean(pin.isMine))
   async function translateUserListings() {
     if (!options.translate || options.locale === 'sv') return
     const wording = new Set<string>()
     const add = (text: string | undefined) => { if (text && text.trim() && !translations.has(text) && !triedToTranslate.has(text)) wording.add(text) }
     // not the places (note, from, to): a name like "Södermalm" is not translated
-    for (const pin of [...pins, ...buyerPins]) if (pin.isMine) [pin.title, pin.meta, pin.details].forEach(add)
-    for (const pin of exchangePins) if (pin.isMine) [pin.title, pin.meta, pin.details].forEach(add)
+    for (const pin of [...pins, ...buyerPins]) if (writtenByVisitor(pin)) [pin.title, pin.meta, pin.details].forEach(add)
+    for (const pin of exchangePins) if (writtenByVisitor(pin)) [pin.title, pin.meta, pin.details].forEach(add)
     const texts = [...wording]
     if (texts.length === 0) return
     texts.forEach((text) => triedToTranslate.add(text))
@@ -401,12 +506,13 @@ export function mountAtlas(root: HTMLElement, options: AtlasOptions): AtlasHandl
       ? `<a class="detail-link" href="${esc(safeHref(pin.link) ?? 'https://www.hemnet.se/')}" target="_blank" rel="noreferrer">${e('detail.viewListing')} <span>↗</span></a>`
       : `<div class="detail-contact"><span class="contact-dot"></span><span>${e('detail.requestActive')}</span></div><a class="detail-contact-link" href="${contactLink}">${e('detail.contact')} <span>↗</span></a>`
     const createAnalysisBlock = kind === 'sale' ? `<button type="button" class="detail-create-analysis">${e('detail.createAnalysis')}</button>` : ''
-    const panelContent = `${detailClose(t('close'))}${photoBlock}${bodyOpen}${inlineTag}<h2>${esc(shown(pin.title, key))}</h2><p class="detail-note">${esc(shown(pin.note, key))}</p><p class="detail-meta">${esc(shown(pin.meta, key) ?? (kind === 'sale' ? t('detail.saleMeta') : t('detail.requestMeta')))}</p><p class="detail-description">${esc(shown(pin.details, key) ?? (kind === 'sale' ? t('detail.saleDetails') : t('detail.requestDetails')))}</p>${translationNote(key, [pin.title, pin.note, pin.meta, pin.details])}${actionBlock}<a class="detail-map-link" href="${googleMapsLink}" target="_blank" rel="noreferrer">${e('detail.openInGoogleMaps')} <span>↗</span></a>${createAnalysisBlock}</div>`
+    const panelContent = `${detailClose(t('close'))}${photoBlock}${bodyOpen}${inlineTag}${hiddenNotice(pin)}<h2>${esc(shown(pin.title, key))}</h2><p class="detail-note">${esc(shown(pin.note, key))}</p><p class="detail-meta">${esc(shown(pin.meta, key) ?? (kind === 'sale' ? t('detail.saleMeta') : t('detail.requestMeta')))}</p><p class="detail-description">${esc(shown(pin.details, key) ?? (kind === 'sale' ? t('detail.saleDetails') : t('detail.requestDetails')))}</p>${translationNote(key, [pin.title, pin.note, pin.meta, pin.details])}${transportBlock(pin, kind)}${actionBlock}<a class="detail-map-link" href="${googleMapsLink}" target="_blank" rel="noreferrer">${e('detail.openInGoogleMaps')} <span>↗</span></a>${createAnalysisBlock}</div>`
     detailPanel.innerHTML = panelContent
     detailPanel.hidden = false
     detailPanel.querySelector('#detail-close')?.addEventListener('click', closeDetail)
     detailPanel.querySelector('.detail-translation-toggle')?.addEventListener('click', () => { if (showOriginal.has(key)) showOriginal.delete(key); else showOriginal.add(key); selectPin(pin, kind, true) })
     if (options.onCreateAnalysis) detailPanel.querySelector('.detail-create-analysis')?.addEventListener('click', options.onCreateAnalysis)
+    if (kind === 'sale') void loadTransport(pin)
   }
   function closeDetail() { detailPanel.hidden = true; setArcHighlight(null); setSelectedMarker(null) }
   /** "Translated automatically. Show original": under the description of a listing whose wording was translated. */
@@ -414,6 +520,60 @@ export function mountAtlas(root: HTMLElement, options: AtlasOptions): AtlasHandl
     if (!hasTranslation(texts)) return ''
     return `<p class="detail-translation">${e('detail.translated')} <button type="button" class="detail-translation-toggle">${showOriginal.has(key) ? e('detail.showTranslation') : e('detail.showOriginal')}</button></p>`
   }
+  // --- The lite area analysis of a sale listing: how to get around ----------------------------------------
+  // Only on the public map, where it comes from the site's database: the nearest bus stop and the nearest train
+  // station, each with its name and straight-line distance, and the source. A stop that is not there is stated as
+  // missing. The box makes no judgement of the connections; it only says what is where.
+  function formatDistance(metres: number): string {
+    return metres < 1000 ? `${metres} m` : `${new Intl.NumberFormat(options.locale, { maximumFractionDigits: 1 }).format(metres / 1000)} km`
+  }
+  function transportBlock(pin: SavedPin, kind: 'sale' | 'buyer'): string {
+    if (!remote || kind !== 'sale' || !pin.remoteId) return ''
+    const row = (label: string, stop: { name: string; distanceM: number } | null, withinM: number) =>
+      `<div class="transport-row"><dt>${e(label)}</dt><dd>${stop ? `<strong>${esc(stop.name)}</strong><span>${esc(formatDistance(stop.distanceM))}</span>` : `<span class="is-missing">${e('transport.missing', { km: withinM / 1000 })}</span>`}</dd></div>`
+    let body: string
+    if (pin.transport) body = `<dl>${row('transport.bus', pin.transport.bus, pin.transport.searchedWithinM)}${row('transport.train', pin.transport.train, pin.transport.searchedWithinM)}</dl><p class="transport-source">${e('transport.source')}</p>`
+    else if (pin.transportStatus === 'unavailable') body = `<p class="transport-note">${e('transport.unavailable')}</p>`
+    else body = `<p class="transport-note">${e('transport.loading')}</p>`
+    return `<section class="detail-transport" data-transport-for="${pin.id}"><h3>${e('transport.title')}</h3>${body}</section>`
+  }
+  /** Draws the box again when its pin is still the one in the detail panel. */
+  function refreshTransportBox(pin: SavedPin) {
+    if (detailPanel.hidden) return
+    const box = detailPanel.querySelector<HTMLElement>(`.detail-transport[data-transport-for="${pin.id}"]`)
+    if (!box) return
+    const holder = document.createElement('div')
+    holder.innerHTML = transportBlock(pin, 'sale')
+    if (holder.firstElementChild) box.replaceWith(holder.firstElementChild)
+  }
+  const transportAsked = new Set<string>()
+  /**
+   * Asks the site for a sale listing's transport info when the pin has none: the built-in examples the first time
+   * anyone opens them, a listing whose first lookup failed, one that was just saved. The site does the lookup once
+   * however many ask; while it is under way the box says so, and this asks again a few times.
+   */
+  async function loadTransport(pin: SavedPin) {
+    const remoteId = pin.remoteId
+    if (!remote || !remoteId || pin.transport || transportAsked.has(remoteId)) return
+    transportAsked.add(remoteId)
+    for (let attempt = 0; attempt < 6; attempt++) {
+      let answer: MapListingDto | null = null
+      try { answer = await remote.ensureTransport(remoteId) } catch { answer = null }
+      if (!answer) break
+      pin.transport = answer.transport
+      pin.transportStatus = answer.transportStatus
+      refreshTransportBox(pin)
+      if (answer.transportStatus !== 'pending') break
+      await new Promise((resolve) => setTimeout(resolve, 3000))
+    }
+    // not found yet: the next time the listing is opened it is tried again (the site does not hammer its source)
+    if (!pin.transport) transportAsked.delete(remoteId)
+  }
+  /** A pin the team hid: still shown to its owner, with a word about it. */
+  function hiddenNotice(pin: { hidden?: boolean }): string {
+    return pin.hidden ? `<p class="detail-hidden-note">${e('detail.hiddenNotice')}</p>` : ''
+  }
+
   function isFilterVisible(kind: PinKind) { return visibleKinds[kind] }
   function toggleKind(kind: PinKind) { visibleKinds[kind] = !visibleKinds[kind]; renderPins() }
 
@@ -505,7 +665,7 @@ export function mountAtlas(root: HTMLElement, options: AtlasOptions): AtlasHandl
     const photoBlock = pin.image ? `<div class="detail-photo-wrap"><img class="detail-photo" src="${esc(safeImage(pin.image))}" alt="${e('detail.photoOf', { title: pin.title })}">${tag}</div>` : ''
     const bodyOpen = pin.image ? '<div class="detail-body">' : '<div class="detail-body detail-body-compact">'
     const inlineTag = pin.image ? '' : tag
-    detailPanel.innerHTML = `${detailClose(t('close'))}${photoBlock}${bodyOpen}${inlineTag}<h2>${esc(shown(pin.title, key))}</h2><div class="exchange-route"><button type="button" class="exchange-stop" data-nav="from"><span class="exchange-dot exchange-dot-from"></span><div><small>${e('detail.livesNow')}</small><strong>${esc(shown(pin.from.note, key))}</strong></div></button><div class="exchange-route-arrow">→</div><button type="button" class="exchange-stop" data-nav="to"><span class="exchange-dot exchange-dot-to"></span><div><small>${e('detail.wantsToLive')}</small><strong>${esc(shown(pin.to.note, key))}</strong></div></button></div><p class="detail-meta">${esc(shown(pin.meta, key))}</p><p class="detail-description">${esc(shown(pin.details, key) ?? t('detail.requestDetails'))}</p>${translationNote(key, [pin.title, pin.from.note, pin.to.note, pin.meta, pin.details])}<div class="detail-contact"><span class="contact-dot"></span><span>${e('detail.requestActive')}</span></div><a class="detail-contact-link" href="${contactLink}">${e('detail.contact')} <span>↗</span></a><a class="detail-map-link" href="${fromMapsLink}" target="_blank" rel="noreferrer">${e('detail.currentPlace')} <span>↗</span></a><a class="detail-map-link" href="${toMapsLink}" target="_blank" rel="noreferrer">${e('detail.wantedPlace')} <span>↗</span></a></div>`
+    detailPanel.innerHTML = `${detailClose(t('close'))}${photoBlock}${bodyOpen}${inlineTag}${hiddenNotice(pin)}<h2>${esc(shown(pin.title, key))}</h2><div class="exchange-route"><button type="button" class="exchange-stop" data-nav="from"><span class="exchange-dot exchange-dot-from"></span><div><small>${e('detail.livesNow')}</small><strong>${esc(shown(pin.from.note, key))}</strong></div></button><div class="exchange-route-arrow">→</div><button type="button" class="exchange-stop" data-nav="to"><span class="exchange-dot exchange-dot-to"></span><div><small>${e('detail.wantsToLive')}</small><strong>${esc(shown(pin.to.note, key))}</strong></div></button></div><p class="detail-meta">${esc(shown(pin.meta, key))}</p><p class="detail-description">${esc(shown(pin.details, key) ?? t('detail.requestDetails'))}</p>${translationNote(key, [pin.title, pin.from.note, pin.to.note, pin.meta, pin.details])}<div class="detail-contact"><span class="contact-dot"></span><span>${e('detail.requestActive')}</span></div><a class="detail-contact-link" href="${contactLink}">${e('detail.contact')} <span>↗</span></a><a class="detail-map-link" href="${fromMapsLink}" target="_blank" rel="noreferrer">${e('detail.currentPlace')} <span>↗</span></a><a class="detail-map-link" href="${toMapsLink}" target="_blank" rel="noreferrer">${e('detail.wantedPlace')} <span>↗</span></a></div>`
     detailPanel.hidden = false
     detailPanel.querySelector('#detail-close')?.addEventListener('click', closeDetail)
     detailPanel.querySelector('[data-nav="from"]')?.addEventListener('click', () => focusExchangeStop(pin, 'from'))
@@ -643,9 +803,9 @@ export function mountAtlas(root: HTMLElement, options: AtlasOptions): AtlasHandl
   function thumbMarkup(image: string | undefined, number: number): string {
     return `<span class="pin-thumb">${safeImage(image) ? `<img src="${esc(safeImage(image))}" alt="" loading="lazy">` : '<span class="pin-thumb-fallback"></span>'}<span class="pin-number">${number}</span></span>`
   }
-  function savePins() { localStorage.setItem(storageKey, JSON.stringify(pins)) }
-  function saveBuyerPins() { localStorage.setItem(buyerStorageKey, JSON.stringify(buyerPins)) }
-  function saveExchangePins() { localStorage.setItem(exchangeStorageKey, JSON.stringify(exchangePins)) }
+  function savePins() { if (!remote) localStorage.setItem(storageKey, JSON.stringify(pins)) }
+  function saveBuyerPins() { if (!remote) localStorage.setItem(buyerStorageKey, JSON.stringify(buyerPins)) }
+  function saveExchangePins() { if (!remote) localStorage.setItem(exchangeStorageKey, JSON.stringify(exchangePins)) }
   function renderPins() {
     markers.forEach((marker) => marker.remove())
     markers.clear()
@@ -792,9 +952,9 @@ export function mountAtlas(root: HTMLElement, options: AtlasOptions): AtlasHandl
   }
   function renderMyListingsDialog() {
     const rows: string[] = []
-    pins.filter((pin) => pin.isMine).forEach((pin) => rows.push(myListingRow('sale', pin.id, pin.image, pin.title, pin.note, '', e('kinds.sale'))))
-    buyerPins.filter((pin) => pin.isMine).forEach((pin) => rows.push(myListingRow('buyer', pin.id, pin.image, pin.title, pin.note, ' my-listing-tag-buyer', e('kinds.buyer'))))
-    exchangePins.filter((pin) => pin.isMine).forEach((pin) => rows.push(myListingRow('exchange', pin.id, pin.image, pin.title, `${pin.from.note} → ${pin.to.note}`, ' my-listing-tag-exchange', e('kinds.exchange'))))
+    pins.filter((pin) => pin.isMine).forEach((pin) => rows.push(myListingRow('sale', pin.id, pin.image, pin.title, pin.note, '', e('kinds.sale') + (pin.hidden ? ` · ${e('mine.hidden')}` : ''))))
+    buyerPins.filter((pin) => pin.isMine).forEach((pin) => rows.push(myListingRow('buyer', pin.id, pin.image, pin.title, pin.note, ' my-listing-tag-buyer', e('kinds.buyer') + (pin.hidden ? ` · ${e('mine.hidden')}` : ''))))
+    exchangePins.filter((pin) => pin.isMine).forEach((pin) => rows.push(myListingRow('exchange', pin.id, pin.image, pin.title, `${pin.from.note} → ${pin.to.note}`, ' my-listing-tag-exchange', e('kinds.exchange') + (pin.hidden ? ` · ${e('mine.hidden')}` : ''))))
     myListingsList.innerHTML = rows.length ? rows.join('') : `<div class="empty-state">${e('mine.empty')}<br>${e('mine.emptyHint')}</div>`
   }
 
@@ -840,8 +1000,14 @@ export function mountAtlas(root: HTMLElement, options: AtlasOptions): AtlasHandl
     map.flyTo(pendingLocation, 14, { duration: 0.6 })
   }
 
-  function deleteMyPin(kind: PinKind, id: number) {
+  async function deleteMyPin(kind: PinKind, id: number) {
     if (!confirm(t('mine.confirmRemove'))) return
+    if (remote) {
+      const pin = (kind === 'sale' ? pins : kind === 'buyer' ? buyerPins : exchangePins).find((candidate) => candidate.id === id)
+      if (pin?.remoteId) {
+        try { await remote.remove(pin.remoteId) } catch (error) { alert(error instanceof Error && error.message ? error.message : t('form.saveFailed')); return }
+      }
+    }
     if (kind === 'sale') { pins = pins.filter((p) => p.id !== id); savePins() }
     else if (kind === 'buyer') { buyerPins = buyerPins.filter((p) => p.id !== id); saveBuyerPins() }
     else { exchangePins = exchangePins.filter((p) => p.id !== id); saveExchangePins() }
@@ -859,8 +1025,8 @@ export function mountAtlas(root: HTMLElement, options: AtlasOptions): AtlasHandl
   function login() { isLoggedIn = true; localStorage.setItem(loginStorageKey, 'true'); applyAuthState() }
   function logout() { isLoggedIn = false; localStorage.setItem(loginStorageKey, 'false'); applyAuthState(); myListingsBackdrop.hidden = true }
 
-  map.on('click', (event) => { if (pickingTarget) { void applyPickedLocation(pickingTarget, event.latlng); return } void openModal(event.latlng) })
-  root.querySelector('#add-button')!.addEventListener('click', () => { closeDrawer(); void openModal(map.getCenter()) })
+  map.on('click', (event) => { if (pickingTarget) { void applyPickedLocation(pickingTarget, event.latlng); return } if (!canPost(false)) return; void openModal(event.latlng) })
+  root.querySelector('#add-button')!.addEventListener('click', () => { closeDrawer(); if (!canPost(true)) return; void openModal(map.getCenter()) })
   form.querySelectorAll<HTMLButtonElement>('.type-option').forEach((option) => option.addEventListener('click', () => setModalPinKind(option.dataset.pinKind as PinKind)))
   root.querySelector('#modal-close')!.addEventListener('click', closeModal)
   modal.addEventListener('click', (event) => { if (event.target === modal) closeModal() })
@@ -885,6 +1051,61 @@ export function mountAtlas(root: HTMLElement, options: AtlasOptions): AtlasHandl
     if (urlInput) urlInput.value = ''
     if (preview) { preview.hidden = true; const img = preview.querySelector('img'); if (img) img.src = '' }
   })
+  /** The path of a picture in the site's picture bucket, from its address; null for any other address. */
+  function pathInBucket(address: string): string | null {
+    const match = /\/map-listing-images\/([^?#]+)$/.exec(address)
+    return match ? decodeURIComponent(match[1]) : null
+  }
+  /**
+   * Saves the form to the site's database (the public map). The picture goes up first when there is a new one; then
+   * the pin is created or, when one was being edited, replaced. Anything the site refuses is shown to the visitor in
+   * its own words and the form stays open.
+   */
+  async function submitRemote(data: FormData, title: string, note: string, meta: string, details: string, image: string) {
+    if (!remote || !pendingLocation) return
+    const kind = modalPinKind
+    const submitButton = form.querySelector<HTMLButtonElement>('.form-submit')!
+    const originalLabel = submitButton.textContent
+    submitButton.disabled = true
+    submitButton.textContent = t('form.saving')
+    try {
+      let toNote: string | null = null
+      let toLat: number | null = null
+      let toLng: number | null = null
+      if (kind === 'exchange') {
+        toNote = String(data.get('toNote') || '').trim()
+        const toLocation: { lat: number; lng: number } | null = pendingToLocation ?? (await geocodeInSweden(toNote))
+        if (!toLocation) { submitButton.textContent = originalLabel; alert(t('form.placeNotFound', { place: toNote })); return }
+        toLat = toLocation.lat
+        toLng = toLocation.lng
+      }
+      // a new picture is uploaded first; one the pin already has keeps its path; none removes it
+      const imagePath = image.startsWith('data:image/') ? await remote.uploadImage(image) : image ? pathInBucket(image) : null
+      const write: ListingWrite = {
+        kind, title, note, details: details || null, meta: meta || null,
+        link: kind === 'sale' ? String(data.get('link') || '').trim() || null : null,
+        image: imagePath, lat: pendingLocation.lat, lng: pendingLocation.lng, toNote, toLat, toLng,
+      }
+      const existing = editingPin && editingPin.kind === kind
+        ? (kind === 'sale' ? pins : kind === 'buyer' ? buyerPins : exchangePins).find((pin) => pin.id === editingPin!.id)
+        : undefined
+      const saved = existing?.remoteId ? await remote.update(existing.remoteId, write) : await remote.create(write)
+      applyOne(saved)
+      renderPins()
+      void translateUserListings()
+      closeModal()
+      // a sale listing's transport info is looked up by the site right after it is saved; fetch it now so it is there when the pin is opened
+      if (saved.kind === 'sale' && saved.transportStatus !== 'ready') {
+        const pin = pins.find((candidate) => candidate.remoteId === saved.id)
+        if (pin) void loadTransport(pin)
+      }
+    } catch (error) {
+      submitButton.textContent = originalLabel
+      alert(error instanceof Error && error.message ? error.message : t('form.saveFailed'))
+    } finally {
+      submitButton.disabled = false
+    }
+  }
   form.addEventListener('submit', async (event) => {
     event.preventDefault()
     if (!pendingLocation) return
@@ -895,6 +1116,7 @@ export function mountAtlas(root: HTMLElement, options: AtlasOptions): AtlasHandl
     const details = String(data.get('details') || '')
     const activeSection = form.querySelector(`[data-form-section="${modalPinKind}"]`)
     const image = getFormImage(activeSection)
+    if (remote) { await submitRemote(data, title, note, meta, details, image); return }
     if (modalPinKind === 'sale') {
       const isEditing = editingPin?.kind === 'sale'
       const id = isEditing ? editingPin!.id : Date.now()
@@ -947,7 +1169,7 @@ export function mountAtlas(root: HTMLElement, options: AtlasOptions): AtlasHandl
     if (inboxDropdown && !inboxDropdown.hidden && !(event.target as HTMLElement).closest('.inbox-wrap')) { inboxDropdown.hidden = true; inboxButton?.setAttribute('aria-expanded', 'false') }
   }
   document.addEventListener('click', onDocumentClick)
-  myListingsButton.addEventListener('click', () => { renderMyListingsDialog(); myListingsBackdrop.hidden = false })
+  myListingsButton.addEventListener('click', () => { if (!canPost(true)) return; renderMyListingsDialog(); myListingsBackdrop.hidden = false })
   root.querySelector('#my-listings-close')!.addEventListener('click', () => { myListingsBackdrop.hidden = true })
   myListingsBackdrop.addEventListener('click', (event) => { if (event.target === myListingsBackdrop) myListingsBackdrop.hidden = true })
   myListingsList.addEventListener('click', (event) => {
@@ -957,10 +1179,12 @@ export function mountAtlas(root: HTMLElement, options: AtlasOptions): AtlasHandl
     if (editButton) openEditModal(editButton.dataset.kind as PinKind, Number(editButton.dataset.id))
     else if (deleteButton) deleteMyPin(deleteButton.dataset.kind as PinKind, Number(deleteButton.dataset.id))
   })
+  if (remote) form.querySelectorAll<HTMLInputElement>('input[name="image"]').forEach((input) => { const label = input.closest('label'); if (label) label.hidden = true; input.disabled = true })
   applyAuthState()
   updatePinSuggestions('')
   renderPins()
   void translateUserListings()
+  void loadRemote()
   function search(query: string) {
     searchInput.value = query
     void searchMap(query)
@@ -968,6 +1192,7 @@ export function mountAtlas(root: HTMLElement, options: AtlasOptions): AtlasHandl
   if (options.initialQuery?.trim()) search(options.initialQuery)
   return {
     search,
+    reload: () => { void loadRemote() },
     unmount: () => {
       if (suggestionTimer) clearTimeout(suggestionTimer)
       suggestionRequestId += 1

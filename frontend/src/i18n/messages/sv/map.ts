@@ -10,12 +10,14 @@
 const map = {
   loading: "Laddar kartan…",
   failed: "Kartan kunde inte laddas. Ladda om sidan och försök igen.",
+  /** Shown in the map's hint line when the listings could not be fetched. */
+  loadFailed: "Annonserna kunde inte hämtas just nu. Ladda om sidan för att försöka igen.",
 
   search: { placeholder: "Sök plats eller pin...", label: "Sök plats eller pin", button: "Sök" },
   notice: {
     title: "Karta",
     badge: "Förhandsversion",
-    text: "Kartan visar exempelannonser. Annonser du lägger till sparas bara i din webbläsare.",
+    text: "Kartan visar exempelannonser och annonser som användare har lagt upp. Logga in för att lägga upp en egen.",
   },
   myListings: "Mina annonser",
   locate: "Visa min position",
@@ -72,6 +74,22 @@ const map = {
     translated: "Översatt automatiskt.",
     showOriginal: "Visa originalet",
     showTranslation: "Visa översättningen",
+    /** Shown to the owner of a listing that the team has hidden. */
+    hiddenNotice: "Den här annonsen är dold av Köpanalys och syns bara för dig.",
+  },
+
+  /**
+   * The lite area analysis in a sale listing: how to get around. Facts only: a name and a straight-line distance.
+   * {km} is the distance searched, as a number.
+   */
+  transport: {
+    title: "Kommunikationer",
+    bus: "Närmaste busshållplats",
+    train: "Närmaste tågstation",
+    missing: "Uppgift saknas – ingen inom {km} km",
+    source: "Källa: Trafiklab och andra öppna trafikdata via Transitous. Avstånd i fågelvägen.",
+    loading: "Hämtar uppgifter om kollektivtrafik…",
+    unavailable: "Uppgifterna om kollektivtrafik kunde inte hämtas just nu. De hämtas igen nästa gång du öppnar annonsen.",
   },
 
   /** The form for adding or changing a listing. */
@@ -105,6 +123,9 @@ const map = {
     exchangeInfoPlaceholder: "Beskriv bostaden som erbjuds och vad personen vill byta till.",
     save: "Spara pin",
     saveChanges: "Spara ändringar",
+    saving: "Sparar…",
+    /** Shown when the site refused to save a listing without saying why. */
+    saveFailed: "Annonsen kunde inte sparas. Försök igen.",
     searching: "Söker plats...",
     fetchingAddress: "Hämtar adress...",
     /** {place} is what the visitor typed. */
@@ -120,6 +141,8 @@ const map = {
     confirmRemove: "Vill du ta bort den här annonsen?",
     empty: "Du har inte lagt till några annonser ännu.",
     emptyHint: "Klicka på \"Skapa annons\" för att komma igång.",
+    /** After the kind of a listing that the team has hidden. */
+    hidden: "dold",
   },
 
   samples: {

@@ -11,8 +11,8 @@ comes from AWS's mirror and Railway only builds when engine files change (GitHub
 
 ## What is live
 
-- **Site** in Swedish and English: landing, pricing, how it works, public map (`/karta`, example listings plus listings
-  visitors keep in their own browser), Bostadsguiden / Insikter / Nyheter (empty until the team publishes),
+- **Site** in Swedish and English: landing, pricing, how it works, public map (`/karta`: signed-in users post sale listings, buyer
+  wishes and exchanges that everyone sees; a sale listing shows its nearest bus stop and train station), Bostadsguiden / Insikter / Nyheter (empty until the team publishes),
   price development, contact, legal pages, cookie consent.
 - **Purchase and credits:** Områdesanalys 99 kr, Trygghetspaket 499 kr, Tre bostäder 999 kr via Stripe Checkout;
   discount codes; account dashboard with balance, analyses and inspection guide.
@@ -63,7 +63,13 @@ Items marked **REQUIRES REVIEW** need a decision by Karol (or the owner of the a
     Also in `apiErrors.ts`: the new `analyses.pdfAwaitingReview` is a proposal, and `analyses.pdfFailed` and
     `analyses.notFoundCompleted` are English in the Swedish file.
     **REQUIRES REVIEW** (Karol)
-15. **What the Supabase GitHub integration does when a migration is merged: UNKNOWN.** The project's settings show no
+15. **The map now shows what visitors post, in public (2026-10-10).** Needs Karol before it goes out: (a) the privacy policy
+    and the terms must say that users' listings are public and who is responsible for them, and how a listing is reported
+    and removed - the legal texts are not touched; (b) the new texts: the notice at the top of the map, the info box
+    (`map.transport.*`), the sign-in and error texts (`map.*`, `apiErrors.map.*`) in both languages are proposals; (c) apply
+    migration `20261010020104_map_listings` first (`docs/operations/database.md`). Pins posted before this (kept in a
+    visitor's own browser) are not shown any more. **REQUIRES REVIEW**
+16. **What the Supabase GitHub integration does when a migration is merged: UNKNOWN.** The project's settings show no
     "Deploy to production" option (2026-10-09). The migration history now matches production (29 of 29) and the "Supabase
     Preview" check passed on `main` after PRs #8 and #9, so today a merge changes nothing in the database. The first pull
     request with a new migration shows what the integration does - apply that migration by hand first
@@ -74,7 +80,8 @@ Items marked **REQUIRES REVIEW** need a decision by Karol (or the owner of the a
 - **Boendekalkyl** (hidden costs per home): start from `lib/report/housingCost.ts`, then set `HOUSING_COST_LIVE = true`.
 - Replace the social proof (item 1) and review the legal texts (item 2).
 - Rewrite the Trygghetspaket delivery texts (item 14).
-- Watch what the Supabase integration does with the next migration (item 15) - `20261009182000_analysis_release` is the next one.
+- Decide the legal texts and wording for the public map (item 15).
+- Watch what the Supabase integration does with the next migration (item 16) - `20261010020104_map_listings` is the next one.
 - Possible later: reuse a published BRF review for other homes in the same association; a reminder before a review is
   late; read the loan notes of an annual report automatically.
 

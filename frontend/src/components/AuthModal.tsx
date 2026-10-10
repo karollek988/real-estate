@@ -459,14 +459,18 @@ function RegisterForm({ onSuccess }: { onSuccess: () => void }) {
   );
 }
 
-export function AuthModal({ open, onClose }: { open: boolean; onClose: () => void }) {
+/**
+ * The sign-in and registration dialog. After a sign-in it takes the visitor to the dashboard, unless `stayOnPage` is set:
+ * a page that asked for the sign-in for its own sake (the map, to post a listing) wants the visitor to stay where they are.
+ */
+export function AuthModal({ open, onClose, stayOnPage = false }: { open: boolean; onClose: () => void; stayOnPage?: boolean }) {
   const t = useTranslations("auth");
   const [mode, setMode] = useState<AuthMode>("login");
   const router = useRouter();
 
   function handleAuthSuccess() {
     onClose();
-    router.push("/dashboard");
+    if (!stayOnPage) router.push("/dashboard");
   }
 
   useEffect(() => {

@@ -6,6 +6,7 @@
 
 | Date | Decision | Detail |
 |---|---|---|
+| 2026-10-10 | The public map's pins (sale listings, buyer wishes, exchanges) are kept in the database, not in the visitor's browser: signed-in users post, everyone sees them at once, the team can hide one. A sale listing shows the nearest bus stop and train station (facts only) from Transitous, looked up once and stored | `supabase/migrations/20261010020104_map_listings.sql`, `docs/architecture/overview.md` |
 | 2026-10-09 | A Trygghetspaket report reaches its customer **only after a reviewer has read and released it** (not just the BRF chapter); the customer sees a waiting page, ready within 24 hours. Områdesanalys stays automatic; reports that already existed stay visible | `docs/product/overview.md`, `supabase/migrations/20261009182000_analysis_release.sql` |
 | 2026-10-09 | `main` needs **no approval** to merge: the ruleset asks for 0 approvals, so the author can merge their own pull request. A pull request and the green check CI passed are still required. (GitHub never lets an author approve their own pull request.) | `.github/rulesets/README.md`, `CONTRIBUTING.md` |
 | 2026-10-08 | Claude Code context rebuilt: project `CLAUDE.md`, path-scoped rules, skills, canonical docs; history archived | `docs/archive/claude-context-migration-2026-10-08.md` |

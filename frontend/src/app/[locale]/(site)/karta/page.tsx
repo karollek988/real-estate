@@ -26,7 +26,7 @@ export default async function KartaPage({ params }: LocaleParams) {
   return (
     <div className="h-[calc(100svh-64px)] min-h-[640px] lg:h-[calc(100svh-76px)] 2xl:h-[calc(100svh-84px)]">
       <h1 className="sr-only">{t("title")}</h1>
-      <ClientMessages areas={["map"]}>
+      <ClientMessages areas={["map", "auth"]}>
         <Suspense fallback={<div className="h-full bg-ka-cream" />}>
           <PublicMap />
         </Suspense>

@@ -109,8 +109,9 @@ when they are shown in another language (src/lib/translate):
 - **If the translator is not there:** nothing breaks. The page shows the Swedish text, without the "translated automatically" note,
   and is left out of search engines in that language (noindex) until it is translated.
 - **What the reader sees:** an article translated automatically says "Translated automatically from Swedish. Show the original".
-  The text of a visitor's own map listing is translated when the page is in another language, with the same two words and a way back
-  to the original; place names are never translated.
+  The text of a listing that a visitor posted on the map is translated when the page is in another language, with the same two words
+  and a way back to the original; place names, the built-in examples (their words are in the message files) and the stop names of
+  the transport box are never translated.
 - **Formatting survives:** bold, italics, links, lists, headings and "good to know" boxes are kept (lib/translate/markdown.ts).
 - **A new language** needs a model for it too: convert one into /models/<pair> (see the Dockerfile) and add the pair to
   `MODEL_FOLDERS` and a glossary in api/translation.py / translation_glossary.py. Until then that language shows the articles in Swedish.
