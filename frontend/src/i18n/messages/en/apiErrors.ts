@@ -99,6 +99,20 @@ const apiErrors: Messages["apiErrors"] = {
     invalid: "The text could not be translated.",
   },
 
+  map: {
+    rateLimited: "Too many requests – wait a moment and try again.",
+    dailyLimit: "You can post at most {count} listings a day. Try again tomorrow.",
+    totalLimit: "You already have {count} listings on the map. Remove one before you post a new one.",
+    invalid: "The listing could not be saved – check the texts, the link and the place.",
+    notFound: "That listing does not exist.",
+    notYours: "You can only change your own listings.",
+    loadFailed: "The map's listings could not be loaded right now.",
+    saveFailed: "The listing could not be saved right now – try again in a moment.",
+    imageInvalid: "The picture could not be read. Choose a JPEG, PNG or WebP picture.",
+    imageTooLarge: "The picture is too large.",
+    imageFailed: "The picture could not be saved right now – try again in a moment.",
+  },
+
   contact: {
     unavailable: "The contact form is not available right now — e-mail us directly at kontakt@kopanalys.se instead.",
     rateLimited: "Too many messages sent – try again later or e-mail kontakt@kopanalys.se.",
