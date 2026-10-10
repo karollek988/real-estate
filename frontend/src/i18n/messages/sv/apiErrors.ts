@@ -116,6 +116,21 @@ const apiErrors = {
     invalid: "Texten kunde inte översättas.",
   },
 
+  /** The public map (app/api/map). {count} is a number. */
+  map: {
+    rateLimited: "För många förfrågningar – vänta en liten stund och försök igen.",
+    dailyLimit: "Du kan lägga upp högst {count} annonser per dygn. Försök igen i morgon.",
+    totalLimit: "Du har redan {count} annonser på kartan. Ta bort en innan du lägger upp en ny.",
+    invalid: "Annonsen kunde inte sparas – kontrollera texterna, länken och platsen.",
+    notFound: "Annonsen finns inte.",
+    notYours: "Du kan bara ändra dina egna annonser.",
+    loadFailed: "Kartans annonser kunde inte hämtas just nu.",
+    saveFailed: "Annonsen kunde inte sparas just nu – försök igen om en stund.",
+    imageInvalid: "Bilden kunde inte läsas. Välj en JPEG-, PNG- eller WebP-bild.",
+    imageTooLarge: "Bilden är för stor.",
+    imageFailed: "Bilden kunde inte sparas just nu – försök igen om en stund.",
+  },
+
   contact: {
     unavailable: "Kontakt via formulär är inte tillgänglig just nu — mejla oss direkt på kontakt@kopanalys.se istället.",
     rateLimited: "För många meddelanden skickade – försök igen senare eller mejla kontakt@kopanalys.se.",

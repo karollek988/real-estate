@@ -23,6 +23,10 @@ that are easy to get wrong:
 - **A full report is shown to a customer only after a reviewer has released it** (`analyses.released_at`, decision
   2026-10-09). Read analyses for a customer through `getReportForViewer` (`lib/analysis/access.ts`); anything that reads
   `analyses` directly and hands report content on must use `latestCompleteAnalysis(..., { releasedOnly: true })`.
+- **The public map's pins are rows of `map_listings`** (decision 2026-10-10), read and written only through `/api/map/*` with the
+  service role (`src/lib/map/`); the table has no public policy and the owner's id must never reach the browser (`toDto`). The
+  map's client (`components/admin/atlas/atlas.ts`) takes a `ListingStore`; the admin portal's copy still uses localStorage. A sale
+  listing's info box says only what is where (name, metres, source) - no "good connections", no score.
 - **Tests are `*.verify.mjs` files** next to the code they check; a new one is picked up by `npm run verify` by its name.
 - **A design reference image is the spec** (layout, spacing, type, colours), not inspiration. References live in
   `docs/design/`; check the result at several viewport widths.

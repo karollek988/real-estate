@@ -7,12 +7,13 @@ import type { Messages } from "../types";
 const map: Messages["map"] = {
   loading: "Loading the map…",
   failed: "The map could not be loaded. Reload the page and try again.",
+  loadFailed: "The listings could not be fetched right now. Reload the page to try again.",
 
   search: { placeholder: "Search for a place or pin...", label: "Search for a place or pin", button: "Search" },
   notice: {
     title: "Map",
     badge: "Preview",
-    text: "The map shows example listings. Listings you add are saved only in your browser.",
+    text: "The map shows example listings and listings that users have posted. Sign in to post your own.",
   },
   myListings: "My listings",
   locate: "Show my location",
@@ -62,6 +63,17 @@ const map: Messages["map"] = {
     translated: "Translated automatically.",
     showOriginal: "Show the original",
     showTranslation: "Show the translation",
+    hiddenNotice: "This listing has been hidden by Köpanalys and is only visible to you.",
+  },
+
+  transport: {
+    title: "Getting around",
+    bus: "Nearest bus stop",
+    train: "Nearest train station",
+    missing: "Not available – none within {km} km",
+    source: "Source: Trafiklab and other open transport data via Transitous. Straight-line distance.",
+    loading: "Fetching public transport information…",
+    unavailable: "The public transport information could not be fetched right now. It is fetched again the next time you open the listing.",
   },
 
   form: {
@@ -94,6 +106,8 @@ const map: Messages["map"] = {
     exchangeInfoPlaceholder: "Describe the home on offer and what the person wants to swap it for.",
     save: "Save pin",
     saveChanges: "Save changes",
+    saving: "Saving…",
+    saveFailed: "The listing could not be saved. Try again.",
     searching: "Looking for the place...",
     fetchingAddress: "Fetching the address...",
     placeNotFound: "Could not find the place \"{place}\". Try a different search.",
@@ -107,6 +121,7 @@ const map: Messages["map"] = {
     confirmRemove: "Do you want to remove this listing?",
     empty: "You have not added any listings yet.",
     emptyHint: "Click \"Create listing\" to get started.",
+    hidden: "hidden",
   },
 
   samples: {

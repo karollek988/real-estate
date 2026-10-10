@@ -37,12 +37,18 @@ There is no staging database.
 |---|---|---|
 | The 29 files up to `20261008120000_text_translations` | yes | **yes - 29 of 29** |
 | `20261009182000_analysis_release` (adds `analyses.released_at` / `released_by`) | **not yet - apply by hand BEFORE the code that reads it is merged** | no |
+| `20261010020104_map_listings` (table `map_listings`, bucket `map-listing-images`, the 45 example pins) | **not yet - apply by hand BEFORE the map code is merged** | no |
 
 `20261009182000_analysis_release`: existing analyses count as released (so every report customers can see today stays
 visible); new full analyses start unreleased. It is safe to run twice - only the run that adds the columns releases the
 existing rows. The code fails closed: with the column missing every full report would be held back and a new area
 analysis could not be created, so the order is: backup of `analyses` (rule 4) → run the file in the SQL Editor → add
 its row to `supabase_migrations.schema_migrations` → merge.
+
+`20261010020104_map_listings`: only adds a table, a bucket and the 45 built-in example pins, so nothing existing is changed
+(no backup needed). It is safe to run twice. Row level security is on and there is no policy: the public map reads and writes
+only through `/api/map` with the service role. Without it `/karta` would show no pins and signing-in users could not post,
+so the order is: run the file in the SQL Editor → add its row to `supabase_migrations.schema_migrations` → merge.
 
 How it got there: before 2026-10-08 six migrations had been applied by hand (`20260906000000`, `20261002000000/100/200`,
 `20261006000000`, `20261007120000`) and were missing from the history, and two had never been run
@@ -110,10 +116,10 @@ from the history, and nothing is missing any more. Whether it does is **not conf
 - **Main tables:** `profiles`, `properties`, `analyses`, `analysis_requests`, `credit_purchases`, `saved_properties`,
   `brf_annual_reports` (+ `key_figures`), `brf_reviews`, `inspections`, `inspection_documents`, `inspection_photos`,
   `discount_codes`, `content_items`, `analytics_visitor_days`, `analytics_daily`, `analytics_arrivals_daily`,
-  `analytics_consent_daily`, `text_translations`. Read the migrations for the exact columns.
+  `analytics_consent_daily`, `text_translations`, `map_listings` (the public map's pins). Read the migrations for the exact columns.
 - **RPCs (service role only):** `consume_credit`, `refund_credit`, `grant_purchase_credits` (idempotent per Stripe
   session), `issue_discount_code`, `record_page_view`, `record_acquisition`.
-- **Storage buckets:** `brf-annual-reports` (private), `inspection-files` (private), `content-images` (public, WebP).
+- **Storage buckets:** `brf-annual-reports` (private), `inspection-files` (private), `content-images` (public, WebP), `map-listing-images` (public, WebP, 2 MB; the pictures of map pins).
   `broker-documents` was dropped on 2026-10-07. The local bucket config allows only PDF for annual reports although the
   app accepts Word and images — production's allowed types: UNKNOWN.
 - **Auth:** Supabase Auth with a "Send Email" HTTP hook to the app (`/api/auth/send-email`, Resend).

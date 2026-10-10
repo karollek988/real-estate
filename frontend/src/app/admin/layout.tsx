@@ -21,7 +21,7 @@ export const metadata: Metadata = {
 
 /**
  * The admin console - BRF reviews (/admin/brf) and the Kunskap content editor
- * (/admin/content): Köpanalys admins only (lib/auth/admin.ts). Everyone else
+ * (/admin/content), the map's pins (/admin/map): Köpanalys admins only (lib/auth/admin.ts). Everyone else
  * gets a plain 404. It is a tool for the team and stays in Swedish, outside the language folder
  * ([locale]), so it is its own root layout with its own <html>.
  *
@@ -54,6 +54,9 @@ export default async function AdminLayout({ children }: { children: React.ReactN
                   </Link>
                   <Link href="/admin/content" className="rounded-full bg-ka-ink/[0.06] px-2.5 py-0.5 text-xs font-medium text-ka-ink hover:bg-ka-ink/[0.12]">
                     Innehåll
+                  </Link>
+                  <Link href="/admin/map" className="rounded-full bg-ka-ink/[0.06] px-2.5 py-0.5 text-xs font-medium text-ka-ink hover:bg-ka-ink/[0.12]">
+                    Karta
                   </Link>
                 </nav>
               </div>

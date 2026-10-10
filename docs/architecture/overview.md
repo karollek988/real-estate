@@ -45,8 +45,15 @@
   - `admin.kopanalys.se` (`src/pages/admin-portal/`): statistics and the Markov simulator (`src/lib/markov/`).
     Its own password login (`ADMIN_PASSWORD_HASH`, HMAC session cookie, `src/lib/admin/`), strict CSP in `next.config.ts`.
 - **Public map** (`/karta`, `src/components/map/PublicMap.tsx` mounting `src/components/admin/atlas/atlas.ts`):
-  Leaflet on OpenStreetMap tiles and Nominatim. Shows example listings; listings a visitor creates are stored in **that
-  visitor's browser (localStorage)**, not on the server.
+  Leaflet on OpenStreetMap tiles and Nominatim. The pins - sale listings, buyer wishes, exchanges and the built-in
+  examples - are rows of **`map_listings`**, read and written only through `/api/map/*` (`src/lib/map/`: service role, no
+  public policy, the owner's id never reaches the browser). Everyone can look; only signed-in users post, edit and remove
+  their own (10 a day, 30 in all); the team hides a pin in `/admin/map`, after which only its owner sees it. Photos are
+  re-encoded to WebP without metadata into the bucket `map-listing-images`. A **sale listing's info box** - the nearest bus
+  stop and train station, name and straight-line distance, nothing else - comes from **Transitous** (open-source MOTIS with the
+  Trafiklab feed, no key; `src/lib/map/transport.ts`), looked up once right after the listing is saved or the first time
+  anyone opens it, and stored in `map_listings.transport`. The admin portal's copy of the map still keeps its demo pins
+  in localStorage.
 - **Content** (Bostadsguiden/Insikter/Nyheter, `src/lib/content/`): table `content_items` + public Storage bucket
   `content-images`; written in `/admin/content`.
 - **Analytics** (`src/lib/analytics/`): cookieless daily visitor counting (`/api/analytics/hit`) and a consent-only
