@@ -25,6 +25,9 @@ Routes, local running and the translation model: `api/README.md`. Architecture: 
 - `/api/browser-fetch` (Camoufox) still fetches Hemnet pages; its legal status is open
   (`docs/legal-data-migration-plan.md`). Don't extend scraping without Karol's decision.
 - Text produced by `analysis_engine/` must follow `.claude/rules/report-objectivity.md`.
+- **Keep large files out of the repository.** Railway uploads the whole repository as a snapshot for every build; 143 MB of
+  validation PDFs were moved out on 2026-10-10 (`BRF-Scraper/README.md` says how to get them back). Test data that is
+  needed belongs next to the test that reads it and stays small.
 - A new dependency goes into `api/requirements.txt` and makes the image bigger; Camoufox launches use ~0.9 GB, the
   translation model ~300 MB. Mention memory impact in the pull request.
 
